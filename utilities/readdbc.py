@@ -12,11 +12,11 @@ print(dir(ffi))
 print(dir(rdbc))
 
 def dbc2dbf(infile, outfile):
-    infile = ffi.new('char*', ffi.addressof(os.path.abspath(infile)))
-    outfile = ffi.new('char*', os.path.abspath(outfile))
+    infile = ffi.addressof(ffi.new('char[]', os.path.abspath(infile)))
+    outfile = ffi.addressof(ffi.new('char[]', os.path.abspath(outfile)))
     lib.dbc2dbf(infile, outfile)
     print(os.path.exists(outfile))
 
 if __name__ == "__main__":
-    dbc2dbf('/tmp/DNRJ2014.dbc', 'test.dbf')
+    dbc2dbf(b'/tmp/DNRJ2014.dbc', b'test.dbf')
 
