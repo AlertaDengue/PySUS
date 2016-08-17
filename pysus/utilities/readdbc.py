@@ -4,10 +4,12 @@ by fccoelho
 license: GPL V3 or Later
 """
 import os
-from utilities._readdbc import ffi, lib
-from dbfread import DBF
 from tempfile import NamedTemporaryFile
+
 import pandas as pd
+from dbfread import DBF
+
+from pysus.utilities._readdbc import ffi, lib
 
 
 def read_dbc(filename, encoding='utf-8'):

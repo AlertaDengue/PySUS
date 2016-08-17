@@ -5,8 +5,11 @@ license: GPL V3 or Later
 """
 
 import unittest
-from utilities.readdbc import read_dbc
+
 import pandas as pd
+
+from pysus.utilities.readdbc import read_dbc
+
 
 class TestReadDbc(unittest.TestCase):
     def test_read_dbc(self):

@@ -6,9 +6,11 @@ license: GPL V3 or Later
 """
 
 import unittest
+
 import numpy as np
 from numpy.testing import *
-from preprocessing import decoders
+
+from pysus.preprocessing import decoders
 
 
 class TestDecoder(unittest.TestCase):

@@ -5,19 +5,18 @@ license: GPL V3 or Later
 """
 import os
 from cffi import FFI
-blastbuilder = FFI()
-ffibuilder = FFI()
-with open(os.path.join(os.path.dirname(__file__), "c-src/blast.c")) as f:
-    blastbuilder.set_source("blast", f.read(), libraries=["c"])
-with open(os.path.join(os.path.dirname(__file__), "c-src/blast.h")) as f:
-    blastbuilder.cdef(f.read())
-blastbuilder.compile(verbose=True)
 
-with open('c-src/dbc2dbf.c','r') as f:
+ffibuilder = FFI()
+
+PATH = os.path.dirname(__file__)
+
+with open(os.path.join(PATH, 'c-src/dbc2dbf.c'),'r') as f:
     ffibuilder.set_source("_readdbc",
                           f.read(),
                           libraries=["c"],
-                          sources=["c-src/blast.c"])
+                          sources=[os.path.join(PATH, "c-src/blast.c")],
+                          include_dirs=[os.path.join(PATH, "c-src/")]
+                          )
 ffibuilder.cdef(
     """
     static unsigned inf(void *how, unsigned char **buf);
@@ -26,9 +25,8 @@ ffibuilder.cdef(
     """
 )
 
-with open(os.path.join(os.path.dirname(__file__), "c-src/blast.h")) as f:
+with open(os.path.join(PATH, "c-src/blast.h")) as f:
     ffibuilder.cdef(f.read(), override=True)
 
 if __name__ == "__main__":
-    # ffibuilder.include(blastbuilder)
     ffibuilder.compile(verbose=True)
