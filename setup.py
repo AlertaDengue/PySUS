@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='PySUS',
-    version='0.1.1',
+    version='0.1.2',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so']
