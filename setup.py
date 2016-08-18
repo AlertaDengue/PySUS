@@ -11,7 +11,7 @@ setup(
         '': ['*.c', '*.h', '*.o', '*.so']
     },
     zip_safe=False,
-    url='',
+    url='https://github.com/fccoelho/PySUS',
     license='gpl-v3',
     author='Flavio Codeco Coelho',
     author_email='fccoelho@gmail.com',
