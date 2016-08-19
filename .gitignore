@@ -1,1 +1,9 @@
 .idea
+PySUS.egg-info/
+build/
+dist/
+*.o
+*.so
+*.pyc
+*.pyo
+
