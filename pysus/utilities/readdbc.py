@@ -20,6 +20,8 @@ def read_dbc(filename, encoding='utf-8'):
     :param encoding: encoding of the data
     :return: Pandas Dataframe.
     """
+    if isinstance(filename, str):
+        filename = filename.encode()
     with NamedTemporaryFile() as tf:
         dbc2dbf(filename, tf.name.encode())
         dbf = DBF(tf.name, encoding=encoding)
@@ -33,6 +35,10 @@ def dbc2dbf(infile, outfile):
     :param infile: .dbc file name
     :param outfile: name of the .dbf file to be created.
     """
+    if isinstance(infile, str):
+        infile = infile.encode()
+    if isinstance(outfile, str):
+        outfile = outfile.encode()
     p = ffi.new('char[]', os.path.abspath(infile))
     q = ffi.new('char[]', os.path.abspath(outfile))
 
@@ -41,5 +47,6 @@ def dbc2dbf(infile, outfile):
     print(os.path.exists(outfile))
 
 if __name__ == "__main__":
-    dbc2dbf(b'/tmp/DNRJ2014.dbc', b'/tmp/output.dbf')
+    dbc2dbf('/home/fccoelho/Downloads/DBF/DNRJ2014.dbc', '/tmp/output.dbf')
+    read_dbc('/home/fccoelho/Downloads/DBF/DNRJ2014.dbc')
 

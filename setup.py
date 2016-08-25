@@ -5,10 +5,10 @@ with open('README.md') as f:
 
 setup(
     name='PySUS',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages(),
     package_data={
-        '': ['*.c', '*.h', '*.o', '*.so']
+        '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
     },
     zip_safe=False,
     url='https://github.com/fccoelho/PySUS',
