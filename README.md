@@ -2,7 +2,7 @@ PySUS
 =====
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
-The documentation of how to use PySUS can be found `here <http://pysus.readthedocs.io/en/latest/>`
+The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/])
 
 Features
 --------
