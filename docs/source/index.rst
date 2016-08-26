@@ -13,6 +13,8 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   Data Sources <data-sources>
+   Tutorials <tutorials>
 
 
 
