@@ -1,8 +1,10 @@
 import unittest
-from pysus.preprocessing.sinan import read_sinan_dbf
+from pysus.preprocessing.sinan import read_sinan_dbf, geocode
 import pandas as pd
 import datetime
 import numpy as np
+
+
 
 
 class TestSinanDF(unittest.TestCase):
@@ -23,6 +25,10 @@ class TestSinanDF(unittest.TestCase):
     def test_type_convertion(self):
         df = read_sinan_dbf('test_data/EPR-2016-06-01-2016.dbf', encoding='latin-1')
         assert not all(df.dtypes == 'object')
+
+    def test_geocode(self):
+        df = pd.read_pickle('test_data/chik.pickle')
+        geocode(sinan_df=df, outfile='chik_2016.csv')
 
 
 if __name__ == '__main__':

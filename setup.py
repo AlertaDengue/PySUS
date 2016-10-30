@@ -22,7 +22,7 @@ Instalation
 
 setup(
     name='PySUS',
-    version='0.1.6',
+    version='0.1.7',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
@@ -36,5 +36,5 @@ setup(
     long_description=ld,
     setup_requires=['cffi>=1.0.0'],
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
-    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0']
+    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests']
 )
