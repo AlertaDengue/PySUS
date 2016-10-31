@@ -12,6 +12,8 @@ Features
 
 - Decode encoded patient age to any time unit (years, months, etc)
 - Convert `.dbc` files to DBF databases or read them into pandas dataframes. DBC files are basically DBFs compressed by a proprietary algorithm.
+- Loads SINAN files into Pandas Dataframes
+- Geocodes SINAN notified cases in batch. You can use your Google API KEY to avoid Google's free limits.
 
 Instalation
 -----------
@@ -22,7 +24,7 @@ Instalation
 
 setup(
     name='PySUS',
-    version='0.1.7',
+    version='0.1.8',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
