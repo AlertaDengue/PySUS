@@ -52,7 +52,7 @@ def _address_generator(df, default=''):
         l = dict(l[1])
         try:
             l['cidade'] = ','.join(get_geocodes(l['ID_MN_RESI']))
-        except KeyError:
+        except:
             print("Could not find geocode {} using default")
             l['cidade'] = default
         yield l['NU_NOTIFIC'], "{NM_LOGRADO}, {NU_NUMERO}, {NM_BAIRRO}, {cidade}, Brasil".format(**l)
