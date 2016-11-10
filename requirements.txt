@@ -4,3 +4,4 @@ dbfread
 geocoder
 requests
 folium
+nbsphinx
