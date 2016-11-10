@@ -7,7 +7,7 @@ Welcome to PySUS's documentation!
 =================================
 
 PySUS is a library which is a collection of helper codes for people which need to analyze data from SUS (Brazilian Universal
-Health System). Contribution are welcome!
+Health System). Contributions are welcome!
 
 Contents:
 
@@ -16,6 +16,7 @@ Contents:
 
    Data Sources <data-sources>
    Tutorials <tutorials>
+   Analyzing Dengue data <Dengue.ipynb>
 
 
 
