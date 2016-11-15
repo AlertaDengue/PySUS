@@ -17,6 +17,7 @@ Contents:
    Data Sources <data-sources>
    Tutorials <tutorials>
    Analyzing Dengue data <Dengue.ipynb>
+         Analyzing Zika data <Zika.ipynb>
 
 
 

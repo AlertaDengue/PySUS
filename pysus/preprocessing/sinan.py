@@ -15,6 +15,13 @@ def read_sinan_dbf(fname, encoding) -> pd.DataFrame:
     """
     db = DBF(fname, encoding=encoding)
     df = pd.DataFrame(list(db))
+
+    def convert_week(x):
+        try:
+            w = int(x) % 100
+        except ValueError:
+            w = pd.np.nan
+        return w
     for cname in df.columns:
         df[cname].replace('', pd.np.nan, inplace=True)
         if cname.startswith(('NU', 'ID')):
@@ -24,7 +31,7 @@ def read_sinan_dbf(fname, encoding) -> pd.DataFrame:
                 # certain IDs can be alphanumerical
                 pass
         elif cname.startswith('SEM'):
-            df[cname] = df[cname].map(lambda x: int(x) % 100)
+            df[cname] = df[cname].map(convert_week)
 
     return df
 
