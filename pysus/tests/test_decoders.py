@@ -33,3 +33,6 @@ class TestDecoder(unittest.TestCase):
         assert_array_equal(res, np.array([1, 1]))
         res = decoders.decodifica_idade([1480] * 5, unidade='Y')
         assert_array_almost_equal(res, np.array([0.0547] * 5), decimal=3)
+
+    def test_verifica_geocodigo(self):
+        self.assertTrue(decoders.is_valid_geocode(3304557))
