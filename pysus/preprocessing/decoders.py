@@ -32,5 +32,5 @@ def decodifica_idade(idade, unidade='Y'):
         #print(idade)
         idade_anos = np.nan
         #raise ValueError("Idade inválida")
-    idade_dec = idade_anos/fator[unidade]
+    idade_dec = idade_anos*fator[unidade]
     return idade_dec
