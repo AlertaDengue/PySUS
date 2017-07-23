@@ -19,15 +19,15 @@ def decodifica_idade(idade, unidade='Y'):
     :param idade: inteiro ou sequencia de inteiros codificados.
     :return:
     """
-    fator = {'Y': 1, 'M': 12, 'D': 365, 'H': 365*24}
+    fator = {'Y': 1., 'M': 12., 'D': 365., 'H': 365*24.}
     if idade >= 4000: #idade em anos
         idade_anos = idade - 4000
     elif idade >= 3000 and idade < 4000: #idade em meses
-        idade_anos = (idade-3000)/12
+        idade_anos = (idade-3000)/12.
     elif idade >= 2000 and idade < 3000: #idade em dias
-        idade_anos = (idade-2000)/365
+        idade_anos = (idade-2000)/365.
     elif idade >= 1000 and idade < 2000: # idade em horas
-        idade_anos = (idade-1000)/(365*24)
+        idade_anos = (idade-1000)/(365*24.)
     else:
         #print(idade)
         idade_anos = np.nan
