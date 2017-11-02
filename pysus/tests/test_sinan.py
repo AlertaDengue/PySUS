@@ -28,7 +28,7 @@ class TestSinanDF(unittest.TestCase):
 
     def test_geocode(self):
         df = pd.read_pickle('test_data/chik.pickle')
-        geocode(sinan_df=df, outfile='chik_2016.csv')
+      #  geocode(sinan_df=df, outfile='chik_2016.csv', default_city='Rio de Janeiro')
 
 
 if __name__ == '__main__':
