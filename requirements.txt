@@ -5,3 +5,4 @@ geocoder
 requests
 folium
 nbsphinx
+nose
