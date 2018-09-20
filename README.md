@@ -13,8 +13,14 @@ Features
 
 Instalation
 -----------
+There are some dependencies which can't be installed through pip, namely `libffi`. Therefore on an ubuntu system:
 
-`$ sudo pip install PySUS`
+```
+sudo apt install libffi-dev
+```
+Then you can proceed to
+
+`sudo pip install PySUS`
 
 Examples
 --------
