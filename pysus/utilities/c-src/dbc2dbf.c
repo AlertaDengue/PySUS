@@ -69,27 +69,31 @@ void dbc2dbf(char** input_file, char** output_file) {
     /* Open input file */
     input  = fopen(input_file[0], "rb");
     if(input == NULL) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Open output file */
     output = fopen(output_file[0], "wb");
     if(output == NULL) {
-        error("Error reading output file %s: %s", output_file[0], strerror(errno));
+        printf("Error reading output file %s: %s", output_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Process file header - skip 8 bytes */
     if( fseek(input, 8, SEEK_SET) ) {
-        error("Error processing input file %s: %s", input_file[0], strerror(errno));
+        printf("Error processing input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Reads two bytes from the header = header size */
     ret = fread(rawHeader, 2, 1, input);
     if( ferror(input) ) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
@@ -104,30 +108,39 @@ void dbc2dbf(char** input_file, char** output_file) {
 
     ret = fread(buf, 1, header, input);
     if( ferror(input) ) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     ret = fwrite(buf, 1, header, output);
     if( ferror(output) ) {
-        error("Error writing output file %s: %s", output_file[0], strerror(errno));
+        printf("Error writing output file %s: %s", output_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Jump to the data (Skip CRC32) */
     if( fseek(input, header + 4, SEEK_SET) ) {
-        error("Error processing input file %s: %s", input_file[0], strerror(errno));
+        printf("Error processing input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* decompress */
     ret = blast(inf, input, outf, output);
-    if( ret ) error("blast error code: %d", ret);
+    if( ret ) {
+        printf("blast printf code: %d", ret);
+        perror("");
+    }
 
     /* see if there are any leftover bytes */
     int n = 0;
     while (fgetc(input) != EOF) n++;
-    if (n) error("blast warning: %d unused bytes of input\n", n);
+    if (n) {
+        printf("blast warning: %d unused bytes of input\n", n);
+        perror("");
+    }
 
     fclose(input);
     fclose(output);

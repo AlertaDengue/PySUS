@@ -22,10 +22,10 @@ def read_dbc(filename, encoding='utf-8'):
     """
     if isinstance(filename, str):
         filename = filename.encode()
-    with NamedTemporaryFile() as tf:
+    with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
         dbf = DBF(tf.name, encoding=encoding)
-        df = pd.DataFrame(list(dbf))
+    df = pd.DataFrame(list(dbf))
     return df
 
 
@@ -46,7 +46,5 @@ def dbc2dbf(infile, outfile):
 
     print(os.path.exists(outfile))
 
-if __name__ == "__main__":
-    dbc2dbf('/home/fccoelho/Downloads/DBF/DNRJ2014.dbc', '/tmp/output.dbf')
-    read_dbc('/home/fccoelho/Downloads/DBF/DNRJ2014.dbc')
+
 
