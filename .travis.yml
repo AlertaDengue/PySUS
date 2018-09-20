@@ -27,5 +27,5 @@ script:
   - cd pysus/utilities
   - python _build_readdbc.py
   - python --version
-  - cd ../..
-  - py.test
+  - cd ../tests
+  - nosetests
