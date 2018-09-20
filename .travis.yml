@@ -4,4 +4,23 @@ python:
 
   - "3.6"
 
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      addons: &gcc73
+        apt:
+          sources: ['ubuntu-toolchain-r-test']
+          packages: ['g++-7.3', 'gcc-7.3', 'gfortran-7.3']
+      env:
+        - CXX='g++-7.3'
+        - CC='gcc-7.3'
+        - FC='gfortran-7.3'
+      python: 3.6
+
+install:
+  - pip install -r requirements.txt --upgrade
+  - python --version
+
+
 script: py.test
