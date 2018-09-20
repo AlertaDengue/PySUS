@@ -11,11 +11,11 @@ matrix:
       addons: &gcc73
         apt:
           sources: ['ubuntu-toolchain-r-test']
-          packages: ['g++-7.3', 'gcc-7.3', 'gfortran-7.3']
+          packages: ['g++-7', 'gcc-7', 'gfortran-7','libffi-dev']
       env:
-        - CXX='g++-7.3'
-        - CC='gcc-7.3'
-        - FC='gfortran-7.3'
+        - CXX='g++-7'
+        - CC='gcc-7'
+        - FC='gfortran-7'
       python: 3.6
 
 install:
