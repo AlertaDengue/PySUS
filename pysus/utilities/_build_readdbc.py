@@ -11,7 +11,7 @@ ffibuilder = FFI()
 PATH = os.path.dirname(__file__)
 
 with open(os.path.join(PATH, 'c-src/dbc2dbf.c'),'r') as f:
-    ffibuilder.set_source("pysus.utilities._readdbc",
+    ffibuilder.set_source("_readdbc",
                           f.read(),
                           libraries=["c"],
                           sources=[os.path.join(PATH, "c-src/blast.c")],
