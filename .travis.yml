@@ -20,7 +20,11 @@ matrix:
 
 install:
   - pip install -r requirements.txt --upgrade
+  - python setup.py build
+
+
+script:
+  - cd pysus/utilities
+  - python _build_readdbc.py
   - python --version
-
-
-script: py.test
+  - py.test
