@@ -1,7 +1,7 @@
 __author__ = 'fccoelho'
 
 import unittest
-from pysus.dados_online.SIH import download
+from pysus.online_data.SIH import download
 import pandas as pd
 
 unittest.skip("too slow to run om travis")

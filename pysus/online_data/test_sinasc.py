@@ -2,7 +2,7 @@ __author__ = 'fccoelho'
 
 import unittest
 from unittest import skip
-from pysus.preprocessing.sinasc import download
+from pysus.online_data.sinasc import download
 
 
 class TestDownload(unittest.TestCase):
