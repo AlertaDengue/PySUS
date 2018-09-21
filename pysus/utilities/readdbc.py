@@ -25,6 +25,7 @@ def read_dbc(filename, encoding='utf-8'):
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
         dbf = DBF(tf.name, encoding=encoding)
+    os.unlink(tf.name)
     df = pd.DataFrame(list(dbf))
     return df
 

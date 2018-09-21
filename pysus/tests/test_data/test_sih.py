@@ -1,0 +1,16 @@
+__author__ = 'fccoelho'
+
+import unittest
+from pysus.dados_online.SIH import download
+import pandas as pd
+
+unittest.skip("too slow to run om travis")
+class SIHTestCase(unittest.TestCase):
+    def test_download(self):
+        df = download('to', 2009, 12)
+        self.assertGreater(len(df), 0)
+        self.assertIsInstance(df, pd.DataFrame)
+
+
+if __name__ == '__main__':
+    unittest.main()

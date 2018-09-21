@@ -11,6 +11,8 @@ Features
 - Decode encoded patient age to any time unit (years, months, etc)
 - Convert `.dbc` files to DBF databases or read them into pandas dataframes. DBC files are basically DBFs compressed by a proprietary algorithm.
 - Read SINAN dbf files returning DataFrames with properly typed columns
+- Download SINASC Data
+- Download SIH Data
 
 Instalation
 -----------
