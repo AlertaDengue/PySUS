@@ -6,6 +6,7 @@ PySUS includes some Jupyter notebooks in its distribution package to serve as tu
 
 Working with SINASC databases
 =============================
+SINASC is the national registry of live births. With PySUS, You can download SINASC tables directly and have them as dataframes to integrate in your analysis.
 
 
 Working with SINAN files
@@ -17,3 +18,7 @@ It also offers geocoding capabilities which attributes geographical coordinates 
 You can use your Google API KEY to avoid Google's free limits. To do this just create an environment variable called GOOGLE_API_KEY.
 Warning: This can take a long time! and can stop halfway through, due to connections timing out. But PySUS creates knows how to restart from the last
 geocoded address.
+
+Working with SIH DATA
+=====================
+SIH is DATASUS' Hospital information system and it contains detailed information about hospitalizations. SIH Data can also be downloaded directly with PySUS.
