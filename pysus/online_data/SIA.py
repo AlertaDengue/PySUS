@@ -38,9 +38,9 @@ def download(state: str, year: int, month: int, cache: bool =True) -> object:
         fname = 'PA{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
         fname2 = 'BI{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
     # Check in Cache
-    cachefile = os.path.join(CACHEPATH, 'SIA' + fname.split('.')[0] + '_{}{}{}.parquet'.format(state, year, month))
+    cachefile = os.path.join(CACHEPATH, 'SIA_' + fname.split('.')[0] + '_.parquet')
     if fname2 is not None:
-        cachefile2 = os.path.join(CACHEPATH, 'SIA' + fname2.split('.')[0] + '_{}{}{}.parquet'.format(state, year, month))
+        cachefile2 = os.path.join(CACHEPATH, 'SIA_' + fname2.split('.')[0] + '_.parquet')
         if os.path.exists(cachefile2):
             df = pd.read_parquet(cachefile)
             df2 = pd.read_parquet(cachefile2)
