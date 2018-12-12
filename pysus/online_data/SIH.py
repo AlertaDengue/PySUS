@@ -21,6 +21,7 @@ def download(state: str, year: int, month: int) -> object:
     """
     state = state.upper()
     year2 = int(str(year)[-2:])
+    month = str(month).zfill(2)
     if year < 1992:
         raise ValueError("SIH does not contain data before 1994")
     ftp = FTP('ftp.datasus.gov.br')
@@ -28,11 +29,11 @@ def download(state: str, year: int, month: int) -> object:
     if year < 2008:
         ftype = 'DBC'
         ftp.cwd('/dissemin/publicos/SIHSUS/199201_200712/Dados')
-        fname = 'RD{}{}{}.dbc'.format(state, year2, month.zfill(2))
+        fname = 'RD{}{}{}.dbc'.format(state, year2, month)
     if year >= 2008:
         ftype = 'DBF'
         ftp.cwd('/dissemin/publicos/SIHSUS/DBF'.format(year))
-        fname = 'RD{}{}{}.dbf'.format(state, str(year2).zfill(2), str(month).zfill(2))
+        fname = 'RD{}{}{}.dbf'.format(state, str(year2).zfill(2), month)
     try:
         ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
     except:

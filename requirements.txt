@@ -6,3 +6,4 @@ requests
 folium
 nbsphinx
 nose
+fastparquet
