@@ -18,6 +18,7 @@ def download(state, year, cache=True):
     :param year: 4 digit integer
     :return: pandas dataframe
     """
+    state = state.upper()
     if year < 1994:
         raise ValueError("SINASC does not contain data before 1994")
     ftp = FTP('ftp.datasus.gov.br')
