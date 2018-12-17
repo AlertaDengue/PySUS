@@ -46,7 +46,7 @@ def dbc2dbf(infile, outfile):
 
     lib.dbc2dbf([p], [q])
 
-    print(os.path.exists(outfile))
+    # print(os.path.exists(outfile))
 
 
 

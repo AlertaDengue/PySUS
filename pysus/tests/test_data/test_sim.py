@@ -2,7 +2,7 @@ __author__ = 'fccoelho'
 
 import unittest
 from unittest import skip
-from pysus.online_data.SIM import download
+from pysus.online_data.SIM import download, get_CID10_table, get_CID9_table
 
 
 class TestDownload(unittest.TestCase):
@@ -10,9 +10,20 @@ class TestDownload(unittest.TestCase):
         df = download('ba', 2007)
         self.assertIn('IDADEMAE', df.columns)
         self.assertGreater(len(df), 0)
+
     def test_download_CID9(self):
         df = download('mg', 1987)
         self.assertIn('NECROPSIA', df.columns)
+        self.assertGreater(len(df), 0)
+
+    def test_get_cid10(self):
+        df = get_CID10_table()
+        self.assertIn('CID10', df.columns)
+        self.assertGreater(len(df), 0)
+
+    def test_get_cid9(self):
+        df = get_CID9_table()
+        self.assertIn('DESCRICAO', df.columns)
         self.assertGreater(len(df), 0)
 
 
