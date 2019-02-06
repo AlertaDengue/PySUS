@@ -105,6 +105,11 @@ def get_CID9_table(cache=True):
 
 
 def get_municipios(cache=True):
+    """
+    Get municipality metadata
+    :param cache:
+    :return:
+    """
     ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
@@ -125,6 +130,11 @@ def get_municipios(cache=True):
     return df
 
 def get_ocupations(cache=True):
+    """
+    Fetch ocupations table
+    :param cache:
+    :return:
+    """
     ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')

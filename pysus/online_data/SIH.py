@@ -32,9 +32,9 @@ def download(state: str, year: int, month: int, cache: bool=True) -> object:
         ftp.cwd('/dissemin/publicos/SIHSUS/199201_200712/Dados')
         fname = 'RD{}{}{}.dbc'.format(state, year2, month)
     if year >= 2008:
-        ftype = 'DBF'
-        ftp.cwd('/dissemin/publicos/SIHSUS/DBF'.format(year))
-        fname = 'RD{}{}{}.dbf'.format(state, str(year2).zfill(2), month)
+        ftype = 'DBC'
+        ftp.cwd('/dissemin/publicos/SIHSUS/200801_/Dados'.format(year))
+        fname = 'RD{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
     cachefile = os.path.join(CACHEPATH, 'SIH_' + fname.split('.')[0] + '_.parquet')
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
