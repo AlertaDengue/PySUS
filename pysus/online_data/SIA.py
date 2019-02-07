@@ -55,10 +55,10 @@ def download(state: str, year: int, month: int, cache: bool =True) -> object:
                 if cache:  #saves to cache
                     df2.to_parquet(cachefile2)
             except Exception as e:
+                df2 = None
                 print(e)
     else:
         df2 = None
-
 
     return df, df2
 
