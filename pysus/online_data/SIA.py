@@ -71,6 +71,7 @@ def _fetch_file(fname, ftp, ftype):
     :param ftype: file type: DBF|DBC
     :return: pandas dataframe
     """
+    print("Downloading {}...".format(fname))
     try:
         ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
     except:
