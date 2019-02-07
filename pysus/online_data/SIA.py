@@ -39,25 +39,28 @@ def download(state: str, year: int, month: int, cache: bool =True) -> object:
         fname2 = 'BI{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
     # Check in Cache
     cachefile = os.path.join(CACHEPATH, 'SIA_' + fname.split('.')[0] + '_.parquet')
-    if fname2 is not None:
-        cachefile2 = os.path.join(CACHEPATH, 'SIA_' + fname2.split('.')[0] + '_.parquet')
-        if os.path.exists(cachefile2):
-            df = pd.read_parquet(cachefile)
-            df2 = pd.read_parquet(cachefile2)
-            return df, df2
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
-        return df, None
-
-    df = _fetch_file(fname, ftp, ftype)
-    if cache:
-        df.to_parquet(cachefile)
-    if fname2 is not None:
-        df2 = _fetch_file(fname2, ftp, ftype)
+    else:
+        df = _fetch_file(fname, ftp, ftype)
         if cache:
-            df2.to_parquet(cachefile2)
-        return df, df2
-    return df, None
+            df.to_parquet(cachefile)
+    if fname2 is not None:
+        cachefile2 = os.path.join(CACHEPATH, 'SIA_' + fname2.split('.')[0] + '_.parquet')
+        if os.path.exists(cachefile2):  # reads from cache
+            df2 = pd.read_parquet(cachefile2)
+        else:  # fetches from DataSUS
+            try:
+                df2 = _fetch_file(fname2, ftp, ftype)
+                if cache:  #saves to cache
+                    df2.to_parquet(cachefile2)
+            except Exception as e:
+                print(e)
+    else:
+        df2 = None
+
+
+    return df, df2
 
 
 def _fetch_file(fname, ftp, ftype):
