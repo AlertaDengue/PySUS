@@ -7,8 +7,16 @@ import os
 from pathlib import Path
 
 # create pysus cache directory
-if not os.path.exists(os.path.join(Path.home(),'pysus')):
+if not os.path.exists(os.path.join(Path.home(), 'pysus')):
     os.mkdir(os.path.join(Path.home(), 'pysus'))
 
 CACHEPATH = os.path.join(Path.home(), 'pysus')
 
+
+def cache_contents():
+    """
+    List the files currently cached in ~/pysus
+    :return:
+    """
+    cached_data = os.listdir(CACHEPATH)
+    return [os.path.join(CACHEPATH, f) for f in cached_data]
