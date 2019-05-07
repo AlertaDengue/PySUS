@@ -7,3 +7,4 @@ folium
 nbsphinx
 nose
 fastparquet
+pyarrow
