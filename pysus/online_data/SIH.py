@@ -13,12 +13,13 @@ from dbfread import DBF
 import pandas as pd
 
 
-def download(state: str, year: int, month: int, cache: bool=True) -> object:
+def download(state: str, year: int, month: int, cache: bool=True, type='RD') -> object:
     """
     Download SIH records for state year and month and returns dataframe
     :param month: 1 to 12
     :param state: 2 letter state code
     :param year: 4 digit integer 
+    :param type: tipo (RD, RJ, ER)
     """
     state = state.upper()
     year2 = int(str(year)[-2:])
@@ -30,11 +31,11 @@ def download(state: str, year: int, month: int, cache: bool=True) -> object:
     if year < 2008:
         ftype = 'DBC'
         ftp.cwd('/dissemin/publicos/SIHSUS/199201_200712/Dados')
-        fname = 'RD{}{}{}.dbc'.format(state, year2, month)
+        fname = '{}{}{}{}.dbc'.format(state, year2, month)
     if year >= 2008:
         ftype = 'DBC'
         ftp.cwd('/dissemin/publicos/SIHSUS/200801_/Dados'.format(year))
-        fname = 'RD{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
+        fname = '{}{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
     cachefile = os.path.join(CACHEPATH, 'SIH_' + fname.split('.')[0] + '_.parquet')
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
