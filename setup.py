@@ -38,5 +38,5 @@ setup(
     long_description=ld,
     setup_requires=['cffi>=1.0.0'],
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
-    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests']
+    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'pyarrow']
 )
