@@ -8,7 +8,7 @@ from tempfile import NamedTemporaryFile
 from io import BytesIO
 import pandas as pd
 from dbfread import DBF
-
+from simpledbf import Dbf5
 from pysus.utilities._readdbc import ffi, lib
 
 
@@ -24,8 +24,8 @@ def read_dbc(filename, encoding='utf-8'):
         filename = filename.encode()
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
-        dbf = DBF(tf.name, encoding=encoding)
-        df = pd.DataFrame(list(dbf))
+        dbf = Dbf5(tf.name,codec=encoding)
+        df = dbf.to_dataframe()
     os.unlink(tf.name)
 
     return df
