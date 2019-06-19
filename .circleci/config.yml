@@ -12,13 +12,14 @@ jobs:
       - image: circleci/python:3.6.2-stretch-browsers
     steps:
       - checkout
-      - run: pip install -r requirements/dev.txt
+      - run: pip install -r requirements.txt
   test:
     docker:
       - image: circleci/python:3.6.2-stretch-browsers
     steps:
       - checkout
-      - run: pip install -r requirements/dev.txt
+      - run: pip install -r requirements.txt
+      - run: nosetests
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
