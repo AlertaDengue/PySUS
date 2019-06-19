@@ -13,13 +13,19 @@ jobs:
     steps:
       - checkout
       - run: pip install -r requirements/dev.txt
+  test:
+    docker:
+      - image: circleci/python:3.6.2-stretch-browsers
+    steps:
+      - checkout
+      - run: pip install -r requirements/dev.txt
 
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
   # Name the workflow "Welcome"
-  Welcome:
+  Build_and_test:
     # Run the welcome/run job in its own container
     jobs:
-      - welcome/run
       - build
+      - test
 
