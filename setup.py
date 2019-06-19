@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-ld="""
+ld = """
 PySUS
 =====
 
@@ -24,10 +24,10 @@ Instalation
 
 setup(
     name='PySUS',
-    version='0.3.7',
+    version='0.3.8',
     packages=find_packages(),
     package_data={
-        '': ['*.c', '*.h', '*.md', '*.txt']
+        '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
     },
     zip_safe=False,
     url='https://github.com/fccoelho/PySUS',
@@ -38,5 +38,5 @@ setup(
     long_description=ld,
     setup_requires=['cffi>=1.0.0'],
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
-    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests']
+    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'pyarrow', 'fastparquet']
 )
