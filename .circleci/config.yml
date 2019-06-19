@@ -13,3 +13,10 @@ workflows:
     # Run the welcome/run job in its own container
     jobs:
       - welcome/run
+      - build:
+          docker:
+            - image: circleci/python:3.6.2-stretch-browsers
+          steps:
+            - checkout
+            - run: pip install -r requirements/dev.txt
+

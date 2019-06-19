@@ -27,7 +27,7 @@ setup(
     version='0.3.7',
     packages=find_packages(),
     package_data={
-        '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
+        '': ['*.c', '*.h', '*.md', '*.txt']
     },
     zip_safe=False,
     url='https://github.com/fccoelho/PySUS',
