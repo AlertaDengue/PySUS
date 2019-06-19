@@ -12,12 +12,14 @@ jobs:
       - image: circleci/python:3.6.2-stretch-browsers
     steps:
       - checkout
+      - run: pip install -U pip
       - run: pip install -r requirements.txt
   test:
     docker:
       - image: circleci/python:3.6.2-stretch-browsers
     steps:
       - checkout
+      - run: pip install -U pip
       - run: pip install -r requirements.txt
       - run: nosetests
 
