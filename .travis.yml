@@ -28,4 +28,4 @@ script:
   - python _build_readdbc.py
   - python --version
   - cd ../tests
-#  - nosetests
+  - nosetests
