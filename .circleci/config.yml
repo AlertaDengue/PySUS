@@ -6,6 +6,14 @@ orbs:
   # Declare a dependency on the welcome-orb
   welcome: circleci/welcome-orb@0.3.1
 
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.2-stretch-browsers
+    steps:
+      - checkout
+      - run: pip install -r requirements/dev.txt
+
 # Orchestrate or schedule a set of jobs, see https://circleci.com/docs/2.0/workflows/
 workflows:
   # Name the workflow "Welcome"
@@ -13,10 +21,5 @@ workflows:
     # Run the welcome/run job in its own container
     jobs:
       - welcome/run
-      - build:
-          docker:
-            - image: circleci/python:3.6.2-stretch-browsers
-          steps:
-            - checkout
-            - run: pip install -r requirements/dev.txt
+      - build
 
