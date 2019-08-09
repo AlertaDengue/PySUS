@@ -19,6 +19,8 @@ def download(state: str, year: int, month: int, cache: bool =True) -> object:
     :param month: 1 to 12
     :param state: 2 letter state code
     :param year: 4 digit integer
+    :param cache: whether to cache files locally. default is True
+    :return: Two dataframes PA and BI
     """
     state = state.upper()
     year2 = str(year)[-2:]
