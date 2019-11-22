@@ -9,9 +9,10 @@ license: GPL V3 or Later
 
 __docformat__ = 'restructuredtext en'
 import numpy as np
+from datetime import timedelta
 
 @np.vectorize
-def decodifica_idade(idade, unidade='Y'):
+def decodifica_idade_SINAN(idade, unidade='Y'):
     """
     Em tabelas do SINAN frequentemente a idade é representada como um inteiro que precisa ser parseado
     para retornar a idade em uma unidade cronológica padrão.
@@ -34,6 +35,28 @@ def decodifica_idade(idade, unidade='Y'):
         #raise ValueError("Idade inválida")
     idade_dec = idade_anos*fator[unidade]
     return idade_dec
+
+@np.vectorize
+def decodifica_idade_SIM(idade, unidade="D"):
+    """
+    Em tabelas do SIM a idade encontra-se codificada
+    :param idade: valor original da tabela do SIM
+    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas. Valor default: 'D'
+    :return:
+    """
+    fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24.}
+    if idade.startswith('1'):
+        idade = timedelta(hours=int(idade[1:])).days
+    elif idade.startswith('2'):
+        idade = timedelta(days=int(idade[1:])).days
+    elif idade.startswith('3'):
+        idade = timedelta(days=int(idade[1:]) * 30).days
+    elif idade.startswith('4'):
+        idade = timedelta(days=int(idade[1:]) * 365).days
+    else:
+        idade = np.nan
+    return idade/fator.get(unidade, 1)
+
 
 def is_valid_geocode(geocodigo):
     """
