@@ -1,11 +1,20 @@
 import unittest
 from pysus.preprocessing.sinan import read_sinan_dbf, geocode
+from pysus.online_data.SINAN import download, list_diseases
 import pandas as pd
 import datetime
 import numpy as np
 
 
+class TestSINANDownload(unittest.TestCase):
+    def test_download(self):
+        df = download('AC', 2007, 'Animais Peçonhentos')
+        self.assertIsInstance(df, pd.DataFrame)
 
+    def test_lista_agravos(self):
+        lista = list_diseases()
+        self.assertIsInstance(lista, list)
+        self.assertGreater(len(lista), 0)
 
 class TestSinanDF(unittest.TestCase):
     def test_read_dbf(self):

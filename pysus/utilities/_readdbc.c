@@ -1,4 +1,30 @@
 #define _CFFI_
+
+/* We try to define Py_LIMITED_API before including Python.h.
+
+   Mess: we can only define it if Py_DEBUG, Py_TRACE_REFS and
+   Py_REF_DEBUG are not defined.  This is a best-effort approximation:
+   we can learn about Py_DEBUG from pyconfig.h, but it is unclear if
+   the same works for the other two macros.  Py_DEBUG implies them,
+   but not the other way around.
+
+   Issue #350 is still open: on Windows, the code here causes it to link
+   with PYTHON36.DLL (for example) instead of PYTHON3.DLL.  A fix was
+   attempted in 164e526a5515 and 14ce6985e1c3, but reverted: virtualenv
+   does not make PYTHON3.DLL available, and so the "correctly" compiled
+   version would not run inside a virtualenv.  We will re-apply the fix
+   after virtualenv has been fixed for some time.  For explanation, see
+   issue #355.  For a workaround if you want PYTHON3.DLL and don't worry
+   about virtualenv, see issue #350.  See also 'py_limited_api' in
+   setuptools_ext.py.
+*/
+#if !defined(_CFFI_USE_EMBEDDING) && !defined(Py_LIMITED_API)
+#  include <pyconfig.h>
+#  if !defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(Py_REF_DEBUG)
+#    define Py_LIMITED_API
+#  endif
+#endif
+
 #include <Python.h>
 #ifdef __cplusplus
 extern "C" {
@@ -85,8 +111,12 @@ typedef void *_cffi_opcode_t;
 #define _CFFI_PRIM_UINT_FAST64  45
 #define _CFFI_PRIM_INTMAX       46
 #define _CFFI_PRIM_UINTMAX      47
+#define _CFFI_PRIM_FLOATCOMPLEX 48
+#define _CFFI_PRIM_DOUBLECOMPLEX 49
+#define _CFFI_PRIM_CHAR16       50
+#define _CFFI_PRIM_CHAR32       51
 
-#define _CFFI__NUM_PRIM         48
+#define _CFFI__NUM_PRIM         52
 #define _CFFI__UNKNOWN_PRIM           (-1)
 #define _CFFI__UNKNOWN_FLOAT_PRIM     (-2)
 #define _CFFI__UNKNOWN_LONG_DOUBLE    (-3)
@@ -218,7 +248,9 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #  include <stdint.h>
 # endif
 # if _MSC_VER < 1800   /* MSVC < 2013 */
-   typedef unsigned char _Bool;
+#  ifndef __cplusplus
+    typedef unsigned char _Bool;
+#  endif
 # endif
 #else
 # include <stdint.h>
@@ -235,7 +267,7 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 
 #ifdef __cplusplus
 # ifndef _Bool
-#  define _Bool bool   /* semi-hackish: C++ has no _Bool; bool is builtin */
+   typedef bool _Bool;   /* semi-hackish: C++ has no _Bool; bool is builtin */
 # endif
 #endif
 
@@ -253,6 +285,7 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_from_c_ulong PyLong_FromUnsignedLong
 #define _cffi_from_c_longlong PyLong_FromLongLong
 #define _cffi_from_c_ulonglong PyLong_FromUnsignedLongLong
+#define _cffi_from_c__Bool PyBool_FromLong
 
 #define _cffi_to_c_double PyFloat_AsDouble
 #define _cffi_to_c_float PyFloat_AsDouble
@@ -299,9 +332,9 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_to_c_char                                                  \
                  ((int(*)(PyObject *))_cffi_exports[9])
 #define _cffi_from_c_pointer                                             \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[10])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[10])
 #define _cffi_to_c_pointer                                               \
-    ((char *(*)(PyObject *, CTypeDescrObject *))_cffi_exports[11])
+    ((char *(*)(PyObject *, struct _cffi_ctypedescr *))_cffi_exports[11])
 #define _cffi_get_struct_layout                                          \
     not used any more
 #define _cffi_restore_errno                                              \
@@ -311,35 +344,40 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_from_c_char                                                \
     ((PyObject *(*)(char))_cffi_exports[15])
 #define _cffi_from_c_deref                                               \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[16])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[16])
 #define _cffi_to_c                                                       \
-    ((int(*)(char *, CTypeDescrObject *, PyObject *))_cffi_exports[17])
+    ((int(*)(char *, struct _cffi_ctypedescr *, PyObject *))_cffi_exports[17])
 #define _cffi_from_c_struct                                              \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[18])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[18])
 #define _cffi_to_c_wchar_t                                               \
-    ((wchar_t(*)(PyObject *))_cffi_exports[19])
+    ((_cffi_wchar_t(*)(PyObject *))_cffi_exports[19])
 #define _cffi_from_c_wchar_t                                             \
-    ((PyObject *(*)(wchar_t))_cffi_exports[20])
+    ((PyObject *(*)(_cffi_wchar_t))_cffi_exports[20])
 #define _cffi_to_c_long_double                                           \
     ((long double(*)(PyObject *))_cffi_exports[21])
 #define _cffi_to_c__Bool                                                 \
     ((_Bool(*)(PyObject *))_cffi_exports[22])
 #define _cffi_prepare_pointer_call_argument                              \
-    ((Py_ssize_t(*)(CTypeDescrObject *, PyObject *, char **))_cffi_exports[23])
+    ((Py_ssize_t(*)(struct _cffi_ctypedescr *,                           \
+                    PyObject *, char **))_cffi_exports[23])
 #define _cffi_convert_array_from_object                                  \
-    ((int(*)(char *, CTypeDescrObject *, PyObject *))_cffi_exports[24])
+    ((int(*)(char *, struct _cffi_ctypedescr *, PyObject *))_cffi_exports[24])
 #define _CFFI_CPIDX  25
 #define _cffi_call_python                                                \
     ((void(*)(struct _cffi_externpy_s *, char *))_cffi_exports[_CFFI_CPIDX])
-#define _CFFI_NUM_EXPORTS 26
+#define _cffi_to_c_wchar3216_t                                           \
+    ((int(*)(PyObject *))_cffi_exports[26])
+#define _cffi_from_c_wchar3216_t                                         \
+    ((PyObject *(*)(int))_cffi_exports[27])
+#define _CFFI_NUM_EXPORTS 28
 
-typedef struct _ctypedescr CTypeDescrObject;
+struct _cffi_ctypedescr;
 
 static void *_cffi_exports[_CFFI_NUM_EXPORTS];
 
 #define _cffi_type(index)   (                           \
     assert((((uintptr_t)_cffi_types[index]) & 1) == 0), \
-    (CTypeDescrObject *)_cffi_types[index])
+    (struct _cffi_ctypedescr *)_cffi_types[index])
 
 static PyObject *_cffi_init(const char *module_name, Py_ssize_t version,
                             const struct _cffi_type_context_s *ctx)
@@ -372,19 +410,45 @@ static PyObject *_cffi_init(const char *module_name, Py_ssize_t version,
     return NULL;
 }
 
-_CFFI_UNUSED_FN
-static PyObject **_cffi_unpack_args(PyObject *args_tuple, Py_ssize_t expected,
-                                    const char *fnname)
+
+#ifdef HAVE_WCHAR_H
+typedef wchar_t _cffi_wchar_t;
+#else
+typedef uint16_t _cffi_wchar_t;   /* same random pick as _cffi_backend.c */
+#endif
+
+_CFFI_UNUSED_FN static uint16_t _cffi_to_c_char16_t(PyObject *o)
 {
-    if (PyTuple_GET_SIZE(args_tuple) != expected) {
-        PyErr_Format(PyExc_TypeError,
-                     "%.150s() takes exactly %zd arguments (%zd given)",
-                     fnname, expected, PyTuple_GET_SIZE(args_tuple));
-        return NULL;
-    }
-    return &PyTuple_GET_ITEM(args_tuple, 0);   /* pointer to the first item,
-                                                  the others follow */
+    if (sizeof(_cffi_wchar_t) == 2)
+        return (uint16_t)_cffi_to_c_wchar_t(o);
+    else
+        return (uint16_t)_cffi_to_c_wchar3216_t(o);
 }
+
+_CFFI_UNUSED_FN static PyObject *_cffi_from_c_char16_t(uint16_t x)
+{
+    if (sizeof(_cffi_wchar_t) == 2)
+        return _cffi_from_c_wchar_t((_cffi_wchar_t)x);
+    else
+        return _cffi_from_c_wchar3216_t((int)x);
+}
+
+_CFFI_UNUSED_FN static int _cffi_to_c_char32_t(PyObject *o)
+{
+    if (sizeof(_cffi_wchar_t) == 4)
+        return (int)_cffi_to_c_wchar_t(o);
+    else
+        return (int)_cffi_to_c_wchar3216_t(o);
+}
+
+_CFFI_UNUSED_FN static PyObject *_cffi_from_c_char32_t(int x)
+{
+    if (sizeof(_cffi_wchar_t) == 4)
+        return _cffi_from_c_wchar_t((_cffi_wchar_t)x);
+    else
+        return _cffi_from_c_wchar3216_t(x);
+}
+
 
 /**********  end CPython-specific section  **********/
 #else
@@ -496,27 +560,31 @@ void dbc2dbf(char** input_file, char** output_file) {
     /* Open input file */
     input  = fopen(input_file[0], "rb");
     if(input == NULL) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Open output file */
     output = fopen(output_file[0], "wb");
     if(output == NULL) {
-        error("Error reading output file %s: %s", output_file[0], strerror(errno));
+        printf("Error reading output file %s: %s", output_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Process file header - skip 8 bytes */
     if( fseek(input, 8, SEEK_SET) ) {
-        error("Error processing input file %s: %s", input_file[0], strerror(errno));
+        printf("Error processing input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Reads two bytes from the header = header size */
     ret = fread(rawHeader, 2, 1, input);
     if( ferror(input) ) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
@@ -531,30 +599,39 @@ void dbc2dbf(char** input_file, char** output_file) {
 
     ret = fread(buf, 1, header, input);
     if( ferror(input) ) {
-        error("Error reading input file %s: %s", input_file[0], strerror(errno));
+        printf("Error reading input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     ret = fwrite(buf, 1, header, output);
     if( ferror(output) ) {
-        error("Error writing output file %s: %s", output_file[0], strerror(errno));
+        printf("Error writing output file %s: %s", output_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* Jump to the data (Skip CRC32) */
     if( fseek(input, header + 4, SEEK_SET) ) {
-        error("Error processing input file %s: %s", input_file[0], strerror(errno));
+        printf("Error processing input file %s: %s", input_file[0], strerror(errno));
+        perror("");
         return;
     }
 
     /* decompress */
     ret = blast(inf, input, outf, output);
-    if( ret ) error("blast error code: %d", ret);
+    if( ret ) {
+        printf("blast printf code: %d", ret);
+        perror("");
+    }
 
     /* see if there are any leftover bytes */
     int n = 0;
     while (fgetc(input) != EOF) n++;
-    if (n) error("blast warning: %d unused bytes of input\n", n);
+    if (n) {
+        printf("blast warning: %d unused bytes of input\n", n);
+        perror("");
+    }
 
     fclose(input);
     fclose(output);
@@ -608,15 +685,9 @@ _cffi_f_blast(PyObject *self, PyObject *args)
   PyObject *arg1;
   PyObject *arg2;
   PyObject *arg3;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 4, "blast");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "blast", 4, 4, &arg0, &arg1, &arg2, &arg3))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
-  arg2 = aa[2];
-  arg3 = aa[3];
 
   x0 = (unsigned int(*)(void *, unsigned char * *))_cffi_to_c_pointer(arg0, _cffi_type(1));
   if (x0 == (unsigned int(*)(void *, unsigned char * *))NULL && PyErr_Occurred())
@@ -674,13 +745,9 @@ _cffi_f_dbc2dbf(PyObject *self, PyObject *args)
   Py_ssize_t datasize;
   PyObject *arg0;
   PyObject *arg1;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 2, "dbc2dbf");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "dbc2dbf", 2, 2, &arg0, &arg1))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(16), arg0, (char **)&x0);
@@ -732,13 +799,9 @@ _cffi_f_inf(PyObject *self, PyObject *args)
   unsigned int result;
   PyObject *arg0;
   PyObject *arg1;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 2, "inf");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "inf", 2, 2, &arg0, &arg1))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(2), arg0, (char **)&x0);
@@ -791,14 +854,9 @@ _cffi_f_outf(PyObject *self, PyObject *args)
   PyObject *arg0;
   PyObject *arg1;
   PyObject *arg2;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 3, "outf");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "outf", 3, 3, &arg0, &arg1, &arg2))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
-  arg2 = aa[2];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(2), arg0, (char **)&x0);
@@ -867,12 +925,19 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   0,  /* flags */
 };
 
+#ifdef __GNUC__
+#  pragma GCC visibility push(default)  /* for -fvisibility= */
+#endif
+
 #ifdef PYPY_VERSION
 PyMODINIT_FUNC
 _cffi_pypyinit__readdbc(const void *p[])
 {
     p[0] = (const void *)0x2601;
     p[1] = &_cffi_type_context;
+#if PY_MAJOR_VERSION >= 3
+    return NULL;
+#endif
 }
 #  ifdef _MSC_VER
      PyMODINIT_FUNC
@@ -894,4 +959,8 @@ init_readdbc(void)
 {
   _cffi_init("_readdbc", 0x2601, &_cffi_type_context);
 }
+#endif
+
+#ifdef __GNUC__
+#  pragma GCC visibility pop
 #endif
