@@ -1,12 +1,11 @@
-PySUS
-=====
+# PySUS
 ![travis](https://travis-ci.org/AlertaDengue/PySUS.svg?branch=master)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
 
-Features
---------
+## Features
+
 
 - Decode encoded patient age to any time unit (years, months, etc)
 - Convert `.dbc` files to DBF databases or read them into pandas dataframes. DBC files are basically DBFs compressed by a proprietary algorithm.
@@ -16,9 +15,10 @@ Features
 - Download SIA data
 - Download SIM data
 - Download CIHA data
+- Download SINAN data (only case investigation tables)
 
-Instalation
------------
+## Instalation
+
 There are some dependencies which can't be installed through pip, namely `libffi`. Therefore on an ubuntu system:
 
 ```
@@ -27,6 +27,34 @@ sudo apt install libffi-dev
 Then you can proceed to
 
 `sudo pip install PySUS`
+
+## Running from a Docker container
+If you use windows, or for some other reason is not able to install PySUS on you OS, you can run it from a docker container.
+
+First, clone the Pysus repository:
+
+```bash
+git clone https://github.com/fccoelho/PySUS.git
+``` 
+then from within the PySUS directory build the container
+
+```bash
+cd PySUS
+docker build -t pysus .
+```
+You only have to do this once. On the first time it will take a few minutes.
+Then you can launch jupyter from the container a just use PySUS:
+
+```bash
+docker run -p 8888:8888 pysus:latest
+```
+Point your browser to [http://127.0.0.1:8888](http://127.0.0.1:8888) and have fun.
+once you are done, you can stop the container with a simple `ctrl-c` from the terminal you started it or use the following command:
+```bash
+# to find the container ID
+docker ps 
+docker stop <CONTAINER ID>
+```
 
 Examples
 --------

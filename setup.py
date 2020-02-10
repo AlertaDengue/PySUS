@@ -24,7 +24,7 @@ Instalation
 
 setup(
     name='PySUS',
-    version='0.4.1',
+    version='0.4.2',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
