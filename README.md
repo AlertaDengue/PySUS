@@ -49,15 +49,23 @@ Then you can launch jupyter from the container a just use PySUS:
 docker run -p 8888:8888 pysus:latest
 ```
 Point your browser to [http://127.0.0.1:8888](http://127.0.0.1:8888) and have fun.
-once you are done, you can stop the container with a simple `ctrl-c` from the terminal you started it or use the following command:
+Once you are done, you can stop the container with a simple `ctrl-c` from the terminal you started it or use the following command:
 ```bash
 # to find the container ID
 docker ps 
 docker stop <CONTAINER ID>
 ```
+### Mounting your working directory in the container
+If you don't want you work to disappear when you stop the container, you must mount your working directory on the container. In the example below, I am mounting the `/home/fccoelho/Downloads/pysus` on the `/home/jovyan/work` directory inside the container. This means that everything that is saved inside the `work` directory will actually be saved in the `/home/fccoelho/Downloads/pysus`. Modify according to your needs.
 
-Examples
---------
+```bash
+docker run -e NB_USER=fccoelho -e NB_UID=1000 -v /home/fccoelho/Downloads/pysus:/home/jovyan/work -p 8888:8888 pysus:latest
+```
+
+For more options about interacting with your container check [jupyter-docker-stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html) documentation.
+
+## Examples
+
 Reading SINAN files:
 
 ```python
