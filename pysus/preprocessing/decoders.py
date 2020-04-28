@@ -45,15 +45,18 @@ def decodifica_idade_SIM(idade, unidade="D"):
     :return:
     """
     fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24.}
-    if idade.startswith('1'):
-        idade = timedelta(hours=int(idade[1:])).days
-    elif idade.startswith('2'):
-        idade = timedelta(days=int(idade[1:])).days
-    elif idade.startswith('3'):
-        idade = timedelta(days=int(idade[1:]) * 30).days
-    elif idade.startswith('4'):
-        idade = timedelta(days=int(idade[1:]) * 365).days
-    else:
+    try:
+        if idade.startswith('1'):
+            idade = timedelta(hours=int(idade[1:])).days
+        elif idade.startswith('2'):
+            idade = timedelta(days=int(idade[1:])).days
+        elif idade.startswith('3'):
+            idade = timedelta(days=int(idade[1:]) * 30).days
+        elif idade.startswith('4'):
+            idade = timedelta(days=int(idade[1:]) * 365).days
+        else:
+            idade = np.nan
+    except ValueError:
         idade = np.nan
     return idade/fator.get(unidade, 1)
 
