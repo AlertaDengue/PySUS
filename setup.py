@@ -28,34 +28,56 @@ Make sure your system has libffi-dev package installed,
 
 """
 
-class PostInstall(install):
-    def run(self):
-        def _post_install():
-            setuptools_path = setuptools.__path__[0].replace('/setuptools', '')
-            pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
-
-            ## This code is to make sure the compiled extension module inside the 
-            # utilities module is named _readdbc.so
-            if os.path.exists(pysus_path):
-                comp_mod_list = glob.glob(os.path.join(pysus_path, 'utilities', '_readdbc*.so'))
-                for mod in comp_mod_list:
-                    mod = os.path.split(mod)[-1]
-                    if mod != '_readdbc.so':
-                        print(f'Renaming {mod} to _readdbc.so')
-                        os.chdir(os.path.join(pysus_path, 'utilities'))
-                        os.rename(mod, '_readdbc.so')
-            # Sometimes the compiled module is thrown on the (site|dist)-packages directory
-            try:
-                shutil.copy(os.path.join(setuptools_path, '_readdbc.abi3.so'),
-                            os.path.join(setuptools_path, 'pysus', 'utilities', '_readdbc.abi3.so')
-                            )
-                print(f'Copied _readdbc.abi3.so to pysus/utilities')
-            except:
-                pass
-        atexit.register(_post_install)
-        install.run(self)
-
-
+# class PostInstall(install):
+#     def run(self):
+#         def _post_install():
+#             setuptools_path = setuptools.__path__[0].replace('/setuptools', '')
+#             pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
+#
+#             ## This code is to make sure the compiled extension module inside the
+#             # utilities module is named _readdbc.so
+#             if os.path.exists(pysus_path):
+#                 comp_mod_list = glob.glob(os.path.join(pysus_path, 'utilities', '_readdbc*.so'))
+#                 for mod in comp_mod_list:
+#                     mod = os.path.split(mod)[-1]
+#                     if mod != '_readdbc.so':
+#                         print(f'Renaming {mod} to _readdbc.so')
+#                         os.chdir(os.path.join(pysus_path, 'utilities'))
+#                         os.rename(mod, '_readdbc.so')
+#             # Sometimes the compiled module is thrown on the (site|dist)-packages directory
+#             try:
+#                 shutil.copy(os.path.join(setuptools_path, '_readdbc.abi3.so'),
+#                             os.path.join(setuptools_path, 'pysus', 'utilities', '_readdbc.abi3.so')
+#                             )
+#                 print(f'Copied _readdbc.abi3.so to pysus/utilities')
+#             except:
+#                 pass
+#         atexit.register(_post_install)
+#         install.run(self)
+#
+# def _post_install():
+#     setuptools_path = setuptools.__path__[0].replace('/setuptools', '')
+#     pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
+#
+#     ## This code is to make sure the compiled extension module inside the
+#     # utilities module is named _readdbc.so
+#     if os.path.exists(pysus_path):
+#         comp_mod_list = glob.glob(os.path.join(pysus_path, 'utilities', '_readdbc*.so'))
+#         for mod in comp_mod_list:
+#             mod = os.path.split(mod)[-1]
+#             if mod != '_readdbc.so':
+#                 print(f'Renaming {mod} to _readdbc.so')
+#                 os.chdir(os.path.join(pysus_path, 'utilities'))
+#                 os.rename(mod, '_readdbc.so')
+#     # Sometimes the compiled module is thrown on the (site|dist)-packages directory
+#     try:
+#         shutil.copy(os.path.join(setuptools_path, '_readdbc.abi3.so'),
+#                     os.path.join(setuptools_path, 'pysus', 'utilities', '_readdbc.abi3.so')
+#                     )
+#         print(f'Copied _readdbc.abi3.so to pysus/utilities')
+#     except:
+#         pass
+# atexit.register(_post_install)
 setup(
     name='PySUS',
     version='0.4.5',
@@ -63,6 +85,7 @@ setup(
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
     },
+    include_package_data=True,
     zip_safe=False,
     url='https://github.com/fccoelho/PySUS',
     license='gpl-v3',
@@ -77,28 +100,5 @@ setup(
 )
 
 
-def _post_install():
-    setuptools_path = setuptools.__path__[0].replace('/setuptools', '')
-    pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
-
-    ## This code is to make sure the compiled extension module inside the
-    # utilities module is named _readdbc.so
-    if os.path.exists(pysus_path):
-        comp_mod_list = glob.glob(os.path.join(pysus_path, 'utilities', '_readdbc*.so'))
-        for mod in comp_mod_list:
-            mod = os.path.split(mod)[-1]
-            if mod != '_readdbc.so':
-                print(f'Renaming {mod} to _readdbc.so')
-                os.chdir(os.path.join(pysus_path, 'utilities'))
-                os.rename(mod, '_readdbc.so')
-    # Sometimes the compiled module is thrown on the (site|dist)-packages directory
-    try:
-        shutil.copy(os.path.join(setuptools_path, '_readdbc.abi3.so'),
-                    os.path.join(setuptools_path, 'pysus', 'utilities', '_readdbc.abi3.so')
-                    )
-        print(f'Copied _readdbc.abi3.so to pysus/utilities')
-    except:
-        pass
 
 
-atexit.register(_post_install)

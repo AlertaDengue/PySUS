@@ -9,7 +9,10 @@ from io import BytesIO
 import pandas as pd
 from dbfread import DBF
 
-from pysus.utilities._readdbc import ffi, lib
+try:
+    from pysus.utilities._readdbc import ffi, lib
+except ImportError:
+    from _readdbc import ffi, lib
 
 
 def read_dbc(filename, encoding='utf-8'):
