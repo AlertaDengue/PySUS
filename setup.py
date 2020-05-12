@@ -58,8 +58,9 @@ if os.path.exists(pysus_path):
 
 # Sometimes the compiled module is thrown on the (site|dist)-packages directory
 try:
-    shutil.copyfile(os.path.join(setuptools_path, 'readdbc.abi3.so'),
-                    os.path.join(setuptools_path, 'pysus', 'utilities', 'readdbc.abi3.so')
+    shutil.copyfile(os.path.join(setuptools_path, '_readdbc.abi3.so'),
+                    os.path.join(setuptools_path, 'pysus', 'utilities', '_readdbc.abi3.so')
                     )
+    print(f'Copied _readdbc.abi3.so to pysus/utilities')
 except:
     pass
