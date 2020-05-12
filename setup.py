@@ -1,5 +1,6 @@
 import setuptools
 import glob, os
+import shutil
 from setuptools import setup, find_packages
 
 ld = """
@@ -24,6 +25,7 @@ Make sure your system has libffi-dev package installed,
 `$ sudo pip install PySUS`
 
 """
+setuptools_path = setuptools.__path__[0].replace('/setuptools', '')
 pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
 setup(
     name='PySUS',
@@ -53,3 +55,11 @@ if os.path.exists(pysus_path):
             print(f'Renaming {mod} to _readdbc.so')
             os.chdir(os.path.join(pysus_path, 'utilities'))
             os.rename(mod, '_readdbc.so')
+
+# Sometimes the compiled module is thrown on the (site|dist)-packages directory
+try:
+    shutil.copyfile(os.path.join(setuptools_path, 'readdbc.abi3.so'),
+                    os.path.join(setuptools_path, 'pysus', 'utilities', 'readdbc.abi3.so')
+                    )
+except:
+    pass

@@ -1,1 +1,2 @@
 recursive-include pysus *.c *.h
+include pysus/utilities/c-src/*
