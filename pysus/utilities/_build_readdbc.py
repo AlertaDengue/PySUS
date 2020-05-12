@@ -29,4 +29,4 @@ with open(os.path.join(PATH, "c-src/blast.h")) as f:
     ffibuilder.cdef(f.read(), override=True)
 
 if __name__ == "__main__":
-    ffibuilder.compile(verbose=True)
+    ffibuilder.compile(tmpdir='.', target='pysus/utilities/_readdbc.so', verbose=False, debug=None)

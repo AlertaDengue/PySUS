@@ -1,3 +1,5 @@
+import setuptools
+import glob, os
 from setuptools import setup, find_packages
 
 ld = """
@@ -17,14 +19,15 @@ Features
 
 Instalation
 -----------
+Make sure your system has libffi-dev package installed,
 
 `$ sudo pip install PySUS`
 
 """
-
+pysus_path = setuptools.__path__[0].replace('setuptools', 'pysus')
 setup(
     name='PySUS',
-    version='0.4.2',
+    version='0.4.5',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
@@ -36,7 +39,17 @@ setup(
     author_email='fccoelho@gmail.com',
     description="Tools for dealing with Brazil's Public health data",
     long_description=ld,
-    setup_requires=['cffi>=1.0.0'],
+    setup_requires=['cffi>=1.0.0', 'setuptools>26.0.0'],
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
     install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'pyarrow', 'fastparquet']
 )
+
+## This code is to make sure the compiled extension module inside the utilities module is named _readdbc.so
+if os.path.exists(pysus_path):
+    comp_mod_list = glob.glob(os.path.join(pysus_path, 'utilities', '_readdbc*.so'))
+    for mod in comp_mod_list:
+        mod = os.path.split(mod)[-1]
+        if mod != '_readdbc.so':
+            print(f'Renaming {mod} to _readdbc.so')
+            os.chdir(os.path.join(pysus_path, 'utilities'))
+            os.rename(mod, '_readdbc.so')
