@@ -9,11 +9,32 @@ import os
 from ftplib import FTP
 from pysus.utilities.readdbc import read_dbc
 from pysus.online_data import CACHEPATH
+from pysus.utilities import FTP_DATASUS
+from pysus.utilities import BR_STATES
 from dbfread import DBF
 import pandas as pd
 
 
 def download(state, year, cache=True):
+    """
+    Downloads data directly from Datasus ftp server but allows multiple states and years
+    :param state: two-letter state identifier or array of state identifiers: MG == Minas Gerais. Accepts BR to download all states
+    :param year: 4 digit integer or array of 4 digit integers
+    :return: pandas dataframe
+    """
+    if(state == 'BR'):
+        state = BR_STATES
+    states = state if isinstance(state,list) else [state]
+    years = year if isinstance(year,list) else [year]
+
+    df = pd.DataFrame()
+    for s in states:
+        for y in years:
+            df = df.append(downloadState(s,y,cache))
+    
+    return df
+
+def downloadState(state, year, cache=True):
     """
     Downloads data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais
@@ -24,7 +45,7 @@ def download(state, year, cache=True):
     state = state.upper()
     if year < 1979:
         raise ValueError("SIM does not contain data before 1979")
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP(FTP_DATASUS)
     ftp.login()
     if year >= 1996:
         ftp.cwd('/dissemin/publicos/SIM/CID10/DORES')
