@@ -97,3 +97,28 @@ def add_dv(geocodigo):
         return geocodigo
     else:
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
+
+
+def process_sim(dataframe, municipality_data = True):
+    variables_names = dataframe.columns
+
+    # CODINST
+    if("CODINST" in variables_names):
+        dataframe["CODINST"].replace({
+                "E": "Estadual",
+                "R": "Regional",
+                "M": "Municipal"
+            }, 
+            inplace=True
+        )
+
+    # TIPOBITO
+    if("TIPOBITO" in variables_names):
+        dataframe["TIPOBITO"].replace({
+                "0": np.nan,
+                "9": np.nan,
+                "1": "Fetal",
+                "2": "Não Fetal"
+            },
+            inplace=True
+        )
