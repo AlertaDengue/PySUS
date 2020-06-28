@@ -30,7 +30,9 @@ def download(state, year, cache=True):
     df = pd.DataFrame()
     for s in states:
         for y in years:
-            df = df.append(downloadState(s,y,cache))
+            dfYear = downloadState(s,y,cache)
+            dfYear["ANO"] = y
+            df = df.append(dfYear)
     
     return df
 
