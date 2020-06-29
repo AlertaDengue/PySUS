@@ -9,7 +9,8 @@ license: GPL V3 or Later
 
 __docformat__ = 'restructuredtext en'
 import numpy as np
-from datetime import timedelta
+import pandas as pd
+from datetime import timedelta, datetime
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -60,7 +61,15 @@ def decodifica_idade_SIM(idade, unidade="D"):
         idade = np.nan
     return idade/fator.get(unidade, 1)
 
+@np.vectorize
+def decodifica_data_SIM(data):
+    try:
+        new_data = datetime.strptime(data, '%d%m%Y')
+    except ValueError:
+        new_data = np.nan
+    return new_data
 
+@np.vectorize
 def is_valid_geocode(geocodigo):
     """
     Returns True if the geocode is valid
@@ -99,26 +108,45 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def process_sim(dataframe, municipality_data = True):
+def translate_variables_sim(dataframe, municipality_data = True):
     variables_names = dataframe.columns
+    df = dataframe
 
-    # CODINST
-    if("CODINST" in variables_names):
-        dataframe["CODINST"].replace({
-                "E": "Estadual",
-                "R": "Regional",
-                "M": "Municipal"
-            }, 
-            inplace=True
-        )
+    # # TIPOBITO
+    # if("TIPOBITO" in variables_names):
+    #     df = df["TIPOBITO"].replace({
+    #             "0": np.nan,
+    #             "9": np.nan,
+    #             "1": "Fetal",
+    #             "2": "Não Fetal"
+    #         }
+    #     )
 
-    # TIPOBITO
-    if("TIPOBITO" in variables_names):
-        dataframe["TIPOBITO"].replace({
+    # # DTOBITO
+    # if("DTOBITO" in variables_names):
+    #     df["DTOBITO"] = decodifica_data_SIM(df["DTOBITO"])
+
+    # SEXO
+    if("SEXO" in variables_names):
+        df["SEXO"].replace({
                 "0": np.nan,
                 "9": np.nan,
-                "1": "Fetal",
-                "2": "Não Fetal"
+                "1": "Masculino",
+                "2": "Feminino"
             },
             inplace=True
         )
+        df["SEXO"] = df["SEXO"].astype('categorical')
+
+    # CODMUNRES
+    if("CODMUNRES" in variables_names):
+        df["CODMUNRES"].astype('category')
+
+    # # CODINST
+    # if("CODINST" in variables_names):
+    #     df = df["CODINST"].replace({
+    #             "E": "Estadual",
+    #             "R": "Regional",
+    #             "M": "Municipal"
+    #         }
+    #     )
