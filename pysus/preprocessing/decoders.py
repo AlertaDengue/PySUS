@@ -108,9 +108,30 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def translate_variables_sim(dataframe, municipality_data = True):
+def translate_variables_SIM(dataframe):
     variables_names = dataframe.columns
     df = dataframe
+
+    # SEXO
+    if("SEXO" in variables_names):
+        df["SEXO"].replace({
+                "0": np.nan,
+                "9": np.nan,
+                "1": "Masculino",
+                "2": "Feminino"
+            },
+            inplace=True
+        )
+        df["SEXO"] = df["SEXO"].astype('category')
+
+    # CODMUNRES
+    if("CODMUNRES" in variables_names):
+        df.loc[~is_valid_geocode(df["CODMUNRES"]), "CODMUNRES"] = np.nan
+        df["CODMUNRES"] = df["CODMUNRES"].astype('category')
+
+    # IDADE
+    if("IDADE" in variables_names):
+        df["IDADE_ANOS"] = decodifica_idade_SIM(df['IDADE'],'Y')
 
     # # TIPOBITO
     # if("TIPOBITO" in variables_names):
@@ -126,21 +147,6 @@ def translate_variables_sim(dataframe, municipality_data = True):
     # if("DTOBITO" in variables_names):
     #     df["DTOBITO"] = decodifica_data_SIM(df["DTOBITO"])
 
-    # SEXO
-    if("SEXO" in variables_names):
-        df["SEXO"].replace({
-                "0": np.nan,
-                "9": np.nan,
-                "1": "Masculino",
-                "2": "Feminino"
-            },
-            inplace=True
-        )
-        df["SEXO"] = df["SEXO"].astype('categorical')
-
-    # CODMUNRES
-    if("CODMUNRES" in variables_names):
-        df["CODMUNRES"].astype('category')
 
     # # CODINST
     # if("CODINST" in variables_names):
@@ -150,3 +156,5 @@ def translate_variables_sim(dataframe, municipality_data = True):
     #             "M": "Municipal"
     #         }
     #     )
+
+    return df
