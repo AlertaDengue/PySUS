@@ -55,6 +55,8 @@ def decodifica_idade_SIM(idade, unidade="D"):
             idade = timedelta(days=int(idade[1:]) * 30).days
         elif idade.startswith('4'):
             idade = timedelta(days=int(idade[1:]) * 365).days
+        elif idade.startswith('5'):
+            idade = timedelta(days=int(idade[1:]) * 365).days + 365 * 100
         else:
             idade = np.nan
     except ValueError:
