@@ -32,7 +32,6 @@ def download(state, year, cache=True):
         for y in years:
             dfYear = downloadState(s,y,cache)
             dfYear["ANO"] = y
-            dfYear["UF"] = s
             df = df.append(dfYear)
     
     dfYear["UF"] = dfYear["UF"].astype('category')
