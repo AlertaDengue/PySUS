@@ -11,6 +11,7 @@ __docformat__ = 'restructuredtext en'
 import numpy as np
 import pandas as pd
 from datetime import timedelta, datetime
+from pysus.online_data.SIM import get_municipios
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -56,7 +57,7 @@ def decodifica_idade_SIM(idade, unidade="D"):
         elif idade.startswith('4'):
             idade = timedelta(days=int(idade[1:]) * 365).days
         elif idade.startswith('5'):
-            idade = timedelta(days=int(idade[1:]) * 365).days + 10 * 365
+            idade = timedelta(days=int(idade[1:]) * 365).days + 100 * 365
         else:
             idade = np.nan
     except ValueError:
@@ -86,6 +87,10 @@ def is_valid_geocode(geocodigo):
     else:
         return False
 
+def get_valid_geocodes():
+    tab_mun = get_municipios()
+    df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
+    return df["MUNCODDV"].append(df["MUNCOD"]).values
 
 def calculate_digit(geocode):
     """
@@ -110,23 +115,15 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def translate_variables_sim(dataframe, municipality_data = True):
+def translate_variables_SIM(dataframe, municipality_data = True):
     variables_names = dataframe.columns
     df = dataframe
+    
+    valid_mun = get_valid_geocodes()
 
-    # # TIPOBITO
-    # if("TIPOBITO" in variables_names):
-    #     df = df["TIPOBITO"].replace({
-    #             "0": np.nan,
-    #             "9": np.nan,
-    #             "1": "Fetal",
-    #             "2": "Não Fetal"
-    #         }
-    #     )
-
-    # # DTOBITO
-    # if("DTOBITO" in variables_names):
-    #     df["DTOBITO"] = decodifica_data_SIM(df["DTOBITO"])
+    # IDADE
+    if("IDADE" in variables_names):
+        df["IDADE_ANOS"] = decodifica_idade_SIM(df["IDADE"],'Y')
 
     # SEXO
     if("SEXO" in variables_names):
@@ -138,17 +135,10 @@ def translate_variables_sim(dataframe, municipality_data = True):
             },
             inplace=True
         )
-        df["SEXO"] = df["SEXO"].astype('categorical')
+        df["SEXO"] = df["SEXO"].astype('category')
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
-        df["CODMUNRES"].astype('category')
+        df["CODMUNRES"] = df["CODMUNRES"].transform(lambda x: add_dv(x) if x in valid_mun else np.nan).astype("category")
 
-    # # CODINST
-    # if("CODINST" in variables_names):
-    #     df = df["CODINST"].replace({
-    #             "E": "Estadual",
-    #             "R": "Regional",
-    #             "M": "Municipal"
-    #         }
-    #     )
+    return df

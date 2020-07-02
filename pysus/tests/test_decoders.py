@@ -34,5 +34,17 @@ class TestDecoder(unittest.TestCase):
         res = decoders.decodifica_idade_SINAN([1480] * 5, unidade='Y')
         assert_array_almost_equal(res, np.array([0.0547] * 5), decimal=3)
 
+    def test_decodifica_idade_retorna_em_anos_SIM(self):
+        res = decoders.decodifica_idade_SIM(['501'], unidade='Y')
+        assert_array_equal(res, np.array([101]))
+        res = decoders.decodifica_idade_SIM(['401'] * 2, unidade='Y')
+        assert_array_equal(res, np.array([1] * 2))
+        res = decoders.decodifica_idade_SIM(['311'] * 3, unidade='Y')
+        assert_array_almost_equal(res, np.array([0.904109589] * 3), decimal=3)
+        res = decoders.decodifica_idade_SIM(['224'] * 4, unidade='Y')
+        assert_array_almost_equal(res, np.array([0.065753425]*4), decimal=3)
+        res = decoders.decodifica_idade_SIM(['130'] * 5, unidade='Y')
+        assert_array_almost_equal(res, np.array([0.00274] * 5), decimal=3)
+
     def test_verifica_geocodigo(self):
         self.assertTrue(decoders.is_valid_geocode(3304557))
