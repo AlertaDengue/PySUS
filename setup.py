@@ -80,7 +80,7 @@ Make sure your system has libffi-dev package installed,
 # atexit.register(_post_install)
 setup(
     name='PySUS',
-    version='0.4.5',
+    version='0.4.6',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
