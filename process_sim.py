@@ -2,13 +2,13 @@ from pysus.online_data.SIM import download
 from pysus.preprocessing.decoders import translate_variables_SIM
 import numpy as np
 
+def create_condition(dataframe,dictionary):
+    return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
+
 variables = ['ANO','UF','CODMUNRES','SEXO','IDADE_ANOS']
 
-def create_query(row):
-    return ''
-
 print("Baixando dados")
-df = download('SP', [2010])
+df = download('SP', [2006])
 
 print("Traduzindo variáveis")
 df = translate_variables_SIM(df)
@@ -76,20 +76,32 @@ print("Redistribuindo mortes com dados faltantes")
 
 missing_rates = [rates_no_age, rates_no_sex, rates_no_sex_age, rates_no_munic, rates_no_munic_age, rates_no_munic_sex, rates_no_munic_sex_age]
 
-
-
 # Distribui dados com idade faltante
 # sum_no_age = rates_no_age["CONTAGEM"].sum()
 # sum_rates = rates["CONTAGEM"].sum()
 
 
 for missing_rate in missing_rates:
+    sum_missing = missing_rate["CONTAGEM"].sum()
+    sum_rates = rates["CONTAGEM"].sum()
     for row in missing_rate.itertuples(index=False):
         row_dict = dict(row._asdict())
         del row_dict["CONTAGEM"]
-        condition = np.logical_and.reduce([rates[k] == v for k,v in row_dict.items()])
+        condition = create_condition(rates,row_dict)
         sum_data = rates[condition]["CONTAGEM"].sum()
+        if sum_data == 0.0:
+            if "CODMUNRES" in row_dict:
+                del row_dict["CODMUNRES"]
+            elif "SEXO" in row_dict:
+                del row_dict["CODMUNRES"]
+            elif "IDADE_ANOS" in row_dict:
+                del row_dict["IDADE_ANOS"]
+            condition = create_condition(rates,row_dict)
+            sum_data = rates[condition]["CONTAGEM"].sum()
         rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
+    print("Filtro:",missing_rate.columns.tolist()[:-1])
+    print('Dif. : {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_missing)))
 
+print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
 print("Gerando CSV")
-rates.to_csv("br.csv",index=False)
+rates.to_csv("sp-2006.csv",index=False)
