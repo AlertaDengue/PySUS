@@ -8,7 +8,7 @@ def create_condition(dataframe,dictionary):
 variables = ['ANO','UF','CODMUNRES','SEXO','IDADE_ANOS']
 
 print("Baixando dados")
-df = download('SP', [2006])
+df = download('SP', [2005,2006,2007,2008,2009])
 
 print("Traduzindo variáveis")
 df = translate_variables_SIM(df)
@@ -93,7 +93,7 @@ for missing_rate in missing_rates:
             if "CODMUNRES" in row_dict:
                 del row_dict["CODMUNRES"]
             elif "SEXO" in row_dict:
-                del row_dict["CODMUNRES"]
+                del row_dict["SEXO"]
             elif "IDADE_ANOS" in row_dict:
                 del row_dict["IDADE_ANOS"]
             condition = create_condition(rates,row_dict)
