@@ -111,6 +111,7 @@ def calculate_digit(geocode):
     dv = 0 if soma % 10 == 0 else (10 - (soma % 10))
     return dv
 
+@np.vectorize
 def add_dv(geocodigo):
     if len(str(geocodigo)) == 7:
         return geocodigo
@@ -142,6 +143,7 @@ def translate_variables_SIM(dataframe, municipality_data = True):
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
+        df["CODMUNRES"] = add_dv(df["CODMUNRES"])
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = np.nan
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
 

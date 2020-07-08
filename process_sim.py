@@ -112,4 +112,4 @@ for missing_rate in missing_rates:
 
 print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
 print("Gerando CSV")
-rates.to_csv("sp-2006.csv",index=False)
+rates.to_csv("sp.csv",index=False)
