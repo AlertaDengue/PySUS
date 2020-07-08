@@ -5,6 +5,20 @@ import numpy as np
 def create_condition(dataframe,dictionary):
     return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
 
+def relax_filter(dataframe,dictionary):
+    if "CODMUNRES" in dictionary:
+        del dictionary["CODMUNRES"]
+    elif "SEXO" in dictionary:
+        del dictionary["SEXO"]
+    elif "IDADE_ANOS" in dictionary:
+        del dictionary["IDADE_ANOS"]
+    elif "UF" in dictionary:
+        del dictionary["UF"]
+    condition = create_condition(dataframe,dictionary)
+    sum_data = dataframe[condition]["CONTAGEM"].sum()
+    return (condition,sum_data,dictionary)
+
+
 variables = ['ANO','UF','CODMUNRES','SEXO','IDADE_ANOS']
 
 print("Baixando dados")
@@ -76,30 +90,23 @@ print("Redistribuindo mortes com dados faltantes")
 
 missing_rates = [rates_no_age, rates_no_sex, rates_no_sex_age, rates_no_munic, rates_no_munic_age, rates_no_munic_sex, rates_no_munic_sex_age]
 
-# Distribui dados com idade faltante
-# sum_no_age = rates_no_age["CONTAGEM"].sum()
-# sum_rates = rates["CONTAGEM"].sum()
-
-
+# Executa para cada conjunto de dados faltantes
 for missing_rate in missing_rates:
+    print("Dados conhecidos:",missing_rate.columns.tolist()[:-1])
     sum_missing = missing_rate["CONTAGEM"].sum()
     sum_rates = rates["CONTAGEM"].sum()
+    # Executa para cada linha de dados faltantes
     for row in missing_rate.itertuples(index=False):
         row_dict = dict(row._asdict())
         del row_dict["CONTAGEM"]
         condition = create_condition(rates,row_dict)
         sum_data = rates[condition]["CONTAGEM"].sum()
-        if sum_data == 0.0:
-            if "CODMUNRES" in row_dict:
-                del row_dict["CODMUNRES"]
-            elif "SEXO" in row_dict:
-                del row_dict["SEXO"]
-            elif "IDADE_ANOS" in row_dict:
-                del row_dict["IDADE_ANOS"]
-            condition = create_condition(rates,row_dict)
-            sum_data = rates[condition]["CONTAGEM"].sum()
+        # Caso não haja proporção conhecida relaxa o filtro
+        while sum_data == 0.0:
+            (condition,sum_data,row_dict) = relax_filter(rates,row_dict)
+            print("Linha sem proporção conhecida:",dict(row._asdict()))
+            print("Filtro utilizado:",list(row_dict.keys()))
         rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-    print("Filtro:",missing_rate.columns.tolist()[:-1])
     print('Dif. : {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_missing)))
 
 print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
