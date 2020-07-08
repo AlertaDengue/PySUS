@@ -97,7 +97,6 @@ def calculate_digit(geocode):
     dv = 0 if soma % 10 == 0 else (10 - (soma % 10))
     return dv
 
-@np.vectorize
 def add_dv(geocodigo):
     if len(str(geocodigo)) == 7:
         return geocodigo
