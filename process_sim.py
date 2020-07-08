@@ -1,5 +1,6 @@
 from pysus.online_data.SIM import download
 from pysus.preprocessing.decoders import translate_variables_SIM
+import numpy as np
 
 variables = ['ANO','UF','CODMUNRES','SEXO','IDADE_ANOS']
 
@@ -73,83 +74,22 @@ rates = rates[~((rates['CODMUNRES'] == '999') | (rates['SEXO'] == '999') | (rate
 
 print("Redistribuindo mortes com dados faltantes")
 
-# missing_rates = [rates_no_munic, rates_no_sex, rates_no_age, rates_no_munic_age, rates_no_munic_sex, rates_no_sex_age, rates_no_munic_sex_age]
+missing_rates = [rates_no_age, rates_no_sex, rates_no_sex_age, rates_no_munic, rates_no_munic_age, rates_no_munic_sex, rates_no_munic_sex_age]
 
-# for missing_rate in missing_rates:
-#     missing_sum = missing_rate["CONTAGEM"].sum()
 
 
 # Distribui dados com idade faltante
-sum_no_age = rates_no_age["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_age.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["CODMUNRES"] == row.CODMUNRES) & (rates["SEXO"] == row.SEXO)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
+# sum_no_age = rates_no_age["CONTAGEM"].sum()
+# sum_rates = rates["CONTAGEM"].sum()
 
-print('Dif. idade faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_age)))
 
-# Distribui dados com sexo faltante
-sum_no_sex = rates_no_sex["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_sex.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["CODMUNRES"] == row.CODMUNRES) & (rates["IDADE_ANOS"] == row.IDADE_ANOS)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. sexo faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_sex)))
-
-# Distribui dados com sexo e idade faltante
-sum_no_sex_age = rates_no_sex_age["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_sex_age.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["CODMUNRES"] == row.CODMUNRES)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. sexo e idade faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_sex_age)))
-
-# Distribui dados com município faltante
-sum_no_munic = rates_no_munic["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_munic.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["SEXO"] == row.SEXO) & (rates["IDADE_ANOS"] == row.IDADE_ANOS)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. município faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_munic)))
-
-# Distribui dados com município e idade faltante
-sum_no_munic_age = rates_no_munic_age["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_munic_age.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["SEXO"] == row.SEXO)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. município e idade faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_munic_age)))
-
-# Distribui dados com município e sexo faltante
-sum_no_munic_sex = rates_no_munic_sex["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_munic_sex.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF) & (rates["IDADE_ANOS"] == row.IDADE_ANOS)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. município e sexo faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_munic_sex)))
-
-# Distribui dados com município, sexo e idade faltante
-sum_no_munic_sex_age = rates_no_munic_sex_age["CONTAGEM"].sum()
-sum_rates = rates["CONTAGEM"].sum()
-for row in rates_no_munic_sex_age.itertuples():
-    condition = (rates["ANO"] == row.ANO) & (rates["UF"] == row.UF)
-    sum_data = rates[condition]["CONTAGEM"].sum()
-    rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-print('Dif. município, sexo e idade faltante: {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_no_munic_sex_age)))
-
-print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
+for missing_rate in missing_rates:
+    for row in missing_rate.itertuples(index=False):
+        row_dict = dict(row._asdict())
+        del row_dict["CONTAGEM"]
+        condition = np.logical_and.reduce([rates[k] == v for k,v in row_dict.items()])
+        sum_data = rates[condition]["CONTAGEM"].sum()
+        rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
 
 print("Gerando CSV")
 rates.to_csv("br.csv",index=False)
