@@ -5,7 +5,7 @@ import numpy as np
 def create_condition(dataframe,dictionary):
     return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
 
-def relax_filter(dataframe,dictionary):
+def relax_filter(dictionary):
     if "CODMUNRES" in dictionary:
         del dictionary["CODMUNRES"]
     elif "SEXO" in dictionary:
@@ -14,9 +14,7 @@ def relax_filter(dataframe,dictionary):
         del dictionary["IDADE_ANOS"]
     elif "UF" in dictionary:
         del dictionary["UF"]
-    condition = create_condition(dataframe,dictionary)
-    sum_data = dataframe[condition]["CONTAGEM"].sum()
-    return (condition,sum_data,dictionary)
+    return dictionary
 
 
 variables = ['ANO','UF','CODMUNRES','SEXO','IDADE_ANOS']
@@ -103,11 +101,14 @@ for missing_rate in missing_rates:
         sum_data = rates[condition]["CONTAGEM"].sum()
         # Caso não haja proporção conhecida relaxa o filtro
         while sum_data == 0.0:
-            (condition,sum_data,row_dict) = relax_filter(rates,row_dict)
+            row_dict = relax_filter(row_dict)
+            condition = create_condition(rates,row_dict)
+            sum_data = rates[condition]["CONTAGEM"].sum()
             print("Linha sem proporção conhecida:",dict(row._asdict()))
             print("Filtro utilizado:",list(row_dict.keys()))
         rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
     print('Dif. : {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_missing)))
+    print('----------')
 
 print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
 print("Gerando CSV")
