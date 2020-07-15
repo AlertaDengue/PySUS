@@ -31,8 +31,8 @@ def download(state, year, cache=True):
     for s in states:
         for y in years:
             dfYear = downloadState(s,y,cache)
-            dfYear["ANO"] = y
-            dfYear["UF"] = s
+            # dfYear["ANO"] = y
+            # dfYear["UF"] = s
             df = df.append(dfYear)
     
     return df

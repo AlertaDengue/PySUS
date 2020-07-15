@@ -143,6 +143,7 @@ def translate_variables_SIM(dataframe, municipality_data = True):
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
+        df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
         df["CODMUNRES"] = add_dv(df["CODMUNRES"])
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = np.nan
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
