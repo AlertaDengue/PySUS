@@ -22,32 +22,44 @@ def download(state, year, cache=True):
     """
     year2 = str(year)[-2:].zfill(2)
     state = state.upper()
+    ftp_dir = ""
+    fname = ""
     if year < 1979:
         raise ValueError("SIM does not contain data before 1979")
-    ftp = FTP('ftp.datasus.gov.br')
-    ftp.login()
-    if year >= 1996:
-        ftp.cwd('/dissemin/publicos/SIM/CID10/DORES')
+    elif year >= 1996:
+        ftp_dir = '/dissemin/publicos/SIM/CID10/DORES'
         fname = 'DO{}{}.DBC'.format(state, year)
     else:
-        ftp.cwd('/dissemin/publicos/SIM/CID9/DORES')
-        fname = 'DOR{}{}.DBC'.format(state, year2)
-    cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
-    if os.path.exists(cachefile):
-        df = pd.read_parquet(cachefile)
-        return df
-
-    try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
-    except:
-        try:
-            ftp.retrbinary('RETR {}'.format(fname.upper()), open(fname, 'wb').write)
-        except:
-            raise Exception("File {} not available".format(fname))
-
-    df = read_dbc(fname, encoding='iso-8859-1')
+        ftp_dir = '/dissemin/publicos/SIM/CID9/DORES'
+        fname = fname = 'DOR{}{}.DBC'.format(state, year2)
+    
+    cache_fail = False
     if cache:
-        df.to_parquet(cachefile)
+        cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
+        if os.path.exists(cachefile):
+            df = pd.read_parquet(cachefile)
+            return df
+        else:
+            cache_fail = True
+
+    if cache_fail or not cache:
+        ftp = FTP('ftp.datasus.gov.br')
+        ftp.login()
+        ftp.cwd(ftp_dir)
+    
+        try:
+            ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
+        except:
+            try:
+                ftp.retrbinary('RETR {}'.format(fname.upper()), open(fname, 'wb').write)
+            except:
+                raise Exception("File {} not available".format(fname))
+
+        df = read_dbc(fname, encoding='iso-8859-1')
+        
+        if cache:
+            df.to_parquet(cachefile)
+            
     os.unlink(fname)
     return df
 
