@@ -11,7 +11,7 @@ from dbfread import DBF
 
 try:
     from pysus.utilities._readdbc import ffi, lib
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     from _readdbc import ffi, lib
 
 
