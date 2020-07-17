@@ -44,16 +44,22 @@ def decodifica_idade_SIM(idade, unidade="D"):
     :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas. Valor default: 'D'
     :return:
     """
-    fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24.}
+    fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24., 'm': 1/1440.}
     try:
-        if idade.startswith('1'):
-            idade = timedelta(hours=int(idade[1:])).days
+        if idade.startswith('0') and idade[1:] != '00':
+            idade = timedelta(minutes=int(idade[1:]))
+            idade = idade.seconds/86400 + idade.days
+        elif idade.startswith('1'):
+            idade = timedelta(hours=int(idade[1:]))
+            idade = idade.seconds/86400 + idade.days
         elif idade.startswith('2'):
             idade = timedelta(days=int(idade[1:])).days
         elif idade.startswith('3'):
             idade = timedelta(days=int(idade[1:]) * 30).days
         elif idade.startswith('4'):
             idade = timedelta(days=int(idade[1:]) * 365).days
+        elif idade.startswith('5'):
+            idade = timedelta(days=int(idade[1:]) * 365).days + 100 * 365
         else:
             idade = np.nan
     except ValueError:
@@ -90,7 +96,6 @@ def calculate_digit(geocode):
         soma += sum([int(d) for d in str(valor)]) if valor > 9 else valor
     dv = 0 if soma % 10 == 0 else (10 - (soma % 10))
     return dv
-
 
 def add_dv(geocodigo):
     if len(str(geocodigo)) == 7:
