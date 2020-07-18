@@ -119,7 +119,7 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def translate_variables_SIM(dataframe, municipality_data = True):
+def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_args={},municipality_data = True):
     variables_names = dataframe.columns
     df = dataframe
     
@@ -127,7 +127,12 @@ def translate_variables_SIM(dataframe, municipality_data = True):
 
     # IDADE
     if("IDADE" in variables_names):
-        df["IDADE_ANOS"] = decodifica_idade_SIM(df["IDADE"],'Y')
+        df["IDADE_ANOS"] = decodifica_idade_SIM(df["IDADE"],age_unity)
+        if(age_classes):
+            df["IDADE_ANOS"] = classify_age(df["IDADE_ANOS"],**classify_args)
+            df["IDADE_ANOS"] = df["IDADE_ANOS"].astype('category')
+            df["IDADE_ANOS"] = df["IDADE_ANOS"].cat.add_categories(['nan'])
+            df["IDADE_ANOS"] = df["IDADE_ANOS"].fillna('nan')
 
     # SEXO
     if("SEXO" in variables_names):
@@ -140,12 +145,44 @@ def translate_variables_SIM(dataframe, municipality_data = True):
             inplace=True
         )
         df["SEXO"] = df["SEXO"].astype('category')
+        df["SEXO"] = df["SEXO"].cat.add_categories(['nan'])
+        df["SEXO"] = df["SEXO"].fillna('nan')
+
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
         df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
         df["CODMUNRES"] = add_dv(df["CODMUNRES"])
-        df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = np.nan
+        df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
+        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
+        df["CODMUNRES"] = df["CODMUNRES"].fillna('nan')
+
 
     return df
+
+
+def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',interval=None):
+    """
+    Classifica idade segundo parâmetros ou IntervalIndex
+    :param serie: Serie pandas contendo idades
+    :param start: início do primeiro grupo
+    :param end: fim do último grupo
+    :param freq: tamanho dos grupos. Por padrão considera cada valor um grupo.
+    :param open_end: cria uma classe no final da lista de intervalos que contém todos acima daquele último valor. Default True
+    :param closed: onde os intervalos devem ser fechados. Possíveis valores: {'left', 'right', 'both', 'neither'}. Default 'left'
+    :param interval: IntervalIndex do pandas. Caso seja passado todos os outros parâmetros de intervalo são desconsiderados. Defaul None
+    :return:
+    """
+    if(interval):
+        iv = interval
+    else:
+        iv = pd.interval_range(start=start,end=end,freq=freq,closed=closed)
+    iv_array = iv.to_tuples().tolist()
+
+    # Adiciona classe aberta no final da lista de intervalos. 
+    # Útil para criar agrupamentos como 0,1,2,...,89,90+
+    if(open_end):
+        iv_array.append((iv_array[-1][1],+np.inf))
+    intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
+    return pd.cut(serie,intervals)
