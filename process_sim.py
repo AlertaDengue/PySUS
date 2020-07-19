@@ -9,6 +9,7 @@ import pandas as pd
 # A ordem das variáveis define a prioridade para distribuição.
 # ['CODMUNRES','SEXO','IDADE_ANOS'] significa que IDADE_ANOS será removida primeiro na redistribuição e CODMUNRES por último.
 variables = ['CODMUNRES','SEXO','IDADE_ANOS']
+folder = '/media/gabriel/Croquete/FTP_DATASUS/datasus/dissemin/publicos/SIM/CID10/DORES'
 
 print("Baixando dados")
 years = [2001,2002,2003,2004,2005,2006,2007,2008,2009,2010]
@@ -16,7 +17,7 @@ first = True
 for state in BR_STATES:
     for year in years:
         print("Baixando {} {}".format(state,year))
-        df = download(state, year)
+        df = download(state, year,folder=folder)
 
         print("Traduzindo variáveis")
         df = translate_variables_SIM(df,age_classes=True)

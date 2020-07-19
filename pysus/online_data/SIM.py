@@ -9,35 +9,11 @@ import os
 from ftplib import FTP
 from pysus.utilities.readdbc import read_dbc
 from pysus.online_data import CACHEPATH
-from pysus.utilities import FTP_DATASUS
-from pysus.utilities import BR_STATES
 from dbfread import DBF
 import pandas as pd
 
 
-def download(state, year, cache=True):
-    """
-    Downloads data directly from Datasus ftp server but allows multiple states and years
-    :param state: two-letter state identifier or array of state identifiers: MG == Minas Gerais. Accepts BR to download all states
-    :param year: 4 digit integer or array of 4 digit integers
-    :return: pandas dataframe
-    """
-    if(state == 'BR'):
-        state = BR_STATES
-    states = state if isinstance(state,list) else [state]
-    years = year if isinstance(year,list) else [year]
-
-    df = pd.DataFrame()
-    for s in states:
-        for y in years:
-            dfYear = downloadState(s,y,cache)
-            # dfYear["ANO"] = y
-            # dfYear["UF"] = s
-            df = df.append(dfYear)
-    
-    return df
-
-def downloadState(state, year, cache=True):
+def download(state, year, cache=True, folder=None):
     """
     Downloads data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais
@@ -57,8 +33,12 @@ def downloadState(state, year, cache=True):
         ftp_dir = '/dissemin/publicos/SIM/CID9/DORES'
         fname = fname = 'DOR{}{}.DBC'.format(state, year2)
     
+
+
     cache_fail = False
-    if cache:
+    if folder:
+        fname = "{}/{}".format(folder,fname)
+    elif cache:
         cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
         if os.path.exists(cachefile):
             df = pd.read_parquet(cachefile)
@@ -66,7 +46,8 @@ def downloadState(state, year, cache=True):
         else:
             cache_fail = True
 
-    if cache_fail or not cache:
+    # Se tiver folder não tenta cache
+    if not folder and (cache_fail or not cache):
         ftp = FTP('ftp.datasus.gov.br')
         ftp.login()
         ftp.cwd(ftp_dir)
@@ -79,10 +60,9 @@ def downloadState(state, year, cache=True):
             except:
                 raise Exception("File {} not available".format(fname))
 
-        df = read_dbc(fname, encoding='iso-8859-1')
-        
-        if cache:
-            df.to_parquet(cachefile)
+    df = read_dbc(fname, encoding='iso-8859-1')
+    
+    df.to_parquet(cachefile)
             
     os.unlink(fname)
     return df
