@@ -38,12 +38,26 @@ def decodifica_idade_SINAN(idade, unidade='Y'):
     idade_dec = idade_anos*fator[unidade]
     return idade_dec
 
+def get_age_string(unidade):
+    if unidade == 'Y':
+        return 'ANOS'
+    elif unidade == 'M':
+        return 'MESES'
+    elif unidade == 'D':
+        return 'DIAS'
+    elif unidade == 'H':
+        return 'HORAS'
+    elif unidade == 'm':
+        return 'MINUTOS'
+    else:
+        return ''
+
 @np.vectorize
 def decodifica_idade_SIM(idade, unidade="D"):
     """
     Em tabelas do SIM a idade encontra-se codificada
     :param idade: valor original da tabela do SIM
-    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas. Valor default: 'D'
+    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas, 'm': minutos. Valor default: 'D'
     :return:
     """
     fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24., 'm': 1/1440.}
@@ -127,12 +141,13 @@ def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_ar
 
     # IDADE
     if("IDADE" in variables_names):
-        df["IDADE_ANOS"] = decodifica_idade_SIM(df["IDADE"],age_unity)
+        column_name = "IDADE_{}".format(get_age_string(age_unity))
+        df[column_name] = decodifica_idade_SIM(df["IDADE"],age_unity)
         if(age_classes):
-            df["IDADE_ANOS"] = classify_age(df["IDADE_ANOS"],**classify_args)
-            df["IDADE_ANOS"] = df["IDADE_ANOS"].astype('category')
-            df["IDADE_ANOS"] = df["IDADE_ANOS"].cat.add_categories(['nan'])
-            df["IDADE_ANOS"] = df["IDADE_ANOS"].fillna('nan')
+            df[column_name] = classify_age(df[column_name],**classify_args)
+            df[column_name] = df[column_name].astype('category')
+            df[column_name] = df[column_name].cat.add_categories(['nan'])
+            df[column_name] = df[column_name].fillna('nan')
 
     # SEXO
     if("SEXO" in variables_names):
@@ -186,3 +201,90 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
         iv_array.append((iv_array[-1][1],+np.inf))
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
+
+def create_condition(dataframe,dictionary):
+    if dictionary == {}:
+        return np.array([True] * len(dataframe), dtype=bool)
+    return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
+
+def relax_filter(dictionary,fields):
+    for field in fields:
+        if field in dictionary:
+            del dictionary[field]
+            break
+    return dictionary
+
+def group_count_and_resample(dataframe,variables):
+    df = dataframe
+
+    # No pandas 1.1.0 será possível usar o argumento dropna=False, e evitar de converter NaN em uma categoria no translate_variables_SIM
+    rates = df.groupby(variables).size().reset_index(name='CONTAGEM')
+    rates["CONTAGEM"] = rates["CONTAGEM"].astype('float64')
+
+    sum_original = rates["CONTAGEM"].sum()
+
+    print("Removendo categorias faltantes vazias")
+    # Remove município desconhecido com contagem 0
+    rates = rates[~((rates['CODMUNRES'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
+
+    # Remove sexo desconhecido com contagem 0
+    rates = rates[~((rates['SEXO'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
+
+    # Remove idade desconhecida com contagem 0
+    rates = rates[~((rates['IDADE_ANOS'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
+
+    ### Dataframes de dados faltantes
+
+    print("Criando dataframes de dados faltantes")
+    # Faltando apenas município
+    rates_no_munic = rates[(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES'])
+
+    # Faltando apenas sexo
+    rates_no_sex = rates[~(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['SEXO'])
+
+    # Faltando apenas idade
+    rates_no_age = rates[~(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['IDADE_ANOS'])
+
+    # Faltando município e sexo
+    rates_no_munic_sex = rates[(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','SEXO'])
+
+    # Faltando município e idade
+    rates_no_munic_age = rates[(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','IDADE_ANOS'])
+
+    # Faltando sexo e idade
+    rates_no_sex_age = rates[~(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['SEXO','IDADE_ANOS'])
+
+    # Faltando município, sexo e idade
+    rates_no_munic_sex_age = rates[(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','SEXO','IDADE_ANOS'])
+
+    # Remove dados faltantes
+    rates = rates[~((rates['CODMUNRES'] == 'nan') | (rates['SEXO'] == 'nan') | (rates['IDADE_ANOS'] == 'nan'))]
+
+    print("Redistribuindo mortes com dados faltantes")
+
+    missing_rates = [rates_no_age, rates_no_sex, rates_no_sex_age, rates_no_munic, rates_no_munic_age, rates_no_munic_sex, rates_no_munic_sex_age]
+
+    # Executa para cada conjunto de dados faltantes
+    for missing_rate in missing_rates:
+        print("Dados conhecidos:",missing_rate.columns.tolist()[:-1])
+        sum_missing = missing_rate["CONTAGEM"].sum()
+        sum_rates = rates["CONTAGEM"].sum()
+        # Executa para cada linha de dados faltantes
+        for row in missing_rate.itertuples(index=False):
+            row_dict = dict(row._asdict())
+            del row_dict["CONTAGEM"]
+            condition = create_condition(rates,row_dict)
+            sum_data = rates[condition]["CONTAGEM"].sum()
+            # Caso não haja proporção conhecida relaxa o filtro
+            while sum_data == 0.0:
+                row_dict = relax_filter(row_dict,variables)
+                condition = create_condition(rates,row_dict)
+                sum_data = rates[condition]["CONTAGEM"].sum()
+                print("Linha sem proporção conhecida:",dict(row._asdict()))
+                print("Filtro utilizado:",list(row_dict.keys()))
+            rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
+        print('Dif. : {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_missing)))
+        print('----------')
+    print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
+
+    return rates
