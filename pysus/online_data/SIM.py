@@ -36,10 +36,10 @@ def download(state, year, cache=True, folder=None):
 
 
     cache_fail = False
+    cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
     if folder:
         fname = "{}/{}".format(folder,fname)
     elif cache:
-        cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
         if os.path.exists(cachefile):
             df = pd.read_parquet(cachefile)
             return df

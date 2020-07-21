@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta, datetime
 from pysus.online_data.SIM import get_municipios
+from itertools import product
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -134,7 +135,7 @@ def add_dv(geocodigo):
 
 
 def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_args={},municipality_data = True):
-    variables_names = dataframe.columns
+    variables_names = dataframe.columns.tolist()
     df = dataframe
     
     valid_mun = get_valid_geocodes()
@@ -163,6 +164,10 @@ def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_ar
         df["SEXO"] = df["SEXO"].cat.add_categories(['nan'])
         df["SEXO"] = df["SEXO"].fillna('nan')
 
+    #MUNRES
+    if("MUNIRES" in variables_names):
+        df = df.rename(columns={'MUNIRES': 'CODMUNRES'})
+        variables_names.append('CODMUNRES')
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
@@ -173,6 +178,26 @@ def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_ar
         df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
         df["CODMUNRES"] = df["CODMUNRES"].fillna('nan')
 
+    #RACACOR
+    if("RACACOR" in variables_names):
+        df["RACACOR"].replace({
+                "0": np.nan,
+                "1": "Branca",
+                "2": "Preta",
+                "3": "Amarela",
+                "4": "Parda",
+                "5": "Indígena",
+                "6": np.nan,
+                "7": np.nan,
+                "8": np.nan,
+                "9": np.nan,
+                "": np.nan
+            },
+            inplace=True
+        )
+        df["RACACOR"] = df["RACACOR"].astype('category')
+        df["RACACOR"] = df["RACACOR"].cat.add_categories(['nan'])
+        df["RACACOR"] = df["RACACOR"].fillna('nan')
 
     return df
 
@@ -202,67 +227,59 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
 
-def create_condition(dataframe,dictionary):
+def logical_and_from_dict(dataframe, dictionary):
     if dictionary == {}:
         return np.array([True] * len(dataframe), dtype=bool)
     return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
 
 def relax_filter(dictionary,fields):
-    for field in fields:
+    for field in reversed(fields):
         if field in dictionary:
             del dictionary[field]
             break
     return dictionary
 
-def group_count_and_resample(dataframe,variables):
+def group_and_count(dataframe,variables):
     df = dataframe
 
     # No pandas 1.1.0 será possível usar o argumento dropna=False, e evitar de converter NaN em uma categoria no translate_variables_SIM
     rates = df.groupby(variables).size().reset_index(name='CONTAGEM')
     rates["CONTAGEM"] = rates["CONTAGEM"].astype('float64')
 
+    return rates
+
+def resample(rates,variables):
     sum_original = rates["CONTAGEM"].sum()
 
-    print("Removendo categorias faltantes vazias")
-    # Remove município desconhecido com contagem 0
-    rates = rates[~((rates['CODMUNRES'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
-
-    # Remove sexo desconhecido com contagem 0
-    rates = rates[~((rates['SEXO'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
-
-    # Remove idade desconhecida com contagem 0
-    rates = rates[~((rates['IDADE_ANOS'] == 'nan') & (rates['CONTAGEM'] == 0.0))]
+    # Removendo categorias faltantes vazias
+    for var in variables:
+        condition_dict = {
+            var: 'nan',
+            'CONTAGEM': 0.0
+        }
+        rates = rates[~logical_and_from_dict(rates,condition_dict)]
 
     ### Dataframes de dados faltantes
 
     print("Criando dataframes de dados faltantes")
-    # Faltando apenas município
-    rates_no_munic = rates[(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES'])
 
-    # Faltando apenas sexo
-    rates_no_sex = rates[~(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['SEXO'])
+    variables_dict = [{x: 'nan'} for x in variables]
+    variables_condition = [logical_and_from_dict(rates,x) for x in variables_dict]
+    # Primeiro item da tupla é != nan, segundo é o == nan
+    variables_tuples = [(np.logical_not(x),x) for x in variables_condition]
+    variables_product = list(product(*variables_tuples))
 
-    # Faltando apenas idade
-    rates_no_age = rates[~(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['IDADE_ANOS'])
+    # Remove regra de todos != nan
+    del variables_product[0]
 
-    # Faltando município e sexo
-    rates_no_munic_sex = rates[(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & ~(rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','SEXO'])
+    missing_rates = [rates[np.logical_and.reduce(x)] for x in variables_product]
+    # Remove colunas com nan, no pandas 1.1.0 será possível deixar esses valores como NaN de verdade
+    missing_rates = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_rates]
 
-    # Faltando município e idade
-    rates_no_munic_age = rates[(rates['CODMUNRES'] == 'nan') & ~(rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','IDADE_ANOS'])
-
-    # Faltando sexo e idade
-    rates_no_sex_age = rates[~(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['SEXO','IDADE_ANOS'])
-
-    # Faltando município, sexo e idade
-    rates_no_munic_sex_age = rates[(rates['CODMUNRES'] == 'nan') & (rates['SEXO'] == 'nan') & (rates['IDADE_ANOS'] == 'nan')].drop(columns=['CODMUNRES','SEXO','IDADE_ANOS'])
-
-    # Remove dados faltantes
-    rates = rates[~((rates['CODMUNRES'] == 'nan') | (rates['SEXO'] == 'nan') | (rates['IDADE_ANOS'] == 'nan'))]
+    # # Remove dados faltantes
+    rates = rates[~np.logical_or.reduce(variables_product[-1])]
 
     print("Redistribuindo mortes com dados faltantes")
-
-    missing_rates = [rates_no_age, rates_no_sex, rates_no_sex_age, rates_no_munic, rates_no_munic_age, rates_no_munic_sex, rates_no_munic_sex_age]
 
     # Executa para cada conjunto de dados faltantes
     for missing_rate in missing_rates:
@@ -273,12 +290,12 @@ def group_count_and_resample(dataframe,variables):
         for row in missing_rate.itertuples(index=False):
             row_dict = dict(row._asdict())
             del row_dict["CONTAGEM"]
-            condition = create_condition(rates,row_dict)
+            condition = logical_and_from_dict(rates,row_dict)
             sum_data = rates[condition]["CONTAGEM"].sum()
             # Caso não haja proporção conhecida relaxa o filtro
             while sum_data == 0.0:
                 row_dict = relax_filter(row_dict,variables)
-                condition = create_condition(rates,row_dict)
+                condition = logical_and_from_dict(rates,row_dict)
                 sum_data = rates[condition]["CONTAGEM"].sum()
                 print("Linha sem proporção conhecida:",dict(row._asdict()))
                 print("Filtro utilizado:",list(row_dict.keys()))
