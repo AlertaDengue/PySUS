@@ -13,7 +13,7 @@ from dbfread import DBF
 import pandas as pd
 
 
-def download(state, year, cache=True):
+def download(state, year, cache=True, folder=None):
     """
     Downloads data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais
@@ -33,16 +33,21 @@ def download(state, year, cache=True):
         ftp_dir = '/dissemin/publicos/SIM/CID9/DORES'
         fname = fname = 'DOR{}{}.DBC'.format(state, year2)
     
+
+
     cache_fail = False
-    if cache:
-        cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
+    cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
+    if folder:
+        fname = "{}/{}".format(folder,fname)
+    elif cache:
         if os.path.exists(cachefile):
             df = pd.read_parquet(cachefile)
             return df
         else:
             cache_fail = True
 
-    if cache_fail or not cache:
+    # Se tiver folder não tenta cache
+    if not folder and (cache_fail or not cache):
         ftp = FTP('ftp.datasus.gov.br')
         ftp.login()
         ftp.cwd(ftp_dir)
@@ -55,10 +60,9 @@ def download(state, year, cache=True):
             except:
                 raise Exception("File {} not available".format(fname))
 
-        df = read_dbc(fname, encoding='iso-8859-1')
-        
-        if cache:
-            df.to_parquet(cachefile)
+    df = read_dbc(fname, encoding='iso-8859-1')
+    
+    df.to_parquet(cachefile)
             
     os.unlink(fname)
     return df
