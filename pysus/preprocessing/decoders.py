@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta, datetime
 from pysus.online_data.SIM import get_municipios
-from itertools import product
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -224,69 +223,3 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
         iv_array.append((iv_array[-1][1],+np.inf))
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
-
-def logical_and_from_dict(dataframe, dictionary):
-    if dictionary == {}:
-        return np.array([True] * len(dataframe), dtype=bool)
-    return np.logical_and.reduce([dataframe[k] == v for k,v in dictionary.items()])
-
-def relax_filter(dictionary,fields):
-    for field in reversed(fields):
-        if field in dictionary:
-            del dictionary[field]
-            break
-    return dictionary
-
-def group_and_count(dataframe,variables):
-    df = dataframe
-
-    # No pandas 1.1.0 será possível usar o argumento dropna=False, e evitar de converter NaN em uma categoria no translate_variables_SIM
-    counts = df.groupby(variables).size().reset_index(name='CONTAGEM')
-    counts["CONTAGEM"] = counts["CONTAGEM"].astype('float64')
-
-    return counts
-
-def redistribute(counts,variables):
-    # Removendo categorias faltantes vazias
-    for var in variables:
-        condition_dict = {
-            var: 'nan',
-            'CONTAGEM': 0.0
-        }
-        counts = counts[~logical_and_from_dict(counts,condition_dict)]
-
-    ### Dataframes de dados faltantes
-
-    variables_dict = [{x: 'nan'} for x in variables]
-    variables_condition = [logical_and_from_dict(counts,x) for x in variables_dict]
-    # Primeiro item da tupla é != nan, segundo é o == nan
-    variables_tuples = [(np.logical_not(x),x) for x in variables_condition]
-    variables_product = list(product(*variables_tuples))
-
-    # Remove regra de todos != nan
-    del variables_product[0]
-
-    missing_counts = [counts[np.logical_and.reduce(x)] for x in variables_product]
-    # Remove colunas com nan, no pandas 1.1.0 será possível deixar esses valores como NaN de verdade
-    missing_counts = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_counts]
-
-    # # Remove dados faltantes
-    counts = counts[~np.logical_or.reduce(variables_product[-1])]
-
-
-    # Executa para cada conjunto de dados faltantes
-    for missing_rate in missing_counts:
-        # Executa para cada linha de dados faltantes
-        for row in missing_rate.itertuples(index=False):
-            row_dict = dict(row._asdict())
-            del row_dict["CONTAGEM"]
-            condition = logical_and_from_dict(counts,row_dict)
-            sum_data = counts[condition]["CONTAGEM"].sum()
-            # Caso não haja proporção conhecida relaxa o filtro
-            while sum_data == 0.0:
-                row_dict = relax_filter(row_dict,variables)
-                condition = logical_and_from_dict(counts,row_dict)
-                sum_data = counts[condition]["CONTAGEM"].sum()
-            counts.loc[condition,"CONTAGEM"] = counts[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-
-    return counts
