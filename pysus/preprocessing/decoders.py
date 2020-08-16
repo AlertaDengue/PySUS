@@ -33,9 +33,7 @@ def decodifica_idade_SINAN(idade, unidade='Y'):
     elif idade >= 1000 and idade < 2000: # idade em horas
         idade_anos = (idade-1000)/(365*24.)
     else:
-        #print(idade)
         idade_anos = np.nan
-        #raise ValueError("Idade inválida")
     idade_dec = idade_anos*fator[unidade]
     return idade_dec
 
@@ -249,8 +247,6 @@ def group_and_count(dataframe,variables):
     return counts
 
 def redistribute(counts,variables):
-    sum_original = counts["CONTAGEM"].sum()
-
     # Removendo categorias faltantes vazias
     for var in variables:
         condition_dict = {
@@ -260,8 +256,6 @@ def redistribute(counts,variables):
         counts = counts[~logical_and_from_dict(counts,condition_dict)]
 
     ### Dataframes de dados faltantes
-
-    print("Criando dataframes de dados faltantes")
 
     variables_dict = [{x: 'nan'} for x in variables]
     variables_condition = [logical_and_from_dict(counts,x) for x in variables_dict]
@@ -279,13 +273,9 @@ def redistribute(counts,variables):
     # # Remove dados faltantes
     counts = counts[~np.logical_or.reduce(variables_product[-1])]
 
-    print("Redistribuindo mortes com dados faltantes")
 
     # Executa para cada conjunto de dados faltantes
     for missing_rate in missing_counts:
-        print("Dados conhecidos:",missing_rate.columns.tolist()[:-1])
-        sum_missing = missing_rate["CONTAGEM"].sum()
-        sum_counts = counts["CONTAGEM"].sum()
         # Executa para cada linha de dados faltantes
         for row in missing_rate.itertuples(index=False):
             row_dict = dict(row._asdict())
@@ -297,11 +287,6 @@ def redistribute(counts,variables):
                 row_dict = relax_filter(row_dict,variables)
                 condition = logical_and_from_dict(counts,row_dict)
                 sum_data = counts[condition]["CONTAGEM"].sum()
-                print("Linha sem proporção conhecida:",dict(row._asdict()))
-                print("Filtro utilizado:",list(row_dict.keys()))
             counts.loc[condition,"CONTAGEM"] = counts[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-        print('Dif. : {:f}'.format(counts["CONTAGEM"].sum() - (sum_counts + sum_missing)))
-        print('----------')
-    print('Dif. final: {:f}'.format(counts["CONTAGEM"].sum() - sum_original))
 
     return counts
