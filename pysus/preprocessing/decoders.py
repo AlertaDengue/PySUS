@@ -243,13 +243,13 @@ def group_and_count(dataframe,variables):
     df = dataframe
 
     # No pandas 1.1.0 será possível usar o argumento dropna=False, e evitar de converter NaN em uma categoria no translate_variables_SIM
-    rates = df.groupby(variables).size().reset_index(name='CONTAGEM')
-    rates["CONTAGEM"] = rates["CONTAGEM"].astype('float64')
+    counts = df.groupby(variables).size().reset_index(name='CONTAGEM')
+    counts["CONTAGEM"] = counts["CONTAGEM"].astype('float64')
 
-    return rates
+    return counts
 
-def resample(rates,variables):
-    sum_original = rates["CONTAGEM"].sum()
+def redistribute(counts,variables):
+    sum_original = counts["CONTAGEM"].sum()
 
     # Removendo categorias faltantes vazias
     for var in variables:
@@ -257,14 +257,14 @@ def resample(rates,variables):
             var: 'nan',
             'CONTAGEM': 0.0
         }
-        rates = rates[~logical_and_from_dict(rates,condition_dict)]
+        counts = counts[~logical_and_from_dict(counts,condition_dict)]
 
     ### Dataframes de dados faltantes
 
     print("Criando dataframes de dados faltantes")
 
     variables_dict = [{x: 'nan'} for x in variables]
-    variables_condition = [logical_and_from_dict(rates,x) for x in variables_dict]
+    variables_condition = [logical_and_from_dict(counts,x) for x in variables_dict]
     # Primeiro item da tupla é != nan, segundo é o == nan
     variables_tuples = [(np.logical_not(x),x) for x in variables_condition]
     variables_product = list(product(*variables_tuples))
@@ -272,36 +272,36 @@ def resample(rates,variables):
     # Remove regra de todos != nan
     del variables_product[0]
 
-    missing_rates = [rates[np.logical_and.reduce(x)] for x in variables_product]
+    missing_counts = [counts[np.logical_and.reduce(x)] for x in variables_product]
     # Remove colunas com nan, no pandas 1.1.0 será possível deixar esses valores como NaN de verdade
-    missing_rates = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_rates]
+    missing_counts = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_counts]
 
     # # Remove dados faltantes
-    rates = rates[~np.logical_or.reduce(variables_product[-1])]
+    counts = counts[~np.logical_or.reduce(variables_product[-1])]
 
     print("Redistribuindo mortes com dados faltantes")
 
     # Executa para cada conjunto de dados faltantes
-    for missing_rate in missing_rates:
+    for missing_rate in missing_counts:
         print("Dados conhecidos:",missing_rate.columns.tolist()[:-1])
         sum_missing = missing_rate["CONTAGEM"].sum()
-        sum_rates = rates["CONTAGEM"].sum()
+        sum_counts = counts["CONTAGEM"].sum()
         # Executa para cada linha de dados faltantes
         for row in missing_rate.itertuples(index=False):
             row_dict = dict(row._asdict())
             del row_dict["CONTAGEM"]
-            condition = logical_and_from_dict(rates,row_dict)
-            sum_data = rates[condition]["CONTAGEM"].sum()
+            condition = logical_and_from_dict(counts,row_dict)
+            sum_data = counts[condition]["CONTAGEM"].sum()
             # Caso não haja proporção conhecida relaxa o filtro
             while sum_data == 0.0:
                 row_dict = relax_filter(row_dict,variables)
-                condition = logical_and_from_dict(rates,row_dict)
-                sum_data = rates[condition]["CONTAGEM"].sum()
+                condition = logical_and_from_dict(counts,row_dict)
+                sum_data = counts[condition]["CONTAGEM"].sum()
                 print("Linha sem proporção conhecida:",dict(row._asdict()))
                 print("Filtro utilizado:",list(row_dict.keys()))
-            rates.loc[condition,"CONTAGEM"] = rates[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
-        print('Dif. : {:f}'.format(rates["CONTAGEM"].sum() - (sum_rates + sum_missing)))
+            counts.loc[condition,"CONTAGEM"] = counts[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
+        print('Dif. : {:f}'.format(counts["CONTAGEM"].sum() - (sum_counts + sum_missing)))
         print('----------')
-    print('Dif. final: {:f}'.format(rates["CONTAGEM"].sum() - sum_original))
+    print('Dif. final: {:f}'.format(counts["CONTAGEM"].sum() - sum_original))
 
-    return rates
+    return counts
