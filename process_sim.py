@@ -1,5 +1,5 @@
 from pysus.online_data.SIM import download
-from pysus.preprocessing.decoders import translate_variables_SIM, group_and_count, resample
+from pysus.preprocessing.decoders import translate_variables_SIM, group_and_count, redistribute
 from pysus.utilities import BR_STATES
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ for state in ['SP']:
         counts = group_and_count(df,variables)
 
         counts = redistribute(counts,variables)
-        counts.to_parquet('teste.parquet')
+
         print("Adicionando colunas de ano e estado")
         counts.insert(loc=0,column="UF",value=state)
         counts.insert(loc=0,column="ANO",value=year)
