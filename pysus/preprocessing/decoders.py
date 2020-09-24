@@ -11,7 +11,7 @@ __docformat__ = 'restructuredtext en'
 import numpy as np
 import pandas as pd
 from datetime import timedelta, datetime
-from pysus.online_data.SIM import get_municipios
+from pysus.online_data.SIM import get_municipios, get_CID10_table, get_CID10_chapters_table
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -223,3 +223,53 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
         iv_array.append((iv_array[-1][1],+np.inf))
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
+
+def char_range(c1, c2):
+    """Generates the characters from `c1` to `c2`, inclusive."""
+    for c in range(ord(c1), ord(c2)+1):
+        yield chr(c)
+
+def get_cause_chapter(causa,chapters):
+    causa = causa[0:3]
+    letter = causa[:1]
+    number = int(causa[1:3])
+    results = chapters[(chapters['FIRST_LETTER'] <= letter) & (chapters['LAST_LETTER'] >= letter)]
+    if(len(results) == 1):
+        row = results.iloc[0]
+        if(row['FIRST_LETTER'] < letter and row['LAST_LETTER'] > letter):
+            return row['CHAPTER']
+        elif((row['FIRST_LETTER'] == row['LAST_LETTER']) or \
+            (row['FIRST_LETTER'] <= letter and row['LAST_LETTER'] >= letter)):
+            if(row['FIRST_NUMBER'] <= number and row['LAST_NUMBER'] >= number):
+                return row['CHAPTER']
+            else:
+                return -1
+        else:
+            return -1
+    
+    for i, row in results.iterrows():
+        if(letter == row['FIRST_LETTER'] and row['FIRST_LETTER'] == row['LAST_LETTER']):
+            if(row['FIRST_NUMBER'] <= number and number <= row['LAST_NUMBER']):
+                return row['CHAPTER']
+        elif(letter == row['LAST_LETTER'] and number <= row['LAST_NUMBER']):
+                return row['CHAPTER']
+    
+    return -1
+        
+get_chapters = np.vectorize(get_cause_chapter, excluded=[1])        
+
+def get_normalized_chapters(chapters):
+    chapters['CHAPTER'] = [i + 1 for i in range(0,len(chapters))]
+    chapters['FIRST_LETTER'] = chapters['CAUSAS'].str[0]
+    chapters['LAST_LETTER'] = chapters['CAUSAS'].str[-3]
+    chapters['FIRST_NUMBER'] = chapters['CAUSAS'].str[1:3].apply(int)
+    chapters['LAST_NUMBER'] = chapters['CAUSAS'].str[5:7].apply(int)
+    return chapters
+
+def classifica_CID10(col_name='CHAPTER'):
+    chapters = get_CID10_chapters_table()
+    chapters = get_normalized_chapters(chapters)
+    codes = get_CID10_table()
+    codes['CID10_NORM'] = codes['CID10'].str[:3]
+    codes[col_name] = get_chapters(codes['CID10_NORM'], chapters)
+    return True

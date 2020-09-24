@@ -12,7 +12,6 @@ if not os.path.exists(os.path.join(str(Path.home()), 'pysus')):
 
 CACHEPATH = os.path.join(str(Path.home()), 'pysus')
 
-
 def cache_contents():
     """
     List the files currently cached in ~/pysus
