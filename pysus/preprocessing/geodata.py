@@ -21,6 +21,16 @@ def add_data_to_municipality(
                         title_cols=['SEXO','IDADE_ANOS'],
                         value_col='CONTAGEM'):
 
+     """
+    Adiciona dados de mortalidade aos seus respectivos municípios. Gera um GeoDataFrame do GeoPandas.
+    :param counts: dataframe contendo os dados a serem agregados.
+    :param map_year: ano do mapa a ser usado (biblioteca geobr).
+    :param codmun_col: coluna com geocode do município
+    :param title_cols: colunas que serão utilizadas para formar o título das colunas no GeoDataFrame.
+    :param value_col: coluna com o valor a ser adicionado ao GeoDataFrame
+    :return:
+    """
+
     # Extrai código do estado dos municípios.
     # 2 primeiros dígitos do código são o estado
     states = counts[counts[codmun_col] != 'nan'][codmun_col].apply(lambda x: str(x)[:2]).unique()
