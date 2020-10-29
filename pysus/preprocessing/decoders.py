@@ -9,7 +9,9 @@ license: GPL V3 or Later
 
 __docformat__ = 'restructuredtext en'
 import numpy as np
-from datetime import timedelta
+import pandas as pd
+from datetime import timedelta, datetime
+from pysus.online_data.SIM import get_municipios
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -30,18 +32,30 @@ def decodifica_idade_SINAN(idade, unidade='Y'):
     elif idade >= 1000 and idade < 2000: # idade em horas
         idade_anos = (idade-1000)/(365*24.)
     else:
-        #print(idade)
         idade_anos = np.nan
-        #raise ValueError("Idade inválida")
     idade_dec = idade_anos*fator[unidade]
     return idade_dec
+
+def get_age_string(unidade):
+    if unidade == 'Y':
+        return 'ANOS'
+    elif unidade == 'M':
+        return 'MESES'
+    elif unidade == 'D':
+        return 'DIAS'
+    elif unidade == 'H':
+        return 'HORAS'
+    elif unidade == 'm':
+        return 'MINUTOS'
+    else:
+        return ''
 
 @np.vectorize
 def decodifica_idade_SIM(idade, unidade="D"):
     """
     Em tabelas do SIM a idade encontra-se codificada
     :param idade: valor original da tabela do SIM
-    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas. Valor default: 'D'
+    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas, 'm': minutos. Valor default: 'D'
     :return:
     """
     fator = {'Y': 365., 'M': 30., 'D': 1., 'H': 1/24., 'm': 1/1440.}
@@ -66,7 +80,15 @@ def decodifica_idade_SIM(idade, unidade="D"):
         idade = np.nan
     return idade/fator.get(unidade, 1)
 
+@np.vectorize
+def decodifica_data_SIM(data):
+    try:
+        new_data = datetime.strptime(data, '%d%m%Y')
+    except ValueError:
+        new_data = np.nan
+    return new_data
 
+@np.vectorize
 def is_valid_geocode(geocodigo):
     """
     Returns True if the geocode is valid
@@ -81,6 +103,10 @@ def is_valid_geocode(geocodigo):
     else:
         return False
 
+def get_valid_geocodes():
+    tab_mun = get_municipios()
+    df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
+    return df["MUNCODDV"].append(df["MUNCOD"]).values
 
 def calculate_digit(geocode):
     """
@@ -97,8 +123,103 @@ def calculate_digit(geocode):
     dv = 0 if soma % 10 == 0 else (10 - (soma % 10))
     return dv
 
+@np.vectorize
 def add_dv(geocodigo):
     if len(str(geocodigo)) == 7:
         return geocodigo
     else:
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
+
+
+def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_args={},municipality_data = True):
+    variables_names = dataframe.columns.tolist()
+    df = dataframe
+    
+    valid_mun = get_valid_geocodes()
+
+    # IDADE
+    if("IDADE" in variables_names):
+        column_name = "IDADE_{}".format(get_age_string(age_unity))
+        df[column_name] = decodifica_idade_SIM(df["IDADE"],age_unity)
+        if(age_classes):
+            df[column_name] = classify_age(df[column_name],**classify_args)
+            df[column_name] = df[column_name].astype('category')
+            df[column_name] = df[column_name].cat.add_categories(['nan'])
+            df[column_name] = df[column_name].fillna('nan')
+
+    # SEXO
+    if("SEXO" in variables_names):
+        df["SEXO"].replace({
+                "0": np.nan,
+                "9": np.nan,
+                "1": "Masculino",
+                "2": "Feminino"
+            },
+            inplace=True
+        )
+        df["SEXO"] = df["SEXO"].astype('category')
+        df["SEXO"] = df["SEXO"].cat.add_categories(['nan'])
+        df["SEXO"] = df["SEXO"].fillna('nan')
+
+    #MUNRES
+    if("MUNIRES" in variables_names):
+        df = df.rename(columns={'MUNIRES': 'CODMUNRES'})
+        variables_names.append('CODMUNRES')
+
+    # CODMUNRES
+    if("CODMUNRES" in variables_names):
+        df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
+        df["CODMUNRES"] = add_dv(df["CODMUNRES"])
+        df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
+        df["CODMUNRES"] = df["CODMUNRES"].astype('category')
+        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
+        df["CODMUNRES"] = df["CODMUNRES"].fillna('nan')
+
+    #RACACOR
+    if("RACACOR" in variables_names):
+        df["RACACOR"].replace({
+                "0": np.nan,
+                "1": "Branca",
+                "2": "Preta",
+                "3": "Amarela",
+                "4": "Parda",
+                "5": "Indígena",
+                "6": np.nan,
+                "7": np.nan,
+                "8": np.nan,
+                "9": np.nan,
+                "": np.nan
+            },
+            inplace=True
+        )
+        df["RACACOR"] = df["RACACOR"].astype('category')
+        df["RACACOR"] = df["RACACOR"].cat.add_categories(['nan'])
+        df["RACACOR"] = df["RACACOR"].fillna('nan')
+
+    return df
+
+
+def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',interval=None):
+    """
+    Classifica idade segundo parâmetros ou IntervalIndex
+    :param serie: Serie pandas contendo idades
+    :param start: início do primeiro grupo
+    :param end: fim do último grupo
+    :param freq: tamanho dos grupos. Por padrão considera cada valor um grupo.
+    :param open_end: cria uma classe no final da lista de intervalos que contém todos acima daquele último valor. Default True
+    :param closed: onde os intervalos devem ser fechados. Possíveis valores: {'left', 'right', 'both', 'neither'}. Default 'left'
+    :param interval: IntervalIndex do pandas. Caso seja passado todos os outros parâmetros de intervalo são desconsiderados. Defaul None
+    :return:
+    """
+    if(interval):
+        iv = interval
+    else:
+        iv = pd.interval_range(start=start,end=end,freq=freq,closed=closed)
+    iv_array = iv.to_tuples().tolist()
+
+    # Adiciona classe aberta no final da lista de intervalos. 
+    # Útil para criar agrupamentos como 0,1,2,...,89,90+
+    if(open_end):
+        iv_array.append((iv_array[-1][1],+np.inf))
+    intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
+    return pd.cut(serie,intervals)
