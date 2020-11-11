@@ -8,3 +8,4 @@ nbsphinx
 nose
 fastparquet
 facets-overview
+geobr
