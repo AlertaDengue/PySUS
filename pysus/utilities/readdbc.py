@@ -15,19 +15,20 @@ except (ImportError, ModuleNotFoundError):
     from _readdbc import ffi, lib
 
 
-def read_dbc(filename, encoding='utf-8'):
+def read_dbc(filename, encoding='utf-8', raw=False):
     """
     Opens a DATASUS .dbc file and return its contents as a pandas
     Dataframe.
     :param filename: .dbc filename
     :param encoding: encoding of the data
+    :param raw: Skip type conversion. Set it to True to avoid type conversion errors
     :return: Pandas Dataframe.
     """
     if isinstance(filename, str):
         filename = filename.encode()
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
-        dbf = DBF(tf.name, encoding=encoding)
+        dbf = DBF(tf.name, encoding=encoding, raw=raw)
         df = pd.DataFrame(list(dbf))
     os.unlink(tf.name)
 

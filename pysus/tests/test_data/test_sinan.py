@@ -1,5 +1,6 @@
 import unittest
 from pysus.online_data.SINAN import download, list_diseases, get_available_years
+import pandas as pd
 
 
 class TestDownload(unittest.TestCase):
@@ -9,9 +10,13 @@ class TestDownload(unittest.TestCase):
         self.assertIn('Tuberculose', dis)
 
     def test_get_available_years(self):
-        res = get_available_years('RJ', 'Dengue')
+        res = get_available_years('RJ', 'dengue')
         self.assertIsInstance(res, list)
         assert res[0].startswith('DENG')
+
+    def test_download(self):
+        df = download('MG', 2018, 'Chagas')
+        self.assertIsInstance(df, pd.DataFrame)
 
 
 
