@@ -15,7 +15,7 @@ class TestDownload(unittest.TestCase):
         assert res[0].startswith('DENG')
 
     def test_download(self):
-        df = download('MG', 2018, 'Chagas')
+        df = download('SP', 2018, 'Chagas')
         self.assertIsInstance(df, pd.DataFrame)
 
 
