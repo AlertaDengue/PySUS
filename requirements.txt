@@ -9,3 +9,6 @@ nose
 fastparquet
 facets-overview
 geobr
+geopandas
+shapely
+dask
