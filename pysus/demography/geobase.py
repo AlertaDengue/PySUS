@@ -36,15 +36,26 @@ class GeoBase:
     """
     Parameterized geographical base
     """
-
     def __init__(self, level='Country'):
         try:
             assert level in LEVELS
         except AssertionError:
             print(f"Please select one of these levels: {', '.join(LEVELS.keys())}")
         self.level = level
+        self.mapdf = None
 
-    def get_map(self, *args):
-        gdf = LEVELS[self.level](*args)
-        return gdf
+    def map(self, *args, **kwargs):
+        """
+        Fetches map of `self.level` given parameters
+        :param args: positional parameters for geobr map reading function
+        :param kwargs: keyword parameters for geobr map reading function
+        :return:
+        """
+        if self.mapdf is None:
+            self.mapdf = LEVELS[self.level](*args, **kwargs)
+        return self.mapdf
+
+    def _demographics(self):
+        pass
+
 
