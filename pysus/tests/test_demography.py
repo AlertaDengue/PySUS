@@ -14,8 +14,15 @@ class Geobase(unittest.TestCase):
         t0 = time()
         gdf = GB.map() # from second time it should skip download
         tf = time()
-        self.assertLess(t0-tf, 1)
+        self.assertLess(tf-t0, 1)
         self.assertEqual(len(gdf), 1)
+
+    def test_demographics(self):
+        GB = geobase.GeoBase(level='State')
+        gdf = GB.map('all')
+        self.assertEqual(len(gdf), 27)
+        GB.demographics()
+        self.assertIn('population', GB.mapdf)
 
 
 

@@ -12,3 +12,5 @@ geobr
 geopandas
 shapely
 dask
+georasters
+owslib
