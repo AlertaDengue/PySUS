@@ -14,3 +14,6 @@ shapely
 dask
 georasters
 owslib
+wget
+colorcet
+datashader
