@@ -107,7 +107,7 @@ class GeoBase:
 row.geometry)
             sex = np.random.randint(0, 2, size=len(people))
             age = np.random.randint(0, 100, size=len(people))
-        print(people.shape, people[0])
+        print(len(people), people[0])
         self.pop = gpd.GeoDataFrame({'sex': sex, 'age': age, 'geometry': 
 people})
         self.pop['longitude'] = [pt.x for pt in self.pop.geometry]
@@ -116,13 +116,14 @@ people})
 
     def plot_synthetic_pop(self):
         canvas = ds.Canvas(plot_width=800, plot_height=600)
-        agg = ds.points(self.pop, x_range='longitude', y_range='latitude')
-        ds.tf.shade(agg, cmap=colorcet.fire, how='log')
+        agg = canvas.points(self.pop, x='longitude', y='latitude')
+        return ds.tf.shade(agg, cmap=colorcet.fire, how='log')
 
 
 def contains(args):
     polygon, point = args
-    return polygon.contains(geometry.Point(point))
+    pt = geometry.Point(point)
+    return pt, polygon.contains(pt)
 
 def sample_random_people(n, polygon, overestimate=1.5):
     print(f"Synthetizing {n} individuals")
@@ -134,11 +135,11 @@ ratio) * overestimate), 2))[:n,:]
     #multipoint = multipoint.intersection(polygon)
     po = Pool()
     res = po.map(contains, ((polygon, p) for p in samples))
-    res[:10]
+    pts = [p for p,c in res if c]  # List of inscribed points
     po.terminate()
     po.join()
    
-    return samples[res]
+    return pts
 
 
 def get_population(geometry, raster):
