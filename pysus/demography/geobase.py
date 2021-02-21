@@ -107,7 +107,7 @@ class GeoBase:
 row.geometry)
             sex = np.random.randint(0, 2, size=len(people))
             age = np.random.randint(0, 100, size=len(people))
-
+        print(people.shape, people[0])
         self.pop = gpd.GeoDataFrame({'sex': sex, 'age': age, 'geometry': 
 people})
         self.pop['longitude'] = [pt.x for pt in self.pop.geometry]
