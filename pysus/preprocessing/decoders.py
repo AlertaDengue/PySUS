@@ -10,6 +10,8 @@ license: GPL V3 or Later
 __docformat__ = 'restructuredtext en'
 import numpy as np
 import pandas as pd
+import re
+from string import ascii_uppercase
 from datetime import timedelta, datetime
 from pysus.online_data.SIM import get_municipios, get_CID10_table, get_CID10_chapters_table
 
@@ -131,7 +133,13 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_args={},municipality_data = True):
+def translate_variables_SIM(
+    dataframe,
+    age_unity='Y',
+    age_classes=None,
+    classify_args={},
+    classify_cid10_chapters = False
+    ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
     
@@ -196,6 +204,12 @@ def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_ar
         df["RACACOR"] = df["RACACOR"].cat.add_categories(['nan'])
         df["RACACOR"] = df["RACACOR"].fillna('nan')
 
+    # CAUSABAS IN CID10 CHAPTER
+    if(classify_cid10_chapters):
+        code_index = get_CID10_code_index(get_CID10_chapters_table())
+        df['CID10_CHAPTER'] = df['CAUSABAS'].str.slice(0,3).map(code_index)
+        df['CID10_CHAPTER'] = df['CID10_CHAPTER'].astype('category')
+
     return df
 
 
@@ -224,52 +238,36 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
 
-def char_range(c1, c2):
-    """Generates the characters from `c1` to `c2`, inclusive."""
-    for c in range(ord(c1), ord(c2)+1):
-        yield chr(c)
+def get_CID10_code_index(datasus_chapters):
+    code_index = {}
+    for ch_array_index, chapter in datasus_chapters.iterrows():
+        # Ex.: ['A00','B99']
+        chapter_range = chapter['CAUSAS'].split('-')
+        start_letter = chapter_range[0][0]
+        end_letter = chapter_range[1][0]
 
-def get_cause_chapter(causa,chapters):
-    causa = causa[0:3]
-    letter = causa[:1]
-    number = int(causa[1:3])
-    results = chapters[(chapters['FIRST_LETTER'] <= letter) & (chapters['LAST_LETTER'] >= letter)]
-    if(len(results) == 1):
-        row = results.iloc[0]
-        if(row['FIRST_LETTER'] < letter and row['LAST_LETTER'] > letter):
-            return row['CHAPTER']
-        elif((row['FIRST_LETTER'] == row['LAST_LETTER']) or \
-            (row['FIRST_LETTER'] <= letter and row['LAST_LETTER'] >= letter)):
-            if(row['FIRST_NUMBER'] <= number and row['LAST_NUMBER'] >= number):
-                return row['CHAPTER']
-            else:
-                return -1
+        if(start_letter == end_letter):
+            number_range_start = int(chapter_range[0][1:3])
+            number_range_finish = int(chapter_range[1][1:3])
+            for code in range(number_range_start,number_range_finish+1):
+                code_index[f"{start_letter}{str(code).zfill(2)}"] = ch_array_index + 1
         else:
-            return -1
-    
-    for i, row in results.iterrows():
-        if(letter == row['FIRST_LETTER'] and row['FIRST_LETTER'] == row['LAST_LETTER']):
-            if(row['FIRST_NUMBER'] <= number and number <= row['LAST_NUMBER']):
-                return row['CHAPTER']
-        elif(letter == row['LAST_LETTER'] and number <= row['LAST_NUMBER']):
-                return row['CHAPTER']
-    
-    return -1
-        
-get_chapters = np.vectorize(get_cause_chapter, excluded=[1])        
+            string_range_start = chapter_range[0][0]
+            string_range_end = chapter_range[1][0]
+            full_string_range = re.compile(f"{string_range_start}.*{string_range_end}").search(ascii_uppercase)[0]
 
-def get_normalized_chapters(chapters):
-    chapters['CHAPTER'] = [i + 1 for i in range(0,len(chapters))]
-    chapters['FIRST_LETTER'] = chapters['CAUSAS'].str[0]
-    chapters['LAST_LETTER'] = chapters['CAUSAS'].str[-3]
-    chapters['FIRST_NUMBER'] = chapters['CAUSAS'].str[1:3].apply(int)
-    chapters['LAST_NUMBER'] = chapters['CAUSAS'].str[5:7].apply(int)
-    return chapters
+            for let_array_index, letter in enumerate(full_string_range):
+                # First array letter
+                if let_array_index == 0:
+                    number_range_start = int(chapter_range[0][1:3])
+                    number_range_end = 99
+                elif let_array_index == len(full_string_range) - 1: # Last array letter
+                    number_range_start = 0
+                    number_range_end = int(chapter_range[1][1:3])
+                else: # Middle letters
+                    number_range_start = 0
+                    number_range_end = 99
+                for code_number in range(number_range_start,number_range_end + 1):
+                    code_index[f"{letter}{str(code_number).zfill(2)}"] = ch_array_index + 1
 
-def classifica_CID10(col_name='CHAPTER'):
-    chapters = get_CID10_chapters_table()
-    chapters = get_normalized_chapters(chapters)
-    codes = get_CID10_table()
-    codes['CID10_NORM'] = codes['CID10'].str[:3]
-    codes[col_name] = get_chapters(codes['CID10_NORM'], chapters)
-    return True
+    return code_index
