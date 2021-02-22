@@ -47,6 +47,9 @@ def redistribute(counts,variables):
     :param variables: variáveis a serem consideradas para filtro de redistribuição pro rata
     :return:
     """
+    # Adiciona array de trues para as colunas faltantes nas variáveis
+    missing_columns_count = len(counts.columns) - len(variables) - 1
+
     # Removendo categorias faltantes vazias
     for var in variables:
         condition_dict = {
@@ -58,7 +61,14 @@ def redistribute(counts,variables):
     ### Dataframes de dados faltantes
 
     variables_dict = [{x: 'nan'} for x in variables]
+    
+    # if(missing_columns_count > 0):
+        # variables_dict.extend([{} for x in range(missing_columns_count)])
+
     variables_condition = [logical_and_from_dict(counts,x) for x in variables_dict]
+    # variables_condition.extend([np.array([True] * len(counts), dtype=bool) for x in range(missing_columns_count)])
+
+
     # Primeiro item da tupla é != nan, segundo é o == nan
     variables_tuples = [(np.logical_not(x),x) for x in variables_condition]
     variables_product = list(product(*variables_tuples))
@@ -70,7 +80,7 @@ def redistribute(counts,variables):
     # Remove colunas com nan, no pandas 1.1.0 será possível deixar esses valores como NaN de verdade
     missing_counts = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_counts]
 
-    # # Remove dados faltantes
+    # Remove dados faltantes
     counts = counts[~np.logical_or.reduce(variables_product[-1])]
 
 

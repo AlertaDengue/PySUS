@@ -108,7 +108,7 @@ def is_valid_geocode(geocodigo):
 def get_valid_geocodes():
     tab_mun = get_municipios()
     df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
-    return df["MUNCODDV"].append(df["MUNCOD"]).values
+    return df["MUNCODDV"].append(df["MUNCOD"]).astype('int64').values
 
 def calculate_digit(geocode):
     """
@@ -177,7 +177,6 @@ def translate_variables_SIM(
     # CODMUNRES
     if("CODMUNRES" in variables_names):
         df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
-        df["CODMUNRES"] = add_dv(df["CODMUNRES"])
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
         df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
