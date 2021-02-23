@@ -76,24 +76,29 @@ def redistribute(counts,variables):
     # Remove regra de todos != nan
     del variables_product[0]
 
-    missing_counts = [counts[np.logical_and.reduce(x)] for x in variables_product]
-    # Remove colunas com nan, no pandas 1.1.0 será possível deixar esses valores como NaN de verdade
-    missing_counts = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in missing_counts]
+    # Lista todos os dados faltantes por grupos de colunas faltantes
+    list_missing_data = [counts[np.logical_and.reduce(x)] for x in variables_product]
+    # Remove as colunas de dado faltante dos dataframes
+    list_missing_data = [x.drop(columns=x.columns[x.isin(['nan']).any()].tolist()) for x in list_missing_data]
+
+    # Lista colunas que não são filtros
+    not_filter_columns = list(set(counts.columns.to_list()) - set(variables))
 
     # Remove dados faltantes
     counts = counts[~np.logical_or.reduce(variables_product[-1])]
 
 
     # Executa para cada conjunto de dados faltantes
-    for missing_rate in missing_counts:
+    for missing_count in list_missing_data:
         # Executa para cada linha de dados faltantes
-        for row in missing_rate.itertuples(index=False):
+        for row in missing_count.itertuples(index=False):
             row_dict = dict(row._asdict())
-            del row_dict["CONTAGEM"]
+            for key in not_filter_columns:
+                row_dict.pop(key)
             condition = logical_and_from_dict(counts,row_dict)
             sum_data = counts[condition]["CONTAGEM"].sum()
             # Caso não haja proporção conhecida relaxa o filtro
-            while sum_data == 0.0:
+            while sum_data == 0.0 and len(row_dict) > 0:
                 row_dict = relax_filter(row_dict,variables)
                 condition = logical_and_from_dict(counts,row_dict)
                 sum_data = counts[condition]["CONTAGEM"].sum()
