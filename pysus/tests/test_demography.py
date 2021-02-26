@@ -1,6 +1,7 @@
 import unittest
 from pysus.demography import geobase
 import geopandas as gpd
+
 from time import time
 
 class Geobase(unittest.TestCase):
