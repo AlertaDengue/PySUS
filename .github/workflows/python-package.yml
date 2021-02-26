@@ -40,6 +40,7 @@ jobs:
         python setup.py build
         cd pysus/utilities
         python _build_readdbc.py
+        cd ../../
         python setup.py install
     - name: Lint with flake8
       run: |
