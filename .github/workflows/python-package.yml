@@ -26,9 +26,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt install build-essential
-        sudo apt install g++ gcc gfortran libffi-dev
+        sudo apt install g++ gcc gfortran libffi-dev libgdal-dev
         python -m pip install --upgrade pip
         python -m pip install flake8 nose
+        python -m pip install --no-install GDAL
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: build extension
       run: |
