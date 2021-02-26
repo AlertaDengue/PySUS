@@ -26,6 +26,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
+      continue-on-error: true
       run: |
         sudo apt install build-essential
         sudo apt install g++ gcc gfortran libffi-dev libgdal-dev gdal-bin
