@@ -25,9 +25,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        apt install build-essential
+        apt install g++ gcc gfortran libffi-dev
         python -m pip install --upgrade pip
         python -m pip install flake8 nose
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: build extension
+      run: |
+        python setup.py build
+        cd pysus/utilities
+        python _build_readdbc.py
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
