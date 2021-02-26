@@ -25,8 +25,8 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        apt install build-essential
-        apt install g++ gcc gfortran libffi-dev
+        sudo apt install build-essential
+        sudo apt install g++ gcc gfortran libffi-dev
         python -m pip install --upgrade pip
         python -m pip install flake8 nose
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
