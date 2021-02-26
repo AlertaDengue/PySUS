@@ -38,7 +38,7 @@ def group_and_count(dataframe,variables):
 
     return counts
 
-def redistribute(counts,variables):
+def redistribute_missing(counts,variables):
     """
     Realiza redistribuição pro rata das contagens com algum dado faltante.
     O dataframe deve conter uma coluna float64 chamada CONTAGEM e as demais colunas devem ser
@@ -61,13 +61,8 @@ def redistribute(counts,variables):
     ### Dataframes de dados faltantes
 
     variables_dict = [{x: 'nan'} for x in variables]
-    
-    # if(missing_columns_count > 0):
-        # variables_dict.extend([{} for x in range(missing_columns_count)])
 
     variables_condition = [logical_and_from_dict(counts,x) for x in variables_dict]
-    # variables_condition.extend([np.array([True] * len(counts), dtype=bool) for x in range(missing_columns_count)])
-
 
     # Primeiro item da tupla é != nan, segundo é o == nan
     variables_tuples = [(np.logical_not(x),x) for x in variables_condition]
@@ -87,7 +82,6 @@ def redistribute(counts,variables):
     # Remove dados faltantes
     counts = counts[~np.logical_or.reduce(variables_product[-1])]
 
-
     # Executa para cada conjunto de dados faltantes
     for missing_count in list_missing_data:
         # Executa para cada linha de dados faltantes
@@ -103,5 +97,25 @@ def redistribute(counts,variables):
                 condition = logical_and_from_dict(counts,row_dict)
                 sum_data = counts[condition]["CONTAGEM"].sum()
             counts.loc[condition,"CONTAGEM"] = counts[condition]["CONTAGEM"].apply(lambda x: row.CONTAGEM*x/sum_data + x)
+
+    return counts
+
+def redistribute_cid_chapter(counts,chapter,filter_columns,chapter_column="CID10_CHAPTER"):
+    df_chapter = counts[(counts[chapter_column] == chapter) & (counts['CONTAGEM'] > 0)]
+    counts = counts[counts[chapter_column] != chapter]
+    not_filter_columns = list(set(counts.columns.to_list()) - set(filter_columns))
+
+    for row in df_chapter.itertuples(index=False):
+        row_dict = dict(row._asdict())
+        for key in not_filter_columns:
+            row_dict.pop(key)
+        condition = logical_and_from_dict(counts,row_dict)
+        sum_data = counts[condition]['CONTAGEM'].sum()
+        while sum_data == 0.0 and len(row_dict) > 0:
+            row_dict = relax_filter(row_dict,filter_columns)
+            condition = logical_and_from_dict(counts,row_dict)
+            sum_data = counts[condition]["CONTAGEM"].sum()
+        redistributed_values = counts[condition]['CONTAGEM'].apply(lambda x: row.CONTAGEM*x/sum_data + x).copy()
+        counts.loc[condition,'CONTAGEM'] = redistributed_values
 
     return counts

@@ -10,7 +10,7 @@ license: GPL V3 or Later
 __docformat__ = 'restructuredtext en'
 from pysus.online_data.SIM import download
 from pysus.preprocessing.decoders import translate_variables_SIM
-from pysus.preprocessing.SIM import group_and_count, redistribute
+from pysus.preprocessing.SIM import group_and_count, redistribute_missing
 from geobr import read_municipality
 import pandas as pd
 
