@@ -7,6 +7,7 @@ import os
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 import pandas as pd
+import geopandas as gpd
 from dbfread import DBF
 
 try:
@@ -29,7 +30,7 @@ def read_dbc(filename, encoding='utf-8', raw=False):
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
         dbf = DBF(tf.name, encoding=encoding, raw=raw)
-        df = pd.DataFrame(list(dbf))
+        df = gpd.DataFrame(list(dbf))
     os.unlink(tf.name)
 
     return df
