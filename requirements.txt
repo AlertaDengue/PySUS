@@ -18,3 +18,4 @@ wget
 colorcet
 datashader
 xarray
+geobr
