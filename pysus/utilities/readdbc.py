@@ -30,7 +30,7 @@ def read_dbc(filename, encoding='utf-8', raw=False):
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
         dbf = DBF(tf.name, encoding=encoding, raw=raw)
-        df = gpd.DataFrame(list(dbf))
+        df = gpd.GeoDataFrame(list(dbf))
     os.unlink(tf.name)
 
     return df
