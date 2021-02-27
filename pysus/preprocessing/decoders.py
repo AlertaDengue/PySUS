@@ -138,7 +138,8 @@ def translate_variables_SIM(
     age_unity='Y',
     age_classes=None,
     classify_args={},
-    classify_cid10_chapters = False
+    classify_cid10_chapters = False,
+    geocode_dv=True
     ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
@@ -176,6 +177,8 @@ def translate_variables_SIM(
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
+        if(geocode_dv):
+            df["CODMUNRES"] = df["CODMUNRES"].apply(add_dv)
         df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')

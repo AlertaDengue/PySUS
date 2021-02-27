@@ -10,7 +10,7 @@ __docformat__ = 'restructuredtext en'
 import numpy as np
 from itertools import product
 from decimal import Decimal
-
+import pandas as pd
 
 def logical_and_from_dict(dataframe, dictionary):
     if dictionary == {}:
@@ -116,12 +116,14 @@ def redistribute_rows_pro_rata(counts,filter_columns,redistribute_list,count_col
     :param count_columns: nome da coluna de counts
     :return:
     """
+    # Evita alerta na atribuição de múltiplos itens com máscara (.loc)
+    pd.set_option('mode.chained_assignment',None)
+
     not_filter_columns = list(set(counts.columns.to_list()) - set(filter_columns))
 
     for row in redistribute_list.itertuples(index=False):
         row_dict = dict(row._asdict())
-        for key in not_filter_columns:
-            row_dict.pop(key)
+        [row_dict.pop(key) for key in not_filter_columns]
         condition = logical_and_from_dict(counts,row_dict)
         sum_data = counts[condition][count_columns].sum()
         # Caso não haja proporção conhecida relaxa o filtro
@@ -131,6 +133,8 @@ def redistribute_rows_pro_rata(counts,filter_columns,redistribute_list,count_col
             sum_data = counts[condition][count_columns].sum()
         counts.loc[condition,count_columns] = counts[condition][count_columns].apply(lambda x: pro_rata_model(x,getattr(row,count_columns),sum_data))
 
+    # Volta alerta para warning
+    pd.set_option('mode.chained_assignment','warn')
     return counts
 
 def pro_rata_model(current_value,redistribution_amount,group_sum):
