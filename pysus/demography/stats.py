@@ -68,7 +68,7 @@ def get_sidra_table(table_id, territorial_level, geocode='all',
     base_url = "https://apisidra.ibge.gov.br/values"
     query = f"/t/{table_id}/n{territorial_level}/{geocode}"
     if period is not None:
-        query += f"p/{period}"
+        query += f"/p/{period}"
     if variables is not None:
         query += f"/v/{variables}"
     if classification is not None:
