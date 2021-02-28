@@ -11,10 +11,8 @@ fastparquet
 facets-overview
 geobr
 geopandas
-shapely
 dask
 georasters
-owslib
 wget
 colorcet
 datashader

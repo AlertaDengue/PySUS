@@ -5,13 +5,10 @@ All data comes from IBGE
 
 import geobr
 import dask
-import xarray as xr
-import numba
 from multiprocessing import Pool
 import wget
 import geopandas as gpd
 import numpy as np
-from owslib.wms import WebMapService
 import georasters as gr
 import datashader as ds
 import colorcet
@@ -19,7 +16,7 @@ import tempfile
 import lzma, tarfile
 import os
 from shapely import geometry
-import matplotlib.path as mpltPath
+
 
 LEVELS = {"Country": geobr.read_country,
           "Region": geobr.read_region,
@@ -187,24 +184,4 @@ def get_full_pop_raster(path='.'):
     return raster
 
 
-def fetch_gpw4_raster(bbox):
-    """
-    Fetches raster population data from GPW4.
-    **DEPRECATED**: There are no guarantees about raster resolution here
-    :param bbox: bounds of the geometry
-    :return:
-    """
-    url = "https://sedac.ciesin.columbia.edu/geoserver/wms"
-    wms = WebMapService(url)
-    img = wms.getmap(
-        layers=['gpw-v4:gpw-v4-population-count_2020'],
-        srs='EPSG:4326',
-        bbox=bbox,
-        size=(1440, 720),
-        format='image/geotiff',
-        transparent=True
-    )
-    with tempfile.NamedTemporaryFile('w+b') as out:
-        out.write(img.read())
-        raster = gr.from_file(out.name)
-    return raster
+
