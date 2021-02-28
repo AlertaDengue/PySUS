@@ -5,15 +5,14 @@ geocoder
 requests
 geobr
 folium
-nbsphinx
 nose
 fastparquet
 facets-overview
 geobr
 geopandas
 dask
-georasters
 wget
 colorcet
 datashader
 xarray
+georasters
