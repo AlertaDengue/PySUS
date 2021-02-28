@@ -3,6 +3,7 @@ cffi
 dbfread
 geocoder
 requests
+geobr
 folium
 nbsphinx
 nose
@@ -18,4 +19,3 @@ wget
 colorcet
 datashader
 xarray
-geobr

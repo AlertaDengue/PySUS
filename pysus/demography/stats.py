@@ -119,7 +119,8 @@ def localidades_por_agregado(agregado: int, nivel: str):
     url = APIBASE + f"agregados/{agregado}/localidades/{nivel}"
     try:
         table = pd.read_json(url)
-    except:
+    except Exception as e:
+        print(f"Could not download from {url}\n{e}")
         return None
     return table
 
@@ -131,10 +132,12 @@ def metadados(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/metadados"
     try:
-        table = pd.read_json(url)
-    except:
+        res = requests.get(url)
+        data = res.json()
+    except Exception as e:
+        print(f"Could not download from {url}\n{e}")
         return None
-    return table
+    return data
 
 def lista_periodos(agregado: int):
     """
@@ -149,7 +152,7 @@ def lista_periodos(agregado: int):
         return None
     return table
 
-def variaveis_agregado(agregado: int, periodos: str, variavel: str, **kwargs):
+def variaveis_agregado(agregado: int, periodos: str, variavel: str='allxp', **kwargs):
     """
     Obtém o conjunto de variáveis a partir do identificador do agregado, períodos pesquisados e identificador das variáveis
     :param agregado: identifocador do agregados
