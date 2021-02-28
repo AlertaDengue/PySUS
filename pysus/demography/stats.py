@@ -8,89 +8,89 @@ import json
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
-# def get_sidra_table(table_id, territorial_level, geocode='all',
-#                     period=None, variables=None, classification=None, categories=None,
-#                     format=None, decimals=None, headers=None):
-#     """
-#     Wrapper for the SIDRA API. More information here: http://api.sidra.ibge.gov.br/home/ajuda
-#     :param table_id: código da tabela de onde se deseja extrair os dados. código pode ser obtido aqui: https://sidra.ibge.gov.br/acervo#/S/Q
-#     :param territorial_level: 1 – Brasil, 2 – Grande Região, 3 – Unidade da Federação, 6 – Município, etc
-#     :param geocode: geocódigo do IBGE: 3304557,3550308 – especifica os municípios do Rio de Janeiro e São Paulo.
-#     all – especifica todos os municípios. in n3 11,12 - especifica os municípios contidos nas Unidades da Federação Rondônia e Acre.
-#
-#     :param period:  Os períodos podem ser especificados de forma avulsa, separados por vírgula (,), em faixas, separados por traço (-), ou de ambas as formas
-#         Um período pode ter o formato AAAA, de 4 dígitos, que representa um ano, ou o formato AAAADD, de 6 dígitos, onde AAAA representa um ano e DD seu correspondente mês (01 a 12), trimestre (01 a 04), semestre (01 a 02), etc, de acordo com a periodicidade de divulgação dos dados da tabela.
-#
-#         Exemplo 1: /p/2008,2010-2012 – especifica os anos de 2008, e 2010 a 2012.
-#
-#         Exemplo 2: /p/201101-201112,201204,201208 – especifica os meses de janeiro a dezembro de 2012, abril de 2012 e agosto de 2012.
-#
-#         O parâmetro p pode ser seguido pela constante all para especificar todos os períodos disponíveis.
-#
-#         Exemplo 3: /p/all
-#
-#         O parâmetro p pode ser seguido pela constante first e um número de períodos, indicando os primeiros períodos da lista de períodos disponíveis (períodos mais antigos).
-#         O número de períodos pode ser omitido quando se tratar de apenas um aperíodo.
-#
-#         Exemplo 4: /p/first 12
-#
-#         Exemplo 5: /p/first
-#
-#         O parâmetro p pode ser seguido pela constante last e um número de períodos, indicando os últimos períodos da série (períodos mais recentes).
-#         O número de períodos pode ser omitido quando se tratar de apenas um período.
-#
-#         Exemplo 6: /p/last 12
-#
-#         Exemplo 7: /p/last (valor default, quando não especificado o parâmetro p)
-#     :param variables:As variáveis são especificadas através de seus códigos, separados por vírgula (,).
-#         A lista de variáveis pode incluir também as variáveis de percentual geradas automaticamente pelo Sidra (são variáveis cujos códigos são superiores a 1.000.000).
-#
-#         Exemplo 1: /v/63,69 – especifica o percentual no mês e o percentual acumulado no ano do IPCA.
-#
-#         O parâmetro v pode ser seguido pela constante all para especificar todas as variáveis da tabela, inclusive as variáveis de percentual geradas automaticamente pelo Sidra.
-#
-#         Exemplo 2: /v/all
-#
-#         O parâmetro v pode ser seguido pela constante allxp para especificar todas as variáveis da tabela, exceto as variáveis de percentual geradas automaticamente pelo Sidra.
-#
-#         Exemplo 3: /v/allxp (valor default, quando não especificado o parâmetro v)
-#     :param classification: informa o código de uma das classificações da tabela.
-#         Como exemplos, temos 1 – Situação do domicílio, 2 – Sexo, 81 – Produto da lavoura temporária, etc.
-#     :param categories:  As categorias são especificadas através de seus códigos, de forma individual ou para compor uma soma, separadas por vírgula (,).
-#         As categorias que compõem a soma devem ser separadas por espaço.
-#
-#         Exemplo 1: /c81/2692,2702,2694 2695 – especifica os produtos da lavoura temporária arroz, feijão e (batata doce + batata inglesa)
-#     :param format:
-#     :param decimals:
-#     :param headers: `y` para receber o header (valor default, caso o parâmetro h não seja especificado). `n` para não receber o header.
-#     :return:
-#     """
-#     base_url = "https://apisidra.ibge.gov.br/values"
-#     query = f"/t/{table_id}/n{territorial_level}/{geocode}"
-#     if period is not None:
-#         query += f"p/{period}"
-#     if variables is not None:
-#         query += f"/v/{variables}"
-#     if classification is not None:
-#         query += f"/c{classification}"
-#     if categories is not None:
-#         query += f"/{categories}"
-#     if format is not None:
-#         query += f"/f/{format}"
-#     if decimals is not None:
-#         query += f"/d/{decimals}"
-#     if headers is not None:
-#         query += f"/h/{headers}"
-#
-#     url = base_url + query
-#     print(f'Requesting data from {url}')
-#     try:
-#         df = pd.read_json(url)
-#     except HTTPError as exc:
-#         response =requests.get(url)
-#         print(f"Consulta falhou: {response.text}")
-#         return None
-#     return df
+def get_sidra_table(table_id, territorial_level, geocode='all',
+                    period=None, variables=None, classification=None, categories=None,
+                    format=None, decimals=None, headers=None):
+    """
+    Wrapper for the SIDRA API. More information here: http://api.sidra.ibge.gov.br/home/ajuda
+    :param table_id: código da tabela de onde se deseja extrair os dados. código pode ser obtido aqui: https://sidra.ibge.gov.br/acervo#/S/Q
+    :param territorial_level: 1 – Brasil, 2 – Grande Região, 3 – Unidade da Federação, 6 – Município, etc
+    :param geocode: geocódigo do IBGE: 3304557,3550308 – especifica os municípios do Rio de Janeiro e São Paulo.
+    all – especifica todos os municípios. in n3 11,12 - especifica os municípios contidos nas Unidades da Federação Rondônia e Acre.
+
+    :param period:  Os períodos podem ser especificados de forma avulsa, separados por vírgula (,), em faixas, separados por traço (-), ou de ambas as formas
+        Um período pode ter o formato AAAA, de 4 dígitos, que representa um ano, ou o formato AAAADD, de 6 dígitos, onde AAAA representa um ano e DD seu correspondente mês (01 a 12), trimestre (01 a 04), semestre (01 a 02), etc, de acordo com a periodicidade de divulgação dos dados da tabela.
+
+        Exemplo 1: /p/2008,2010-2012 – especifica os anos de 2008, e 2010 a 2012.
+
+        Exemplo 2: /p/201101-201112,201204,201208 – especifica os meses de janeiro a dezembro de 2012, abril de 2012 e agosto de 2012.
+
+        O parâmetro p pode ser seguido pela constante all para especificar todos os períodos disponíveis.
+
+        Exemplo 3: /p/all
+
+        O parâmetro p pode ser seguido pela constante first e um número de períodos, indicando os primeiros períodos da lista de períodos disponíveis (períodos mais antigos).
+        O número de períodos pode ser omitido quando se tratar de apenas um aperíodo.
+
+        Exemplo 4: /p/first 12
+
+        Exemplo 5: /p/first
+
+        O parâmetro p pode ser seguido pela constante last e um número de períodos, indicando os últimos períodos da série (períodos mais recentes).
+        O número de períodos pode ser omitido quando se tratar de apenas um período.
+
+        Exemplo 6: /p/last 12
+
+        Exemplo 7: /p/last (valor default, quando não especificado o parâmetro p)
+    :param variables:As variáveis são especificadas através de seus códigos, separados por vírgula (,).
+        A lista de variáveis pode incluir também as variáveis de percentual geradas automaticamente pelo Sidra (são variáveis cujos códigos são superiores a 1.000.000).
+
+        Exemplo 1: /v/63,69 – especifica o percentual no mês e o percentual acumulado no ano do IPCA.
+
+        O parâmetro v pode ser seguido pela constante all para especificar todas as variáveis da tabela, inclusive as variáveis de percentual geradas automaticamente pelo Sidra.
+
+        Exemplo 2: /v/all
+
+        O parâmetro v pode ser seguido pela constante allxp para especificar todas as variáveis da tabela, exceto as variáveis de percentual geradas automaticamente pelo Sidra.
+
+        Exemplo 3: /v/allxp (valor default, quando não especificado o parâmetro v)
+    :param classification: informa o código de uma das classificações da tabela.
+        Como exemplos, temos 1 – Situação do domicílio, 2 – Sexo, 81 – Produto da lavoura temporária, etc.
+    :param categories:  As categorias são especificadas através de seus códigos, de forma individual ou para compor uma soma, separadas por vírgula (,).
+        As categorias que compõem a soma devem ser separadas por espaço.
+
+        Exemplo 1: /c81/2692,2702,2694 2695 – especifica os produtos da lavoura temporária arroz, feijão e (batata doce + batata inglesa)
+    :param format:
+    :param decimals:
+    :param headers: `y` para receber o header (valor default, caso o parâmetro h não seja especificado). `n` para não receber o header.
+    :return:
+    """
+    base_url = "https://apisidra.ibge.gov.br/values"
+    query = f"/t/{table_id}/n{territorial_level}/{geocode}"
+    if period is not None:
+        query += f"p/{period}"
+    if variables is not None:
+        query += f"/v/{variables}"
+    if classification is not None:
+        query += f"/c{classification}"
+    if categories is not None:
+        query += f"/{categories}"
+    if format is not None:
+        query += f"/f/{format}"
+    if decimals is not None:
+        query += f"/d/{decimals}"
+    if headers is not None:
+        query += f"/h/{headers}"
+
+    url = base_url + query
+    print(f'Requesting data from {url}')
+    try:
+        df = pd.read_json(url)
+    except HTTPError as exc:
+        response =requests.get(url)
+        print(f"Consulta falhou: {response.text}")
+        return None
+    return df
 
 
 def list_agregados(**kwargs):
