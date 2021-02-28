@@ -36,7 +36,7 @@ jobs:
     - name: build extension
       run: |
         python -m pip install --upgrade cffi
-        python -m pip install --upgrade dbfread
+        python -m pip install --upgrade dbfread geobr
         python setup.py build
         cd pysus/utilities
         python _build_readdbc.py
