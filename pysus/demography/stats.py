@@ -4,6 +4,7 @@ Helper functions to download official statistics from IBGE SIDRA
 import pandas as pd
 from urllib.error import HTTPError
 import requests
+import json
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
@@ -152,61 +153,74 @@ def lista_periodos(agregado: int):
         return None
     return table
 
-def variaveis_agregado(agregado: int, periodos: str, variavel: str='allxp', **kwargs):
+
+class FetchData:
     """
-    Obtém o conjunto de variáveis a partir do identificador do agregado, períodos pesquisados e identificador das variáveis
-    :param agregado: identifocador do agregados
-    :param periodos: Período do qual se deseja obter os resultados. Consulte os identificadores dos períodos na Base de
-        identificadores. Informe valores negativos para obter os últimos resultados. Pode conter um ou mais períodos
-        delimitados pelo caracter | (pipe)
-    :param variavel: Um ou mais identificadores de variável separados pelo caracter | (pipe). Caso omitido, assume o
-        valor allxp, que retorna quaisquer variáveis relacionada ao agregado. Para saber mais sobre as variáveis de cada
-        agregado, acesse seus respectivos metadados
-    :kwargs: parametros adicionais:
-        - **localidades**: Uma ou mais localidades delimitadas pelo caracter | (pipe). No caso do Brasil, o identificador é
-            BR. Para qualquer outra localidade que NÃO seja Brasil, essa deve seguir o padrão N<NIVEL_GEOGRAFICO>[<LOCALIDADE>],
-            em que <LOCALIDADE> pode ser uma ou mais localidades separadas por vírgula. É possível ainda generalizar o
-            resultado, informando a classe da localidade, conforme os exemplos a seguir
+       Obtém o conjunto de variáveis a partir do identificador do agregado, períodos pesquisados e identificador das variáveis
+       :param agregado: identifocador do agregados
+       :param periodos: Período do qual se deseja obter os resultados. Consulte os identificadores dos períodos na Base de
+           identificadores. Informe valores negativos para obter os últimos resultados. Pode conter um ou mais períodos
+           delimitados pelo caracter | (pipe)
+       :param variavel: Um ou mais identificadores de variável separados pelo caracter | (pipe). Caso omitido, assume o
+           valor allxp, que retorna quaisquer variáveis relacionada ao agregado. Para saber mais sobre as variáveis de cada
+           agregado, acesse seus respectivos metadados
+       :kwargs: parametros adicionais:
+           - **localidades**: Uma ou mais localidades delimitadas pelo caracter | (pipe). No caso do Brasil, o identificador é
+               BR. Para qualquer outra localidade que NÃO seja Brasil, essa deve seguir o padrão N<NIVEL_GEOGRAFICO>[<LOCALIDADE>],
+               em que <LOCALIDADE> pode ser uma ou mais localidades separadas por vírgula. É possível ainda generalizar o
+               resultado, informando a classe da localidade, conforme os exemplos a seguir
 
-                https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?localidades=N7
+                   https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?localidades=N7
 
-            Obtém os resultados referentes às variáveis do agregado 1705 cujas localidades sejam regiões metropolitanas (N7)
+               Obtém os resultados referentes às variáveis do agregado 1705 cujas localidades sejam regiões metropolitanas (N7)
 
-                https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?localidades=N7[3501,3301]
+                   https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?localidades=N7[3501,3301]
 
-            Obtém os resultados referentes às variáveis do agregado 1705 cujas localidades sejam as regiões metropolitanas
-            (N7) de São Paulo e Rio de Janeiro (3501,3301). Observe que 3501 e 3301 são, respectivamente, os identificadores
-            das regiões metropolitanas de São Paulo e Rio de Janeiro. Não podem ser confundidos, portanto, com os
-            identificadores dos municípios de São Paulo/SP e Rio de Janeiro/RJ, que são 3550308 e 3304557, respectivamente
+               Obtém os resultados referentes às variáveis do agregado 1705 cujas localidades sejam as regiões metropolitanas
+               (N7) de São Paulo e Rio de Janeiro (3501,3301). Observe que 3501 e 3301 são, respectivamente, os identificadores
+               das regiões metropolitanas de São Paulo e Rio de Janeiro. Não podem ser confundidos, portanto, com os
+               identificadores dos municípios de São Paulo/SP e Rio de Janeiro/RJ, que são 3550308 e 3304557, respectivamente
 
-        - **classificacao**: Além de estar relacionado à uma dada localidade e um determinado período, os resultados das
-            variáveis podem estar relacionados à outros conjuntos de dados, que na nomenclatura do SIDRA recebe o nome de
-            classificação. Como exemplo, considere o agregado Produção, venda, valor da produção e área colhida da lavoura
-            temporária nos estabelecimentos agropecuários. Além da localidade e do período, os resultados produzidos por
-            esse agregado referem-se aos produtos produzidos, condição do produtor, grupos de atividades econômica, grupos
-            de área, grupos de área colhida e pronafiano, que são as classificações do agregado - Para conhecer as
-            classificações de cada agregado, acesse seus respectivos metadados. Aos componentes da classificação, dar-se o
-            nome de categoria. Na prática, você fará uso das classificações para restringir a consulta, conforme os exemplos a seguir
+           - **classificacao**: Além de estar relacionado à uma dada localidade e um determinado período, os resultados das
+               variáveis podem estar relacionados à outros conjuntos de dados, que na nomenclatura do SIDRA recebe o nome de
+               classificação. Como exemplo, considere o agregado Produção, venda, valor da produção e área colhida da lavoura
+               temporária nos estabelecimentos agropecuários. Além da localidade e do período, os resultados produzidos por
+               esse agregado referem-se aos produtos produzidos, condição do produtor, grupos de atividades econômica, grupos
+               de área, grupos de área colhida e pronafiano, que são as classificações do agregado - Para conhecer as
+               classificações de cada agregado, acesse seus respectivos metadados. Aos componentes da classificação, dar-se o
+               nome de categoria. Na prática, você fará uso das classificações para restringir a consulta, conforme os exemplos a seguir
 
-            https://servicodados.ibge.gov.br/api/v3/agregados/1712/variaveis?classificacao=226[4844]&localidades=BR
+               https://servicodados.ibge.gov.br/api/v3/agregados/1712/variaveis?classificacao=226[4844]&localidades=BR
 
-            Obtém os resultados referentes às variáveis do agregado 1712 cujo produto produzido (226) seja abacaxi (4844)
-            no Brasil (BR)
+               Obtém os resultados referentes às variáveis do agregado 1712 cujo produto produzido (226) seja abacaxi (4844)
+               no Brasil (BR)
 
-            https://servicodados.ibge.gov.br/api/v3/agregados/1712/variaveis?classificacao=226[4844]|218[4780]&localidades=BR
+               https://servicodados.ibge.gov.br/api/v3/agregados/1712/variaveis?classificacao=226[4844]|218[4780]&localidades=BR
 
-            Obtém os resultados referentes às variáveis do agregado 1712 cujo produto produzido (226) seja abacaxi (4844) e
-            cuja condição do produtor (218) seja proprietário (4780) no Brasil (BR)
-        - **view**: Modo de visualização. Caso deseje que a resposta seja renderizada usando notação OLAP, configure
-            esse parâmetro com o valor OLAP - https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?view=OLAP&localidades=BR.
-            A outra opção é configurar esse parâmetro com o valor flat. No modo flat, o primeiro elemento do Array são
-            metadados, de forma que os resultados vêm a partir do segundo elemento
-    """
-    url = APIBASE + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
-    url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
-    try:
-        table = pd.read_json(url)
-    except:
-        return None
-    return table
+               Obtém os resultados referentes às variáveis do agregado 1712 cujo produto produzido (226) seja abacaxi (4844) e
+               cuja condição do produtor (218) seja proprietário (4780) no Brasil (BR)
+           - **view**: Modo de visualização. Caso deseje que a resposta seja renderizada usando notação OLAP, configure
+               esse parâmetro com o valor OLAP - https://servicodados.ibge.gov.br/api/v3/agregados/1705/variaveis?view=OLAP&localidades=BR.
+               A outra opção é configurar esse parâmetro com o valor flat. No modo flat, o primeiro elemento do Array são
+               metadados, de forma que os resultados vêm a partir do segundo elemento
+       """
+    def __init__(self, agregado: int, periodos: str, variavel: str='allxp', **kwargs):
+        self.url = APIBASE + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
+        self.url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
+        self.JSON = None
+        self._fetch_JSON()
+
+    def _fetch_JSON(self):
+        try:
+            print(f"Fetching {self.url}" )
+            res = requests.get(self.url)
+            self.JSON = res.json()
+        except Exception as e:
+            print(f"Couldn't download data:\n{e}")
+
+    def to_dataframe(self):
+        return pd.DataFrame(self.JSON)
+
+
+
 
