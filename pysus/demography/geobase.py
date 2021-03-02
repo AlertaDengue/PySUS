@@ -47,7 +47,23 @@ class GeoBase:
     Parameterized geographical base
     """
 
-    def __init__(self, level):
+    def __init__(self, level, reset=False):
+        """
+        Initialize geographical base at the specified level
+        :param level: One of the valid levels specified in `pysus.demography.geobase.LEVELS`
+        :param reset: reset the local directory cache. Set to True if you you are changing the parameters of the map.
+        default: False
+        """
+        if reset:
+            if os.path.exists(f"{level}_map.parquet"):
+                os.remove(f"{level}_map.parquet")
+            if os.path.exists(f"{level}_pop.parquet"):
+                os.remove(f"{level}_pop.parquet")
+            if os.path.exists(f"{level}_raster.parquet"):
+                os.remove(f"{level}_raster.parquet")
+        else:
+            if os.path.exists(f"{level}_map.parquet"):
+                print("You have cached data for this level. Please set `reset=True` if you want to download fresh data")
         try:
             assert level in LEVELS
         except AssertionError:
@@ -67,8 +83,6 @@ class GeoBase:
             self.pop.to_parquet(f"{self.level}_pop.parquet")
         elif what == 'raster':
             self.raster.to_parquet(f"{self.level}_raster.parquet")
-
-
 
 
     def help_fetch_map(self):

@@ -16,6 +16,18 @@ class Geobase(unittest.TestCase):
         gdf = GB.map() # from second time it should skip download
         tf = time()
         self.assertLess(tf-t0, 1)
+        self.assertEqual(int(gdf['code_muni'].values[0]), 4108304)
+        self.assertEqual(len(gdf), 1)
+
+    def test_get_map_2019(self):
+        GB = geobase.GeoBase(level='Municipality', reset=True)
+        gdf = GB.map(4220000, year=2019)
+        self.assertIsInstance(gdf, gpd.GeoDataFrame)
+        t0 = time()
+        gdf = GB.map()  # from second time it should skip download
+        tf = time()
+        self.assertLess(tf - t0, 1)
+        self.assertEqual(int(gdf['code_muni'].values[0]), 4220000)
         self.assertEqual(len(gdf), 1)
 
     def test_demographics(self):
