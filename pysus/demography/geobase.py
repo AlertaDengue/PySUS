@@ -161,7 +161,7 @@ def contains(args):
     return pt, polygon.contains(pt)
 
 def sample_random_people(n, polygon, overestimate=1.5):
-    print(f"Synthetizing {n} individuals")
+    print(f"Synthesizing {n} individuals")
     min_x, min_y, max_x, max_y = polygon.bounds
     ratio = polygon.area / polygon.envelope.area
     samples = np.random.uniform((min_x, min_y), (max_x, max_y), (int((n / 

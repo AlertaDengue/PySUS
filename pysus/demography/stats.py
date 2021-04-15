@@ -12,7 +12,7 @@ def get_sidra_table(table_id, territorial_level, geocode='all',
                     period=None, variables=None, classification=None, categories=None,
                     format=None, decimals=None, headers=None):
     """
-    Wrapper for the SIDRA API. More information here: http://api.sidra.ibge.gov.br/home/ajuda
+    Wrapper for the SIDRA API. More information here: http://apisidra.ibge.gov.br/home/ajuda
     :param table_id: código da tabela de onde se deseja extrair os dados. código pode ser obtido aqui: https://sidra.ibge.gov.br/acervo#/S/Q
     :param territorial_level: 1 – Brasil, 2 – Grande Região, 3 – Unidade da Federação, 6 – Município, etc
     :param geocode: geocódigo do IBGE: 3304557,3550308 – especifica os municípios do Rio de Janeiro e São Paulo.
