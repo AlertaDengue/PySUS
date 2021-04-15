@@ -24,6 +24,7 @@ requirements:
     - pyarrow
     - python
     - requests
+    - georasters
   run:
     - cffi >=1.0.0
     - dbfread
@@ -33,6 +34,7 @@ requirements:
     - pyarrow
     - python
     - requests
+    - georasters
 
 test:
   imports:
