@@ -20,6 +20,8 @@ Contents:
    Analyzing Dengue data <Dengue.ipynb>
    Analyzing Chikungunya data <Chikungunya.ipynb>
    Analyzing Zika data <Zika.ipynb>
+   Manipulating Demographic Data <Demography.ipynb>
+   Getting Official Statistics <IBGE_data.ipynb>
 
 
 

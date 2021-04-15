@@ -3,9 +3,16 @@ cffi
 dbfread
 geocoder
 requests
+geobr
 folium
-nbsphinx
 nose
 fastparquet
 facets-overview
 geobr
+geopandas
+dask
+wget
+colorcet
+datashader
+xarray
+georasters

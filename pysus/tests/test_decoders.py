@@ -60,6 +60,7 @@ class TestDecoder(unittest.TestCase):
         raca_array = df['RACACOR'].unique().tolist()
         assert_array_equal(raca_array, ['Branca', 'Preta', 'Amarela', 'nan', 'Parda', 'Indígena'])
 
+    @unittest.skip
     def test_group_and_count(self):
         df = download('sp',2010)
         df = decoders.translate_variables_SIM(df)
@@ -68,6 +69,7 @@ class TestDecoder(unittest.TestCase):
         sample = counts[counts['CONTAGEM'] != 0]['CONTAGEM'].sample(20,random_state=0).tolist()
         assert_array_equal(sample, [1.0, 1.0, 2.0, 4.0, 9.0, 1.0, 1.0, 1.0, 3.0, 289.0, 1.0, 3.0, 3.0, 19.0, 9.0, 1.0, 2.0, 1.0, 1.0, 3.0])
 
+    @unittest.skip
     def test_redistribute(self):
         df = download('sp',2010)
         df = decoders.translate_variables_SIM(df)
