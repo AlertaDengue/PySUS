@@ -39,7 +39,7 @@ def download(
     month: int,
     cache: bool = True,
     group: Union[str, List[str]] = ['PA', 'BI'],
-) -> Tuple[Optional[pd.DataFrame], ...]:
+) -> Union[Optional[pd.DataFrame], Tuple[Optional[pd.DataFrame], ...]]:
     """
     Download SIH records for state year and month and returns dataframe
     :param month: 1 to 12
@@ -117,10 +117,13 @@ def download(
             except Exception as e:
                 df = None
                 print(e)
-        
+
         dfs.append(df)
 
-    return tuple(dfs)
+    if len(dfs) == 1:
+        return dfs[0]
+    else:
+        return tuple(dfs)
 
 
 def _fetch_file(fname, ftp, ftype):
