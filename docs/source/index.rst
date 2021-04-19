@@ -17,6 +17,7 @@ Contents:
    Data Sources <data-sources>
    Tutorials <tutorials>
    Loading SINAN data <SINAN.ipynb>
+   Loading SIM data <SIM.ipynb>
    Analyzing Dengue data <Dengue.ipynb>
    Analyzing Chikungunya data <Chikungunya.ipynb>
    Analyzing Zika data <Zika.ipynb>
