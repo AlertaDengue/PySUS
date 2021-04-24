@@ -41,13 +41,13 @@ def download(
     group: Union[str, List[str]] = ['PA', 'BI'],
 ) -> Union[Optional[pd.DataFrame], Tuple[Optional[pd.DataFrame], ...]]:
     """
-    Download SIH records for state year and month and returns dataframe
+    Download SIASUS records for state year and month and returns dataframe
     :param month: 1 to 12
     :param state: 2 letter state code
     :param year: 4 digit integer
     :param cache: whether to cache files locally. default is True
-    :param groups: 2 letter document code or a list of 2 letter codes, defaults
-        to ['PA', 'BI']. Codes should be one of the following:
+    :param groups: 2-3 letter document code or a list of 2-3 letter codes,
+        defaults to ['PA', 'BI']. Codes should be one of the following:
         PA - Produção Ambulatorial
         BI - Boletim de Produção Ambulatorial individualizado
         AD - APAC de Laudos Diversos
