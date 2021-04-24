@@ -84,7 +84,7 @@ def download(
         gname = gname.upper()
         if gname not in group_dict:
             raise ValueError(
-                'SIA does not contain files named {}'.format(gname)
+                f'SIA does not contain files named {gname}'
             )
 
         # Check available
@@ -96,12 +96,12 @@ def download(
             # backwards-compatibility with older behavior of returning
             # (PA, None) for calls after 1994 and before Jan, 2008
             raise Warning(
-                'SIA does not contain data for {} before {:%d/%m/%Y}'
-                .format(gname, available_date)
+                f'SIA does not contain data for {gname} '
+                f'before {available_date:%d/%m/%Y}'
             )
             continue
 
-        fname = '{}{}{}{}.dbc'.format(gname, state, year2.zfill(2), month)
+        fname = f'{gname}{state}{year2.zfill(2)}{month}.dbc'
 
         # Check in Cache
         cachefile = os.path.join(
@@ -134,14 +134,14 @@ def _fetch_file(fname, ftp, ftype):
     :param ftype: file type: DBF|DBC
     :return: pandas dataframe
     """
-    print("Downloading {}...".format(fname))
+    print(f'Downloading {fname}...')
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
+        ftp.retrbinary(f'RETR {fname}', open(fname, 'wb').write)
     except:
         try:
-            ftp.retrbinary('RETR {}'.format(fname.lower()), open(fname, 'wb').write)
+            ftp.retrbinary(f'RETR {fname.lower()}', open(fname, 'wb').write)
         except:
-            raise Exception("File {} not available".format(fname))
+            raise Exception(f'File {fname} not available')
     if ftype == 'DBC':
         df = read_dbc(fname, encoding='iso-8859-1')
     elif ftype == 'DBF':
