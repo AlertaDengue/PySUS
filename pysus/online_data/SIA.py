@@ -11,6 +11,8 @@ import os
 from datetime import date
 from ftplib import FTP
 from typing import Dict, List, Optional, Tuple, Union
+import warnings
+
 from pysus.utilities.readdbc import read_dbc
 from dbfread import DBF
 import pandas as pd
@@ -95,7 +97,7 @@ def download(
             # NOTE: raise Warning instead of ValueError for
             # backwards-compatibility with older behavior of returning
             # (PA, None) for calls after 1994 and before Jan, 2008
-            raise Warning(
+            warnings.warn(
                 f'SIA does not contain data for {gname} '
                 f'before {available_date:%d/%m/%Y}'
             )
