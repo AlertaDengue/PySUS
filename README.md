@@ -161,3 +161,28 @@ Out[3]:
 4     2009       07        16505851000126  ...                    2126796     1
 [5 rows x 27 columns]
 ```
+
+Dowloading and reading SIA data:
+
+```python
+In[1]: from pysus.online_data.SIA import download
+In[2]: bi, ps = download('AC', 2020, 3, group=["BI", "PS"])
+In[3]: bi.head()
+Out[3]: 
+    CODUNI  GESTAO CONDIC   UFMUN TPUPS  ... VL_APROV UFDIF MNDIF ETNIA NAT_JUR
+0  2000733  120000     EP  120040    07  ...     24.2     0     0          1023
+1  2001063  120000     EP  120040    36  ...      7.3     0     0          1023
+2  2001063  120000     EP  120040    36  ...      7.3     0     0          1023
+3  2001586  120000     EP  120040    05  ...     38.1     0     0          1147
+4  2000083  120000     EP  120033    05  ...     64.8     0     0          1023
+[5 rows x 36 columns]
+In[4]: ps.head()
+Out[4]:
+  CNES_EXEC  GESTAO CONDIC   UFMUN  ... PERMANEN QTDATE QTDPCN NAT_JUR
+0   2002094  120000     EP  120040  ...       30      1      1    1023
+1   2002094  120000     EP  120040  ...               0      0    1023
+2   2002094  120000     EP  120040  ...               0      0    1023
+3   2002094  120000     EP  120040  ...               0      0    1023
+4   2002094  120000     EP  120040  ...               0      0    1023
+[5 rows x 45 columns]
+```
