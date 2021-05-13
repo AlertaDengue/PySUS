@@ -16,3 +16,4 @@ colorcet
 datashader
 xarray
 georasters
+elasticsearch
