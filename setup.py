@@ -81,7 +81,7 @@ $ sudo pip install PySUS
 # atexit.register(_post_install)
 setup(
     name='PySUS',
-    version='0.5.6',
+    version='0.5.7',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']
