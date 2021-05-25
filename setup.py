@@ -10,7 +10,7 @@ PySUS
 =====
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
-The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
+The documentation of how to use PySUS can be found here: http://pysus.readthedocs.io/en/latest/
 
 Features
 --------
@@ -22,10 +22,10 @@ Features
 - Geocodes SINAN notified cases in batch. You can use your Google API KEY to avoid Google's free limits.
 
 Installation
------------
-Make sure your system has libffi-dev package installed,
+------------
+Make sure your system has libffi-dev package installed::
 
-`$ sudo pip install PySUS`
+$ sudo pip install PySUS
 
 """
 
