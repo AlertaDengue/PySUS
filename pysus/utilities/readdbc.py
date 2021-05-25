@@ -7,7 +7,6 @@ import os
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 import pandas as pd
-import geopandas as gpd
 from dbfread import DBF
 import geopandas as gpd
 
@@ -16,7 +15,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     from _readdbc import ffi, lib
 
-    
+
 def read_dbc(filename, encoding='utf-8', raw=False):
     """
     Opens a DATASUS .dbc file and return its contents as a pandas
@@ -55,7 +54,7 @@ def dbc2dbf(infile, outfile):
     # print(os.path.exists(outfile))
 
 
-def read_dbc_geopandas(filename,encoding='utf-8'):
+def read_dbc_geopandas(filename, encoding='utf-8'):
     """
     Opens a DATASUS .dbc file and return its contents as a pandas
     Dataframe, using geopandas
@@ -68,9 +67,8 @@ def read_dbc_geopandas(filename,encoding='utf-8'):
     with NamedTemporaryFile(delete=False) as tf:
         out = tf.name + '.dbf'
         dbc2dbf(filename, out)
-        dbf = gpd.read_file(out, encoding=encoding).drop("geometry",axis=1)
+        dbf = gpd.read_file(out, encoding=encoding).drop("geometry", axis=1)
         df = pd.DataFrame(dbf)
     os.unlink(tf.name)
 
-    return df 
-
+    return df

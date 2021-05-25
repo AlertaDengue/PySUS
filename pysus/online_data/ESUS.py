@@ -7,6 +7,7 @@ import os
 import time
 from datetime import date
 
+
 def download(uf, cache=True, checkmemory=True):
     """
     Download ESUS data by UF
@@ -19,7 +20,7 @@ def download(uf, cache=True, checkmemory=True):
     pwd = 'Za4qNXdyQNSa9YaA'
     today = date.today()
     dt = today.strftime("_%d_%m_%Y")
-    base = f'desc-notificacoes-esusve-{uf}'  #desc-notificacoes-esusve-
+    base = f'desc-notificacoes-esusve-{uf}'  # desc-notificacoes-esusve-
     url = f'https://{user}:{pwd}@elasticsearch-saps.saude.gov.br'
     out = f'ESUS_{uf}_{dt}.parquet'
 
@@ -33,7 +34,7 @@ def download(uf, cache=True, checkmemory=True):
         fname = fetch(base, uf, url)
         size = os.stat(fname).st_size
         if size > 50e6 and checkmemory:
-            print(f"Downloaded data is to large:{size/1e6} MB compressed.")
+            print(f"Downloaded data is to large:{size / 1e6} MB compressed.")
             print("Only loading the first 1000 rows. If your computer has enough memory, set 'checkmemory' to False")
             print(f"The full data is in {fname}")
             df = pd.read_csv(fname, chunksize=1000)
@@ -45,7 +46,6 @@ def download(uf, cache=True, checkmemory=True):
                 df.to_parquet(cachefile)
 
     return df
-
 
 
 def fetch(base, uf, url):
@@ -61,15 +61,13 @@ def fetch(base, uf, url):
     tempfile = os.path.join(CACHEPATH, f'ESUS_temp_{UF}.csv.gz')
     for ch in chunker:
         df = pd.DataFrame.from_dict(ch)
-        df.sintomas = df['sintomas'].str.replace(';', '',)  ## remove os  ;
+        df.sintomas = df['sintomas'].str.replace(';', '', )  ## remove os  ;
         if h:
             df.to_csv(tempfile)
             h = 0
         else:
             df.to_csv(tempfile, mode='a', header=False)
     # df = pd.read_csv('temp.csv.gz')
-
-
 
     return tempfile
 
