@@ -25,7 +25,7 @@ def download(uf, cache=True, checkmemory=True):
     out = f'ESUS_{uf}_{dt}.parquet'
 
     cachefile = os.path.join(CACHEPATH, out)
-    tempfile = os.path.join(CACHEPATH, f'ESUS_temp_{UF}.csv.gz')
+    tempfile = os.path.join(CACHEPATH, f'ESUS_temp_{uf.upper()}.csv.gz')
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
     elif os.path.exists(tempfile):
