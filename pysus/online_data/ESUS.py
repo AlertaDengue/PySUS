@@ -39,7 +39,7 @@ def download(uf, cache=True, checkmemory=True):
             print(f"The full data is in {fname}")
             df = pd.read_csv(fname, chunksize=1000)
         else:
-            df = pd.read_csv(fname)
+            df = pd.read_csv(fname, low_memory=False)
             print(f"{df.shape[0]} records downloaded.")
             os.unlink(fname)
             if cache:
