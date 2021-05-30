@@ -1,5 +1,5 @@
 {% set name = "PySUS" %}
-{% set version = "0.5.2" %}
+{% set version = "0.5.7" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 34dab521bdd8f680d8927fa355f261232d6c122901a2726f0412f472b831066b
+  sha256: b5db6b2d11bcb6d89de6f40698b7f12808b8013aa073f05a6ff4acb9125d6238
 
 build:
   number: 0
@@ -21,7 +21,6 @@ requirements:
     - geocoder
     - pandas
     - pip
-    - pyarrow
     - python
     - requests
     - georasters
@@ -35,6 +34,7 @@ requirements:
     - python
     - requests
     - georasters
+    - elasticsearch
 
 test:
   imports:
