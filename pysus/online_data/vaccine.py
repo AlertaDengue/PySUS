@@ -13,52 +13,82 @@ import requests
 from requests.auth import HTTPBasicAuth
 import os
 import time
+from json import JSONDecodeError
 import json
 from datetime import date
 
 
-
-def download_covid(uf):
-    UF = uf.upper()
+def download_covid(uf=None):
+    """
+    Download covid vaccination data for a give UF
+    :param uf: 'RJ' | 'SP', etc.
+    :return: JSON object
+    """
     user = 'imunizacao_public'
     pwd = 'qlto5t&7r_@+#Tlstigi'
     index = "desc-imunizacao"
-    url = f"https://imunizacao-es.saude.gov.br/_search"
-    query={"query": {"match_all": {"paciente_endereco_uf": UF}}}
+    url = f"https://imunizacao-es.saude.gov.br/_search?scroll=1m"
+    if uf is None:
+        query = {"query": {"match_all": {}},
+                 "size": 10000}
+    else:
+        UF = uf.upper()
+        query = {"query": {"match": {"paciente_endereco_uf": UF}},
+                 "size": 10000
+                 }
     # es = Elasticsearch([url], send_get_body_as='POST', headers=)
     auth = HTTPBasicAuth(user, pwd)
-    es = elasticsearch_fetch(url, auth)#, json.dumps(query))
-    return es
+    data_gen = elasticsearch_fetch(url, auth, query)
+    tempfile = os.path.join(CACHEPATH, f'Vaccine_temp_{UF}.csv.gz')
+    h = 1
+    for dt in data_gen:
+        df = pd.DataFrame(dt)
+        if h:
+            df.to_csv(tempfile)
+            h = 0
+        else:
+            df.to_csv(tempfile, mode='a', header=False)
+    return df
 
 
-def elasticsearch_fetch(uri, auth, json_body='', verb='post'):
+def elasticsearch_fetch(uri, auth, json_body={}):
     headers = {
         'Content-Type': 'application/json',
     }
 
-    try:
-        # make HTTP verb parameter case-insensitive by converting to lower()
-        if verb.lower() == "get":
-            resp = requests.get(uri, auth=auth, headers=headers, data=json_body)
-        elif verb.lower() == "post":
-            resp = requests.post(uri, auth=auth, headers=headers, data=json_body)
-        elif verb.lower() == "put":
-            resp = requests.put(uri, auth=auth, headers=headers, data=json_body)
-
-        # read the text object string
+    scroll_id = ''
+    total = 0
+    while True:
+        if scroll_id:
+            uri = "https://imunizacao-es.saude.gov.br/_search/scroll"
+            json_body['scroll_id'] = scroll_id
+            json_body['scroll'] = '1m'
+            if 'query' in json_body:
+                del json_body['query'] # for the continuation of the download, query parameter is not allowed
+                del json_body['size']
         try:
-            resp_text = json.loads(resp.text)
-        except:
-            resp_text = resp.text
+            response = requests.post(uri, auth=auth, headers=headers, json=json_body)
+            text = response.text
+            try:
+                resp = json.loads(text)
+            except JSONDecodeError:
+                resp = text
+        except Exception as error:
+            print('\nelasticsearch_fetch() error:', error)
+            raise error
+        try:
+            if resp['hits']['hits'] == []:
+                break
+        except KeyError:
+            print(resp)
+        total += len(resp['hits']['hits'])
+        print(f"Downloaded {total} records\r", end='')
+        # print(resp)
+        # print(uri)
+        yield [h['_source'] for h in resp['hits']['hits']]
+        if '_scroll_id' in resp:
+            scroll_id = resp['_scroll_id']
 
-        # catch exceptions and print errors to terminal
-    except Exception as error:
-        print ('\nelasticsearch_curl() error:', error)
-        resp_text = error
-
-    # return the Python dict of the request
-    print ("resp_text:", resp_text)
-    return resp_text
 
 if __name__ == "__main__":
-    print (download_covid('ba'))
+    print(download_covid('ba'))
