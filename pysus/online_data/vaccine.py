@@ -22,7 +22,7 @@ def download_covid(uf=None):
     """
     Download covid vaccination data for a give UF
     :param uf: 'RJ' | 'SP', etc.
-    :return: JSON object
+    :return: dataframe iterator as returned by pandas `read_csv('Vaccine_temp_<uf>.csv.gz', chunksize=5000)`
     """
     user = 'imunizacao_public'
     pwd = 'qlto5t&7r_@+#Tlstigi'
@@ -48,6 +48,7 @@ def download_covid(uf=None):
             h = 0
         else:
             df.to_csv(tempfile, mode='a', header=False)
+    df = pd.read_csv(tempfile, chunk_size=5000)
     return df
 
 
