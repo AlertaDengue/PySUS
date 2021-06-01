@@ -1,5 +1,5 @@
 pandas
-cffi
+cffi>=1.0.0
 dbfread
 geocoder
 requests

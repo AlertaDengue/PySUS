@@ -79,6 +79,9 @@ $ sudo pip install PySUS
 #     except:
 #         pass
 # atexit.register(_post_install)
+with open('requirements.txt') as f:
+    requirements = f.readlines()
+
 setup(
     name='PySUS',
     version='0.5.9',
@@ -96,7 +99,7 @@ setup(
     long_description=ld,
     setup_requires=['cffi>=1.0.0', 'setuptools>26.0.0'],
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
-    install_requires=['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'fastparquet'],
+    install_requires=requirements,#['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'fastparquet'],
     # cmdclass={'install': PostInstall},
 )
 

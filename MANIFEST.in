@@ -2,3 +2,4 @@ recursive-include pysus *.c *.h
 include pysus/utilities/*
 include pysus/utilities/c-src/*
 include pysus/demography/brazil_pop.tif.tar.xz
+include requirements.txt
