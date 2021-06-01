@@ -17,3 +17,4 @@ datashader
 xarray
 georasters
 elasticsearch
+pyarrow
