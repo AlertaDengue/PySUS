@@ -31,15 +31,19 @@ def download_covid(uf=None):
     if uf is None:
         query = {"query": {"match_all": {}},
                  "size": 10000}
+        UF='BR'
     else:
         UF = uf.upper()
         query = {"query": {"match": {"paciente_endereco_uf": UF}},
                  "size": 10000
                  }
-    # es = Elasticsearch([url], send_get_body_as='POST', headers=)
+    tempfile = os.path.join(CACHEPATH, f'Vaccine_temp_{UF}.csv.gz')
+    if os.path.exists(tempfile):
+        print("loading from cache. Returning an iterator of Dataframes in chunks of 5000.")
+        return pd.read_csv(tempfile, chunksize=5000)
     auth = HTTPBasicAuth(user, pwd)
     data_gen = elasticsearch_fetch(url, auth, query)
-    tempfile = os.path.join(CACHEPATH, f'Vaccine_temp_{UF}.csv.gz')
+
     h = 1
     for dt in data_gen:
         df = pd.DataFrame(dt)
@@ -48,7 +52,7 @@ def download_covid(uf=None):
             h = 0
         else:
             df.to_csv(tempfile, mode='a', header=False)
-    df = pd.read_csv(tempfile, chunk_size=5000)
+    df = pd.read_csv(tempfile, chunksize=5000)
     return df
 
 
