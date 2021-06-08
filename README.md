@@ -64,6 +64,30 @@ docker run -e NB_USER=fccoelho -e NB_UID=1000 -v /home/fccoelho/Downloads/pysus:
 
 For more options about interacting with your container check [jupyter-docker-stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html) documentation.
 
+## Changing cache directory
+
+You can change the default directory where PySUS stores files downloaded from DataSUS public repository by setting an environment variable called `PYSUS_CACHEPATH` with the desired location. If the folder does not exist, it will be created on the package's first invocation.
+
+In MacOS or an Unix-based system, run:
+
+```bash
+export PYSUS_CACHEPATH="/home/me/desired/path/.pysus"
+```
+
+You can also add this line at the end of your `~/.profile` or `~/.bashrc` files to make this setting persist.
+
+In Windows, you can set a new environment variable by running:
+
+```PowerShell
+setx PYSUS_CACHEPATH "C:\Users\Me\desired\path\.pysus"
+```
+
+In Docker, just add an extra parameter `-e PYSUS_CACHEPATH="/home/me/desired/path/.pysus"` when starting the container:
+
+```bash
+docker run -p 8888:8888 -e PYSUS_CACHEPATH="/home/me/desired/path/.pysus" pysus:latest 
+```
+
 ## Examples
 
 Reading SINAN files:
