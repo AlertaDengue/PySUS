@@ -1,8 +1,26 @@
 # PySUS
-![travis](https://travis-ci.org/AlertaDengue/PySUS.svg?branch=master)
+![zenodo](https://zenodo.org/badge/doi/10.5281/zenodo.4883502.svg)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
+
+If you use PySUS for a publication,  please use the bibtex below to cite it:
+```bibtex
+@software{flavio_codeco_coelho_2021_4883502,
+  author       = {Flávio Codeço Coelho and
+                  Bernardo Chrispim Baron and
+                  Gabriel Machado de Castro Fonseca and
+                  Pedro Reck and
+                  Daniela Palumbo},
+  title        = {AlertaDengue/PySUS: Vaccine},
+  month        = may,
+  year         = 2021,
+  publisher    = {Zenodo},
+  version      = {0.5.9},
+  doi          = {10.5281/zenodo.4883502},
+  url          = {https://doi.org/10.5281/zenodo.4883502}
+}
+```
 
 ## Features
 
