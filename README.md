@@ -1,5 +1,5 @@
 # PySUS
-![zenodo](https://zenodo.org/badge/doi/10.5281/zenodo.4883502.svg)
+[![DOI](https://zenodo.org/badge/63720586.svg)](https://zenodo.org/badge/latestdoi/63720586)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
