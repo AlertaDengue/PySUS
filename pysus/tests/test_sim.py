@@ -9,7 +9,7 @@ import unittest
 
 from numpy.testing import *
 
-from pysus.online_data.SIM import download, get_CID10_chapters_table
+from pysus.online_data.SIM import download
 from pysus.preprocessing import SIM, decoders
 
 class TestDecoder(unittest.TestCase):

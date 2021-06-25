@@ -14,6 +14,12 @@ from numpy.testing import *
 from pysus.online_data.SIM import download, get_CID10_chapters_table
 from pysus.preprocessing import decoders
 
+def get_CID10_code(index,code):
+    try:
+        code = index[code]
+    except:
+        code = -1
+    return code
 
 class TestDecoder(unittest.TestCase):
     def test_decodifica_idade_retorna_em_anos(self):
@@ -62,8 +68,7 @@ class TestDecoder(unittest.TestCase):
         assert_array_equal(raca_array, ['Branca', 'Preta', 'Amarela', 'nan', 'Parda', 'Indígena'])
 
     def test_get_cid_chapter(self):
-        chapters = decoders.get_CID10_chapters_table()
-        chapters = decoders.get_normalized_chapters(chapters)
+        code_index = decoders.get_CID10_code_index(get_CID10_chapters_table())
         test_causes = pd.DataFrame({'causas':['A00','B99','D48','D49','D50','H00','H59','H60','V00','W00','X00','U00','U04']})
-        results = decoders.get_chapters(test_causes['causas'],chapters)
+        results = test_causes['causas'].map(lambda x: get_CID10_code(code_index,x))
         assert_array_equal(results,[1,1,2,-1,3,7,7,8,-1,20,20,-1,22])

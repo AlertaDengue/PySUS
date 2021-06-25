@@ -132,6 +132,10 @@ def add_dv(geocodigo):
     else:
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
+def columns_as_category(series,nan_string=None):
+    series = series.astype('category')
+    series = series.cat.add_categories
+
 
 def translate_variables_SIM(
     dataframe,
@@ -139,7 +143,9 @@ def translate_variables_SIM(
     age_classes=None,
     classify_args={},
     classify_cid10_chapters = False,
-    geocode_dv=True
+    geocode_dv=True,
+    nan_string='nan',
+    category_columns=True
     ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
@@ -153,8 +159,8 @@ def translate_variables_SIM(
         if(age_classes):
             df[column_name] = classify_age(df[column_name],**classify_args)
             df[column_name] = df[column_name].astype('category')
-            df[column_name] = df[column_name].cat.add_categories(['nan'])
-            df[column_name] = df[column_name].fillna('nan')
+            df[column_name] = df[column_name].cat.add_categories([nan_string])
+            df[column_name] = df[column_name].fillna(nan_string)
 
     # SEXO
     if("SEXO" in variables_names):
@@ -167,8 +173,8 @@ def translate_variables_SIM(
             inplace=True
         )
         df["SEXO"] = df["SEXO"].astype('category')
-        df["SEXO"] = df["SEXO"].cat.add_categories(['nan'])
-        df["SEXO"] = df["SEXO"].fillna('nan')
+        df["SEXO"] = df["SEXO"].cat.add_categories([nan_string])
+        df["SEXO"] = df["SEXO"].fillna(nan_string)
 
     #MUNRES
     if("MUNIRES" in variables_names):
@@ -182,8 +188,8 @@ def translate_variables_SIM(
         df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
-        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
-        df["CODMUNRES"] = df["CODMUNRES"].fillna('nan')
+        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories([nan_string])
+        df["CODMUNRES"] = df["CODMUNRES"].fillna(nan_string)
 
     #RACACOR
     if("RACACOR" in variables_names):
@@ -203,8 +209,8 @@ def translate_variables_SIM(
             inplace=True
         )
         df["RACACOR"] = df["RACACOR"].astype('category')
-        df["RACACOR"] = df["RACACOR"].cat.add_categories(['nan'])
-        df["RACACOR"] = df["RACACOR"].fillna('nan')
+        df["RACACOR"] = df["RACACOR"].cat.add_categories([nan_string])
+        df["RACACOR"] = df["RACACOR"].fillna(nan_string)
 
     # CAUSABAS IN CID10 CHAPTER
     if(classify_cid10_chapters):

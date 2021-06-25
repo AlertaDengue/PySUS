@@ -16,7 +16,9 @@ def add_data_to_municipality(
                         map_year=2019,
                         codmun_col='CODMUNRES',
                         title_cols=['SEXO','IDADE_ANOS'],
-                        value_col='COUNTS'):
+                        value_col='COUNTS',
+                        nan_string='nan'
+                        ):
 
     """
     Adiciona dados de mortalidade aos seus respectivos municípios. Gera um GeoDataFrame do GeoPandas.
@@ -30,7 +32,7 @@ def add_data_to_municipality(
 
     # Extrai código do estado dos municípios.
     # 2 primeiros dígitos do código são o estado
-    states = counts[counts[codmun_col] != 'nan'][codmun_col].apply(lambda x: str(x)[:2]).unique()
+    states = counts[counts[codmun_col] != nan_string][codmun_col].apply(lambda x: str(x)[:2]).unique()
     geo_df = read_municipality(code_muni=states[0],year=map_year)
     
     all_fields = [codmun_col] + title_cols + [value_col]
