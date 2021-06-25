@@ -13,6 +13,7 @@ from numpy.testing import *
 
 from pysus.online_data.SIM import download, get_CID10_chapters_table
 from pysus.preprocessing import decoders
+from pysus.preprocessing.SIM import group_and_count, redistribute_missing, redistribute_cid_chapter
 
 def get_CID10_code(index,code):
     try:
@@ -77,20 +78,30 @@ class TestDecoder(unittest.TestCase):
         df = download('sp',2010)
         df = decoders.translate_variables_SIM(df)
         variables = ['CODMUNRES','SEXO','IDADE_ANOS']
-        counts = decoders.group_and_count(df,variables)
-        sample = counts[counts['CONTAGEM'] != 0]['CONTAGEM'].sample(20,random_state=0).tolist()
+        counts = group_and_count(df,variables)
+        sample = counts[counts['COUNTS'] != 0]['COUNTS'].sample(20,random_state=0).tolist()
         assert_array_equal(sample, [1.0, 1.0, 2.0, 4.0, 9.0, 1.0, 1.0, 1.0, 3.0, 289.0, 1.0, 3.0, 3.0, 19.0, 9.0, 1.0, 2.0, 1.0, 1.0, 3.0])
 
     def test_redistribute(self):
         df = download('sp',2010)
-        df = decoders.translate_variables_SIM(df)
-        variables = ['CODMUNRES','SEXO','IDADE_ANOS']
-        counts = decoders.group_and_count(df,variables)
-        sum_original = counts["CONTAGEM"].sum()
-        counts = decoders.redistribute(counts,variables)
-        sum_redistributed = counts["CONTAGEM"].sum()
+        df = decoders.translate_variables_SIM(df,age_classes=True,classify_cid10_chapters=True)
+        variables = ['CODMUNRES','SEXO','IDADE_ANOS','CID10_CHAPTER']
+        df = df[variables]
+        counts = group_and_count(df,variables)
+        sum_original = counts["COUNTS"].sum()
+        counts = redistribute_missing(counts,variables)
+        sum_redistributed = counts["COUNTS"].sum()
 
-        assert_equal(sum_original,sum_redistributed)
-        
-        sample = counts[counts['CONTAGEM'] != 0]['CONTAGEM'].sample(20,random_state=0).tolist()
-        assert_array_almost_equal(sample, [1.0026605509150972, 3.0076529330337682, 10.0, 3.0, 1.0, 7.030611240693058, 2.0, 1.0, 1.0003988761766138, 1.0, 5.0, 1.0, 2.0, 1.0, 1.0011890475332716, 1.0007766913402458, 3.0, 3.0, 1.0, 1.0], decimal=5)
+        assert_almost_equal(sum_original,sum_redistributed,10)
+
+        sample = counts[counts['COUNTS'] != 0]['COUNTS'].sample(20,random_state=0).tolist()
+        assert_array_almost_equal(sample, [1.0, 1.0000216033775462, 4.0, 1.0057015548341106, 2.000363538647316, 3.0005453079709743, 1.0, 2.0093748859678917, 1.0, 1.0006631753413024, 1.0, 1.0155903470702614, 1.0006446228186379, 1.0007163086475952, 4.0016700388384105, 1.0003146522751405, 5.202681974105347, 1.0057015548341106, 1.0006806444217275, 1.0000656718488452], decimal=5)
+
+        counts = redistribute_cid_chapter(counts,['CODMUNRES','SEXO','IDADE_ANOS'])
+        sum_redistributed = counts["COUNTS"].sum()
+
+        assert_almost_equal(sum_original,sum_redistributed,10)
+
+        sample = counts[counts['COUNTS'] != 0]['COUNTS'].sample(20,random_state=0).tolist()
+        assert_array_almost_equal(sample, [1.089135695829918, 1.1471212205224637, 97.66379391566016, 1.0006806444217275, 1.0526404291598292, 1.0002258989870523, 1.0006438895125183, 1.0022096833374972, 1.004692969527825, 1.0098947488581271, 1.3848786564718214, 1.0358818448712763, 1.0477163671352119, 1.1041264089747516, 1.0002258989870523, 4.00889998546595, 1.0435326872735615, 4.000315617188721, 1.0007163086475952, 2.0118196033377975], decimal=5)
+
