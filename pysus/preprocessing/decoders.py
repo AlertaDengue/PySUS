@@ -131,16 +131,20 @@ def add_dv(geocodigo):
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
 
-def translate_variables_SIM(dataframe,age_unity='Y',age_classes=None,classify_args={},municipality_data = True):
+def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_args={},municipality_data = True):
+    """
+    Take a SIM dataframe, decodes age to the `age_unit` unit. Calculates age classes, substitute sex code by spelled out "Masculino" and Feminino.
+    Creates a column with the municipality name. Decodes race/color codes as well.
+    """
     variables_names = dataframe.columns.tolist()
     df = dataframe
-    
+
     valid_mun = get_valid_geocodes()
 
     # IDADE
     if("IDADE" in variables_names):
-        column_name = "IDADE_{}".format(get_age_string(age_unity))
-        df[column_name] = decodifica_idade_SIM(df["IDADE"],age_unity)
+        column_name = f"IDADE_{get_age_string(age_unit)}"
+        df[column_name] = decodifica_idade_SIM(df["IDADE"],age_unit)
         if(age_classes):
             df[column_name] = classify_age(df[column_name],**classify_args)
             df[column_name] = df[column_name].astype('category')
@@ -217,7 +221,7 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
         iv = pd.interval_range(start=start,end=end,freq=freq,closed=closed)
     iv_array = iv.to_tuples().tolist()
 
-    # Adiciona classe aberta no final da lista de intervalos. 
+    # Adiciona classe aberta no final da lista de intervalos.
     # Útil para criar agrupamentos como 0,1,2,...,89,90+
     if(open_end):
         iv_array.append((iv_array[-1][1],+np.inf))
