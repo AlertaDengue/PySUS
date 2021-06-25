@@ -8,9 +8,6 @@ license: GPL V3 or Later
 """
 
 __docformat__ = 'restructuredtext en'
-from pysus.online_data.SIM import download
-from pysus.preprocessing.decoders import translate_variables_SIM
-from pysus.preprocessing.SIM import group_and_count, redistribute
 from geobr import read_municipality
 import pandas as pd
 
@@ -19,7 +16,9 @@ def add_data_to_municipality(
                         map_year=2019,
                         codmun_col='CODMUNRES',
                         title_cols=['SEXO','IDADE_ANOS'],
-                        value_col='CONTAGEM'):
+                        value_col='COUNTS',
+                        nan_string='nan'
+                        ):
 
     """
     Adiciona dados de mortalidade aos seus respectivos municípios. Gera um GeoDataFrame do GeoPandas.
@@ -33,9 +32,11 @@ def add_data_to_municipality(
 
     # Extrai código do estado dos municípios.
     # 2 primeiros dígitos do código são o estado
-    states = counts[counts[codmun_col] != 'nan'][codmun_col].apply(lambda x: str(x)[:2]).unique()
+    states = counts[counts[codmun_col] != nan_string][codmun_col].apply(lambda x: str(x)[:2]).unique()
     geo_df = read_municipality(code_muni=states[0],year=map_year)
     
+    all_fields = [codmun_col] + title_cols + [value_col]
+
     if(len(states) > 1):
         for state in states[1:]:
             geo_df = geo_df.append(read_municipality(code_muni=state,year=map_year))
