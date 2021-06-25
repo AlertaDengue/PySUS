@@ -10,8 +10,10 @@ license: GPL V3 or Later
 __docformat__ = 'restructuredtext en'
 import numpy as np
 import pandas as pd
+import re
+from string import ascii_uppercase
 from datetime import timedelta, datetime
-from pysus.online_data.SIM import get_municipios
+from pysus.online_data.SIM import get_municipios, get_CID10_table, get_CID10_chapters_table
 
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade='Y'):
@@ -106,7 +108,7 @@ def is_valid_geocode(geocodigo):
 def get_valid_geocodes():
     tab_mun = get_municipios()
     df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
-    return df["MUNCODDV"].append(df["MUNCOD"]).values
+    return df["MUNCODDV"].append(df["MUNCOD"]).astype('int64').values
 
 def calculate_digit(geocode):
     """
@@ -130,12 +132,21 @@ def add_dv(geocodigo):
     else:
         return int(str(geocodigo) + str(calculate_digit(geocodigo)))
 
+def columns_as_category(series,nan_string=None):
+    series = series.astype('category')
+    series = series.cat.add_categories
 
-def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_args={},municipality_data = True):
-    """
-    Take a SIM dataframe, decodes age to the `age_unit` unit. Calculates age classes, substitute sex code by spelled out "Masculino" and Feminino.
-    Creates a column with the municipality name. Decodes race/color codes as well.
-    """
+
+def translate_variables_SIM(
+    dataframe,
+    age_unit='Y',
+    age_classes=None,
+    classify_args={},
+    classify_cid10_chapters = False,
+    geocode_dv=True,
+    nan_string='nan',
+    category_columns=True
+    ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
 
@@ -148,8 +159,8 @@ def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_arg
         if(age_classes):
             df[column_name] = classify_age(df[column_name],**classify_args)
             df[column_name] = df[column_name].astype('category')
-            df[column_name] = df[column_name].cat.add_categories(['nan'])
-            df[column_name] = df[column_name].fillna('nan')
+            df[column_name] = df[column_name].cat.add_categories([nan_string])
+            df[column_name] = df[column_name].fillna(nan_string)
 
     # SEXO
     if("SEXO" in variables_names):
@@ -162,8 +173,8 @@ def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_arg
             inplace=True
         )
         df["SEXO"] = df["SEXO"].astype('category')
-        df["SEXO"] = df["SEXO"].cat.add_categories(['nan'])
-        df["SEXO"] = df["SEXO"].fillna('nan')
+        df["SEXO"] = df["SEXO"].cat.add_categories([nan_string])
+        df["SEXO"] = df["SEXO"].fillna(nan_string)
 
     #MUNRES
     if("MUNIRES" in variables_names):
@@ -172,12 +183,13 @@ def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_arg
 
     # CODMUNRES
     if("CODMUNRES" in variables_names):
+        if(geocode_dv):
+            df["CODMUNRES"] = df["CODMUNRES"].apply(add_dv)
         df["CODMUNRES"] = df["CODMUNRES"].astype('int64')
-        df["CODMUNRES"] = add_dv(df["CODMUNRES"])
         df.loc[~df["CODMUNRES"].isin(valid_mun),"CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype('category')
-        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(['nan'])
-        df["CODMUNRES"] = df["CODMUNRES"].fillna('nan')
+        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories([nan_string])
+        df["CODMUNRES"] = df["CODMUNRES"].fillna(nan_string)
 
     #RACACOR
     if("RACACOR" in variables_names):
@@ -197,8 +209,14 @@ def translate_variables_SIM(dataframe,age_unit='Y',age_classes=None,classify_arg
             inplace=True
         )
         df["RACACOR"] = df["RACACOR"].astype('category')
-        df["RACACOR"] = df["RACACOR"].cat.add_categories(['nan'])
-        df["RACACOR"] = df["RACACOR"].fillna('nan')
+        df["RACACOR"] = df["RACACOR"].cat.add_categories([nan_string])
+        df["RACACOR"] = df["RACACOR"].fillna(nan_string)
+
+    # CAUSABAS IN CID10 CHAPTER
+    if(classify_cid10_chapters):
+        code_index = get_CID10_code_index(get_CID10_chapters_table())
+        df['CID10_CHAPTER'] = df['CAUSABAS'].str.slice(0,3).map(code_index)
+        df['CID10_CHAPTER'] = df['CID10_CHAPTER'].astype('category')
 
     return df
 
@@ -227,3 +245,37 @@ def classify_age(serie,start=0,end=90,freq=None,open_end=True,closed='left',inte
         iv_array.append((iv_array[-1][1],+np.inf))
     intervals = pd.IntervalIndex.from_tuples(iv_array,closed=closed)
     return pd.cut(serie,intervals)
+
+def get_CID10_code_index(datasus_chapters):
+    code_index = {}
+    for ch_array_index, chapter in datasus_chapters.iterrows():
+        # Ex.: ['A00','B99']
+        chapter_range = chapter['CAUSAS'].split('-')
+        start_letter = chapter_range[0][0]
+        end_letter = chapter_range[1][0]
+
+        if(start_letter == end_letter):
+            number_range_start = int(chapter_range[0][1:3])
+            number_range_finish = int(chapter_range[1][1:3])
+            for code in range(number_range_start,number_range_finish+1):
+                code_index[f"{start_letter}{str(code).zfill(2)}"] = ch_array_index + 1
+        else:
+            string_range_start = chapter_range[0][0]
+            string_range_end = chapter_range[1][0]
+            full_string_range = re.compile(f"{string_range_start}.*{string_range_end}").search(ascii_uppercase)[0]
+
+            for let_array_index, letter in enumerate(full_string_range):
+                # First array letter
+                if let_array_index == 0:
+                    number_range_start = int(chapter_range[0][1:3])
+                    number_range_end = 99
+                elif let_array_index == len(full_string_range) - 1: # Last array letter
+                    number_range_start = 0
+                    number_range_end = int(chapter_range[1][1:3])
+                else: # Middle letters
+                    number_range_start = 0
+                    number_range_end = 99
+                for code_number in range(number_range_start,number_range_end + 1):
+                    code_index[f"{letter}{str(code_number).zfill(2)}"] = ch_array_index + 1
+
+    return code_index
