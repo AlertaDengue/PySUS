@@ -16,9 +16,15 @@ Contents:
 
    Data Sources <data-sources>
    Tutorials <tutorials>
+   Loading SINAN data <SINAN.ipynb>
+   Loading SIM data <SIM.ipynb>
+   LOADING PNI data <PNI.ipynb>
    Analyzing Dengue data <Dengue.ipynb>
    Analyzing Chikungunya data <Chikungunya.ipynb>
    Analyzing Zika data <Zika.ipynb>
+   Downloading COVID data from ESUS <ESUS.ipynb>
+   Manipulating Demographic Data <Demography.ipynb>
+   Getting Official Statistics <IBGE_data.ipynb>
 
 
 

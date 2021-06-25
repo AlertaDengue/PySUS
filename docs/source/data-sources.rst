@@ -2,4 +2,11 @@
 Data Sources
 ============
 
-PySUS hopes to include code to download data on demand from DATASUS databases. This feature is still under development.
+PySUS allows you to download data on demand from DATASUS databases.
+Currently, the following databases can be downloaded:
+
+#. SINAN
+#. SINASC
+#. SIM
+#. SIH
+#. SIA

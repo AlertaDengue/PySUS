@@ -1,5 +1,6 @@
 from dbfread import DBF
 import pandas as pd
+import numpy as np
 import requests
 import geocoder
 from functools import lru_cache
@@ -20,10 +21,10 @@ def read_sinan_dbf(fname, encoding) -> pd.DataFrame:
         try:
             w = int(x) % 100
         except ValueError:
-            w = pd.np.nan
+            w = np.nan
         return w
     for cname in df.columns:
-        df[cname].replace('', pd.np.nan, inplace=True)
+        df[cname].replace('', np.nan, inplace=True)
         if cname.startswith(('NU', 'ID')):
             try:
                 df[cname] = pd.to_numeric(df[cname])

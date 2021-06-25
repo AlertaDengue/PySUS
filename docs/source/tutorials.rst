@@ -12,6 +12,9 @@ SINASC is the national registry of live births. With PySUS, You can download SIN
 Working with SINAN files
 ========================
 
+SINAN is the national registry of cases for diseases of required reporting. PySUS offers the possibility of downloading records of individual cases selected for futher laboratory investigation, not the entirety of the reported cases.
+To see how to download these data look at the example notebook provided.
+
 The sinan module in the preprocessing package can load SINAN files from DBF, returning a pandas DataFrame fixing the typing of some columns.
 
 It also offers geocoding capabilities which attributes geographical coordinates to every notified case in a SINAN Dataframe.

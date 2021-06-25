@@ -1,0 +1,59 @@
+{% set name = "PySUS" %}
+{% set version = "0.5.7" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: b5db6b2d11bcb6d89de6f40698b7f12808b8013aa073f05a6ff4acb9125d6238
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - cffi >=1.0.0
+    - dbfread
+    - fastparquet
+    - geocoder
+    - pandas
+    - pip
+    - python
+    - requests
+    - georasters
+  run:
+    - cffi >=1.0.0
+    - dbfread
+    - fastparquet
+    - geocoder
+    - pandas
+    - pyarrow
+    - python
+    - requests
+    - georasters
+    - elasticsearch
+
+test:
+  imports:
+    - pysus
+    - pysus.demography
+    - pysus.online_data
+    - pysus.preprocessing
+    - pysus.tests
+    - pysus.tests.test_data
+
+about:
+  home: "https://github.com/fccoelho/PySUS"
+  license: gpl-v3
+  license_family: GPL3
+  license_file: 
+  summary: "Tools for dealing with Brazil's Public health data"
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - fccoelho
