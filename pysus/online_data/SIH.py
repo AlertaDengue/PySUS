@@ -13,7 +13,7 @@ from dbfread import DBF
 import pandas as pd
 
 
-def download(state: str, year: int, month: int, cache: bool=True) -> object:
+def download(state: str, year: int, month: int, cache: bool=True, folder: str=None) -> object:
     """
     Download SIH records for state year and month and returns dataframe
     :param month: 1 to 12
@@ -24,23 +24,29 @@ def download(state: str, year: int, month: int, cache: bool=True) -> object:
     year2 = int(str(year)[-2:])
     month = str(month).zfill(2)
     if year < 1992:
-        raise ValueError("SIH does not contain data before 1994")
-    if year < 2008:
+        raise ValueError("SIH does not contain data before 1992")
+    elif year < 2008:
         ftype = 'DBC'
         path = '/dissemin/publicos/SIHSUS/199201_200712/Dados'
         fname = 'RD{}{}{}.dbc'.format(state, year2, month)
-    if year >= 2008:
+    else:
         ftype = 'DBC'
         path = '/dissemin/publicos/SIHSUS/200801_/Dados'.format(year)
         fname = 'RD{}{}{}.dbc'.format(state, str(year2).zfill(2), month)
+    
+
     cachefile = os.path.join(CACHEPATH, 'SIH_' + fname.split('.')[0] + '_.parquet')
-    if os.path.exists(cachefile):
-        df = pd.read_parquet(cachefile)
-        return df
+    if folder:
+        fname = "{}/{}".format(folder,fname)
+    elif cache:
+        if os.path.exists(cachefile):
+            df = pd.read_parquet(cachefile)
+            return df
+
 
     df = _fetch_file(fname, path, ftype)
-    if cache:
-        df.to_parquet(cachefile)
+    df.to_parquet(cachefile)
+
     return df
 
 
@@ -59,5 +65,3 @@ def _fetch_file(fname, path, ftype):
         df = pd.DataFrame(list(dbf))
     os.unlink(fname)
     return df
-
-
