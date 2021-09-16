@@ -13,7 +13,7 @@ from dbfread import DBF
 import pandas as pd
 
 
-def download(state: str, year: int, month: int, cache: bool=True, folder: str=None) -> object:
+def download(state: str, year: int, month: int, cache: bool=True) -> object:
     """
     Download SIH records for state year and month and returns dataframe
     :param month: 1 to 12
@@ -36,16 +36,15 @@ def download(state: str, year: int, month: int, cache: bool=True, folder: str=No
     
 
     cachefile = os.path.join(CACHEPATH, 'SIH_' + fname.split('.')[0] + '_.parquet')
-    if folder:
-        fname = "{}/{}".format(folder,fname)
-    elif cache:
+    if cache:
         if os.path.exists(cachefile):
             df = pd.read_parquet(cachefile)
             return df
-
-
+    
     df = _fetch_file(fname, path, ftype)
-    df.to_parquet(cachefile)
+    
+    if cache:
+        df.to_parquet(cachefile)
 
     return df
 
