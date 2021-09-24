@@ -15,7 +15,6 @@ CACHEPATH = os.getenv(
 if not os.path.exists(CACHEPATH):
     os.mkdir(CACHEPATH)
 
-
 def cache_contents():
     """
     List the files currently cached in ~/pysus
