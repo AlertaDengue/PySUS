@@ -84,7 +84,7 @@ with open('requirements.txt') as f:
 
 setup(
     name='PySUS',
-    version='0.5.10',
+    version='0.5.11',
     packages=find_packages(),
     package_data={
         '': ['*.c', '*.h', '*.o', '*.so', '*.md', '*.txt']

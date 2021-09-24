@@ -10,6 +10,7 @@ agravos = {
     'Animais Peçonhentos': 'ANIM',
     'Botulismo': 'BOTU',
     'Chagas': 'CHAG',
+    'Chikungunya': 'CHIK',
     'Colera': 'COLE',
     'Coqueluche': 'COQU',
     'Dengue': 'DENG',
