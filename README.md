@@ -1,8 +1,26 @@
 # PySUS
-![travis](https://travis-ci.org/AlertaDengue/PySUS.svg?branch=master)
+[![DOI](https://zenodo.org/badge/63720586.svg)](https://zenodo.org/badge/latestdoi/63720586)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
+
+If you use PySUS for a publication,  please use the bibtex below to cite it:
+```bibtex
+@software{flavio_codeco_coelho_2021_4883502,
+  author       = {Flávio Codeço Coelho and
+                  Bernardo Chrispim Baron and
+                  Gabriel Machado de Castro Fonseca and
+                  Pedro Reck and
+                  Daniela Palumbo},
+  title        = {AlertaDengue/PySUS: Vaccine},
+  month        = may,
+  year         = 2021,
+  publisher    = {Zenodo},
+  version      = {0.5.9},
+  doi          = {10.5281/zenodo.4883502},
+  url          = {https://doi.org/10.5281/zenodo.4883502}
+}
+```
 
 ## Features
 
@@ -63,6 +81,30 @@ docker run -e NB_USER=fccoelho -e NB_UID=1000 -v /home/fccoelho/Downloads/pysus:
 ```
 
 For more options about interacting with your container check [jupyter-docker-stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/common.html) documentation.
+
+## Changing cache directory
+
+You can change the default directory where PySUS stores files downloaded from DataSUS public repository by setting an environment variable called `PYSUS_CACHEPATH` with the desired location. If the folder does not exist, it will be created on the package's first invocation.
+
+In MacOS or an Unix-based system, run:
+
+```bash
+export PYSUS_CACHEPATH="/home/me/desired/path/.pysus"
+```
+
+You can also add this line at the end of your `~/.profile` or `~/.bashrc` files to make this setting persist.
+
+In Windows, you can set a new environment variable by running:
+
+```PowerShell
+setx PYSUS_CACHEPATH "C:\Users\Me\desired\path\.pysus"
+```
+
+In Docker, just add an extra parameter `-e PYSUS_CACHEPATH="/home/me/desired/path/.pysus"` when starting the container:
+
+```bash
+docker run -p 8888:8888 -e PYSUS_CACHEPATH="/home/me/desired/path/.pysus" pysus:latest 
+```
 
 ## Examples
 
