@@ -29,8 +29,12 @@ def read_dbc(filename, encoding='utf-8', raw=False):
         filename = filename.encode()
     with NamedTemporaryFile(delete=False) as tf:
         dbc2dbf(filename, tf.name.encode())
-        dbf = DBF(tf.name, encoding=encoding, raw=raw)
-        df = gpd.GeoDataFrame(list(dbf))
+        try:
+            dbf = DBF(tf.name, encoding=encoding, raw=raw)
+            df = gpd.GeoDataFrame(list(dbf))
+        except ValueError as exc:
+            dbf = DBF(tf.name, encoding=encoding, raw=not raw)
+            df = gpd.GeoDataFrame(list(dbf))
     os.unlink(tf.name)
 
     return df
