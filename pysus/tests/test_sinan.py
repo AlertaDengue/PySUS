@@ -11,6 +11,11 @@ class TestSINANDownload(unittest.TestCase):
         df = download('AC', 2007, 'Animais Peçonhentos')
         self.assertIsInstance(df, pd.DataFrame)
 
+    def test_fetch_viol_dom(self):
+        df = download('AC', 2011, 'Violência Domestica')
+        self.assertIsInstance(df, pd.DataFrame)
+
+
     def test_lista_agravos(self):
         lista = list_diseases()
         self.assertIsInstance(lista, list)
