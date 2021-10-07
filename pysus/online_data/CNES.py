@@ -47,12 +47,13 @@ def download(group: str, state: str, year: int, month: int, cache: bool=True) ->
     :param year: 4 digit integer
     """
     state = state.upper()
+    assert len(str(year)) == 4
     year2 = str(year)[-2:]
     month = str(month).zfill(2)
     input_date = datetime(int(year), int(month), 1)
     avaiable_date = datetime(group_dict[group][2], group_dict[group][1], 1)
     if input_date < avaiable_date:
-        raise ValueError(f"CNES does not contain data for {group_dict[group][1]}")
+        raise ValueError(f"CNES does not contain data for {input_date}")
     ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     if input_date >= avaiable_date:
