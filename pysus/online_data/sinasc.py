@@ -9,6 +9,9 @@ from ftplib import FTP
 from pysus.utilities.readdbc import read_dbc
 from pysus.online_data import CACHEPATH
 import pandas as pd
+import warnings
+
+warnings.filterwarnings('ignore', message='.*initial implementation of Parquet.*')
 
 
 def download(state, year, cache=True):
@@ -41,4 +44,11 @@ def download(state, year, cache=True):
     os.unlink(fname)
     return df
 
-
+def get_available_years(state):
+    ftp = FTP('ftp.datasus.gov.br')
+    ftp.login()
+    ftp.cwd("/dissemin/publicos/SINASC/ANT/DNRES")
+    res = ftp.nlst(f'DNR{state}*.*')
+    ftp.cwd("/dissemin/publicos/SINASC/NOV/DNRES")
+    res += ftp.nlst(f'DN{state}*.*')
+    return res
