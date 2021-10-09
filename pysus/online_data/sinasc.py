@@ -21,6 +21,7 @@ def download(state, year, cache=True):
     :param year: 4 digit integer
     :return: pandas dataframe
     """
+    assert (len(str(year)) == 4)
     state = state.upper()
     if year < 1994:
         raise ValueError("SINASC does not contain data before 1994")
@@ -32,7 +33,7 @@ def download(state, year, cache=True):
     else:
         ftp.cwd('/dissemin/publicos/SINASC/ANT/DNRES')
         fname = 'DNR{}{}.DBC'.format(state, str(year)[-2:])
-    cachefile = os.path.join(CACHEPATH, 'SINASC_'+fname.split('.')[0] + '_.parquet')
+    cachefile = os.path.join(CACHEPATH, 'SINASC_' + fname.split('.')[0] + '_.parquet')
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
@@ -43,6 +44,7 @@ def download(state, year, cache=True):
         df.to_parquet(cachefile)
     os.unlink(fname)
     return df
+
 
 def get_available_years(state):
     ftp = FTP('ftp.datasus.gov.br')
