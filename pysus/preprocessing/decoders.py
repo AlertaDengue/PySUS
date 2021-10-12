@@ -16,7 +16,7 @@ from datetime import timedelta, datetime
 from pysus.online_data.SIM import get_municipios, get_CID10_table, get_CID10_chapters_table
 
 @np.vectorize
-def decodifica_idade_SINAN(idade, unidade='Y'):
+def decodifica_idade_SINAN(idade, unidade: str='Y'):
     """
     Em tabelas do SINAN frequentemente a idade é representada como um inteiro que precisa ser parseado
     para retornar a idade em uma unidade cronológica padrão.
