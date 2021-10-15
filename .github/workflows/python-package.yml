@@ -51,6 +51,7 @@ jobs:
     #     python setup.py install
 
     - name: Lint with flake8
+      shell: bash -l {0}
       run: |
         pip install flake8 nose
         # stop the build if there are Python syntax errors or undefined names
@@ -59,10 +60,12 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Test with pytest
+      shell: bash -l {0}
       run: |
         pytest -v pysus/
 
     - name: Test with nosetests
+      shell: bash -l {0}
       run: |
         cd pysus/tests/
         nosetests
