@@ -18,7 +18,7 @@ Features
 - Decode encoded patient age to any time unit (years, months, etc)
 - Convert `.dbc` files to DBF databases or read them into pandas dataframes. DBC files are basically DBFs compressed by a proprietary algorithm.
 - Loads SINAN DBC files into Pandas Dataframes
-- Downloads SIA, SIH, SIM, SINASC, and ESUS (covid data) 
+- Downloads SIA, SIH, SIM, SINASC, and ESUS (covid data)
 - Geocodes SINAN notified cases in batch. You can use your Google API KEY to avoid Google's free limits.
 
 Installation
@@ -102,7 +102,3 @@ setup(
     install_requires=requirements,#['pandas', 'dbfread', 'cffi>=1.0.0', 'geocoder', 'requests', 'fastparquet'],
     # cmdclass={'install': PostInstall},
 )
-
-
-
-
