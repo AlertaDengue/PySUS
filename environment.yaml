@@ -8,7 +8,6 @@ dependencies:
   - geocoder
   - requests
   - folium
-  - nose
   - fastparquet
   - geopandas
   - dask
@@ -19,8 +18,14 @@ dependencies:
   - georasters
   - elasticsearch
   - pyarrow
+  # dev
+  - pip
+  - flake8
+  - coverage
+  - sphinx
   - pytest
   - pytest-cov
+  - pre-commit
   - pip:
     - geobr
     - facets-overview

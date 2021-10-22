@@ -5,7 +5,6 @@ geocoder
 requests
 geobr
 folium
-nose
 fastparquet
 facets-overview
 geobr
