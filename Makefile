@@ -30,7 +30,6 @@ help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
 
-
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
@@ -66,7 +65,7 @@ develop: clean precommit_pysus ## install the package in development mode
 	git init  # it is safe to run it more than one time
 	pre-commit install
 
-precommit_pysus:
+precommit_pysus: ## run checks before committing changes
 	pre-commit install
 	pre-commit autoupdate
 	pre-commit run --all-files
