@@ -11,7 +11,7 @@ group_dict = {
         "LT" :  ["Leitos - A partir de Out/2005", 10, 2005],
         "ST" :  ["Estabelecimentos - A partir de Ago/2005", 8, 2005],
         "DC" :  ["Dados Complementares - A partir de Ago/2005", 8, 2005],
-        "EQ" :  ["Equipamentos - A partir de Ago/2005", 8],
+        "EQ" :  ["Equipamentos - A partir de Ago/2005", 8, 2005],
         "SR" :  ["Serviço Especializado - A partir de Ago/2005", 8, 2005],
         "HB" :  ["Habilitação - A partir de Mar/2007", 3, 2007],
         "PF" :  ["Profissional - A partir de Ago/2005", 8, 2005],
