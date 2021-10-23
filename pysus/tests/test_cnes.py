@@ -8,6 +8,11 @@ class CNESTestCase(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         # self.assertEqual(True, False)  # add assertion here
 
+    def test_fetch_equipamentos(self):
+        df = download("EQ","RO",2021,9)
+        self.assertIsInstance(df,pd.DataFrame)
+
+
 
 if __name__ == '__main__':
     unittest.main()
