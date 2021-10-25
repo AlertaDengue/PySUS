@@ -23,6 +23,7 @@ dependencies:
   - flake8
   - coverage
   - sphinx
+  - pandas
   - pytest
   - pytest-cov
   - pre-commit
