@@ -1,0 +1,32 @@
+name: env-pysus
+channels:
+  - conda-forge
+dependencies:
+  - pandas
+  - cffi>=1.0.0
+  - dbfread
+  - geocoder
+  - requests
+  - folium
+  - fastparquet
+  - geopandas
+  - dask
+  - wget
+  - colorcet
+  - datashader
+  - xarray
+  - georasters
+  - elasticsearch
+  - pyarrow
+  # dev
+  - pip
+  - flake8
+  - coverage
+  - sphinx
+  - pandas
+  - pytest
+  - pytest-cov
+  - pre-commit
+  - pip:
+    - geobr
+    - facets-overview

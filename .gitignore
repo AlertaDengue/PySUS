@@ -2,6 +2,7 @@
 PySUS.egg-info/
 build/
 dist/
+*__pycache__/*
 *.o
 *.so
 *.pyc
