@@ -4,11 +4,12 @@ by fccoelho
 license: GPL V3 or Later
 """
 import os
-from tempfile import NamedTemporaryFile
 from io import BytesIO
+from tempfile import NamedTemporaryFile
+
+import geopandas as gpd
 import pandas as pd
 from dbfread import DBF
-import geopandas as gpd
 
 try:
     from pysus.utilities._readdbc import ffi, lib
@@ -16,7 +17,7 @@ except (ImportError, ModuleNotFoundError):
     from _readdbc import ffi, lib
 
 
-def read_dbc(filename, encoding='utf-8', raw=False):
+def read_dbc(filename, encoding="utf-8", raw=False):
     """
     Opens a DATASUS .dbc file and return its contents as a pandas
     Dataframe.
@@ -50,15 +51,15 @@ def dbc2dbf(infile, outfile):
         infile = infile.encode()
     if isinstance(outfile, str):
         outfile = outfile.encode()
-    p = ffi.new('char[]', os.path.abspath(infile))
-    q = ffi.new('char[]', os.path.abspath(outfile))
+    p = ffi.new("char[]", os.path.abspath(infile))
+    q = ffi.new("char[]", os.path.abspath(outfile))
 
     lib.dbc2dbf([p], [q])
 
     # print(os.path.exists(outfile))
 
 
-def read_dbc_geopandas(filename, encoding='utf-8'):
+def read_dbc_geopandas(filename, encoding="utf-8"):
     """
     Opens a DATASUS .dbc file and return its contents as a pandas
     Dataframe, using geopandas
@@ -69,7 +70,7 @@ def read_dbc_geopandas(filename, encoding='utf-8'):
     if isinstance(filename, str):
         filename = filename
     with NamedTemporaryFile(delete=False) as tf:
-        out = tf.name + '.dbf'
+        out = tf.name + ".dbf"
         dbc2dbf(filename, out)
         dbf = gpd.read_file(out, encoding=encoding).drop("geometry", axis=1)
         df = pd.DataFrame(dbf)

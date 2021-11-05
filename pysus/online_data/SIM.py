@@ -6,11 +6,13 @@ license: GPL V3 or Later
 """
 
 import os
-from ftplib import FTP
-from pysus.utilities.readdbc import read_dbc
-from pysus.online_data import CACHEPATH
-from dbfread import DBF
+from ftplib import FTP, error_perm
+
 import pandas as pd
+from dbfread import DBF
+
+from pysus.online_data import CACHEPATH
+from pysus.utilities.readdbc import read_dbc
 
 
 def download(state, year, cache=True, folder=None):
@@ -27,18 +29,16 @@ def download(state, year, cache=True, folder=None):
     if year < 1979:
         raise ValueError("SIM does not contain data before 1979")
     elif year >= 1996:
-        ftp_dir = '/dissemin/publicos/SIM/CID10/DORES'
-        fname = 'DO{}{}.DBC'.format(state, year)
+        ftp_dir = "/dissemin/publicos/SIM/CID10/DORES"
+        fname = "DO{}{}.DBC".format(state, year)
     else:
-        ftp_dir = '/dissemin/publicos/SIM/CID9/DORES'
-        fname = fname = 'DOR{}{}.DBC'.format(state, year2)
-    
-
+        ftp_dir = "/dissemin/publicos/SIM/CID9/DORES"
+        fname = fname = "DOR{}{}.DBC".format(state, year2)
 
     cache_fail = False
-    cachefile = os.path.join(CACHEPATH, 'SIM_'+fname.split('.')[0] + '_.parquet')
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if folder:
-        fname = "{}/{}".format(folder,fname)
+        fname = "{}/{}".format(folder, fname)
     elif cache:
         if os.path.exists(cachefile):
             df = pd.read_parquet(cachefile)
@@ -48,24 +48,25 @@ def download(state, year, cache=True, folder=None):
 
     # Se tiver folder não tenta cache
     if not folder and (cache_fail or not cache):
-        ftp = FTP('ftp.datasus.gov.br')
+        ftp = FTP("ftp.datasus.gov.br")
         ftp.login()
         ftp.cwd(ftp_dir)
-    
+
         try:
-            ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
-        except:
+            ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        except error_perm:
             try:
-                ftp.retrbinary('RETR {}'.format(fname.upper()), open(fname, 'wb').write)
+                ftp.retrbinary("RETR {}".format(fname.upper()), open(fname, "wb").write)
             except:
                 raise Exception("File {} not available".format(fname))
 
-    df = read_dbc(fname, encoding='iso-8859-1')
-    
+    df = read_dbc(fname, encoding="iso-8859-1")
+
     df.to_parquet(cachefile)
-            
+
     os.unlink(fname)
     return df
+
 
 def get_CID10_chapters_table(cache=True):
     """
@@ -73,24 +74,25 @@ def get_CID10_chapters_table(cache=True):
     :param cache:
     :return:
     """
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
-    fname = 'CIDCAP10.DBF'
-    cachefile = os.path.join(CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet')
+    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    fname = "CIDCAP10.DBF"
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
-    except:
-        raise Exception('Could not download {}'.format(fname))
-    dbf = DBF(fname, encoding='iso-8859-1')
+        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+    except error_perm:
+        raise Exception("Could not download {}".format(fname))
+    dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
     os.unlink(fname)
     return df
+
 
 def get_CID10_table(cache=True):
     """
@@ -98,19 +100,19 @@ def get_CID10_table(cache=True):
     :param cache:
     :return:
     """
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
-    fname = 'CID10.DBF'
-    cachefile = os.path.join(CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet')
+    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    fname = "CID10.DBF"
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
-    except:
-        raise Exception('Could not download {}'.format(fname))
-    dbf = DBF(fname, encoding='iso-8859-1')
+        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+    except error_perm:
+        raise Exception("Could not download {}".format(fname))
+    dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
@@ -124,19 +126,19 @@ def get_CID9_table(cache=True):
     :param cache:
     :return:
     """
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd('/dissemin/publicos/SIM/CID9/TABELAS')
-    fname = 'CID9.DBF'
-    cachefile = os.path.join(CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet')
+    ftp.cwd("/dissemin/publicos/SIM/CID9/TABELAS")
+    fname = "CID9.DBF"
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
-    except:
-        raise Exception('Could not download {}'.format(fname))
-    dbf = DBF(fname, encoding='iso-8859-1')
+        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+    except error_perm:
+        raise Exception("Could not download {}".format(fname))
+    dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
@@ -150,24 +152,25 @@ def get_municipios(cache=True):
     :param cache:
     :return:
     """
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
-    fname = 'CADMUN.DBF'
-    cachefile = os.path.join(CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet')
+    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    fname = "CADMUN.DBF"
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
+        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
     except:
-        raise Exception('Could not download {}'.format(fname))
-    dbf = DBF(fname, encoding='iso-8859-1')
+        raise Exception("Could not download {}".format(fname))
+    dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
     os.unlink(fname)
     return df
+
 
 def get_ocupations(cache=True):
     """
@@ -175,19 +178,19 @@ def get_ocupations(cache=True):
     :param cache:
     :return:
     """
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
-    fname = 'TABOCUP.DBF'
-    cachefile = os.path.join(CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet')
+    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    fname = "TABOCUP.DBF"
+    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
     try:
-        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
+        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
     except:
-        raise Exception('Could not download {}'.format(fname))
-    dbf = DBF(fname, encoding='iso-8859-1')
+        raise Exception("Could not download {}".format(fname))
+    dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
