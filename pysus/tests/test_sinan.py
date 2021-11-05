@@ -1,7 +1,9 @@
 import datetime
 import unittest
+
 import numpy as np
 import pandas as pd
+
 from pysus.online_data.SINAN import download, list_diseases
 from pysus.preprocessing.sinan import geocode, read_sinan_dbf
 

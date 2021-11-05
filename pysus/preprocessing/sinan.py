@@ -31,6 +31,7 @@ def read_sinan_dbf(fname, encoding) -> pd.DataFrame:
             try:
                 df[cname] = pd.to_numeric(df[cname])
             except ValueError as e:
+                print(f"Column {cname} could not be converted to numeric: {e}")
                 # certain IDs can be alphanumerical
                 pass
         elif cname.startswith("SEM"):

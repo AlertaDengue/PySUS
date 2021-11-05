@@ -74,6 +74,7 @@ def read_dbc_geopandas(filename, encoding="utf-8"):
         dbc2dbf(filename, out)
         dbf = gpd.read_file(out, encoding=encoding).drop("geometry", axis=1)
         df = pd.DataFrame(dbf)
+        os.unlink(out)
     os.unlink(tf.name)
 
     return df
