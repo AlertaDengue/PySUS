@@ -25,7 +25,7 @@ jobs:
       with:
         miniconda-version: "latest"
         mamba-version: "*"
-        environment-file: environment.yaml
+        environment-file: environment-dev.yaml
         channels: conda-forge
         activate-environment: env-pysus
         use-mamba: true

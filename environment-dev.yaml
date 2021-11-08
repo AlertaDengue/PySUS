@@ -5,6 +5,8 @@ dependencies:
   - pandas
   - cffi>=1.0.0
   - dbfread
+  - gdal=3.3.3
+  - scipy=1.7.1
   - geocoder
   - requests
   - folium
@@ -27,7 +29,9 @@ dependencies:
   - pytest
   - pytest-cov
   - pre-commit
-  - numba
+  - libpq
+
   - pip:
     - geobr
     - facets-overview
+    # - pysus

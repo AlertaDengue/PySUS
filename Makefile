@@ -60,15 +60,9 @@ lint: ## check style with flake8
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-develop: clean precommit_pysus ## install the package in development mode
+develop: clean ## install the package in development mode
 	pip install -e '.[dev]'
-	git init  # it is safe to run it more than one time
 	pre-commit install
-
-precommit_pysus: ## run checks before committing changes
-	pre-commit install
-	pre-commit autoupdate
-	pre-commit run --all-files
 
 test: ## run tests quickly with the default Python
 	py.test
@@ -78,3 +72,8 @@ coverage: ## check code coverage quickly with the default Python
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
+
+# Docker
+run_notebook_pysus: ## build and enable Jupyterlab
+	docker build -t pysus .
+	docker run -p 8888:8888 -e JUPYTER_ENABLE_LAB=yes pysus:latest

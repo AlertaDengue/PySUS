@@ -31,10 +31,6 @@ $ sudo pip install PySUS
 with open("requirements.txt") as f:
     requirements = f.readlines()
 
-test_requirements = ["pytest", "flake8"]
-dev_requirements = []
-dev_requirements += requirements
-
 setup(
     name="PySUS",
     version="0.5.13",
@@ -52,7 +48,20 @@ setup(
     cffi_modules=["pysus/utilities/_build_readdbc.py:ffibuilder"],
     install_requires=requirements,
     # cmdclass={'install': PostInstall},
-    extras_require={"dev": dev_requirements},
+    extras_require={
+        "dev": [
+            "pytest",
+            "pytest-cov",
+            "pre-commit",
+            "black",
+            "isort",
+            "flake8",
+            "coverage",
+            "wheel",
+            "setuptools",
+            "jupyterlab",
+        ]
+    },
     test_suite="tests",
-    tests_require=test_requirements,
+    tests_require=["pytest", "flake8"],
 )
