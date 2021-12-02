@@ -10,11 +10,11 @@ from pysus.preprocessing.sinan import geocode, read_sinan_dbf
 
 class TestSINANDownload(unittest.TestCase):
     def test_download(self):
-        df = download("AC", 2007, "Animais Peçonhentos")
+        df = download("BR", 2007, "Animais Peçonhentos")
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_viol_dom(self):
-        df = download("AC", 2011, "Violência Domestica")
+        df = download("BR", 2011, "Violência Domestica")
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_lista_agravos(self):

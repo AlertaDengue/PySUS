@@ -5,7 +5,7 @@ from io import StringIO
 import pandas as pd
 from dbfread import DBF
 
-from pysus.online_data import CACHEPATH
+from pysus.online_data import CACHEPATH, _fetch_file
 from pysus.utilities.readdbc import read_dbc
 
 agravos = {
@@ -37,6 +37,7 @@ agravos = {
     "Tétano Neonatal": "TETN",
     "Tuberculose": "TUBE",
     "Violência Domestica": "VIOL",
+    "Zika": "ZIKA"
 }
 
 
@@ -46,6 +47,11 @@ def list_diseases():
 
 
 def get_available_years(state, disease):
+    """
+    Fetch available years for data related to specific disease and state
+    :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
+    :param disease: Disease name. See `SINAN.list_diseases` for valid names
+    """
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
@@ -72,27 +78,19 @@ def download(state, year, disease, cache=True):
     state = state.upper()
     if year < 2007:
         raise ValueError("SINAN does not contain data before 2007")
-    ftp = FTP("ftp.datasus.gov.br")
-    ftp.login()
-    ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
+    
     dis_code = agravos[disease.title()]
     fname = f"{dis_code}{state}{year2}.DBC"
-
+    path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
     cachefile = os.path.join(CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet")
-    if os.path.exists(cachefile):
-        df = pd.read_parquet(cachefile)
-        return df
 
-    try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
-    except error_perm:
-        try:
-            ftp.retrbinary("RETR {}".format(fname.upper()), open(fname, "wb").write)
-        except Exception as e:
-            raise Exception("{}\nFile {} not available".format(e, fname))
+    ftp = FTP("ftp.datasus.gov.br")
+    ftp.login()
+    ftp.cwd(path)
+    
+    df = _fetch_file(fname, path, 'DBC')
 
-    df = read_dbc(fname, encoding="iso-8859-1")
     if cache:
         df.to_parquet(cachefile)
-    os.unlink(fname)
+    # os.unlink(fname)
     return df
