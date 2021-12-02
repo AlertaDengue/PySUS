@@ -2,6 +2,7 @@ import os
 from ftplib import FTP, error_perm
 from io import StringIO
 
+# import download as download
 import pandas as pd
 from dbfread import DBF
 
@@ -15,6 +16,8 @@ agravos = {
     "Chikungunya": "CHIK",
     "Colera": "COLE",
     "Coqueluche": "COQU",
+    "Contact Communicable Disease": "ACBI",
+    "Acidentes de Trabalho": "ACGR",
     "Dengue": "DENG",
     "Difteria": "DIFT",
     "Esquistossomose": "ESQU",
@@ -59,7 +62,6 @@ def get_available_years(state, disease):
     res = ftp.nlst(f"{agravos[disease.title()]}{state}*.dbc")
     return res
 
-
 def download(state, year, disease, cache=True):
     """
     Downloads SINAN data directly from Datasus ftp server
@@ -92,5 +94,6 @@ def download(state, year, disease, cache=True):
 
     if cache:
         df.to_parquet(cachefile)
-    # os.unlink(fname)
+    if os.path.exists(fname):
+        os.unlink(fname)
     return df
