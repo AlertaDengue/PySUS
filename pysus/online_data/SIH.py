@@ -33,7 +33,7 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
         fname = f"RD{state}{year2}{month}.dbc"
     if year >= 2008:
         ftype = "DBC"
-        path = f"/dissemin/publicos/SIHSUS/{year}01_/Dados"
+        path = f"/dissemin/publicos/SIHSUS/200801_/Dados"
         fname = f"RD{state}{str(year2).zfill(2)}{month}.dbc"
     cachefile = os.path.join(CACHEPATH, "SIH_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
