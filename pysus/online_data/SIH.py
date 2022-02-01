@@ -21,9 +21,12 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
     :param month: 1 to 12
     :param state: 2 letter state code
     :param year: 4 digit integer
+    :param cache: Whether to cache or not. defaults to True.
+    :return:
     """
     state = state.upper()
     year2 = int(str(year)[-2:])
+    year2 = str(year2).zfill(2)
     month = str(month).zfill(2)
     if year < 1992:
         raise ValueError("SIH does not contain data before 1994")
@@ -33,8 +36,8 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
         fname = f"RD{state}{year2}{month}.dbc"
     if year >= 2008:
         ftype = "DBC"
-        path = f"/dissemin/publicos/SIHSUS/{year}01_/Dados"
-        fname = f"RD{state}{str(year2).zfill(2)}{month}.dbc"
+        path = f"/dissemin/publicos/SIHSUS/200801_/Dados"
+        fname = f"RD{state}{year2}{month}.dbc"
     cachefile = os.path.join(CACHEPATH, "SIH_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
