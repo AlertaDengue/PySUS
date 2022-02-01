@@ -18,7 +18,7 @@ import pandas as pd
 from dbfread import DBF
 
 from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc, read_dbc_dbf
+from pysus.utilities.readdbc import read_dbc, read_dbc_dbf, dbc2dbf
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -147,6 +147,7 @@ def _fetch_file(fname, ftp, ftype):
             print(f"Downloading {fn}...")
             fobj = open(fnfull, "wb")
             ftp.retrbinary(f"RETR {fn}", fobj.write)
+            dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
     except Exception as exc:
         raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
     if multiples:
