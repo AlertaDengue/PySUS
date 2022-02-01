@@ -78,3 +78,12 @@ def read_dbc_geopandas(filename, encoding="utf-8"):
     os.unlink(tf.name)
 
     return df
+
+def read_dbc_dbf(filename: str):
+    if filename.endswith(('dbc', 'DBC')):
+        df = read_dbc(filename, encoding="iso-8859-1")
+    elif filename.endswith(("DBF", "dbf")):
+            dbf = DBF(filename, encoding="iso-8859-1")
+            df = pd.DataFrame(list(dbf))
+    return df
+
