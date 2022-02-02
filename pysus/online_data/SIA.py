@@ -148,6 +148,7 @@ def _fetch_file(fname, ftp, ftype):
             fobj = open(fnfull, "wb")
             ftp.retrbinary(f"RETR {fn}", fobj.write)
             dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
+            os.unlink(fnfull)
     except Exception as exc:
         raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
     if multiples:
@@ -157,7 +158,7 @@ def _fetch_file(fname, ftp, ftype):
         return
     df = read_dbc_dbf(fname)
 
-    # os.unlink(fname)
+    os.unlink(fname)
     return df
 
 
