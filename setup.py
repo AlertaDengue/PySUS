@@ -37,7 +37,7 @@ dev_requirements += requirements
 
 setup(
     name="PySUS",
-    version="0.5.12",
+    version="0.5.13",
     packages=find_packages(),
     package_data={"": ["*.c", "*.h", "*.o", "*.so", "*.md", "*.txt"]},
     include_package_data=True,
