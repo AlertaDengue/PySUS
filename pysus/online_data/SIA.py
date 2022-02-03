@@ -138,20 +138,12 @@ def _fetch_file(fname, ftp, ftype):
     """
 
     multiples = False
-    try:
-        fnames = check_file_split(fname, ftp)
-        if len(fnames) > 1:
-            multiples = True
-        for fn in fnames:
-            fnfull = os.path.join(CACHEPATH, fn)
-            print(f"Downloading {fn}...")
-            fobj = open(fnfull, "wb")
-            ftp.retrbinary(f"RETR {fn}", fobj.write)
-            dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
-            os.unlink(fnfull)
-    except Exception as exc:
-        raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
+    fnames = check_file_split(fname, ftp)
+
+    multiples = len(fnames) > 1
+
     if multiples:
+        download_multiples(fnames, ftp)
         print(f"This download is split into the following files: {fnames}\n"
               f"They have been downloaded in {CACHEPATH}.\n"
               f"To load them, use the pysus.utilities.read_dbc_dbf function.")
@@ -160,6 +152,19 @@ def _fetch_file(fname, ftp, ftype):
 
     os.unlink(fname)
     return df
+
+
+def download_multiples(fnames, ftp):
+    for fn in fnames:
+        fnfull = os.path.join(CACHEPATH, fn)
+        print(f"Downloading {fn}...")
+        fobj = open(fnfull, "wb")
+        try:
+            ftp.retrbinary(f"RETR {fn}", fobj.write)
+            dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
+            os.unlink(fnfull)
+        except Exception as exc:
+            raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
 
 
 def check_file_split(fname: str, ftp: FTP) -> list:
