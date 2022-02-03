@@ -12,12 +12,13 @@ import warnings
 from datetime import date
 from ftplib import FTP
 from typing import Dict, List, Optional, Tuple, Union
+from pprint import pprint
 
 import pandas as pd
 from dbfread import DBF
 
 from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc
+from pysus.utilities.readdbc import read_dbc, read_dbc_dbf, dbc2dbf
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -35,13 +36,15 @@ group_dict: Dict[str, Tuple[str, int, int]] = {
     "PS": ("RAAS Psicossocial", 1, 2008),
 }
 
+def show_datatypes():
+    pprint(group_dict)
 
 def download(
-    state: str,
-    year: int,
-    month: int,
-    cache: bool = True,
-    group: Union[str, List[str]] = ["PA", "BI"],
+        state: str,
+        year: int,
+        month: int,
+        cache: bool = True,
+        group: Union[str, List[str]] = ["PA", "BI"],
 ) -> Union[Optional[pd.DataFrame], Tuple[Optional[pd.DataFrame], ...]]:
     """
     Download SIASUS records for state year and month and returns dataframe
@@ -111,13 +114,13 @@ def download(
         else:
             try:
                 df = _fetch_file(fname, ftp, ftype)
-                if cache:  # saves to cache
+                if cache and df:  # saves to cache if df is not None
                     df.to_parquet(cachefile)
             except Exception as e:
                 df = None
                 print(e)
-
-        dfs.append(df)
+        if df is not None:
+            dfs.append(df)
 
     if len(dfs) == 1:
         return dfs[0]
@@ -133,18 +136,50 @@ def _fetch_file(fname, ftp, ftype):
     :param ftype: file type: DBF|DBC
     :return: pandas dataframe
     """
-    print(f"Downloading {fname}...")
-    try:
-        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
-    except:
-        try:
-            ftp.retrbinary(f"RETR {fname.lower()}", open(fname, "wb").write)
-        except:
-            raise Exception(f"File {fname} not available")
-    if ftype == "DBC":
-        df = read_dbc(fname, encoding="iso-8859-1")
-    elif ftype == "DBF":
-        dbf = DBF(fname, encoding="iso-8859-1")
-        df = pd.DataFrame(list(dbf))
+
+    multiples = False
+    fnames = check_file_split(fname, ftp)
+
+    multiples = len(fnames) > 1
+
+    if multiples:
+        download_multiples(fnames, ftp)
+        print(f"This download is split into the following files: {fnames}\n"
+              f"They have been downloaded in {CACHEPATH}.\n"
+              f"To load them, use the pysus.utilities.read_dbc_dbf function.")
+        return
+    df = read_dbc_dbf(fname)
+
     os.unlink(fname)
     return df
+
+
+def download_multiples(fnames, ftp):
+    for fn in fnames:
+        fnfull = os.path.join(CACHEPATH, fn)
+        print(f"Downloading {fn}...")
+        fobj = open(fnfull, "wb")
+        try:
+            ftp.retrbinary(f"RETR {fn}", fobj.write)
+            dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
+            os.unlink(fnfull)
+        except Exception as exc:
+            raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
+
+
+def check_file_split(fname: str, ftp: FTP) -> list:
+    """
+    Check for split filenames. Sometimes when files are too large, they are split into multiple files ending in a, b, c, ...
+    :param fname: filename
+    :param ftp: ftp conection
+    :return: list
+    """
+    files = []
+    flist = ftp.nlst()
+    if fname not in flist:
+        for l in ['a', 'b', 'c', 'd']:
+            nm, ext = fname.split('.')
+            if f'{nm}{l}.{ext}' in flist:
+                files.append(f'{nm}{l}.{ext}')
+
+    return files

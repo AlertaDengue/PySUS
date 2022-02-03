@@ -27,6 +27,7 @@ dependencies:
   - pytest
   - pytest-cov
   - pre-commit
+  - numba
   - pip:
     - geobr
     - facets-overview

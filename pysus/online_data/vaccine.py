@@ -38,6 +38,7 @@ def download_covid(uf=None):
             "loading from cache. Returning an iterator of Dataframes in chunks of 5000."
         )
         return pd.read_csv(tempfile, chunksize=5000)
+
     auth = HTTPBasicAuth(user, pwd)
     data_gen = elasticsearch_fetch(url, auth, query)
 
