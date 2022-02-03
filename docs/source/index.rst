@@ -18,6 +18,7 @@ Contents:
    Tutorials <tutorials>
    Loading SINAN data <SINAN.ipynb>
    Loading SIM data <SIM.ipynb>
+   Loading SIA data <Analyzing SIA.ipynb>
    LOADING PNI data <PNI.ipynb>
    Analyzing Dengue data <Dengue.ipynb>
    Analyzing Chikungunya data <Chikungunya.ipynb>
