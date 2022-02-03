@@ -4,6 +4,9 @@ by fccoelho
 license: GPL V3 or Later
 """
 import os
+import csv
+import gzip
+from tqdm import tqdm
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 
@@ -78,3 +81,30 @@ def read_dbc_geopandas(filename, encoding="utf-8"):
     os.unlink(tf.name)
 
     return df
+
+def read_dbc_dbf(filename: str):
+    if filename.endswith(('dbc', 'DBC')):
+        df = read_dbc(filename, encoding="iso-8859-1")
+    elif filename.endswith(("DBF", "dbf")):
+            dbf = DBF(filename, encoding="iso-8859-1")
+            df = pd.DataFrame(list(dbf))
+    return df
+
+def dbf_to_csvgz(filename: str, encoding: str='iso-8859-1'):
+    """
+    Streams a dbf file to gzipped CSV file. The Gzipped csv will be saved on the same path but with a csv.gz extension.
+    :param filename: path to the dbf file
+    """
+    data = DBF(filename, encoding=encoding, raw=False)
+    fn = os.path.splitext(filename)[0] + '.csv.gz'
+
+    with gzip.open(fn, 'wt') as gzf:
+        for i, d in tqdm(enumerate(data), desc='Converting',):
+            if i == 0:
+                csvwriter = csv.DictWriter(gzf, fieldnames=d.keys())
+                csvwriter.writeheader()
+                csvwriter.writerow(d)
+            else:
+                csvwriter.writerow(d)
+
+
