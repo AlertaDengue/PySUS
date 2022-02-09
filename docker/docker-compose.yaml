@@ -1,0 +1,15 @@
+version: '3.3'
+services: 
+  jupyter:
+    build:
+      context: ".."
+      dockerfile: docker/Dokerfile
+      args:
+        DISPLAY: http://localhost:8888/lab/
+    hostname: jupyter-pysus
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - ../pysus/:/home/developer/pysus
+      - /tmp/.X11-unix:/tmp/.X11-unix

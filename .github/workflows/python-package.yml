@@ -25,7 +25,7 @@ jobs:
       with:
         miniconda-version: "latest"
         mamba-version: "*"
-        environment-file: environment-dev.yaml
+        environment-file: environment.yaml
         channels: conda-forge
         activate-environment: env-pysus
         use-mamba: true
@@ -40,6 +40,11 @@ jobs:
       shell: bash -l {0}
       run: |
         make lint
+
+    - name: build and deploy jupyterlab
+      shell: bash -l {0}
+      run: |
+        make run_jupyter_pysus
 
     - name: Test with pytest
       shell: bash -l {0}
