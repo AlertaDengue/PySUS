@@ -46,7 +46,12 @@ jobs:
       run: |
         make run_jupyter_pysus
 
-    - name: Test with pytest
+    - name: run tests for notebooks on container
       shell: bash -l {0}
       run: |
-        make test
+        make test_jupyter_pysus
+
+    # - name: Test with pytest
+    #   shell: bash -l {0}
+    #   run: |
+    #     make test

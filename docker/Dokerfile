@@ -18,6 +18,9 @@ RUN addgroup --gid 1000 developer \
 # Copy environment file to tmp/
 COPY environment.yaml /tmp/environment.yaml
 
+# Copy script for notebooks tests
+COPY --chown=developer:developer docker/test_notebooks.sh /home/developer/test_notebooks.sh
+
 # Use environment to update the env base
 RUN mamba update --all --yes --quiet \
   && mamba env update --file /tmp/environment.yaml --name base \

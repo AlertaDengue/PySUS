@@ -6,7 +6,8 @@ services:
       dockerfile: docker/Dokerfile
       args:
         DISPLAY: http://localhost:8888/lab/
-    hostname: jupyter-pysus
+    hostname: pysus-jupyter
+    container_name: pysus-jupyter
     privileged: true
     environment:
       - DISPLAY=${DISPLAY}

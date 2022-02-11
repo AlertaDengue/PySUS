@@ -28,6 +28,9 @@ run_jupyter_pysus: ## build and deploy all containers
 down_jupyter_pysus: ## stop and remove containers for all services
 	$(DOCKER) down -v --remove-orphans
 
+test_jupyter_pysus: ## run pytest for notebooks inside jupyter container
+	$(DOCKER) exec -T jupyter bash /home/developer/test_notebooks.sh
+
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
 clean-build: ## remove build artifacts
