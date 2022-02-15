@@ -31,23 +31,19 @@ jobs:
         use-mamba: true
         miniforge-variant: Mambaforge
 
-    - name: install dependencies
-      shell: bash -l {0}
+    - name: Install dependencies
       run: |
         make install
 
     - name: Lint with flake8
-      shell: bash -l {0}
       run: |
         make lint
 
     - name: build and deploy jupyterlab
-      shell: bash -l {0}
       run: |
         make run_jupyter_pysus
 
     - name: run tests for notebooks on container
-      shell: bash -l {0}
       run: |
         make test_jupyter_pysus
 
