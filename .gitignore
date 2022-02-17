@@ -13,3 +13,8 @@ dist/
 bin/
 lib/
 pyvenv.cfg
+*.cache/
+*.env
+*.jupyter/
+*.local/
+*.mozilla/

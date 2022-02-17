@@ -1,8 +1,10 @@
 name: env-pysus
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
-  - pandas
+  - jupyterlab 
+  - nodejs
   - cffi>=1.0.0
   - dbfread
   - geocoder
@@ -29,5 +31,7 @@ dependencies:
   - pre-commit
   - numba
   - pip:
+    - nbmake
     - geobr
     - facets-overview
+    - pysus

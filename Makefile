@@ -1,17 +1,7 @@
-.PHONY: clean clean-test clean-pyc clean-build docs help
+SHELL=/bin/bash
+
+.PHONY: clean clean-test clean-pyc clean-build help
 .DEFAULT_GOAL := help
-
-define BROWSER_PYSCRIPT
-import os, webbrowser, sys
-
-try:
-	from urllib import pathname2url
-except:
-	from urllib.request import pathname2url
-
-webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
-endef
-export BROWSER_PYSCRIPT
 
 define PRINT_HELP_PYSCRIPT
 import re, sys
@@ -24,11 +14,22 @@ for line in sys.stdin:
 endef
 export PRINT_HELP_PYSCRIPT
 
-BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
+DOCKER = docker-compose -p pysus -f docker/docker-compose.yaml
+SERVICE :=
+
+# Docker basic
+run_jupyter_pysus: ## build and deploy all containers
+	$(DOCKER) up -d --build
+
+down_jupyter_pysus: ## stop and remove containers for all services
+	$(DOCKER) down -v --remove-orphans
+
+test_jupyter_pysus: ## run pytest for notebooks inside jupyter container
+	$(DOCKER) exec -T jupyter bash /test_notebooks.sh
 
 clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
 
@@ -36,8 +37,13 @@ clean-build: ## remove build artifacts
 	rm -fr build/
 	rm -fr dist/
 	rm -fr .eggs/
+	find . -name '*.cache' -exec rm -fr {} +
+	find . -name '*.jupyter' -exec rm -fr {} +
+	find . -name '*.local' -exec rm -fr {} +
+	find . -name '*.mozilla' -exec rm -fr {} +
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
+
 
 clean-pyc: ## remove Python file artifacts
 	find . -name '*.pyc' -exec rm -f {} +
@@ -60,15 +66,9 @@ lint: ## check style with flake8
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-develop: clean precommit_pysus ## install the package in development mode
+develop: clean ## install the package in development mode
 	pip install -e '.[dev]'
-	git init  # it is safe to run it more than one time
 	pre-commit install
-
-precommit_pysus: ## run checks before committing changes
-	pre-commit install
-	pre-commit autoupdate
-	pre-commit run --all-files
 
 test: ## run tests quickly with the default Python
 	py.test

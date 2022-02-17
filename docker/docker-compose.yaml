@@ -1,0 +1,13 @@
+version: '3.3'
+services: 
+  jupyter:
+    build:
+      context: ".."
+      dockerfile: docker/Dockerfile
+    hostname: pysus-jupyter
+    container_name: pysus-jupyter
+    privileged: true
+    environment:
+      - DISPLAY=:0
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
