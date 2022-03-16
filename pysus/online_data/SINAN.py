@@ -12,6 +12,7 @@ from pysus.utilities.readdbc import read_dbc
 agravos = {
     "Animais Peçonhentos": "ANIM",
     "Botulismo": "BOTU",
+    "Cancer": "CANC",
     "Chagas": "CHAG",
     "Chikungunya": "CHIK",
     "Colera": "COLE",
@@ -59,13 +60,12 @@ def get_available_years(state, disease):
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
     # res = StringIO()
-    res = ftp.nlst(f"{agravos[disease.title()]}{state}*.dbc")
+    res = ftp.nlst(f"{agravos[disease.title()]}*.dbc")
     return res
 
-def download(state, year, disease, cache=True):
+def download(year: int, disease: str, cache: bool=True):
     """
     Downloads SINAN data directly from Datasus ftp server
-    :param state: two-letter state identifier: MG == Minas Gerais
     :param year: 4 digit integer
     :disease: Diseases
     :return: pandas dataframe
@@ -77,20 +77,22 @@ def download(state, year, disease, cache=True):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
-    state = state.upper()
     if year < 2007:
         raise ValueError("SINAN does not contain data before 2007")
     
     dis_code = agravos[disease.title()]
-    fname = f"{dis_code}{state}{year2}.DBC"
+    fname = f"{dis_code}BR{year2}.dbc"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
+    path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
     cachefile = os.path.join(CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet")
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd(path)
-    
-    df = _fetch_file(fname, path, 'DBC')
+    try:
+        df = _fetch_file(fname, path, 'DBC')
+    except:  # If file is not part of the final releases
+        df = _fetch_file(fname, path_pre, 'DBC')
 
     if cache:
         df.to_parquet(cachefile)
