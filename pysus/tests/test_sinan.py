@@ -16,9 +16,15 @@ class TestSINANDownload(unittest.TestCase):
     def test_fetch_viol_dom(self):
         df = download(year=2011, disease="Hantavirose")
         self.assertIsInstance(df, pd.DataFrame)
+
     def test_fetch_cancer_prelim(self):
         df = download(year=2022, disease="Cancer")
         self.assertIsInstance(df, pd.DataFrame)
+
+    def test_fetch_sifilis(self):
+        df = download(year=2021, disease="Sífilis Adquirida")
+        self.assertIsInstance(df, pd.DataFrame)
+
 
     def test_lista_agravos(self):
         lista = list_diseases()
