@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "pysus"
+version = "0.5.13"
+description = "Tools for dealing with Brazil's Public health data"
+authors = ["Flávio Codeço Coelho <fccoelho@gmail.com>"]
+license = "gpl-v3"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+pandas = "^1.4.2"
+pandasql = "^0.7.3"
+cffi = "^1.15.0"
+dbfread = "^2.0.7"
+scipy = "^1.8.0"
+geocoder = "^1.38.1"
+requests = "^2.27.1"
+geobr = "^0.1.10"
+pyarrow = "^7.0.0"
+folium = "^0.12.1"
+fastparquet = "^0.8.1"
+facets-overview = "^1.0.0"
+dask = "^2022.4.0"
+wget = "^3.2"
+colorcet = "^3.0.0"
+llvmlite = "^0.38.0"
+datashader = "^0.13.0"
+rasterstats = "^0.16.0"
+elasticsearch = "^8.1.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.1"
+Sphinx = "^4.5.0"
+nbsphinx = "^0.8.8"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
