@@ -26,6 +26,8 @@ llvmlite = "^0.38.0"
 datashader = "^0.13.0"
 rasterstats = "^0.16.0"
 elasticsearch = "^8.1.2"
+tqdm = "^4.64.0"
+rasterio = "^1.2.10"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

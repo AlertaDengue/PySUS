@@ -20,3 +20,5 @@ georasters
 rasterstats==0.16.0
 elasticsearch==8.1.2
 pyarrow==7.0.0
+tqdm==4.64.0
+rasterio==1.2.10
