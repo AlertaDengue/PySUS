@@ -19,7 +19,7 @@ from pysus.preprocessing import SIM, decoders
 
 class TestDecoder(unittest.TestCase):
     def test_group_and_count(self):
-        df = download("sp", 2010)
+        df = download("se", 2010)
         df = decoders.translate_variables_SIM(df)
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = SIM.group_and_count(df, variables)
@@ -53,7 +53,7 @@ class TestDecoder(unittest.TestCase):
         )
 
     def test_redistribute_missing(self):
-        df = download("sp", 2010)
+        df = download("se", 2010)
         df = decoders.translate_variables_SIM(df)
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = SIM.group_and_count(df, variables)
@@ -94,7 +94,7 @@ class TestDecoder(unittest.TestCase):
         )
 
     def test_redistribute_missing_partial(self):
-        df = download("sp", 2010)
+        df = download("se", 2010)
         df = decoders.translate_variables_SIM(
             df, age_classes=True, classify_cid10_chapters=True
         )

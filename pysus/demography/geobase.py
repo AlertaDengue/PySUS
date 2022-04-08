@@ -15,6 +15,7 @@ import datashader as ds
 import geobr
 import geopandas as gpd
 import georasters as gr
+# import rasterio as rio
 import numpy as np
 import wget
 from shapely import geometry
@@ -196,6 +197,7 @@ def get_full_pop_raster(path="."):
             #     brr.write(tar.extractall(path=path))
     os.unlink("brazil_pop.tif.tar.xz")
     raster = gr.from_file("brazil_pop.tif.tif")
+    # raster = rio.open("brazil_pop.tif.tif")
     os.unlink("brazil_pop.tif.tif")
 
     return raster

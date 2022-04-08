@@ -12,6 +12,7 @@ class SIATestCase(unittest.TestCase):
         assert len(names) == 3
         assert 'PASP2012b.dbc' in names
 
+    @unittest.skip  # Takes a long time to complete
     def test_download_large_PA(self):
         res = download('SP', 2020, 12, group=['PA'])
         if isinstance(res, pd.DataFrame):
