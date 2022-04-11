@@ -1,6 +1,9 @@
 pandas
+pandasql
 cffi>=1.0.0
 dbfread
+gdal
+scipy
 geocoder
 requests
 geobr
