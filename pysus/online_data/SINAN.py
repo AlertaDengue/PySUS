@@ -13,6 +13,7 @@ from pysus.utilities.readdbc import read_dbc
 agravos = {
     "Animais Peçonhentos": "ANIM",
     "Botulismo": "BOTU",
+    "Cancer": "CANC",
     "Chagas": "CHAG",
     "Chikungunya": "CHIK",
     "Colera": "COLE",
@@ -37,6 +38,9 @@ agravos = {
     "Peste": "PEST",
     "Poliomielite": "PFAN",
     "Raiva Humana": "RAIV",
+    "Sífilis Adquirida": "SIFA",
+    "Sífilis Congênita": "SIFC",
+    "Sífilis em Gestante": "SIFG",
     "Tétano Acidental": "TETA",
     "Tétano Neonatal": "TETN",
     "Tuberculose": "TUBE",
@@ -58,7 +62,6 @@ def get_available_years(state, disease):
     """
     warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
     ftp = FTP("ftp.datasus.gov.br")
-    state = 'BR'
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
     # res = StringIO()
@@ -88,13 +91,16 @@ def download(state, year, disease, cache=True):
     dis_code = agravos[disease.title()]
     fname = f"{dis_code}{state}{year2}.DBC"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
+    path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
     cachefile = os.path.join(CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet")
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd(path)
-    
-    df = _fetch_file(fname, path, 'DBC')
+    try:
+        df = _fetch_file(fname, path, 'DBC')
+    except:  # If file is not part of the final releases
+        df = _fetch_file(fname, path_pre, 'DBC')
 
     if cache:
         df.to_parquet(cachefile)
