@@ -65,7 +65,7 @@ def get_available_years(state, disease):
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
     # res = StringIO()
-    res = ftp.nlst(f"{agravos[disease.title()]}{state}*.dbc")
+    res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
     return res
 
 def download(state, year, disease, cache=True):

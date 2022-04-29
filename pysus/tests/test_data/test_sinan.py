@@ -17,6 +17,7 @@ class TestDownload(unittest.TestCase):
 
     def test_get_available_years(self):
         res = get_available_years("RJ", "dengue")
+        print(res)
         self.assertIsInstance(res, list)
         assert res[0].startswith("DENG")
 
