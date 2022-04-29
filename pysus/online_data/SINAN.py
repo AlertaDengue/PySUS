@@ -1,6 +1,7 @@
 import os
 from ftplib import FTP, error_perm
 from io import StringIO
+import warnings
 
 # import download as download
 import pandas as pd
@@ -55,7 +56,9 @@ def get_available_years(state, disease):
     :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
     """
+    warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
     ftp = FTP("ftp.datasus.gov.br")
+    state = 'BR'
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
     # res = StringIO()
@@ -77,7 +80,8 @@ def download(state, year, disease, cache=True):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
-    state = state.upper()
+    state = 'BR' # state.upper()
+    warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
     if year < 2007:
         raise ValueError("SINAN does not contain data before 2007")
     
