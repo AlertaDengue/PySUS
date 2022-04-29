@@ -83,7 +83,7 @@ class GeoBase:
 
     def _persist(self, what):
         if what == "map":
-            self.mapdf.to_parquet(f"{self.level}_map.parquet")
+            self.mapdf.to_file(f"{self.level}_map.gpkg", driver="GPKG")
         elif what == "pop":
             self.pop.to_parquet(f"{self.level}_pop.parquet")
         elif what == "raster":
@@ -99,12 +99,13 @@ class GeoBase:
         :param kwargs: keyword parameters for geobr map reading function
         :return: GeoDataFrame
         """
-        if os.path.exists(f"{self.level}_map.parquet"):
-            self.mapdf = gpd.read_parquet(f"{self.level}_map.parquet")
+        if os.path.exists(f"{self.level}_map.gpkg"):
+            self.mapdf = gpd.read_file(f"{self.level}_map.gpkg", driver="GPKG")
             return self.mapdf
         print("Dowloading the Map...")
         if self.mapdf is None:
             self.mapdf = LEVELS[self.level](*args, **kwargs)
+            self.mapdf.crs = "EPSG:4674"
             self._persist("map")
         return self.mapdf
 
@@ -186,18 +187,16 @@ def get_population(geometry, raster):
 
 
 def get_full_pop_raster(path="."):
-    url = "https://www.dropbox.com/s/l9iphmawfjzt4lf/brazil_pop.tif.tar.xz?dl=1"
-    fn = os.path.join(path, "brazil_pop.tif.tar.xz")
+    url = "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km/2020/BRA/bra_ppp_2020_1km_Aggregated.tif"
+    fn = os.path.join(path, "bra_ppp_2020_1km_Aggregated.tif")
     wget.download(url=url, out=path)
-    fn = os.path.join(path, "brazil_pop.tif.tar.xz")
-    with lzma.open("brazil_pop.tif.tar.xz") as f:
-        with tarfile.open(fileobj=f) as tar:
-            tar.extractall()
-            # with open('brazil_pop.tif', 'wb') as brr:
-            #     brr.write(tar.extractall(path=path))
-    os.unlink("brazil_pop.tif.tar.xz")
-    raster = gr.from_file("brazil_pop.tif.tif")
+    # with lzma.open("brazil_pop.tif.tar.xz") as f:
+    #     with tarfile.open(fileobj=f) as tar:
+    #         tar.extractall()
+    #
+    # os.unlink("brazil_pop.tif.tar.xz")
+    raster = gr.from_file(fn)
     # raster = rio.open("brazil_pop.tif.tif")
-    os.unlink("brazil_pop.tif.tif")
+    os.unlink(fn)
 
     return raster
