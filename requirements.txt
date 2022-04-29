@@ -2,7 +2,7 @@ pandas==1.4.2
 pandasql==0.7.3
 cffi>=1.0.0
 dbfread==2.0.7
-gdal==3.2.2
+gdal
 scipy==1.8.0
 geocoder==1.38.1
 requests==2.27.1
