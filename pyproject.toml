@@ -2,7 +2,7 @@
 name = "pysus"
 description = "Tools for dealing with Brazil's Public health data"
 authors = ["Flavio Codeco Coelho"]
-version = "0.5.14"
+version = "0.5.16"
 homepage = "https://github.com/fccoelho/PySUS"
 
 [tool.poetry.dependencies]
