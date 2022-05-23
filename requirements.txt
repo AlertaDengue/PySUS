@@ -11,7 +11,7 @@ folium==0.12.1
 fastparquet==0.8.1
 facets-overview==1.0.0
 geopandas==0.7.0
-dask==2022.4.0
+dask
 wget==3.2
 colorcet==3.0.0
 datashader==0.13.0
