@@ -16,7 +16,7 @@ If you use PySUS for a publication,  please use the bibtex below to cite it:
   month        = may,
   year         = 2021,
   publisher    = {Zenodo},
-  version      = {0.5.9},
+  version      = {0.5.17},
   doi          = {10.5281/zenodo.4883502},
   url          = {https://doi.org/10.5281/zenodo.4883502}
 }
