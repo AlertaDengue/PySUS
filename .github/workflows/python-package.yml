@@ -47,7 +47,7 @@ jobs:
       run: |
         make test_jupyter_pysus
 
-    # - name: Test with pytest
-    #   shell: bash -l {0}
-    #   run: |
-    #     make test
+     - name: Test with pytest
+       shell: bash -l {0}
+       run: |
+         make test
