@@ -10,7 +10,6 @@ from tqdm import tqdm
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 
-import geopandas as gpd
 import pandas as pd
 from dbfread import DBF
 
@@ -35,10 +34,10 @@ def read_dbc(filename, encoding="utf-8", raw=False):
         dbc2dbf(filename, tf.name.encode())
         try:
             dbf = DBF(tf.name, encoding=encoding, raw=raw)
-            df = gpd.GeoDataFrame(list(dbf))
+            df = pd.DataFrame(list(dbf))
         except ValueError as exc:
             dbf = DBF(tf.name, encoding=encoding, raw=not raw)
-            df = gpd.GeoDataFrame(list(dbf))
+            df = pd.DataFrame(list(dbf))
     os.unlink(tf.name)
 
     return df
@@ -46,7 +45,7 @@ def read_dbc(filename, encoding="utf-8", raw=False):
 
 def dbc2dbf(infile, outfile):
     """
-    Converts a DATASUS dbc file to a DBF database.
+    Converts a DATASUS dbc file to a DBF database saving it to `outfile`.
     :param infile: .dbc file name
     :param outfile: name of the .dbf file to be created.
     """
@@ -62,32 +61,12 @@ def dbc2dbf(infile, outfile):
     # print(os.path.exists(outfile))
 
 
-def read_dbc_geopandas(filename, encoding="utf-8"):
-    """
-    Opens a DATASUS .dbc file and return its contents as a pandas
-    Dataframe, using geopandas
-    :param filename: .dbc filename
-    :param encoding: encoding of the data
-    :return: Pandas Dataframe.
-    """
-    if isinstance(filename, str):
-        filename = filename
-    with NamedTemporaryFile(delete=False) as tf:
-        out = tf.name + ".dbf"
-        dbc2dbf(filename, out)
-        dbf = gpd.read_file(out, encoding=encoding).drop("geometry", axis=1)
-        df = pd.DataFrame(dbf)
-        os.unlink(out)
-    os.unlink(tf.name)
-
-    return df
-
 def read_dbc_dbf(filename: str):
     if filename.endswith(('dbc', 'DBC')):
         df = read_dbc(filename, encoding="iso-8859-1")
     elif filename.endswith(("DBF", "dbf")):
-            # dbf = DBF(filename, encoding="iso-8859-1")
-            dbf = gpd.read_file(filename, encoding="iso-8859-1").drop("geometry", axis=1)
+            dbf = DBF(filename, encoding="iso-8859-1")
+            # dbf = gpd.read_file(filename, encoding="iso-8859-1").drop("geometry", axis=1)
             df = pd.DataFrame(list(dbf))
     return df
 
