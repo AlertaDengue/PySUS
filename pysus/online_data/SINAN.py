@@ -1,6 +1,7 @@
 import os
 from ftplib import FTP, error_perm
 from io import StringIO
+import warnings
 
 # import download as download
 import pandas as pd
@@ -59,16 +60,18 @@ def get_available_years(state, disease):
     :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
     """
+    warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
     # res = StringIO()
-    res = ftp.nlst(f"{agravos[disease.title()]}*.dbc")
+    res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
     return res
 
-def download(year: int, disease: str, cache: bool=True):
+def download(state, year, disease, cache=True):
     """
     Downloads SINAN data directly from Datasus ftp server
+    :param state: two-letter state identifier: MG == Minas Gerais
     :param year: 4 digit integer
     :disease: Diseases
     :return: pandas dataframe
@@ -80,11 +83,13 @@ def download(year: int, disease: str, cache: bool=True):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
+    state = 'BR' # state.upper()
+    warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
     if year < 2007:
         raise ValueError("SINAN does not contain data before 2007")
     
     dis_code = agravos[disease.title()]
-    fname = f"{dis_code}BR{year2}.dbc"
+    fname = f"{dis_code}{state}{year2}.DBC"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
     path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
     cachefile = os.path.join(CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet")

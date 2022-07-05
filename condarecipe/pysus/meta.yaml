@@ -1,5 +1,5 @@
 {% set name = "PySUS" %}
-{% set version = "0.5.7" %}
+{% set version = "0.5.14" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: b5db6b2d11bcb6d89de6f40698b7f12808b8013aa073f05a6ff4acb9125d6238
+  sha256: b5215bf4bf2afb4f9d552deab717df3ab26aeed8dc9750434dde285f227f045d
 
 build:
   number: 0

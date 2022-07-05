@@ -22,7 +22,7 @@ def download(uf, cache=True, checkmemory=True):
     pwd = "Za4qNXdyQNSa9YaA"
     today = date.today()
     dt = today.strftime("_%d_%m_%Y")
-    base = f"desc-notificacoes-esusve-{uf}"  # desc-notificacoes-esusve-
+    base = f"desc-esus-notifica-estado-{uf}"  # desc-notificacoes-esusve-
     url = f"https://{user}:{pwd}@elasticsearch-saps.saude.gov.br"
     out = f"ESUS_{uf}_{dt}.parquet"
 

@@ -1,7 +1,6 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
-    <option name="myLocal" value="true" />
     <inspection_tool class="JSHint" enabled="true" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="JSLint" enabled="true" level="ERROR" enabled_by_default="false" />
     <inspection_tool class="PyClassicStyleClassInspection" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -16,9 +15,16 @@
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <value>
-          <list size="2">
+          <list size="9">
             <item index="0" class="java.lang.String" itemvalue="sphinxit" />
             <item index="1" class="java.lang.String" itemvalue="gnuplot-py" />
+            <item index="2" class="java.lang.String" itemvalue="pandas" />
+            <item index="3" class="java.lang.String" itemvalue="tqdm" />
+            <item index="4" class="java.lang.String" itemvalue="folium" />
+            <item index="5" class="java.lang.String" itemvalue="geopandas" />
+            <item index="6" class="java.lang.String" itemvalue="requests" />
+            <item index="7" class="java.lang.String" itemvalue="dask" />
+            <item index="8" class="java.lang.String" itemvalue="fastparquet" />
           </list>
         </value>
       </option>

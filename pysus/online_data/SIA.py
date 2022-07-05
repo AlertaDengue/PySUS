@@ -85,7 +85,7 @@ def download(
     else:
         raise ValueError("SIA does not contain data before 1994")
 
-    dfs: List[Optional[pd.DataFrame]] = list()
+    dfs: List[Optional[pd.DataFrame]] = []
     for gname in group:
         gname = gname.upper()
         if gname not in group_dict:
@@ -119,13 +119,10 @@ def download(
             except Exception as e:
                 df = None
                 print(e)
-        if df is not None:
-            dfs.append(df)
 
-    if len(dfs) == 1:
-        return dfs[0]
-    else:
-        return tuple(dfs)
+        dfs.append(df)
+
+    return tuple(dfs)
 
 
 def _fetch_file(fname, ftp, ftype):

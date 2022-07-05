@@ -86,7 +86,8 @@ def read_dbc_dbf(filename: str):
     if filename.endswith(('dbc', 'DBC')):
         df = read_dbc(filename, encoding="iso-8859-1")
     elif filename.endswith(("DBF", "dbf")):
-            dbf = DBF(filename, encoding="iso-8859-1")
+            # dbf = DBF(filename, encoding="iso-8859-1")
+            dbf = gpd.read_file(filename, encoding="iso-8859-1").drop("geometry", axis=1)
             df = pd.DataFrame(list(dbf))
     return df
 

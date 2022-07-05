@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "pysus"
+description = "Tools for dealing with Brazil's Public health data"
+authors = ["Flavio Codeco Coelho"]
+version = "0.5.16"
+homepage = "https://github.com/fccoelho/PySUS"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+pandas = "==1.4.2"
+pandasql = "==0.7.3"
+cffi = ">=1.0.0"
+dbfread = "==2.0.7"
+scipy = "==1.8.0"
+geocoder = "==1.38.1"
+requests = "==2.27.1"
+geobr = "==0.1.10"
+pyarrow = "==7.0.0"
+folium = "==0.12.1"
+fastparquet = "==0.8.1"
+facets-overview = "==1.0.0"
+dask = "==2022.4.0"
+wget = "==3.2"
+colorcet = "==3.0.0"
+datashader = "==0.13.0"
+#rasterstats = "==0.16.0"
+elasticsearch = "==7.16.2"
+tqdm = "==4.64.0"
+gdal = "3.4.1"
+geopandas = "==0.7.0"
+georasters = "*"
+xarray = "==2022.3.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pre-commit = "*"
+black = "*"
+isort = "*"
+wheel = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
