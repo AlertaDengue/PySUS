@@ -8,7 +8,7 @@ import pandas as pd
 import requests
 import urllib3
 import io
-requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
+# requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
@@ -120,9 +120,7 @@ def list_agregados(**kwargs):
     url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
     print(f"Fetching Data groupings from {url}")
     try:
-        res = requests.get(url, allow_redirects=False, verify=False)
-        table = pd.read_csv(io.BytesIO(res.content), sep=';')
-        # table = pd.read_json(url)
+        table = pd.read_json(url)
     except requests.exceptions.SSLError as e:
         print(f"Failed fetching aggregates: {e}")
         return pd.DataFrame()
