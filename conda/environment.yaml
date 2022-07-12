@@ -11,10 +11,8 @@ dependencies:
   - geocoder
   - requests
   - fastparquet
-  - geopandas
   - dask
   - wget
-  - xarray
   - elasticsearch
   - pyarrow
   # dev
@@ -29,5 +27,4 @@ dependencies:
   - numba
   - pip:
     - nbmake
-    - facets-overview
     - pysus

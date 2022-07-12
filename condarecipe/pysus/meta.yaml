@@ -23,7 +23,6 @@ requirements:
     - pip
     - python
     - requests
-    - georasters
   run:
     - cffi >=1.0.0
     - dbfread
@@ -33,7 +32,6 @@ requirements:
     - pyarrow
     - python
     - requests
-    - georasters
     - elasticsearch
 
 test:
