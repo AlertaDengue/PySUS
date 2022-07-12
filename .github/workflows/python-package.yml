@@ -1,55 +1,47 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+name: tests
 
-name: Python package
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
+    
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
+    - uses: actions/checkout@v2
+    
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniconda-version: "latest"
+        mamba-version: "*"
+        environment-file: conda/environment.yaml
+        channels: conda-forge,nodefaults
+        activate-environment: env-pysus
+        use-mamba: true
+        miniforge-variant: Mambaforge
 
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniconda-version: "latest"
-          mamba-version: "*"
-          environment-file: environment.yaml
-          channels: conda-forge
-          activate-environment: env-pysus
-          use-mamba: true
-          miniforge-variant: Mambaforge
+    - name: Install dependencies
+      run: |
+        make install
 
-      - name: Install dependencies
-        run: |
-          make install
+    - name: Lint with flake8
+      run: |
+        make check-codestyle
 
-      - name: Lint with flake8
-        run: |
-          make lint
+    - name: build and deploy jupyterlab
+      run: |
+        make run-jupyter-pysus
 
-      - name: build and deploy jupyterlab
-        run: |
-          make run_jupyter_pysus
-
-      - name: run tests for notebooks on container
-        run: |
-          make test_jupyter_pysus
-
-       - name: Test with pytest
-         shell: bash -l {0}
-         run: |
-           make test
+    - name: Test with pytest
+      run: |
+        make test

@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - docker-compose
   - jupyterlab 
   - nodejs
   - cffi>=1.0.0
