@@ -23,7 +23,7 @@ ENV HOME /home/developer
 ENV APP_TMP_DATA=/tmp
 
 # Copy environment file to tmp/
-COPY environment.yaml ${APP_TMP_DATA}/environment.yaml
+COPY conda/environment.yaml ${APP_TMP_DATA}/environment.yaml
 # Executable in a container to be owned by the root user
 COPY docker/test_notebooks.sh /test_notebooks.sh
 COPY docker/entrypoint.sh /entrypoint.sh
