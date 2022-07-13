@@ -77,6 +77,7 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
         df = pd.DataFrame(d)
         if first:
             df.to_csv(tempfile)
+            first = 0
         else:
             df.to_csv(tempfile, mode='a', header=False)
 
@@ -87,7 +88,7 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
     return tempfile
 
 
-def stream_DBF(dbf, chunk_size=3000):
+def stream_DBF(dbf, chunk_size=30000):
     """Fetches records in chunks to preserve memory"""
     data = []
     i = 0

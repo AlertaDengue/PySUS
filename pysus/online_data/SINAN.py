@@ -80,10 +80,11 @@ def download(year, disease, cache=True, return_fname=False):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
+    first_year = [f.split('.')[0][-2:] for f in get_available_years(disease)][0]
     state = 'BR' # state.upper()
     warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
-    if year < 2007:
-        raise ValueError("SINAN does not contain data before 2007")
+    if year2 < first_year:
+        raise ValueError(f"SINAN does not contain data before {first_year}")
     
     dis_code = agravos[disease.title()]
     fname = f"{dis_code}{state}{year2}.DBC"
