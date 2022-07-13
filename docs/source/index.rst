@@ -24,7 +24,6 @@ Contents:
    Analyzing Chikungunya data <Chikungunya.ipynb>
    Analyzing Zika data <Zika.ipynb>
    Downloading COVID data from ESUS <ESUS.ipynb>
-   Manipulating Demographic Data <Demography.ipynb>
    Getting Official Statistics <IBGE_data.ipynb>
 
 

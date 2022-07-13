@@ -3,21 +3,16 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - docker-compose
   - jupyterlab 
   - nodejs
   - cffi>=1.0.0
   - dbfread
   - geocoder
   - requests
-  - folium
   - fastparquet
-  - geopandas
   - dask
   - wget
-  - colorcet
-  - datashader
-  - xarray
-  - georasters
   - elasticsearch
   - pyarrow
   # dev
@@ -32,6 +27,4 @@ dependencies:
   - numba
   - pip:
     - nbmake
-    - geobr
-    - facets-overview
     - pysus

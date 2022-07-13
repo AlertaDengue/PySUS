@@ -6,7 +6,7 @@ import pandas as pd
 from dbfread import DBF
 
 from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc_geopandas
+from pysus.utilities.readdbc import read_dbc
 
 group_dict = {
     "LT": ["Leitos - A partir de Out/2005", 10, 2005],
@@ -78,7 +78,7 @@ def _fetch_file(fname: str, ftp: FTP, ftype: str)-> pd.DataFrame:
     except error_perm:
         raise Exception("File {} not available".format(fname))
     if ftype == "DBC":
-        df = read_dbc_geopandas(fname, encoding="iso-8859-1")
+        df = read_dbc(fname, encoding="iso-8859-1")
     elif ftype == "DBF":
         dbf = DBF(fname, encoding="iso-8859-1")
         df = pd.DataFrame(list(dbf))

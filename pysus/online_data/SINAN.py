@@ -1,11 +1,8 @@
 import os
 from ftplib import FTP, error_perm
-from io import StringIO
 import warnings
 
-# import download as download
 import pandas as pd
-from dbfread import DBF
 
 from pysus.online_data import CACHEPATH, _fetch_file
 from pysus.utilities.readdbc import read_dbc
@@ -54,7 +51,7 @@ def list_diseases():
     return list(agravos.keys())
 
 
-def get_available_years(state, disease):
+def get_available_years(disease):
     """
     Fetch available years for data related to specific disease and state
     :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
@@ -68,7 +65,7 @@ def get_available_years(state, disease):
     res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
     return res
 
-def download(state, year, disease, cache=True):
+def download(year, disease, cache=True):
     """
     Downloads SINAN data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais

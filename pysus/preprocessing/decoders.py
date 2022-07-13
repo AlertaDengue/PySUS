@@ -1,4 +1,3 @@
-# -*- coding:utf-8 -*-
 """
 This module contains a set of functions to decode
 commonly encoded variables

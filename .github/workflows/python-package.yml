@@ -1,32 +1,31 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+name: tests
 
-name: Python package
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
+    
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v2
-
+    
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniconda-version: "latest"
         mamba-version: "*"
-        environment-file: environment.yaml
-        channels: conda-forge
+        environment-file: conda/environment.yaml
+        channels: conda-forge,nodefaults
         activate-environment: env-pysus
         use-mamba: true
         miniforge-variant: Mambaforge
@@ -37,17 +36,12 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        make lint
+        make check-codestyle
 
     - name: build and deploy jupyterlab
       run: |
-        make run_jupyter_pysus
+        make run-jupyter-pysus
 
-    - name: run tests for notebooks on container
+    - name: Test with pytest
       run: |
-        make test_jupyter_pysus
-
-    # - name: Test with pytest
-    #   shell: bash -l {0}
-    #   run: |
-    #     make test
+        make test

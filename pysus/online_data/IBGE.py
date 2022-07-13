@@ -6,21 +6,25 @@ from urllib.error import HTTPError
 
 import pandas as pd
 import requests
+import urllib3
+import io
+# requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
+
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
 
 def get_sidra_table(
-    table_id,
-    territorial_level,
-    geocode="all",
-    period=None,
-    variables=None,
-    classification=None,
-    categories=None,
-    format=None,
-    decimals=None,
-    headers=None,
+        table_id,
+        territorial_level,
+        geocode="all",
+        period=None,
+        variables=None,
+        classification=None,
+        categories=None,
+        format=None,
+        decimals=None,
+        headers=None,
 ):
     """
     Wrapper for the SIDRA API. More information here: http://apisidra.ibge.gov.br/home/ajuda
@@ -114,10 +118,12 @@ def list_agregados(**kwargs):
     """
     url = APIBASE + "agregados?"
     url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
+    print(f"Fetching Data groupings from {url}")
     try:
         table = pd.read_json(url)
-    except:
-        return None
+    except requests.exceptions.SSLError as e:
+        print(f"Failed fetching aggregates: {e}")
+        return pd.DataFrame()
     return table
 
 
@@ -221,7 +227,7 @@ class FetchData:
 
     def __init__(self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs):
         self.url = (
-            APIBASE + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
+                APIBASE + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
         )
         self.url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
         self.JSON = None
