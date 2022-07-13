@@ -26,7 +26,7 @@ group_dict = {
 
 
 def download(
-    group: str, state: str, year: int, month: int, cache: bool = True
+        group: str, state: str, year: int, month: int, cache: bool = True
 ) -> pd.DataFrame:
     """
     Download CNES records for group, state, year and month and returns dataframe
@@ -72,7 +72,7 @@ def download(
     return df
 
 
-def _fetch_file(fname: str, ftp: FTP, ftype: str)-> pd.DataFrame:
+def _fetch_file(fname: str, ftp: FTP, ftype: str) -> pd.DataFrame:
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
     except error_perm:

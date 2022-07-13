@@ -4,7 +4,7 @@ import warnings
 
 import pandas as pd
 
-from pysus.online_data import CACHEPATH, _fetch_file
+from pysus.online_data import CACHEPATH, _fetch_file, get_chunked_dataframe, get_dataframe
 from pysus.utilities.readdbc import read_dbc
 
 agravos = {
@@ -65,7 +65,7 @@ def get_available_years(disease):
     res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
     return res
 
-def download(year, disease, cache=True):
+def download(year, disease, cache=True, return_fname=False):
     """
     Downloads SINAN data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais
@@ -95,12 +95,17 @@ def download(year, disease, cache=True):
     ftp.login()
     ftp.cwd(path)
     try:
-        df = _fetch_file(fname, path, 'DBC')
+        _fetch_file(fname, path, 'DBC', return_df=False)
     except:  # If file is not part of the final releases
-        df = _fetch_file(fname, path_pre, 'DBC')
-
+        _fetch_file(fname, path_pre, 'DBC', return_df=False)
+    if return_fname:
+        filename = get_chunked_dataframe(fname, 'DBC')
+        return filename
+    else:
+        df = get_dataframe(fname, 'DBC')
     if cache:
         df.to_parquet(cachefile)
     if os.path.exists(fname):
         os.unlink(fname)
     return df
+

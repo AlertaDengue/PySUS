@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import os
 
 from pysus.online_data.SINAN import download, list_diseases
 from pysus.preprocessing.sinan import geocode, read_sinan_dbf
@@ -12,6 +13,12 @@ class TestSINANDownload(unittest.TestCase):
     def test_download(self):
         df = download(year=2007, disease="Botulismo")
         self.assertIsInstance(df, pd.DataFrame)
+
+    def test_filename_only(self):
+        fname = download(year=2015, disease="Dengue", return_fname=True)
+        self.assertIsInstance(fname, str)
+        self.assertTrue(os.path.exists(fname))
+
 
     def test_fetch_viol_dom(self):
         df = download(year=2011, disease="Hantavirose")
