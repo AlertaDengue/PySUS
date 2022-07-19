@@ -4,11 +4,13 @@ by fccoelho
 license: GPL V3 or Later
 """
 import os
+from ftplib import FTP
 from pathlib import Path
-from ftplib import FTP, error_perm
-from dbfread import DBF
-from pysus.utilities.readdbc import read_dbc, dbc2dbf
+
 import pandas as pd
+from dbfread import DBF
+
+from pysus.utilities.readdbc import read_dbc, dbc2dbf
 
 CACHEPATH = os.getenv("PYSUS_CACHEPATH", os.path.join(str(Path.home()), "pysus"))
 
@@ -70,10 +72,9 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
         outname = fname.replace('DBC', 'DBF')
         dbc2dbf(fname, outname)
 
-    dbf = DBF(fname, encoding="iso-8859-1")
     tempfile = outname.replace('DBF', 'csv.gz')
     first = 1
-    for d in stream_DBF(DBF(outname)):
+    for d in stream_DBF(DBF(outname, encoding="iso-8859-1")):
         df = pd.DataFrame(d)
         if first:
             df.to_csv(tempfile)
