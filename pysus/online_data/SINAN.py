@@ -4,7 +4,7 @@ import warnings
 
 import pandas as pd
 
-from pysus.online_data import CACHEPATH, _fetch_file
+from pysus.online_data import CACHEPATH, _fetch_file, get_chunked_dataframe, get_dataframe
 from pysus.utilities.readdbc import read_dbc
 
 agravos = {
@@ -65,7 +65,7 @@ def get_available_years(disease):
     res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
     return res
 
-def download(year, disease, cache=True):
+def download(year, disease, cache=True, return_fname=False):
     """
     Downloads SINAN data directly from Datasus ftp server
     :param state: two-letter state identifier: MG == Minas Gerais
@@ -80,10 +80,11 @@ def download(year, disease, cache=True):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
+    first_year = [f.split('.')[0][-2:] for f in get_available_years(disease)][0]
     state = 'BR' # state.upper()
     warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
-    if year < 2007:
-        raise ValueError("SINAN does not contain data before 2007")
+    if year2 < first_year:
+        raise ValueError(f"SINAN does not contain data before {first_year}")
     
     dis_code = agravos[disease.title()]
     fname = f"{dis_code}{state}{year2}.DBC"
@@ -95,12 +96,17 @@ def download(year, disease, cache=True):
     ftp.login()
     ftp.cwd(path)
     try:
-        df = _fetch_file(fname, path, 'DBC')
+        _fetch_file(fname, path, 'DBC', return_df=False)
     except:  # If file is not part of the final releases
-        df = _fetch_file(fname, path_pre, 'DBC')
-
+        _fetch_file(fname, path_pre, 'DBC', return_df=False)
+    if return_fname:
+        filename = get_chunked_dataframe(fname, 'DBC')
+        return filename
+    else:
+        df = get_dataframe(fname, 'DBC')
     if cache:
         df.to_parquet(cachefile)
     if os.path.exists(fname):
         os.unlink(fname)
     return df
+
