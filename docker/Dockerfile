@@ -6,40 +6,47 @@ USER root
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+ENV HOME "/home/pysus"
+ENV PATH "$PATH:/home/pysus/.local/bin"
+ENV ENV_NAME base
+ENV PATH "/opt/conda/envs/$ENV_NAME/bin:$PATH"
+ENV PATH "/opt/poetry/bin:$PATH"
+
 RUN apt-get -qq update --yes \
   && apt-get -qq install --yes --no-install-recommends \
   build-essential firefox\
-  ca-certificates sudo \
+  ca-certificates sudo curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -ms /bin/bash developer \
-  && echo "developer ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/developer \
-  && chmod 0440 /etc/sudoers.d/
+RUN useradd -ms /bin/bash pysus \
+  && echo "pysus ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/pysus \
+  && chmod 0440 /etc/sudoers.d/ \
+  && echo 'source /opt/conda/bin/activate "$ENV_NAME" && exec "$@"' > /activate.sh \
+  && echo 'source activate "$ENV_NAME"' >  /home/pysus/.bashrc \
+  && chmod +x /activate.sh \
+  && chmod -R a+rwx /opt/conda /tmp \
+  && sudo chown -R pysus:pysus /usr/src
 
-# Set home to developer
-ENV HOME /home/developer
-# Allow the application to execute as any UID 
-# and still write temporary data to /tmp
-ENV APP_TMP_DATA=/tmp
+COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
+COPY --chown=pysus:pysus docker/entrypoint.sh /entrypoint.sh
+COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
+COPY --chown=pysus:pysus pysus /usr/src/pysus
+COPY --chown=pysus:pysus docs/source/*.ipynb /home/pysus/Notebooks/
 
-# Copy environment file to tmp/
-COPY conda/environment.yaml ${APP_TMP_DATA}/environment.yaml
-# Executable in a container to be owned by the root user
-COPY docker/test_notebooks.sh /test_notebooks.sh
-COPY docker/entrypoint.sh /entrypoint.sh
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | POETRY_HOME=/opt/poetry python && \
+    cd /usr/local/bin && \
+    ln -s /opt/poetry/bin/poetry && \
+    poetry config virtualenvs.create false
 
-# Use environment to update the env base
-RUN mamba update --all --yes --quiet \
-  && mamba env update --file ${APP_TMP_DATA}/environment.yaml --name base \
+RUN chmod -R a+rwx /home/pysus/.config/pypoetry/
+
+USER pysus
+
+RUN mamba env update -n $ENV_NAME \
+    --file /tmp/dev.yaml \
+  && cd /usr/src && poetry build && poetry install \
   && mamba clean -afy
 
-USER developer
+WORKDIR /home/pysus/Notebooks
 
-# Copy only notebooks to the container with permissions to user
-RUN mkdir ${HOME}/Notebooks
-WORKDIR ${HOME}/Notebooks
-COPY pysus/Notebooks .
-
-ENTRYPOINT ["/entrypoint.sh"]
-
-CMD ["/usr/bin/firefox"]
+ENTRYPOINT ["bash", "/activate.sh"]

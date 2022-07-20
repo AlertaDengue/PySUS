@@ -24,21 +24,23 @@ jobs:
       with:
         miniconda-version: "latest"
         mamba-version: "*"
-        environment-file: conda/environment.yaml
+        environment-file: conda/dev.yaml
         channels: conda-forge,nodefaults
         activate-environment: env-pysus
         use-mamba: true
         miniforge-variant: Mambaforge
 
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
-        make install
+        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+        export PATH="$HOME/.poetry/bin:$PATH"
+        poetry config virtualenvs.create false && poetry build && poetry install
 
     - name: Lint with flake8
       run: |
         make check-codestyle
 
-    - name: build and deploy jupyterlab
+    - name: Run jupyterlab with PySUS
       run: |
         make run-jupyter-pysus
 

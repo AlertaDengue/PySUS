@@ -18,3 +18,4 @@ pyvenv.cfg
 *.jupyter/
 *.local/
 *.mozilla/
+*.ipynb_checkpoints*

@@ -1,4 +1,3 @@
 recursive-include pysus *.c *.h
 include pysus/utilities/*
-include pysus/utilities/c-src/*
 include requirements.txt

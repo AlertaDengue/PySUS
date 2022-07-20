@@ -11,3 +11,5 @@ services:
       - DISPLAY=:0
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+    entrypoint: ["/entrypoint.sh"]
+    command: ["/usr/bin/firefox"]

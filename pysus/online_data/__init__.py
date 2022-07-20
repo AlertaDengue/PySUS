@@ -1,4 +1,4 @@
-u"""
+"""
 Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
@@ -11,10 +11,11 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from dbfread import DBF
+from pysus.utilities.readdbc import dbc2dbf, read_dbc
 
-from pysus.utilities.readdbc import read_dbc, dbc2dbf
-
-CACHEPATH = os.getenv("PYSUS_CACHEPATH", os.path.join(str(Path.home()), "pysus"))
+CACHEPATH = os.getenv(
+    "PYSUS_CACHEPATH", os.path.join(str(Path.home()), "pysus")
+)
 
 # create pysus cache directory
 if not os.path.exists(CACHEPATH):
@@ -30,7 +31,9 @@ def cache_contents():
     return [os.path.join(CACHEPATH, f) for f in cached_data]
 
 
-def _fetch_file(fname: str, path: str, ftype: str, return_df: bool = True) -> pd.DataFrame:
+def _fetch_file(
+    fname: str, path: str, ftype: str, return_df: bool = True
+) -> pd.DataFrame:
     """
     Fetch a single file.
     :param fname: Name of the file
@@ -44,7 +47,7 @@ def _fetch_file(fname: str, path: str, ftype: str, return_df: bool = True) -> pd
     ftp.cwd(path)
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
-    except:
+    except Exception:
         raise Exception("File {} not available".format(fname))
     if return_df:
         df = get_dataframe(fname, ftype)
@@ -61,9 +64,9 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
     :return:  DataFrame
     """
     if ftype == "DBC":
-        df = read_dbc(fname, encoding="iso-8859-1", raw=True)
+        df = read_dbc(fname, encoding="iso-8859-1", raw=False)
     elif ftype == "DBF":
-        dbf = DBF(fname, encoding="iso-8859-1", raw=True)
+        dbf = DBF(fname, encoding="iso-8859-1", raw=False)
         df = pd.DataFrame(list(dbf))
     if os.path.exists(fname):
         os.unlink(fname)
@@ -73,12 +76,12 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
 
 def get_chunked_dataframe(fname: str, ftype: str) -> str:
     if ftype == "DBC":
-        outname = fname.replace('DBC', 'DBF')
+        outname = fname.replace("DBC", "DBF")
         dbc2dbf(fname, outname)
 
-    tempfile = outname.replace('DBF', 'parquet')
-    first = 1
-    for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=True)):
+    tempfile = outname.replace("DBF", "parquet")
+    # first = 1
+    for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=False)):
         df = pd.DataFrame(d)
         df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         table = pa.Table.from_pandas(df)
@@ -118,7 +121,9 @@ def get_CID10_table(cache=True):
     :return:
     """
     fname = "CID10.DBF"
-    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+    cachefile = os.path.join(
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
     if os.path.exists(cachefile):
         df = pd.read_parquet(cachefile)
         return df
@@ -128,38 +133,61 @@ def get_CID10_table(cache=True):
     return df
 
 
-DB_PATHS = {'SINAN': ["/dissemin/publicos/SINAN/DADOS/FINAIS", "/dissemin/publicos/SINAN/DADOS/PRELIM"],
-            'SIM': ["/dissemin/publicos/SIM/CID10/DORES", "/dissemin/publicos/SIM/CID9/DORES"],
-            'SINASC': ["/dissemin/publicos/SINASC/NOV/DNRES", "/dissemin/publicos/SINASC/ANT/DNRES"],
-            'SIH': ["/dissemin/publicos/SIHSUS/199201_200712/Dados", "/dissemin/publicos/SIHSUS/200801_/Dados"],
-            'SIA': ["/dissemin/publicos/SIASUS/199407_200712/Dados", "/dissemin/publicos/SIASUS/200801_/Dados"],
-            'PNI': ["/dissemin/publicos/PNI/DADOS"],
-            'CNES': [f"dissemin/publicos/CNES/200508_/Dados/"],
-            'CIHA': ["/dissemin/publicos/CIHA/201101_/Dados"]
-            }
+DB_PATHS = {
+    "SINAN": [
+        "/dissemin/publicos/SINAN/DADOS/FINAIS",
+        "/dissemin/publicos/SINAN/DADOS/PRELIM",
+    ],
+    "SIM": [
+        "/dissemin/publicos/SIM/CID10/DORES",
+        "/dissemin/publicos/SIM/CID9/DORES",
+    ],
+    "SINASC": [
+        "/dissemin/publicos/SINASC/NOV/DNRES",
+        "/dissemin/publicos/SINASC/ANT/DNRES",
+    ],
+    "SIH": [
+        "/dissemin/publicos/SIHSUS/199201_200712/Dados",
+        "/dissemin/publicos/SIHSUS/200801_/Dados",
+    ],
+    "SIA": [
+        "/dissemin/publicos/SIASUS/199407_200712/Dados",
+        "/dissemin/publicos/SIASUS/200801_/Dados",
+    ],
+    "PNI": ["/dissemin/publicos/PNI/DADOS"],
+    "CNES": ["dissemin/publicos/CNES/200508_/Dados/"],
+    "CIHA": ["/dissemin/publicos/CIHA/201101_/Dados"],
+}
 
 
-def last_update(database: str = 'SINAN') -> pd.DataFrame:
+def last_update(database: str = "SINAN") -> pd.DataFrame:
     """
     Return the date of last update from the database specified.
     :param database: Database to check
     """
     if database not in DB_PATHS:
-        print(f"Database {database} not supported try one of these\n{list(DB_PATHS.keys())}")
+        print(
+            f"Database {database} not supported try one of these"
+            "{list(DB_PATHS.keys())}"
+        )
         return pd.DataFrame()
 
     with FTP("ftp.datasus.gov.br") as ftp:
         ftp.login()
-        response = {'folder': [], 'date': [], 'file_size': [], 'file_name': []}
+        response = {"folder": [], "date": [], "file_size": [], "file_name": []}
 
         def parse(line):
             data = line.strip().split()
-            response['folder'].append(pth)
-            response['date'].append(pd.to_datetime(' '.join([data[0], data[1]])))
-            response['file_size'].append(0 if data[2] == '<DIR>' else int(data[2]))
-            response['file_name'].append(data[3])
+            response["folder"].append(pth)
+            response["date"].append(
+                pd.to_datetime(" ".join([data[0], data[1]]))
+            )
+            response["file_size"].append(
+                0 if data[2] == "<DIR>" else int(data[2])
+            )
+            response["file_name"].append(data[3])
 
         for pth in DB_PATHS[database]:
             ftp.cwd(pth)
-            flist = ftp.retrlines('LIST', parse)
+            # flist = ftp.retrlines("LIST", parse)
     return pd.DataFrame(response)

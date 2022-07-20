@@ -1,0 +1,12 @@
+name: env-pysus
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - cffi
+  - docker-compose
+  - gcc
+  - make
+  - pip
+  - psycopg2
+  - python 3.9.*
