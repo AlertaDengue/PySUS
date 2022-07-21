@@ -123,7 +123,13 @@ def get_CID10_table(cache=True):
 
 
 DB_PATHS = {'SINAN': ["/dissemin/publicos/SINAN/DADOS/FINAIS", "/dissemin/publicos/SINAN/DADOS/PRELIM"],
-            'SIM': [],
+            'SIM': ["/dissemin/publicos/SIM/CID10/DORES", "/dissemin/publicos/SIM/CID9/DORES"],
+            'SINASC': ["/dissemin/publicos/SINASC/NOV/DNRES", "/dissemin/publicos/SINASC/ANT/DNRES"],
+            'SIH': ["/dissemin/publicos/SIHSUS/199201_200712/Dados", "/dissemin/publicos/SIHSUS/200801_/Dados"],
+            'SIA': ["/dissemin/publicos/SIASUS/199407_200712/Dados", "/dissemin/publicos/SIASUS/200801_/Dados"],
+            'PNI': ["/dissemin/publicos/PNI/DADOS"],
+            'CNES': [f"dissemin/publicos/CNES/200508_/Dados/"],
+            'CIHA': ["/dissemin/publicos/CIHA/201101_/Dados"]
             }
 
 
@@ -144,7 +150,7 @@ def last_update(database: str = 'SINAN') -> pd.DataFrame:
             data = line.strip().split()
             response['folder'].append(pth)
             response['date'].append(pd.to_datetime(' '.join([data[0], data[1]])))
-            response['file_size'].append(int(data[2]))
+            response['file_size'].append(0 if data[2] == '<DIR>' else int(data[2]))
             response['file_name'].append(data[3])
 
         for pth in DB_PATHS[database]:
