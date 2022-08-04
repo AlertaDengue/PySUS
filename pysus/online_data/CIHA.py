@@ -38,7 +38,7 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
         fname = "CR{}{}{}.dbc".format(state, year2, month)
     if year >= 2011:
         ftype = "DBC"
-        ftp.cwd("/dissemin/publicos/CIHA/201101_/Dados".format(year))
+        ftp.cwd("/dissemin/publicos/CIHA/201101_/Dados")
         fname = "CIHA{}{}{}.dbc".format(state, str(year2).zfill(2), month)
     cachefile = os.path.join(CACHEPATH, "CIHA_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):

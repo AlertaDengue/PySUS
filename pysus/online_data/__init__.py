@@ -28,7 +28,7 @@ def cache_contents():
     return [os.path.join(CACHEPATH, f) for f in cached_data]
 
 
-def _fetch_file(fname: str, path: str, ftype: str, return_df: bool=True) -> pd.DataFrame:
+def _fetch_file(fname: str, path: str, ftype: str, return_df: bool = True) -> pd.DataFrame:
     """
     Fetch a single file.
     :param fname: Name of the file
@@ -67,6 +67,7 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
         os.unlink(fname)
     return df
 
+
 def get_chunked_dataframe(fname: str, ftype: str) -> str:
     if ftype == "DBC":
         outname = fname.replace('DBC', 'DBF')
@@ -103,6 +104,7 @@ def stream_DBF(dbf, chunk_size=30000):
     else:
         return data
 
+
 def get_CID10_table(cache=True):
     """
     Fetch the CID10 table
@@ -118,3 +120,40 @@ def get_CID10_table(cache=True):
     if cache:
         df.to_parquet(cachefile)
     return df
+
+
+DB_PATHS = {'SINAN': ["/dissemin/publicos/SINAN/DADOS/FINAIS", "/dissemin/publicos/SINAN/DADOS/PRELIM"],
+            'SIM': ["/dissemin/publicos/SIM/CID10/DORES", "/dissemin/publicos/SIM/CID9/DORES"],
+            'SINASC': ["/dissemin/publicos/SINASC/NOV/DNRES", "/dissemin/publicos/SINASC/ANT/DNRES"],
+            'SIH': ["/dissemin/publicos/SIHSUS/199201_200712/Dados", "/dissemin/publicos/SIHSUS/200801_/Dados"],
+            'SIA': ["/dissemin/publicos/SIASUS/199407_200712/Dados", "/dissemin/publicos/SIASUS/200801_/Dados"],
+            'PNI': ["/dissemin/publicos/PNI/DADOS"],
+            'CNES': [f"dissemin/publicos/CNES/200508_/Dados/"],
+            'CIHA': ["/dissemin/publicos/CIHA/201101_/Dados"]
+            }
+
+
+def last_update(database: str = 'SINAN') -> pd.DataFrame:
+    """
+    Return the date of last update from the database specified.
+    :param database: Database to check
+    """
+    if database not in DB_PATHS:
+        print(f"Database {database} not supported try one of these\n{list(DB_PATHS.keys())}")
+        return pd.DataFrame()
+
+    with FTP("ftp.datasus.gov.br") as ftp:
+        ftp.login()
+        response = {'folder': [], 'date': [], 'file_size': [], 'file_name': []}
+
+        def parse(line):
+            data = line.strip().split()
+            response['folder'].append(pth)
+            response['date'].append(pd.to_datetime(' '.join([data[0], data[1]])))
+            response['file_size'].append(0 if data[2] == '<DIR>' else int(data[2]))
+            response['file_name'].append(data[3])
+
+        for pth in DB_PATHS[database]:
+            ftp.cwd(pth)
+            flist = ftp.retrlines('LIST', parse)
+    return pd.DataFrame(response)
