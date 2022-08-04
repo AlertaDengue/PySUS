@@ -1,12 +1,12 @@
 import datetime
+import os
 import unittest
 
 import numpy as np
 import pandas as pd
-import os
 
 from pysus.online_data.SINAN import download, list_diseases
-from pysus.preprocessing.sinan import geocode, read_sinan_dbf
+from pysus.preprocessing.sinan import read_sinan_dbf
 
 
 class TestSINANDownload(unittest.TestCase):
@@ -32,16 +32,18 @@ class TestSINANDownload(unittest.TestCase):
         df = download(year=2021, disease="Sífilis Adquirida")
         self.assertIsInstance(df, pd.DataFrame)
 
-
     def test_lista_agravos(self):
         lista = list_diseases()
         self.assertIsInstance(lista, list)
         self.assertGreater(len(lista), 0)
 
+    def fetch_dengue_to_file(self):
+        download(2008, 'dengue', return_fname=True)
+
 
 class TestSinanDBF(unittest.TestCase):
     def test_read_dbf(self):
-        df = read_sinan_dbf("test_data/EPR-2016-06-01-2016.dbf", encoding="latin-1")
+        df = read_sinan_dbf("EPR-2016-06-01-2016.dbf", encoding="latin-1")
         self.assertIsInstance(df, pd.DataFrame)
         for cname in df.columns:
             if cname.startswith("DT_"):
@@ -61,11 +63,11 @@ class TestSinanDBF(unittest.TestCase):
                 )
 
     def test_type_convertion(self):
-        df = read_sinan_dbf("test_data/EPR-2016-06-01-2016.dbf", encoding="latin-1")
+        df = read_sinan_dbf("EPR-2016-06-01-2016.dbf", encoding="latin-1")
         assert not all(df.dtypes == "object")
 
     def test_geocode(self):
-        df = pd.read_pickle("test_data/chik.pickle")
+        df = pd.read_pickle("chik.pickle")
 
     #  geocode(sinan_df=df, outfile='chik_2016.csv', default_city='Rio de Janeiro')
 

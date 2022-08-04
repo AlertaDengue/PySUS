@@ -1,11 +1,8 @@
 import os
-from ftplib import FTP, error_perm
 import warnings
-
-import pandas as pd
+from ftplib import FTP
 
 from pysus.online_data import CACHEPATH, _fetch_file, get_chunked_dataframe, get_dataframe
-from pysus.utilities.readdbc import read_dbc
 
 agravos = {
     "Animais Peçonhentos": "ANIM",
@@ -80,12 +77,14 @@ def download(year, disease, cache=True, return_fname=False):
             f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
         )
     year2 = str(year)[-2:].zfill(2)
+    if not get_available_years(disease):
+        raise Exception(f"No data is available at present for {disease}")
     first_year = [f.split('.')[0][-2:] for f in get_available_years(disease)][0]
-    state = 'BR' # state.upper()
+    state = 'BR'  # state.upper()
     warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
     if year2 < first_year:
         raise ValueError(f"SINAN does not contain data before {first_year}")
-    
+
     dis_code = agravos[disease.title()]
     fname = f"{dis_code}{state}{year2}.DBC"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
