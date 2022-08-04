@@ -8,6 +8,8 @@ from ftplib import FTP
 from pathlib import Path
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from dbfread import DBF
 
 from pysus.utilities.readdbc import read_dbc, dbc2dbf
@@ -73,15 +75,17 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
         outname = fname.replace('DBC', 'DBF')
         dbc2dbf(fname, outname)
 
-    tempfile = outname.replace('DBF', 'csv.gz')
+    tempfile = outname.replace('DBF', 'parquet')
     first = 1
     for d in stream_DBF(DBF(outname, encoding="iso-8859-1")):
         df = pd.DataFrame(d)
-        if first:
-            df.to_csv(tempfile)
-            first = 0
-        else:
-            df.to_csv(tempfile, mode='a', header=False)
+        table = pa.Table.from_pandas(df)
+        pq.write_to_dataset(table, root_path=tempfile)
+        # if first:
+        #     df.to_csv(tempfile)
+        #     first = 0
+        # else:
+        #     df.to_csv(tempfile, mode='a', header=False)
 
     if os.path.exists(fname):
         os.unlink(fname)
