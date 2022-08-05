@@ -31,6 +31,7 @@ def decodifica_idade_SINAN(idade, unidade: str = "Y"):
     :return:
     """
     fator = {"Y": 1.0, "M": 12.0, "D": 365.0, "H": 365 * 24.0}
+    idade = int(idade)
     if idade >= 4000:  # idade em anos
         idade_anos = idade - 4000
     elif idade >= 3000 and idade < 4000:  # idade em meses
