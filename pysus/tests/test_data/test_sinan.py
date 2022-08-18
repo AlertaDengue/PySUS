@@ -1,6 +1,8 @@
 import datetime
 import os
+import shutil
 import unittest
+from glob import glob
 
 import numpy as np
 import pandas as pd
@@ -15,10 +17,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(year=2015, disease="Dengue", return_fname=True)
+        fname = download(year=2015, disease="Botulismo", return_fname=True)
         self.assertIsInstance(fname, str)
         self.assertTrue(os.path.exists(fname))
-
+        shutil.rmtree(fname, ignore_errors=True)
 
     def test_fetch_viol_dom(self):
         df = download(year=2011, disease="Hantavirose")
@@ -29,16 +31,26 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_sifilis(self):
-        df = download(year=2021, disease="Sífilis Adquirida")
-        self.assertIsInstance(df, pd.DataFrame)
+        self.assertRaises(Exception, download(year=2021, disease="Sífilis Adquirida"))
+        # self.assertIsInstance(df, pd.DataFrame)
 
     def test_lista_agravos(self):
         lista = list_diseases()
         self.assertIsInstance(lista, list)
         self.assertGreater(len(lista), 0)
 
-    def fetch_dengue_to_file(self):
-        download(2008, 'dengue', return_fname=True)
+    def test_chunked_df_size(self):
+        df1 = download(2018, 'Chikungunya')
+        s1 = len(df1)
+        del df1
+        fn = download(2018, 'Chikungunya', return_fname=True)
+        for i, f in enumerate(glob(f'{fn}/*.parquet')):
+            if i == 0:
+                df2 = pd.read_parquet(f)
+            else:
+                df2 = pd.concat([df2, pd.read_parquet(f)], ignore_index=True)
+        self.assertEqual(s1, df2.shape[0])
+        shutil.rmtree(fn, ignore_errors=True)
 
 
 class TestSinanDBF(unittest.TestCase):
