@@ -10,6 +10,7 @@ import pandas as pd
 from pysus.online_data.SINAN import download, list_diseases
 from pysus.preprocessing.sinan import read_sinan_dbf
 
+PATH_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 class TestSINANDownload(unittest.TestCase):
     def test_download(self):
@@ -54,8 +55,12 @@ class TestSINANDownload(unittest.TestCase):
 
 
 class TestSinanDBF(unittest.TestCase):
+    dbf_name = PATH_ROOT + "/" + "EPR-2016-06-01-2016.dbf"
+    data_pickle = PATH_ROOT + "/" + "chik.pickle"
+
     def test_read_dbf(self):
-        df = read_sinan_dbf("EPR-2016-06-01-2016.dbf", encoding="latin-1")
+        df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
+        self.assertTrue(os.path.exists(self.dbf_name))
         self.assertIsInstance(df, pd.DataFrame)
         for cname in df.columns:
             if cname.startswith("DT_"):
@@ -75,11 +80,13 @@ class TestSinanDBF(unittest.TestCase):
                 )
 
     def test_type_convertion(self):
-        df = read_sinan_dbf("EPR-2016-06-01-2016.dbf", encoding="latin-1")
+        df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
+        self.assertTrue(os.path.exists(self.dbf_name))
         assert not all(df.dtypes == "object")
 
     def test_geocode(self):
-        df = pd.read_pickle("chik.pickle")
+        self.assertTrue(os.path.exists(self.data_pickle))
+        df = pd.read_pickle(self.data_pickle)
 
     #  geocode(sinan_df=df, outfile='chik_2016.csv', default_city='Rio de Janeiro')
 
