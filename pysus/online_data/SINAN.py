@@ -2,7 +2,12 @@ import os
 import warnings
 from ftplib import FTP
 
-from pysus.online_data import CACHEPATH, _fetch_file, get_chunked_dataframe, get_dataframe
+from pysus.online_data import (
+    CACHEPATH,
+    _fetch_file,
+    get_chunked_dataframe,
+    get_dataframe,
+)
 
 agravos = {
     "Animais Peçonhentos": "ANIM",
@@ -57,10 +62,13 @@ def get_available_years(disease):
     warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
-    # res = StringIO()
-    res = ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
-    return res
+
+    if not ftp.nlst(f"{agravos[disease.title()]}BR*.dbc"):
+        ftp.cwd("/dissemin/publicos/SINAN/DADOS/PRELIM")
+
+    return ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
 
 def download(year, disease, cache=True, return_fname=False):
     """
@@ -108,4 +116,3 @@ def download(year, disease, cache=True, return_fname=False):
     if os.path.exists(fname):
         os.unlink(fname)
     return df
-
