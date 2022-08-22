@@ -108,7 +108,7 @@ def stream_DBF(dbf, chunk_size=30000):
             data = []
             i = 0
     else:
-        return data
+        yield data
 
 
 def get_CID10_table(cache=True):

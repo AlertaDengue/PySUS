@@ -1,8 +1,6 @@
 import os
-import time
 from datetime import date
 
-import dask.dataframe as dd
 import elasticsearch.helpers
 import pandas as pd
 from elasticsearch import Elasticsearch
@@ -91,4 +89,4 @@ def chunky_fetch(results, chunk_size=3000):
             data = []
             i = 0
     else:
-        return data
+        yield data
