@@ -1,0 +1,51 @@
+[tool.poetry]
+name = "pysus"
+version = "0.6.0"
+description = "Tools for dealing with Brazil's Public health data"
+authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>"]
+license = "GPL"
+
+packages = [{include='pysus'}]
+
+[tool.poetry.dependencies]
+cffi = "1.15.1"
+dbfread = "2.0.7"
+elasticsearch = "^8.3.3"
+fastparquet = "^0.8.1"
+geocoder = "^1.38.1"
+jupyterlab = "^3.4.5"
+numpy = "1.23.2"
+pandas = "1.4.3"
+pyarrow = "^9.0.0"
+pycparser = "2.21"
+pyreaddbc = "1.0.0"
+python = "^3.9"
+python-dateutil = "2.8.2"
+pytz = "2022.2.1"
+six = "1.16.0"
+tqdm = "4.64.0"
+wget = "^3.2"
+
+[tool.poetry.dev-dependencies]
+black = "^22.6.0"
+flake8 = "^5.0.4"
+isort = "^5.10.1"
+pre-commit = "^2.20.0"
+pytest = "^5.2"
+sphinx = "^5.1.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+src_paths = ["isort", "test"]
+
+[tool.black]
+# https://github.com/psf/black
+target-version = ["py39"]
+line-length = 79
+color = true
+
+exclude = ["*.git", "docs/"]

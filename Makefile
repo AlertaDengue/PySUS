@@ -1,4 +1,7 @@
-SHELL=/bin/bash
+SHELL := /usr/bin/env bash
+PYTHON := python
+PYTHONPATH := ${PWD}
+
 
 .PHONY: clean clean-test clean-pyc clean-build help
 .DEFAULT_GOAL := help
@@ -22,15 +25,24 @@ DOCKER = docker-compose -p pysus -f docker/docker-compose.yaml
 SERVICE :=
 
 
+#* Poetry
+.PHONY: poetry-download
+poetry-download:
+	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | $(PYTHON) -
+
+.PHONY: poetry-remove
+poetry-remove:
+	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | $(PYTHON) - --uninstall
+
 #* Installation
 .PHONY: install
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
+install:
+	poetry lock -n && poetry export --without-hashes > requirements.txt
+	poetry build && poetry install
 
 .PHONY: pre-commit-install
-develop-install: clean ## install the package in development mode
-	pip install -e '.[dev]'
-	pre-commit install
+pre-commit-install:
+	poetry run pre-commit install
 
 #* Linting
 .PHONY: check-codestyle
@@ -56,7 +68,7 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 
 .PHONY: test
 test: ## run tests quickly with the default Python
-	py.test
+	poetry run pytest -vv pysus/tests/
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pysus/tests/ -m pytest
@@ -79,6 +91,7 @@ clean-build: ## remove build artifacts
 	find . -name '*.mozilla' -exec rm -fr {} +
 	find . -name '*.egg-info' -exec rm -fr {} +
 	find . -name '*.egg' -exec rm -f {} +
+	find . -name '*.ipynb_checkpoints' -exec rm -rf {} +
 
 .PHONY: clean-pyc
 clean-pyc: ## remove Python file artifacts

@@ -1,22 +1,17 @@
-u"""
+"""
 Created on 16/08/16
 by fccoelho
 license: GPL V3 or Later
 """
-import os
 import csv
 import gzip
-from tqdm import tqdm
-from io import BytesIO
+import os
 from tempfile import NamedTemporaryFile
 
 import pandas as pd
 from dbfread import DBF
-
-try:
-    from pysus.utilities._readdbc import ffi, lib
-except (ImportError, ModuleNotFoundError):
-    from _readdbc import ffi, lib
+from pyreaddbc import ffi, lib
+from tqdm import tqdm
 
 
 def read_dbc(filename, encoding="utf-8", raw=False):
@@ -25,7 +20,8 @@ def read_dbc(filename, encoding="utf-8", raw=False):
     Dataframe.
     :param filename: .dbc filename
     :param encoding: encoding of the data
-    :param raw: Skip type conversion. Set it to True to avoid type conversion errors
+    :param raw: |
+        Skip type conversion. Set it to True to avoid type conversion errors
     :return: Pandas Dataframe.
     """
     if isinstance(filename, str):
@@ -35,7 +31,7 @@ def read_dbc(filename, encoding="utf-8", raw=False):
         try:
             dbf = DBF(tf.name, encoding=encoding, raw=raw)
             df = pd.DataFrame(list(dbf))
-        except ValueError as exc:
+        except ValueError:
             dbf = DBF(tf.name, encoding=encoding, raw=not raw)
             df = pd.DataFrame(list(dbf))
     os.unlink(tf.name)
@@ -62,29 +58,34 @@ def dbc2dbf(infile, outfile):
 
 
 def read_dbc_dbf(filename: str):
-    if filename.endswith(('dbc', 'DBC')):
+    if filename.endswith(("dbc", "DBC")):
         df = read_dbc(filename, encoding="iso-8859-1")
     elif filename.endswith(("DBF", "dbf")):
-            dbf = DBF(filename, encoding="iso-8859-1")
-            # dbf = gpd.read_file(filename, encoding="iso-8859-1").drop("geometry", axis=1)
-            df = pd.DataFrame(list(dbf))
+        dbf = DBF(filename, encoding="iso-8859-1")
+        # dbf = gpd.read_file(
+        # filename, encoding="iso-8859-1"
+        # ).drop("geometry", axis=1)
+        df = pd.DataFrame(list(dbf))
     return df
 
-def dbf_to_csvgz(filename: str, encoding: str='iso-8859-1'):
+
+def dbf_to_csvgz(filename: str, encoding: str = "iso-8859-1"):
     """
-    Streams a dbf file to gzipped CSV file. The Gzipped csv will be saved on the same path but with a csv.gz extension.
+    Streams a dbf file to gzipped CSV file. The Gzipped csv
+        will be saved on the same path but with a csv.gz extension.
     :param filename: path to the dbf file
     """
     data = DBF(filename, encoding=encoding, raw=False)
-    fn = os.path.splitext(filename)[0] + '.csv.gz'
+    fn = os.path.splitext(filename)[0] + ".csv.gz"
 
-    with gzip.open(fn, 'wt') as gzf:
-        for i, d in tqdm(enumerate(data), desc='Converting',):
+    with gzip.open(fn, "wt") as gzf:
+        for i, d in tqdm(
+            enumerate(data),
+            desc="Converting",
+        ):
             if i == 0:
                 csvwriter = csv.DictWriter(gzf, fieldnames=d.keys())
                 csvwriter.writeheader()
                 csvwriter.writerow(d)
             else:
                 csvwriter.writerow(d)
-
-

@@ -4,7 +4,6 @@ from datetime import date
 import elasticsearch.helpers
 import pandas as pd
 from elasticsearch import Elasticsearch
-
 from pysus.online_data import CACHEPATH
 
 
@@ -13,7 +12,8 @@ def download(uf, cache=True, checkmemory=True):
     Download ESUS data by UF
     :param uf: rj, mg, etc
     :param cache: if results should be cached on disk
-    :return: DataFrame if data fits in memory, other an iterator of chunks of size 1000.
+    :return: DataFrame if data fits in memory,
+        other an iterator of chunks of size 1000.
     """
     uf = uf.lower()
     user = "user-public-notificacoes"
@@ -36,7 +36,8 @@ def download(uf, cache=True, checkmemory=True):
         if size > 50e6 and checkmemory:
             print(f"Downloaded data is to large:{size / 1e6} MB compressed.")
             print(
-                "Only loading the first 1000 rows. If your computer has enough memory, set 'checkmemory' to False"
+                "Only loading the first 1000 rows. If your computer has enough"
+                + " memory, set 'checkmemory' to False"
             )
             print(f"The full data is in {fname}")
             df = pd.read_csv(fname, chunksize=1000)
@@ -56,7 +57,9 @@ def fetch(base, uf, url):
     es = Elasticsearch([url], send_get_body_as="POST")
     body = {"query": {"match_all": {}}}
     results = elasticsearch.helpers.scan(es, query=body, index=base)
-    # df = pd.DataFrame.from_dict([document['_source'] for document in results])
+    # df = pd.DataFrame.from_dict(
+    # [document['_source'] for document in results]
+    # )
 
     chunker = chunky_fetch(results, 3000)
     h = 1
@@ -66,7 +69,7 @@ def fetch(base, uf, url):
         df.sintomas = df["sintomas"].str.replace(
             ";",
             "",
-        )  ## remove os  ;
+        )  # remove os  ;
         if h:
             df.to_csv(tempfile)
             h = 0
