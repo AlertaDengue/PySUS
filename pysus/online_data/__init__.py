@@ -189,5 +189,5 @@ def last_update(database: str = "SINAN") -> pd.DataFrame:
 
         for pth in DB_PATHS[database]:
             ftp.cwd(pth)
-            # flist = ftp.retrlines("LIST", parse)
+            flist = ftp.retrlines("LIST", parse)
     return pd.DataFrame(response)
