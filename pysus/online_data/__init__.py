@@ -163,7 +163,10 @@ DB_PATHS = {
 def last_update(database: str = "SINAN") -> pd.DataFrame:
     """
     Return the date of last update from the database specified.
-    :param database: Database to check
+
+    Parameters
+    ----------
+    database: Database to check
     """
     if database not in DB_PATHS:
         print(
