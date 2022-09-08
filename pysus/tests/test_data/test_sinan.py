@@ -35,6 +35,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertRaises(Exception, download(year=2021, disease="Sífilis Adquirida"))
         # self.assertIsInstance(df, pd.DataFrame)
 
+    def test_fetch_sifilis_gestante(self):
+        df = download(year=2021, disease="Sífilis em Gestante")
+        self.assertIsInstance(df, pd.DataFrame)
+
     def test_lista_agravos(self):
         lista = list_diseases()
         self.assertIsInstance(lista, list)

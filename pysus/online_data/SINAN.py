@@ -60,15 +60,15 @@ def get_available_years(disease):
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
     """
     warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
+    disease = check_case(disease)
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-
     ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
 
-    if not ftp.nlst(f"{agravos[disease.title()]}BR*.dbc"):
+    if not ftp.nlst(f"{agravos[disease]}BR*.dbc"):
         ftp.cwd("/dissemin/publicos/SINAN/DADOS/PRELIM")
 
-    return ftp.nlst(f"{agravos[disease.title()]}BR*.dbc")
+    return ftp.nlst(f"{agravos[disease]}BR*.dbc")
 
 def download(year, disease, cache=True, return_fname=False):
     """
@@ -78,12 +78,7 @@ def download(year, disease, cache=True, return_fname=False):
     :disease: Diseases
     :return: pandas dataframe
     """
-    try:
-        assert disease.title() in agravos
-    except AssertionError:
-        print(
-            f"Disease {disease} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
-        )
+    disease = check_case(disease)
     year2 = str(year)[-2:].zfill(2)
     if not get_available_years(disease):
         raise Exception(f"No data is available at present for {disease}")
@@ -93,7 +88,7 @@ def download(year, disease, cache=True, return_fname=False):
     if year2 < first_year:
         raise ValueError(f"SINAN does not contain data before {first_year}")
 
-    dis_code = agravos[disease.title()]
+    dis_code = agravos[disease]
     fname = f"{dis_code}{state}{year2}.DBC"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
     path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
@@ -116,3 +111,18 @@ def download(year, disease, cache=True, return_fname=False):
     if os.path.exists(fname):
         os.unlink(fname)
     return df
+
+
+def check_case(disease):
+    try:
+        assert disease in agravos
+    except AssertionError:
+        try:
+            assert disease.title()
+            disease = disease.title()
+        except AssertionError:
+            print(
+                f"Disease {disease.title()} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
+            )
+    return disease
+
