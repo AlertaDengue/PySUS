@@ -70,7 +70,7 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
         df = pd.DataFrame(list(dbf))
     if os.path.exists(fname):
         os.unlink(fname)
-    df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+    df.applymap(lambda x: x.decode("iso-8859-1") if isinstance(x, bytes) else x)
     return df
 
 
@@ -81,7 +81,7 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
 
     tempfile = outname.replace("DBF", "parquet")
     # first = 1
-    for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=False)):
+    for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=True)):
         df = pd.DataFrame(d)
         df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         table = pa.Table.from_pandas(df)
