@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysus"
-version = "0.6.0"
+version = "0.6.1"
 description = "Tools for dealing with Brazil's Public health data"
 authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>"]
 license = "GPL"

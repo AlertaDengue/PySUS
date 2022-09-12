@@ -34,6 +34,9 @@ def read_dbc(filename, encoding="utf-8", raw=False):
         except ValueError:
             dbf = DBF(tf.name, encoding=encoding, raw=not raw)
             df = pd.DataFrame(list(dbf))
+        except Exception as e:
+            print(f"Failed to read DBF: {e}")
+            df = pd.DataFrame()
     os.unlink(tf.name)
 
     return df
