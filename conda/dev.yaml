@@ -8,6 +8,7 @@ dependencies:
   - gcc
   - make
   - pip
+  - poetry
   - psycopg2
   - python 3.9.*
   - poetry
