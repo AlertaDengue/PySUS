@@ -44,7 +44,7 @@ agravos = {
     "Tétano Neonatal": "TETN",
     "Tuberculose": "TUBE",
     "Violência Domestica": "VIOL",
-    "Zika": "ZIKA"
+    "Zika": "ZIKA",
 }
 
 
@@ -56,10 +56,14 @@ def list_diseases():
 def get_available_years(disease):
     """
     Fetch available years for data related to specific disease and state
-    :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
+    :param state: Two letter state symbol, e.g.
+        'RJ', 'BR' is also possible for national level.
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
     """
-    warnings.warn("Now SINAN tables are no longer split by state. Returning countrywide years")
+    warnings.warn(
+        "Now SINAN tables are no longer split by state."
+        "Returning countrywide years"
+    )
     disease = check_case(disease)
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
@@ -69,6 +73,7 @@ def get_available_years(disease):
         ftp.cwd("/dissemin/publicos/SINAN/DADOS/PRELIM")
 
     return ftp.nlst(f"{agravos[disease]}BR*.dbc")
+
 
 def download(year, disease, cache=True, return_fname=False):
     """
@@ -82,9 +87,14 @@ def download(year, disease, cache=True, return_fname=False):
     year2 = str(year)[-2:].zfill(2)
     if not get_available_years(disease):
         raise Exception(f"No data is available at present for {disease}")
-    first_year = [f.split('.')[0][-2:] for f in get_available_years(disease)][0]
-    state = 'BR'  # state.upper()
-    warnings.warn("Now SINAN tables are no longer split by state. Returning country table")
+    first_year = [f.split(".")[0][-2:] for f in get_available_years(disease)][
+        0
+    ]
+    state = "BR"  # state.upper()
+    warnings.warn(
+        "Now SINAN tables are no longer split by state."
+        "Returning country table"
+    )
     if year2 < first_year:
         raise ValueError(f"SINAN does not contain data before {first_year}")
 
@@ -92,20 +102,22 @@ def download(year, disease, cache=True, return_fname=False):
     fname = f"{dis_code}{state}{year2}.DBC"
     path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
     path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
-    cachefile = os.path.join(CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet")
+    cachefile = os.path.join(
+        CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet"
+    )
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd(path)
     try:
-        _fetch_file(fname, path, 'DBC', return_df=False)
-    except:  # If file is not part of the final releases
-        _fetch_file(fname, path_pre, 'DBC', return_df=False)
+        _fetch_file(fname, path, "DBC", return_df=False)
+    except:  # If file is not part of the final releases #noqa E722
+        _fetch_file(fname, path_pre, "DBC", return_df=False)
     if return_fname:
-        filename = get_chunked_dataframe(fname, 'DBC')
+        filename = get_chunked_dataframe(fname, "DBC")
         return filename
     else:
-        df = get_dataframe(fname, 'DBC')
+        df = get_dataframe(fname, "DBC")
     if cache:
         df.to_parquet(cachefile)
     if os.path.exists(fname):
@@ -122,7 +134,7 @@ def check_case(disease):
             disease = disease.title()
         except AssertionError:
             print(
-                f"Disease {disease.title()} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
+                f"Disease {disease.title()} is not available in SINAN.\n"
+                "Available diseases: {list_diseases()}"
             )
     return disease
-

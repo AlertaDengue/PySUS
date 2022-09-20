@@ -1,16 +1,16 @@
 import datetime
-import os
 import shutil
 import unittest
 from glob import glob
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from pysus.online_data.SINAN import download, list_diseases
 from pysus.preprocessing.sinan import read_sinan_dbf
 
-PATH_ROOT = os.path.dirname(os.path.abspath(__file__))
+PATH_ROOT = Path(__file__).resolve().parent
+
 
 class TestSINANDownload(unittest.TestCase):
     def test_download(self):
@@ -18,9 +18,12 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(year=2015, disease="Botulismo", return_fname=True)
-        self.assertIsInstance(fname, str)
-        self.assertTrue(os.path.exists(fname))
+        fname = Path(
+            download(year=2018, disease="Difteria", return_fname=True)
+        )
+        full_pq_path = fname.absolute().as_posix()
+        self.assertIsInstance(full_pq_path, str)
+        self.assertTrue(fname.exists())
         shutil.rmtree(fname, ignore_errors=True)
 
     def test_fetch_viol_dom(self):
@@ -32,8 +35,9 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_sifilis(self):
-        self.assertRaises(Exception, download(year=2021, disease="Sífilis Adquirida"))
-        # self.assertIsInstance(df, pd.DataFrame)
+        self.assertRaises(
+            Exception, download(year=2021, disease="Sífilis Adquirida")
+        )
 
     def test_fetch_sifilis_gestante(self):
         df = download(year=2021, disease="Sífilis em Gestante")
@@ -45,11 +49,11 @@ class TestSINANDownload(unittest.TestCase):
         self.assertGreater(len(lista), 0)
 
     def test_chunked_df_size(self):
-        df1 = download(2018, 'Chikungunya')
+        df1 = download(2018, "Chikungunya")
         s1 = len(df1)
         del df1
-        fn = download(2018, 'Chikungunya', return_fname=True)
-        for i, f in enumerate(glob(f'{fn}/*.parquet')):
+        fn = download(2018, "Chikungunya", return_fname=True)
+        for i, f in enumerate(glob(f"{fn}/*.parquet")):
             if i == 0:
                 df2 = pd.read_parquet(f)
             else:
@@ -59,12 +63,12 @@ class TestSINANDownload(unittest.TestCase):
 
 
 class TestSinanDBF(unittest.TestCase):
-    dbf_name = PATH_ROOT + "/" + "EPR-2016-06-01-2016.dbf"
-    data_pickle = PATH_ROOT + "/" + "chik.pickle"
+    dbf_name = PATH_ROOT / "EPR-2016-06-01-2016.dbf"
+    data_pickle = PATH_ROOT / "chik.pickle"
 
     def test_read_dbf(self):
         df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
-        self.assertTrue(os.path.exists(self.dbf_name))
+        self.assertTrue(self.dbf_name.exists())
         self.assertIsInstance(df, pd.DataFrame)
         for cname in df.columns:
             if cname.startswith("DT_"):
@@ -85,14 +89,12 @@ class TestSinanDBF(unittest.TestCase):
 
     def test_type_convertion(self):
         df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
-        self.assertTrue(os.path.exists(self.dbf_name))
+        self.assertTrue(self.dbf_name.exists())
         assert not all(df.dtypes == "object")
 
     def test_geocode(self):
-        self.assertTrue(os.path.exists(self.data_pickle))
-        df = pd.read_pickle(self.data_pickle)
-
-    #  geocode(sinan_df=df, outfile='chik_2016.csv', default_city='Rio de Janeiro')
+        self.assertTrue(self.data_pickle.exists())
+        # df = pd.read_pickle(self.data_pickle)
 
 
 if __name__ == "__main__":
