@@ -28,7 +28,8 @@ RUN useradd -ms /bin/bash pysus \
   && sudo chown -R pysus:pysus /usr/src
 
 COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
-COPY --chown=pysus:pysus docker/entrypoint.sh /entrypoint.sh
+COPY --chown=pysus:pysus docker/scripts/entrypoint.sh /entrypoint.sh
+COPY --chown=pysus:pysus docker/scripts/poetry_install.sh /tmp/poetry_install.sh
 COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
 COPY --chown=pysus:pysus docs/source/*.ipynb /home/pysus/Notebooks/
