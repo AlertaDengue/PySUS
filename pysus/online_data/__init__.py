@@ -83,7 +83,7 @@ def get_chunked_dataframe(fname: str, ftype: str) -> str:
     # first = 1
     for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=True)):
         df = pd.DataFrame(d)
-        df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+        # df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         table = pa.Table.from_pandas(df)
         pq.write_to_dataset(table, root_path=tempfile)
         # if first:
