@@ -48,7 +48,7 @@ def _fetch_file(
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
     except Exception:
-        raise Exception("File {} not available".format(fname))
+        raise Exception("File {} not available on {}".format(fname, path))
     if return_df:
         df = get_dataframe(fname, ftype)
         return df
