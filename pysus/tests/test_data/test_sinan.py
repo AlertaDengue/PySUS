@@ -1,5 +1,6 @@
 import datetime
 import os
+from pathlib import Path
 import shutil
 import unittest
 from glob import glob
@@ -7,7 +8,7 @@ from glob import glob
 import numpy as np
 import pandas as pd
 
-from pysus.online_data.SINAN import download, list_diseases
+from pysus.online_data.SINAN import download, list_diseases, download_dbfs
 from pysus.preprocessing.sinan import read_sinan_dbf
 
 PATH_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -57,6 +58,13 @@ class TestSINANDownload(unittest.TestCase):
         self.assertEqual(s1, df2.shape[0])
         shutil.rmtree(fn, ignore_errors=True)
 
+    def test_download_all_dbfs_for_zika(self):
+        download_dbfs('zika')
+        self.assertTrue(Path('/tmp/pysus/ZIKABR16.dbf').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR17.dbf').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR18.dbf').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR19.dbf').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR20.dbf').exists())
 
 class TestSinanDBF(unittest.TestCase):
     dbf_name = PATH_ROOT + "/" + "EPR-2016-06-01-2016.dbf"

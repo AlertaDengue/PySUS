@@ -144,7 +144,7 @@ def download_dbfs(disease, data_dir="/tmp/pysus"):
     Download all DBFs found in datasus, given a disease.
     An output path can be defined.
     :param disease: A disease according to `agravos`.
-    :param data_dir: Out
+    :param data_dir: Output data path.
     """
     disease = check_case(disease)
 
