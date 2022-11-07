@@ -19,7 +19,7 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(year=2015, disease="Botulismo", return_fname=True)
+        fname = download(year=2015, disease="Botulismo", return_chunks=True)
         self.assertIsInstance(fname, str)
         self.assertTrue(os.path.exists(fname))
         shutil.rmtree(fname, ignore_errors=True)
