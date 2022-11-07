@@ -11,3 +11,6 @@ dependencies:
   - psycopg2
   - python 3.9.*
   - poetry
+  - pip:
+    - geopandas
+    - simpledbf
