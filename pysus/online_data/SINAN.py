@@ -1,14 +1,13 @@
 import logging
-import os
+import shutil
 import warnings
 from ftplib import FTP
 from pathlib import Path
 
 from pysus.online_data import (
-    CACHEPATH,
     _fetch_file,
-    get_chunked_dataframe,
-    get_dataframe,
+    chunk_dbfiles_into_parquets,
+    parquets_to_dataframe,
 )
 from pysus.utilities.readdbc import dbc2dbf
 
@@ -64,7 +63,7 @@ def get_available_years(disease, return_path=False):
     """
     warnings.warn(
         "Now SINAN tables are no longer split by state. Returning countrywide years"
-    )
+    ) #legacy
     disease = check_case(disease)
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
@@ -78,7 +77,7 @@ def get_available_years(disease, return_path=False):
             dbcs = []
             for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
                 dbcs.append(f"{ppath}/{dbc}")
-                return dbcs
+            return dbcs
 
     if return_path:
         ppath = "/dissemin/publicos/SINAN/DADOS/FINAIS"
@@ -90,94 +89,92 @@ def get_available_years(disease, return_path=False):
     return ftp.nlst(f"{agravos[disease]}BR*.dbc")
 
 
-def download(year, disease, cache=True, return_fname=False):
+def download(disease, year, data_path="/tmp/pysus", return_chunks=False):
     """
     Downloads SINAN data directly from Datasus ftp server
-    :param state: two-letter state identifier: MG == Minas Gerais
     :param year: 4 digit integer
     :disease: Diseases
     :return: pandas dataframe
     """
     disease = check_case(disease)
     year2 = str(year)[-2:].zfill(2)
-    if not get_available_years(disease):
-        raise Exception(f"No data is available at present for {disease}")
-    first_year = [f.split(".")[0][-2:] for f in get_available_years(disease)][
+    dis_code = agravos[disease]
+    fname = f"{dis_code}BR{year2}.dbc"
+    years = get_available_years(disease)
+    fyears = get_available_years(disease, return_path=True)
+
+    first_year = [f.split(".")[0][-2:] for f in years][
         0
     ]
-    state = "BR"  # state.upper()
-    warnings.warn(
-        "Now SINAN tables are no longer split by state. Returning country table"
-    )
-    if year2 < first_year:
+
+    if not years or fname not in years:
+        raise Exception(f"No data found for this request. Available data for {disease}: \n{years}")
+
+    if year2 < first_year: #legacy
         raise ValueError(f"SINAN does not contain data before {first_year}")
 
-    dis_code = agravos[disease]
-    fname = f"{dis_code}{state}{year2}.DBC"
-    path = "/dissemin/publicos/SINAN/DADOS/FINAIS"
-    path_pre = "/dissemin/publicos/SINAN/DADOS/PRELIM"
-    cachefile = os.path.join(
-        CACHEPATH, "SINAN_" + fname.split(".")[0] + "_.parquet"
-    )
+    warnings.warn(
+        "Now SINAN tables are no longer split by state. Returning country table" 
+    ) #legacy
+    
+    pname = next(p for p in fyears if fname in p)
+    sus_path = "/".join(pname.split("/")[:-1])
+
+    data_path = Path(data_path)
+    data_path.mkdir(exist_ok=True, parents=True)
+    out = Path(data_path) / fname
+    dbf = Path(f"{str(out)[:-4]}.dbf")
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd(path)
+
+    if not Path(out).exists():
+        try:
+            _fetch_file(fname, sus_path, "DBC", return_df=False)
+            shutil.move(Path(fname), data_path)
+            logging.info(f"{fname} downloaded at {data_path}")
+
+        except Exception as e:
+            logging.error(e)
+
     try:
-        _fetch_file(fname, path, "DBC", return_df=False)
-    except:  # If file is not part of the final releases
-        _fetch_file(fname, path_pre, "DBC", return_df=False)
-    if return_fname:
-        filename = get_chunked_dataframe(fname, "DBC")
-        return filename
-    else:
-        df = get_dataframe(fname, "DBC")
-    if cache:
-        df.to_parquet(cachefile)
-    if os.path.exists(fname):
-        os.unlink(fname)
-    return df
+        partquet_dir = chunk_dbfiles_into_parquets(str(out))
+
+        if not return_chunks:
+            df = parquets_to_dataframe(partquet_dir, clean_after_read=True)
+            return df
+
+        return partquet_dir
+
+    except Exception as e:
+        logging.error(e)
+
+    finally:
+        while out.exists():
+            out.unlink()
+        while dbf.exists():
+            dbf.unlink()
 
 
-def download_dbfs(disease, data_dir="/tmp/pysus"):
+def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
     """
-    Download all DBFs found in datasus, given a disease.
+    Download all DBFs found in datasus, given a disease, in chunks.
     An output path can be defined.
+    `pysus.online_data.parquets_to_dataframe()` can read these parquets.
     :param disease: A disease according to `agravos`.
-    :param data_dir: Output data path.
+    :param data_dir: Output parquet path.
     """
     disease = check_case(disease)
+    parquets = []
 
     for dbc in get_available_years(disease, return_path=True):
         if any(get_available_years(disease, return_path=True)):
-            fname = dbc.split("/")[-1]
-            path = dbc.split("/")[:-1]
-            path = "/".join(path)
-            outname = fname.replace(fname[-3:], "dbf")
-            pathout = Path(data_dir)
 
-            if not Path(pathout / outname).exists():
-                pathout.mkdir(parents=True, exist_ok=True)
+            year = dbc.split('.dbc')[0][-2:]
+            parquet_dir = download(disease, year, data_dir, return_chunks=True)
+            parquets.append(parquet_dir)
 
-                try:
-                    _fetch_file(fname, path, "DBC", return_df=False)
-
-                except Exception as e:
-                    logging.error(f"Not able to fetch {fname}\n\n{e}")
-
-                if Path(fname).exists():
-
-                    try:
-                        dbc2dbf(fname, str(Path(pathout / outname)))
-                        logging.info(f"{outname} downloaded at {pathout}")
-
-                    except Exception as e:
-                        logging.error(
-                            f"Not able to parse {fname} to DBF\n\n{e}"
-                        )
-
-                    finally:
-                        Path(fname).unlink()
+    return parquets
 
 
 def check_case(disease):

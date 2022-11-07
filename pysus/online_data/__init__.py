@@ -94,16 +94,15 @@ def chunk_dbfiles_into_parquets(fpath: str) -> str(PosixPath):
         fpath = outpath
 
     parquet_dir = f"{fpath[:-4]}.parquet"
-
-    if not Path(parquet_dir).exists() or not os.listdir(parquet_dir):
+    if not Path(parquet_dir).exists():
+        Path(parquet_dir).mkdir(exist_ok=True, parents=True)
         for d in stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
-
             try:
                 df = pd.DataFrame(d)
-                df = df.applymap(
-                    lambda x: x.decode() if isinstance(x, bytes) else x
-                )
-                table = pa.Table.from_pandas(df)
+                table = pa.Table.from_pandas(
+                    df.applymap(
+                    lambda x: x.decode(encoding="iso-8859-1") if isinstance(x, bytes) else x
+                ))
                 pq.write_to_dataset(table, root_path=parquet_dir)
 
             except Exception as e:
