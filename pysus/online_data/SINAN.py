@@ -64,29 +64,31 @@ def get_available_years(disease, return_path=False):
     warnings.warn(
         "Now SINAN tables are no longer split by state. Returning countrywide years"
     ) #legacy
+
+    fpath = "/dissemin/publicos/SINAN/DADOS/FINAIS"
+    ppath = "/dissemin/publicos/SINAN/DADOS/PRELIM"
     disease = check_case(disease)
+
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    ftp.cwd("/dissemin/publicos/SINAN/DADOS/FINAIS")
 
-    if not ftp.nlst(f"{agravos[disease]}BR*.dbc"):
-        ftp.cwd("/dissemin/publicos/SINAN/DADOS/PRELIM")
+    dbcs = []
 
+    ftp.cwd(fpath)
+    for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
         if return_path:
-            ppath = "/dissemin/publicos/SINAN/DADOS/PRELIM"
-            dbcs = []
-            for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
-                dbcs.append(f"{ppath}/{dbc}")
-            return dbcs
-
-    if return_path:
-        ppath = "/dissemin/publicos/SINAN/DADOS/FINAIS"
-        dbcs = []
-        for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
+            dbcs.append(f"{fpath}/{dbc}")
+        else:
+            dbcs.append(dbc)
+        
+    ftp.cwd(ppath)
+    for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
+        if return_path:
             dbcs.append(f"{ppath}/{dbc}")
-        return dbcs
+        else:
+            dbcs.append(dbc)
 
-    return ftp.nlst(f"{agravos[disease]}BR*.dbc")
+    return dbcs
 
 
 def download(disease, year, data_path="/tmp/pysus", return_chunks=False):

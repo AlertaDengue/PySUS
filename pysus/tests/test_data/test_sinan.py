@@ -8,7 +8,7 @@ from glob import glob
 import numpy as np
 import pandas as pd
 
-from pysus.online_data.SINAN import download, list_diseases, download_dbfs
+from pysus.online_data.SINAN import download, list_diseases, download_all_years_in_chunks
 from pysus.preprocessing.sinan import read_sinan_dbf
 
 PATH_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -46,10 +46,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertGreater(len(lista), 0)
 
     def test_chunked_df_size(self):
-        df1 = download(2018, 'Chikungunya')
+        df1 = download(year=2018, disease='Chikungunya')
         s1 = len(df1)
         del df1
-        fn = download(2018, 'Chikungunya', return_fname=True)
+        fn = download(year=2018, disease='Chikungunya', return_chunks=True)
         for i, f in enumerate(glob(f'{fn}/*.parquet')):
             if i == 0:
                 df2 = pd.read_parquet(f)
@@ -59,12 +59,12 @@ class TestSINANDownload(unittest.TestCase):
         shutil.rmtree(fn, ignore_errors=True)
 
     def test_download_all_dbfs_for_zika(self):
-        download_dbfs('zika')
-        self.assertTrue(Path('/tmp/pysus/ZIKABR16.dbf').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR17.dbf').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR18.dbf').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR19.dbf').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR20.dbf').exists())
+        download_all_years_in_chunks('zika')
+        self.assertTrue(Path('/tmp/pysus/ZIKABR16.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR17.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR18.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR19.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR20.parquet').exists())
 
 class TestSinanDBF(unittest.TestCase):
     dbf_name = PATH_ROOT + "/" + "EPR-2016-06-01-2016.dbf"
