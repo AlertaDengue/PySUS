@@ -152,10 +152,10 @@ def download(disease, year, data_path="/tmp/pysus", return_chunks=False):
         logging.error(e)
 
     finally:
-        while out.exists():
-            out.unlink()
-        while dbf.exists():
-            dbf.unlink()
+        out.unlink(missing_ok=True)
+        dbf.unlink(missing_ok=True)
+        Path(fname).unlink(missing_ok=True)
+        Path(f'{fname[:-4]}.dbf').unlink(missing_ok=True)
 
 
 def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
