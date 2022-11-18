@@ -33,7 +33,7 @@ COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
 COPY --chown=pysus:pysus docs/source/*.ipynb /home/pysus/Notebooks/
 
-RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3 - \
+RUN curl -sSL https://install.python-poetry.org/ | POETRY_HOME=/opt/poetry python && \
     cd /usr/local/bin && \
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
