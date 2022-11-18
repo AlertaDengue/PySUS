@@ -114,7 +114,8 @@ def chunk_dbfiles_into_parquets(fpath: str) -> str(PosixPath):
 
 
 def parquets_to_dataframe(
-    parquet_dir: str(PosixPath), clean_after_read=False
+    parquet_dir: str(PosixPath), 
+    clean_after_read=False
 ) -> pd.DataFrame:
 
     parquets = Path(parquet_dir).glob("*.parquet")

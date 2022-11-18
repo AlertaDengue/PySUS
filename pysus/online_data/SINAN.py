@@ -57,9 +57,12 @@ def list_diseases():
 
 def get_available_years(disease, return_path=False):
     """
-    Fetch available years for data related to specific disease and state
-    :param state: Two letter state symbol, e.g. 'RJ', 'BR' is also possible for national level.
+    Fetch available years for data related to specific disease
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
+    :param return_path: If set to True, returns the entire Path of the datasets
+                        in the FTP Server. Used to remove the discrimination of
+                        FINAIS and PRELIM while downloading the datasets.
+    :return: A list of DBC files from a specific disease found in the FTP Server.
     """
     warnings.warn(
         "Now SINAN tables are no longer split by state. Returning countrywide years"
@@ -91,18 +94,27 @@ def get_available_years(disease, return_path=False):
     return dbcs
 
 
-def download(disease, year, data_path="/tmp/pysus", return_chunks=False):
+def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
     """
-    Downloads SINAN data directly from Datasus ftp server
-    :param year: 4 digit integer
-    :disease: Diseases
-    :return: pandas dataframe
+    Downloads SINAN data directly from Datasus ftp server.
+    :param disease: Disease according to `agravos`.
+    :param year: 4 digit integer.
+    :param return_chunks: If set to True, download the data in parquet chunks.
+    :param data_path: The directory where the chunks will be downloaded to.
+    @note The data will be downloaded either return_chunks is set True or False,
+          the difference between the two is that setting to False will read the
+          parquet chunks, return as a DataFrame and clean after read.
+    :return: Default behavior returns a Pandas DataFrame.
     """
     disease = check_case(disease)
     year2 = str(year)[-2:].zfill(2)
     dis_code = agravos[disease]
     fname = f"{dis_code}BR{year2}.dbc"
-    years = get_available_years(disease)
+    years = get_available_years(disease) #legacy
+    
+    #Returns a list with all the DBC files found with their path,
+    # enabling the user to download all the DBCs available in both
+    # FINAIS and PRELIM directories 
     fyears = get_available_years(disease, return_path=True)
 
     first_year = [f.split(".")[0][-2:] for f in years][
@@ -119,9 +131,11 @@ def download(disease, year, data_path="/tmp/pysus", return_chunks=False):
         "Now SINAN tables are no longer split by state. Returning country table" 
     ) #legacy
     
+    #Generate the path to be downloaded from the FTP Server
     pname = next(p for p in fyears if fname in p)
     sus_path = "/".join(pname.split("/")[:-1])
 
+    #Create the path where the data will be downloaded locally
     data_path = Path(data_path)
     data_path.mkdir(exist_ok=True, parents=True)
     out = Path(data_path) / fname
@@ -169,11 +183,19 @@ def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
     disease = check_case(disease)
     parquets = []
 
-    for dbc in get_available_years(disease, return_path=True):
-        if any(get_available_years(disease, return_path=True)):
+    available_years = get_available_years(disease, return_path=True)
 
+    if available_years:
+        for dbc in available_years:
             year = dbc.split('.dbc')[0][-2:]
-            parquet_dir = download(disease, year, data_dir, return_chunks=True)
+
+            parquet_dir = download(
+                disease = disease, 
+                year = year, 
+                return_chunks = True,
+                data_path = data_dir
+            )
+
             parquets.append(parquet_dir)
 
     return parquets
