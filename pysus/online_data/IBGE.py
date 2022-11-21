@@ -100,7 +100,11 @@ def get_sidra_table(
     url = base_url + query
     print(f"Requesting data from {url}")
     try:
-        df = pd.read_json(url)
+        with (
+            get_legacy_session() as s,
+            s.get(url) as response
+        ):
+            df = pd.DataFrame(response.json())
     except HTTPError as exc:
         response = requests.get(url)
         print(f"Consulta falhou: {response.text}")
@@ -120,7 +124,11 @@ def list_agregados(**kwargs):
     url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
     print(f"Fetching Data groupings from {url}")
     try:
-        table = pd.read_json(url)
+        with (
+            get_legacy_session() as s,
+            s.get(url) as response
+        ):
+            table = pd.DataFrame(response.json())
     except requests.exceptions.SSLError as e:
         print(f"Failed fetching aggregates: {e}")
         return pd.DataFrame()
@@ -137,7 +145,11 @@ def localidades_por_agregado(agregado: int, nivel: str):
     """
     url = APIBASE + f"agregados/{agregado}/localidades/{nivel}"
     try:
-        table = pd.read_json(url)
+        with (
+            get_legacy_session() as s,
+            s.get(url) as response
+        ):
+            table = pd.DataFrame(response.json())
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
         return None
@@ -152,8 +164,11 @@ def metadados(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/metadados"
     try:
-        res = requests.get(url)
-        data = res.json()
+        with (
+            get_legacy_session() as s,
+            s.get(url) as response
+        ):
+            data = response.json()
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
         return None
@@ -164,11 +179,15 @@ def lista_periodos(agregado: int):
     """
     Obtém os períodos associados ao agregado
     :param agregado:
-    :return:
+    :return: pd.DataFrame com os períodos de atualização
     """
     url = APIBASE + f"agregados/{agregado}/periodos"
     try:
-        table = pd.read_json(url)
+        with (
+            get_legacy_session() as s,
+            s.get(url) as response
+        ):
+            table = pd.DataFrame(response.json())
     except:
         return None
     return table
@@ -236,10 +255,49 @@ class FetchData:
     def _fetch_JSON(self):
         try:
             print(f"Fetching {self.url}")
-            res = requests.get(self.url)
-            self.JSON = res.json()
+            with (
+                get_legacy_session() as s,
+                s.get(self.url) as response
+            ):
+                self.JSON = response.json()
         except Exception as e:
             print(f"Couldn't download data:\n{e}")
 
     def to_dataframe(self):
         return pd.DataFrame(self.JSON)
+
+
+
+"""
+HTTPSConnectionPool(host='servicodados.ibge.gov.br', port=443): 
+    Max retries exceeded with url: 
+    /api/v3/agregados/{...} 
+    Caused by SSLError(
+        SSLError(1, '[SSL: UNSAFE_LEGACY_RENEGOTIATION_DISABLED] 
+        unsafe legacy renegotiation disabled (_ssl.c:1129)'
+
+SOLUTION: https://github.com/scrapy/scrapy/issues/5491#issuecomment-1241862323
+"""
+
+import ssl # Builtin
+
+
+class CustomHttpAdapter (requests.adapters.HTTPAdapter):
+    # "Transport adapter" that allows us to use custom ssl_context.
+
+    def __init__(self, ssl_context=None, **kwargs):
+        self.ssl_context = ssl_context
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, connections, maxsize, block=False):
+        self.poolmanager = urllib3.poolmanager.PoolManager(
+            num_pools=connections, maxsize=maxsize,
+            block=block, ssl_context=self.ssl_context)
+
+
+def get_legacy_session():
+    ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    ctx.options |= 0x4  # OP_LEGACY_SERVER_CONNECT
+    session = requests.session()
+    session.mount('https://', CustomHttpAdapter(ctx))
+    return session
