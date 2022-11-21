@@ -16,10 +16,11 @@ from requests.auth import HTTPBasicAuth
 from pysus.online_data import CACHEPATH
 
 
-def download_covid(uf=None):
+def download_covid(uf=None, only_header=False):
     """
     Download covid vaccination data for a give UF
     :param uf: 'RJ' | 'SP', etc.
+    :param only_header: Used to see the header of the data before downloading.
     :return: dataframe iterator as returned by pandas `read_csv('Vaccine_temp_<uf>.csv.gz', chunksize=5000)`
     """
     user = "imunizacao_public"
@@ -41,6 +42,9 @@ def download_covid(uf=None):
 
     auth = HTTPBasicAuth(user, pwd)
     data_gen = elasticsearch_fetch(url, auth, query)
+
+    if only_header:
+        return pd.DataFrame(next(data_gen))
 
     h = 1
     for dt in data_gen:
@@ -97,4 +101,4 @@ def elasticsearch_fetch(uri, auth, json_body={}):
 
 
 if __name__ == "__main__":
-    print(download_covid("ba"))
+    print(download_covid("ba", only_header=True))
