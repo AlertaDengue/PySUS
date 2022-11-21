@@ -1,5 +1,6 @@
 import datetime
 import os
+from pathlib import Path
 import shutil
 import unittest
 from glob import glob
@@ -7,7 +8,7 @@ from glob import glob
 import numpy as np
 import pandas as pd
 
-from pysus.online_data.SINAN import download, list_diseases
+from pysus.online_data.SINAN import download, list_diseases, download_all_years_in_chunks
 from pysus.preprocessing.sinan import read_sinan_dbf
 
 PATH_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,7 @@ class TestSINANDownload(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(year=2015, disease="Botulismo", return_fname=True)
+        fname = download(year=2015, disease="Botulismo", return_chunks=True)
         self.assertIsInstance(fname, str)
         self.assertTrue(os.path.exists(fname))
         shutil.rmtree(fname, ignore_errors=True)
@@ -45,10 +46,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertGreater(len(lista), 0)
 
     def test_chunked_df_size(self):
-        df1 = download(2018, 'Chikungunya')
+        df1 = download(year=2018, disease='Chikungunya')
         s1 = len(df1)
         del df1
-        fn = download(2018, 'Chikungunya', return_fname=True)
+        fn = download(year=2018, disease='Chikungunya', return_chunks=True)
         for i, f in enumerate(glob(f'{fn}/*.parquet')):
             if i == 0:
                 df2 = pd.read_parquet(f)
@@ -57,6 +58,13 @@ class TestSINANDownload(unittest.TestCase):
         self.assertEqual(s1, df2.shape[0])
         shutil.rmtree(fn, ignore_errors=True)
 
+    def test_download_all_dbfs_for_zika(self):
+        download_all_years_in_chunks('zika')
+        self.assertTrue(Path('/tmp/pysus/ZIKABR16.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR17.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR18.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR19.parquet').exists())
+        self.assertTrue(Path('/tmp/pysus/ZIKABR20.parquet').exists())
 
 class TestSinanDBF(unittest.TestCase):
     dbf_name = PATH_ROOT + "/" + "EPR-2016-06-01-2016.dbf"
