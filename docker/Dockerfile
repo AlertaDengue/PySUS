@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV HOME "/home/pysus"
 ENV PATH "$PATH:/home/pysus/.local/bin"
-ENV ENV_NAME base
+ENV ENV_NAME pysus
 ENV PATH "/opt/conda/envs/$ENV_NAME/bin:$PATH"
 ENV PATH "/opt/poetry/bin:$PATH"
 
@@ -42,9 +42,10 @@ RUN chmod -R a+rwx /home/pysus/.config/pypoetry/
 
 USER pysus
 
-RUN mamba env update -n $ENV_NAME \
-    --file /tmp/dev.yaml \
-  && cd /usr/src && poetry build && poetry install \
+RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
+  && cd /usr/src \
+  && poetry build \
+  && poetry install \
   && mamba clean -afy
 
 WORKDIR /home/pysus/Notebooks
