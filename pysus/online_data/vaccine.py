@@ -72,7 +72,8 @@ def elasticsearch_fetch(uri, auth, json_body={}):
                 ]  # for the continuation of the download, query parameter is not allowed
                 del json_body["size"]
         try:
-            response = requests.post(uri, auth=auth, headers=headers, json=json_body)
+            s = requests.Session()
+            response = s.post(uri, auth=auth, headers=headers, json=json_body)
             text = response.text
             try:
                 resp = json.loads(text)
