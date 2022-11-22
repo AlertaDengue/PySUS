@@ -32,7 +32,7 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
         raise ValueError("CIHA does not contain data before 2008")
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
-    logger.debug(f"Stablishing connection.\n{ftp.welcome}")
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
 
     if year > 2008 and year < 2011:
         ftype = "DBC"

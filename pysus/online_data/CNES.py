@@ -1,9 +1,10 @@
 import os
+import pandas as pd
+
+from dbfread import DBF
+from loguru import logger
 from datetime import datetime
 from ftplib import FTP, error_perm
-
-import pandas as pd
-from dbfread import DBF
 
 from pysus.online_data import CACHEPATH
 from pysus.utilities.readdbc import read_dbc
@@ -54,21 +55,32 @@ def download(
     month = str(month).zfill(2)
     input_date = datetime(int(year), int(month), 1)
     avaiable_date = datetime(group_dict[group][2], group_dict[group][1], 1)
+
     if input_date < avaiable_date:
         raise ValueError(f"CNES does not contain data for {input_date}")
+
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+
     if input_date >= avaiable_date:
         ftype = "DBC"
         ftp.cwd("dissemin/publicos/CNES/200508_/Dados/{}/".format(group))
         fname = "{}{}{}{}.dbc".format(group, state, str(year2).zfill(2), month)
+
     cachefile = os.path.join(CACHEPATH, "CNES_" + fname.split(".")[0] + "_.parquet")
+
     if os.path.exists(cachefile):
+        logger.info(f"Using local data: {cachefile}")
         df = pd.read_parquet(cachefile)
         return df
+
     df = _fetch_file(fname, ftp, ftype)
+
     if cache:
+        logger.debug(f"Data stored as parquet at {cachefile}")
         df.to_parquet(cachefile)
+
     return df
 
 
@@ -83,4 +95,5 @@ def _fetch_file(fname: str, ftp: FTP, ftype: str) -> pd.DataFrame:
         dbf = DBF(fname, encoding="iso-8859-1")
         df = pd.DataFrame(list(dbf))
     os.unlink(fname)
+    logger.debug(f"{fname} removed.")
     return df
