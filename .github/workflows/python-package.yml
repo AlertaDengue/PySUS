@@ -30,7 +30,7 @@ jobs:
         use-mamba: true
         miniforge-variant: Mambaforge
 
-    - name: Install Dependencies
+    - name: Install dependencies
       run: |
         curl -sSL https://install.python-poetry.org/ | python -
         export PATH="$HOME/.poetry/bin:$PATH"

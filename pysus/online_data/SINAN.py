@@ -210,6 +210,7 @@ def check_case(disease):
             disease = disease.title()
         except AssertionError:
             print(
-                f"Disease {disease.title()} is not available in SINAN.\nAvailable diseases: {list_diseases()}"
+                f"Disease {disease.title()} is not available in SINAN.\n"
+                "Available diseases: {list_diseases()}"
             )
     return disease
