@@ -66,6 +66,7 @@ def download(
     if input_date >= avaiable_date:
         ftype = "DBC"
         ftp.cwd("dissemin/publicos/CNES/200508_/Dados/{}/".format(group))
+        logger.debug("Changing FTP work dir to: dissemin/publicos/CNES/200508_/Dados/{}/".format(group))
         fname = "{}{}{}{}.dbc".format(group, state, str(year2).zfill(2), month)
 
     cachefile = os.path.join(CACHEPATH, "CNES_" + fname.split(".")[0] + "_.parquet")

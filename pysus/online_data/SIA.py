@@ -11,7 +11,6 @@ import os
 import pandas as pd
 
 from ftplib import FTP
-from dbfread import DBF
 from datetime import date
 from loguru import logger
 from pprint import pprint
@@ -81,8 +80,12 @@ def download(
     ftype = "DBC"
     if year >= 1994 and year < 2008:
         ftp.cwd("/dissemin/publicos/SIASUS/199407_200712/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/199407_200712/Dados")
+
     elif year >= 2008:
         ftp.cwd("/dissemin/publicos/SIASUS/200801_/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/200801_/Dados")
+        
     else:
         raise ValueError("SIA does not contain data before 1994")
 
@@ -152,7 +155,7 @@ def _fetch_file(fname, ftp, ftype):
 
     os.unlink(fname)
     logger.debug(f"{fname} removed")
-    
+
     return df
 
 

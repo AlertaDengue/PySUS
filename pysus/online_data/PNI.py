@@ -27,6 +27,7 @@ def download(state, year, cache=True):
     ftp.login()
     logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DADOS")
+    logger.debug("Changing FTP work dir to: /dissemin/publicos/PNI/DADOS")
     fname = f"CPNI{state}{year2}.DBF"
 
     cachefile = os.path.join(CACHEPATH, "PNI_" + fname.split(".")[0] + "_.parquet")
@@ -62,6 +63,7 @@ def get_available_years(state):
     ftp.login()
     logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DADOS")
+    logger.debug("Changing FTP work dir to: /dissemin/publicos/PNI/DADOS")
     res = ftp.nlst(f"CPNI{state}*.DBF")
     return res
 
@@ -71,6 +73,7 @@ def available_docs():
     ftp.login()
     logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DOCS")
+    logger.debug("Changing FTP work dir to: /dissemin/publicos/PNI/DOCS")
     res = ftp.nlst(f"*")
     return res
 
@@ -80,6 +83,7 @@ def fetch_document(fname):
     ftp.login()
     logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DOCS")
+    logger.debug("Changing FTP work dir to: /dissemin/publicos/PNI/DOCS")
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
         print(f"Downloaded {fname}.")

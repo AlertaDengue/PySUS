@@ -65,6 +65,7 @@ def _fetch_file(fname, path, ftype):
     ftp.login()
     logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd(path)
+    logger.debug(f"Changing FTP work dir to: {path}")
 
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
