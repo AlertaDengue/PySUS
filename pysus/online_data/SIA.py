@@ -85,7 +85,7 @@ def download(
     elif year >= 2008:
         ftp.cwd("/dissemin/publicos/SIASUS/200801_/Dados")
         logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/200801_/Dados")
-        
+
     else:
         raise ValueError("SIA does not contain data before 1994")
 
@@ -103,7 +103,7 @@ def download(
             # NOTE: raise Warning instead of ValueError for
             # backwards-compatibility with older behavior of returning
             # (PA, None) for calls after 1994 and before Jan, 2008
-            logger.warn(
+            logger.warning(
                 f"SIA does not contain data for {gname} "
                 f"before {available_date:%d/%m/%Y}"
             )

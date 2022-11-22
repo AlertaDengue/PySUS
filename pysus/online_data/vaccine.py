@@ -62,6 +62,7 @@ def download_covid(uf=None, only_header=False):
     
     logger.info(f"{tempfile} stored at {CACHEPATH}.")
     df = pd.read_csv(tempfile, chunksize=5000)
+    
     return df
 
 

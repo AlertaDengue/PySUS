@@ -1,6 +1,4 @@
-import logging
 import shutil
-import warnings
 from ftplib import FTP
 from pathlib import Path
 from loguru import logger
@@ -65,7 +63,7 @@ def get_available_years(disease, return_path=False):
                         FINAIS and PRELIM while downloading the datasets.
     :return: A list of DBC files from a specific disease found in the FTP Server.
     """
-    logger.warn(
+    logger.warning(
         "Now SINAN tables are no longer split by state. Returning countrywide years"
     ) #legacy
 
@@ -131,7 +129,7 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
     if year2 < first_year: #legacy
         raise ValueError(f"SINAN does not contain data before {first_year}")
 
-    logger.warn(
+    logger.warning(
         "Now SINAN tables are no longer split by state. Returning country table" 
     ) #legacy
     
@@ -171,14 +169,14 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
         return partquet_dir
 
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
 
     finally:
         out.unlink(missing_ok=True)
         dbf.unlink(missing_ok=True)
         Path(fname).unlink(missing_ok=True)
         Path(f'{fname[:-4]}.dbf').unlink(missing_ok=True)
-        logger.info("🧹 Cleaning data residues")
+        logger.debug("🧹 Cleaning data residues")
 
 
 def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
