@@ -54,7 +54,7 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
     df = _fetch_file(fname, ftp, ftype)
 
     if cache:
-        logger.debug(f"Data stored as parquet at {cachefile}")
+        logger.info(f"Data stored as parquet at {cachefile}")
         df.to_parquet(cachefile)
     return df
 

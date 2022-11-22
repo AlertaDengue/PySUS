@@ -1,11 +1,11 @@
 import os
-from datetime import date
-
-import elasticsearch.helpers
 import pandas as pd
-from elasticsearch import Elasticsearch
-from pysus.online_data import CACHEPATH
 
+from datetime import date
+from loguru import logger
+from elasticsearch import Elasticsearch, helpers
+
+from pysus.online_data import CACHEPATH
 
 def download(uf, cache=True, checkmemory=True):
     """
@@ -27,8 +27,10 @@ def download(uf, cache=True, checkmemory=True):
     cachefile = os.path.join(CACHEPATH, out)
     tempfile = os.path.join(CACHEPATH, f"ESUS_temp_{uf.upper()}.csv.gz")
     if os.path.exists(cachefile):
+        logger.info(f"Using local parquet file: {cachefile}")
         df = pd.read_parquet(cachefile)
     elif os.path.exists(tempfile):
+        logger.info(f"Using local csv file: {tempfile}")
         df = pd.read_csv(tempfile, chunksize=1000)
     else:
         fname = fetch(base, uf, url)
@@ -47,6 +49,7 @@ def download(uf, cache=True, checkmemory=True):
             os.unlink(fname)
             if cache:
                 df.to_parquet(cachefile)
+                logger.info(f"Data stored as parquet at {cachefile}")
 
     return df
 
@@ -56,7 +59,7 @@ def fetch(base, uf, url):
     print(f"Reading ESUS data for {UF}")
     es = Elasticsearch([url], send_get_body_as="POST")
     body = {"query": {"match_all": {}}}
-    results = elasticsearch.helpers.scan(es, query=body, index=base)
+    results = helpers.scan(es, query=body, index=base)
     # df = pd.DataFrame.from_dict(
     # [document['_source'] for document in results]
     # )
