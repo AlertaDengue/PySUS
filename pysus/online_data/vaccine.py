@@ -19,6 +19,9 @@ from requests.auth import HTTPBasicAuth
 from pysus.online_data import CACHEPATH
 
 
+# logger.add(sink=sys.stderr, level='INFO')
+
+
 def download_covid(uf=None, only_header=False):
     """
     Download covid vaccination data for a give UF
