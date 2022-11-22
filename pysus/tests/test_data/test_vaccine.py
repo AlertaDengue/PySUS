@@ -10,6 +10,7 @@ class VaccineTestCase(unittest.TestCase):
         """Careful! this download can take a long time"""
         df = download_covid("BA", only_header=True)
         self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(df.shape, (10000, 42))
 
 
 if __name__ == "__main__":
