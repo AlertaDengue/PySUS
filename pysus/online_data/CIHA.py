@@ -47,15 +47,15 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
     cachefile = os.path.join(CACHEPATH, "CIHA_" + fname.split(".")[0] + "_.parquet")
 
     if os.path.exists(cachefile):
-        logger.debug(f"Data cache found as parquet at {cachefile}")
+        logger.info(f"Local parquet data found at {cachefile}")
         df = pd.read_parquet(cachefile)
         return df
 
     df = _fetch_file(fname, ftp, ftype)
 
     if cache:
-        logger.info(f"Data stored as parquet at {cachefile}")
         df.to_parquet(cachefile)
+        logger.info(f"Data stored as parquet at {cachefile}")
     return df
 
 

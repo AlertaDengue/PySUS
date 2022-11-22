@@ -1,15 +1,13 @@
 """
 Helper functions to download official statistics from IBGE SIDRA
 """
-import json
-from urllib.error import HTTPError
 
-import pandas as pd
-import requests
 import urllib3
-import io
+import requests
+import pandas as pd
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
+from urllib.error import HTTPError
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 

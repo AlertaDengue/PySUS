@@ -2,11 +2,11 @@
 Download data from the national immunization program
 """
 import os
-from ftplib import FTP, error_perm
-from io import StringIO
-
 import pandas as pd
+
 from dbfread import DBF
+from loguru import logger
+from ftplib import FTP, error_perm
 
 from pysus.online_data import CACHEPATH
 
@@ -25,11 +25,13 @@ def download(state, year, cache=True):
     state = state.upper()
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DADOS")
     fname = f"CPNI{state}{year2}.DBF"
 
     cachefile = os.path.join(CACHEPATH, "PNI_" + fname.split(".")[0] + "_.parquet")
     if os.path.exists(cachefile):
+        logger.info(f"Local parquet data found at {cachefile}")
         df = pd.read_parquet(cachefile)
         return df
 
@@ -44,7 +46,9 @@ def download(state, year, cache=True):
     df = pd.DataFrame(list(dbf))
     if cache:
         df.to_parquet(cachefile)
+        logger.info(f"Data stored as parquet at {cachefile}")
     os.unlink(fname)
+    logger.debug(f"{fname} removed")
     return df
 
 
@@ -56,8 +60,8 @@ def get_available_years(state):
     """
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DADOS")
-    # res = StringIO()
     res = ftp.nlst(f"CPNI{state}*.DBF")
     return res
 
@@ -65,8 +69,8 @@ def get_available_years(state):
 def available_docs():
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DOCS")
-    # res = StringIO()
     res = ftp.nlst(f"*")
     return res
 
@@ -74,6 +78,7 @@ def available_docs():
 def fetch_document(fname):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftp.cwd("/dissemin/publicos/PNI/DOCS")
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)

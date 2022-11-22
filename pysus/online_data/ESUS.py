@@ -27,10 +27,10 @@ def download(uf, cache=True, checkmemory=True):
     cachefile = os.path.join(CACHEPATH, out)
     tempfile = os.path.join(CACHEPATH, f"ESUS_temp_{uf.upper()}.csv.gz")
     if os.path.exists(cachefile):
-        logger.info(f"Using local parquet file: {cachefile}")
+        logger.info(f"Local parquet file found at {cachefile}")
         df = pd.read_parquet(cachefile)
     elif os.path.exists(tempfile):
-        logger.info(f"Using local csv file: {tempfile}")
+        logger.info(f"Local csv file found at {tempfile}")
         df = pd.read_csv(tempfile, chunksize=1000)
     else:
         fname = fetch(base, uf, url)

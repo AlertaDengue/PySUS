@@ -71,15 +71,15 @@ def download(
     cachefile = os.path.join(CACHEPATH, "CNES_" + fname.split(".")[0] + "_.parquet")
 
     if os.path.exists(cachefile):
-        logger.info(f"Using local data: {cachefile}")
+        logger.info(f"Local parquet data found at {cachefile}")
         df = pd.read_parquet(cachefile)
         return df
 
     df = _fetch_file(fname, ftp, ftype)
 
     if cache:
-        logger.info(f"Data stored as parquet at {cachefile}")
         df.to_parquet(cachefile)
+        logger.info(f"Data stored as parquet at {cachefile}")
 
     return df
 
