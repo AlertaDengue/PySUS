@@ -18,7 +18,7 @@ from pprint import pprint
 from typing import Dict, List, Optional, Tuple, Union
 
 from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc, read_dbc_dbf, dbc2dbf
+from pysus.utilities.readdbc import read_dbc_dbf, dbc2dbf
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -152,6 +152,7 @@ def _fetch_file(fname, ftp, ftype):
 
     os.unlink(fname)
     logger.debug(f"{fname} removed")
+    
     return df
 
 
