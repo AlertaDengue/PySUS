@@ -3,13 +3,14 @@ import shutil
 import warnings
 from ftplib import FTP
 from pathlib import Path
+from loguru import logger
 
 from pysus.online_data import (
     _fetch_file,
     chunk_dbfiles_into_parquets,
     parquets_to_dataframe,
 )
-from pysus.utilities.readdbc import dbc2dbf
+
 
 agravos = {
     "Animais Peçonhentos": "ANIM",
@@ -64,7 +65,7 @@ def get_available_years(disease, return_path=False):
                         FINAIS and PRELIM while downloading the datasets.
     :return: A list of DBC files from a specific disease found in the FTP Server.
     """
-    warnings.warn(
+    logger.warn(
         "Now SINAN tables are no longer split by state. Returning countrywide years"
     ) #legacy
 
@@ -74,10 +75,12 @@ def get_available_years(disease, return_path=False):
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
 
     dbcs = []
 
     ftp.cwd(fpath)
+    logger.debug(f"Changing FTP work dir to: {fpath}")
     for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
         if return_path:
             dbcs.append(f"{fpath}/{dbc}")
@@ -85,6 +88,7 @@ def get_available_years(disease, return_path=False):
             dbcs.append(dbc)
         
     ftp.cwd(ppath)
+    logger.debug(f"Changing FTP work dir to: {ppath}")
     for dbc in ftp.nlst(f"{agravos[disease]}BR*.dbc"):
         if return_path:
             dbcs.append(f"{ppath}/{dbc}")
@@ -127,7 +131,7 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
     if year2 < first_year: #legacy
         raise ValueError(f"SINAN does not contain data before {first_year}")
 
-    warnings.warn(
+    logger.warn(
         "Now SINAN tables are no longer split by state. Returning country table" 
     ) #legacy
     
@@ -138,20 +142,24 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
     #Create the path where the data will be downloaded locally
     data_path = Path(data_path)
     data_path.mkdir(exist_ok=True, parents=True)
+    logger.debug(f"{data_path} directory created.")
+
     out = Path(data_path) / fname
     dbf = Path(f"{str(out)[:-4]}.dbf")
 
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
 
     if not Path(out).exists():
+        logger.debug(f"{fname} file not found. Proceeding to download..")
         try:
             _fetch_file(fname, sus_path, "DBC", return_df=False)
             shutil.move(Path(fname), data_path)
-            logging.info(f"{fname} downloaded at {data_path}")
+            logger.info(f"{fname} downloaded at {data_path}")
 
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
 
     try:
         partquet_dir = chunk_dbfiles_into_parquets(str(out))
@@ -170,6 +178,7 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
         dbf.unlink(missing_ok=True)
         Path(fname).unlink(missing_ok=True)
         Path(f'{fname[:-4]}.dbf').unlink(missing_ok=True)
+        logger.info("🧹 Cleaning data residues")
 
 
 def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
@@ -197,6 +206,8 @@ def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
             )
 
             parquets.append(parquet_dir)
+
+    [logger.debug(f"{parquet} downloaded.") for parquet in parquets]
 
     return parquets
 
