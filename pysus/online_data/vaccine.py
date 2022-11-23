@@ -6,20 +6,15 @@ This module contains function to download from specific campains:
 - COVID-19 in 2020-2021 Downloaded as described [here](http://opendatasus.saude.gov.br/dataset/b772ee55-07cd-44d8-958f-b12edd004e0b/resource/5916b3a4-81e7-4ad5-adb6-b884ff198dc1/download/manual_api_vacina_covid-19.pdf)
 """
 import os
-# import sys
-import time
 import json
-# from loguru import logger
 import requests
 import pandas as pd
 
+from loguru import logger
 from json import JSONDecodeError
 from requests.auth import HTTPBasicAuth
 
 from pysus.online_data import CACHEPATH
-
-
-# logger.add(sink=sys.stderr, level='INFO')
 
 
 def download_covid(uf=None, only_header=False):
@@ -39,6 +34,8 @@ def download_covid(uf=None, only_header=False):
     else:
         UF = uf.upper()
         query = {"query": {"match": {"paciente_endereco_uf": UF}}, "size": 10000}
+    
+    logger.info(f"Searching for COVID data of {UF}")
     tempfile = os.path.join(CACHEPATH, f"Vaccine_temp_{UF}.csv.gz")
     if os.path.exists(tempfile):
         print(
@@ -51,8 +48,7 @@ def download_covid(uf=None, only_header=False):
 
     if only_header:
         df = pd.DataFrame(next(data_gen))
-        # logger.warning(f"Downloading data sample visualization of {df.shape[0]} rows...")
-        time.sleep(0.3)
+        logger.warning(f"Downloading data sample for visualization of {df.shape[0]} rows...")
         return df
 
     h = 1
@@ -64,8 +60,9 @@ def download_covid(uf=None, only_header=False):
         else:
             df.to_csv(tempfile, mode="a", header=False)
     
-    # logger.info(f"{tempfile} stored at {CACHEPATH}.")
+    logger.info(f"{tempfile} stored at {CACHEPATH}.")
     df = pd.read_csv(tempfile, chunksize=5000)
+    
     return df
 
 
@@ -100,7 +97,8 @@ def elasticsearch_fetch(uri, auth, json_body={}):
         try:
             if resp["hits"]["hits"] == []:
                 break
-        except KeyError:
+        except KeyError as e:
+            logger.error(e)
             print(resp)
         total += len(resp["hits"]["hits"])
         print(f"Downloaded {total} records\r", end="")

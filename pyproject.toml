@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysus"
-version = "0.6.1"
+version = "0.6.3"
 description = "Tools for dealing with Brazil's Public health data"
 authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>"]
 license = "GPL"
@@ -25,6 +25,7 @@ pytz = "2022.2.1"
 six = "1.16.0"
 tqdm = "4.64.0"
 wget = "^3.2"
+loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.6.0"
