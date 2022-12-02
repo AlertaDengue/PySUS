@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV HOME "/home/pysus"
 ENV PATH "$PATH:/home/pysus/.local/bin"
-ENV ENV_NAME base
+ENV ENV_NAME pysus
 ENV PATH "/opt/conda/envs/$ENV_NAME/bin:$PATH"
 ENV PATH "/opt/poetry/bin:$PATH"
 
@@ -28,12 +28,13 @@ RUN useradd -ms /bin/bash pysus \
   && sudo chown -R pysus:pysus /usr/src
 
 COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
-COPY --chown=pysus:pysus docker/entrypoint.sh /entrypoint.sh
+COPY --chown=pysus:pysus docker/scripts/entrypoint.sh /entrypoint.sh
+COPY --chown=pysus:pysus docker/scripts/poetry_install.sh /tmp/poetry_install.sh
 COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
 COPY --chown=pysus:pysus docs/source/*.ipynb /home/pysus/Notebooks/
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | POETRY_HOME=/opt/poetry python && \
+RUN curl -sSL https://install.python-poetry.org/ | POETRY_HOME=/opt/poetry python && \
     cd /usr/local/bin && \
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
@@ -42,9 +43,10 @@ RUN chmod -R a+rwx /home/pysus/.config/pypoetry/
 
 USER pysus
 
-RUN mamba env update -n $ENV_NAME \
-    --file /tmp/dev.yaml \
-  && cd /usr/src && poetry build && poetry install \
+RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
+  && cd /usr/src \
+  && poetry build \
+  && poetry install \
   && mamba clean -afy
 
 WORKDIR /home/pysus/Notebooks

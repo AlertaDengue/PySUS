@@ -3,9 +3,11 @@ Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
 """
+import logging
 import os
+import shutil
 from ftplib import FTP
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 import pandas as pd
 import pyarrow as pa
@@ -48,7 +50,7 @@ def _fetch_file(
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
     except Exception:
-        raise Exception("File {} not available".format(fname))
+        raise Exception("File {} not available on {}".format(fname, path))
     if return_df:
         df = get_dataframe(fname, ftype)
         return df
@@ -70,33 +72,68 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
         df = pd.DataFrame(list(dbf))
     if os.path.exists(fname):
         os.unlink(fname)
-    df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+    df.applymap(
+        lambda x: x.decode("iso-8859-1") if isinstance(x, bytes) else x
+    )
     return df
 
 
-def get_chunked_dataframe(fname: str, ftype: str) -> str:
-    if ftype == "DBC":
-        outname = fname.replace("DBC", "DBF")
-        dbc2dbf(fname, outname)
+def chunk_dbfiles_into_parquets(fpath: str) -> str(PosixPath):
 
-    tempfile = outname.replace("DBF", "parquet")
-    # first = 1
-    for d in stream_DBF(DBF(outname, encoding="iso-8859-1", raw=False)):
-        df = pd.DataFrame(d)
-        df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
-        table = pa.Table.from_pandas(df)
-        pq.write_to_dataset(table, root_path=tempfile)
-        # if first:
-        #     df.to_csv(tempfile)
-        #     first = 0
-        # else:
-        #     df.to_csv(tempfile, mode='a', header=False)
+    dbfile = str(Path(fpath).absolute()).split("/")[-1]
 
-    if os.path.exists(fname):
-        os.unlink(fname)
-        os.unlink(outname)
+    if Path(dbfile).suffix in [".dbc", ".DBC"]:
+        outpath = f"{fpath[:-4]}.dbf"
 
-    return tempfile
+        try:
+            dbc2dbf(fpath, outpath)
+
+        except Exception as e:
+            logging.error(e)
+
+        fpath = outpath
+
+    parquet_dir = f"{fpath[:-4]}.parquet"
+    if not Path(parquet_dir).exists():
+        Path(parquet_dir).mkdir(exist_ok=True, parents=True)
+        for d in stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
+            try:
+                df = pd.DataFrame(d)
+                table = pa.Table.from_pandas(
+                    df.applymap(
+                    lambda x: x.decode(encoding="iso-8859-1") if isinstance(x, bytes) else x
+                ))
+                pq.write_to_dataset(table, root_path=parquet_dir)
+
+            except Exception as e:
+                logging.error(e)
+
+        logging.info(f"{fpath} chunked into parquets at {parquet_dir}")
+
+    return parquet_dir
+
+
+def parquets_to_dataframe(
+    parquet_dir: str(PosixPath), 
+    clean_after_read=False
+) -> pd.DataFrame:
+
+    parquets = Path(parquet_dir).glob("*.parquet")
+
+    try:
+        chunks_list = [
+            pd.read_parquet(str(f), engine="fastparquet") for f in parquets
+        ]
+
+        return pd.concat(chunks_list, ignore_index=True)
+
+    except Exception as e:
+        logging.error(e)
+
+    finally:
+        if clean_after_read:
+            shutil.rmtree(parquet_dir)
+            logging.info(f"{parquet_dir} removed")
 
 
 def stream_DBF(dbf, chunk_size=30000):

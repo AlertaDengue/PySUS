@@ -5,21 +5,23 @@ This module contains function to download from specific campains:
 
 - COVID-19 in 2020-2021 Downloaded as described [here](http://opendatasus.saude.gov.br/dataset/b772ee55-07cd-44d8-958f-b12edd004e0b/resource/5916b3a4-81e7-4ad5-adb6-b884ff198dc1/download/manual_api_vacina_covid-19.pdf)
 """
-import json
 import os
-from json import JSONDecodeError
-
-import pandas as pd
+import json
 import requests
+import pandas as pd
+
+from loguru import logger
+from json import JSONDecodeError
 from requests.auth import HTTPBasicAuth
 
 from pysus.online_data import CACHEPATH
 
 
-def download_covid(uf=None):
+def download_covid(uf=None, only_header=False):
     """
     Download covid vaccination data for a give UF
     :param uf: 'RJ' | 'SP', etc.
+    :param only_header: Used to see the header of the data before downloading.
     :return: dataframe iterator as returned by pandas `read_csv('Vaccine_temp_<uf>.csv.gz', chunksize=5000)`
     """
     user = "imunizacao_public"
@@ -32,6 +34,8 @@ def download_covid(uf=None):
     else:
         UF = uf.upper()
         query = {"query": {"match": {"paciente_endereco_uf": UF}}, "size": 10000}
+    
+    logger.info(f"Searching for COVID data of {UF}")
     tempfile = os.path.join(CACHEPATH, f"Vaccine_temp_{UF}.csv.gz")
     if os.path.exists(tempfile):
         print(
@@ -42,6 +46,11 @@ def download_covid(uf=None):
     auth = HTTPBasicAuth(user, pwd)
     data_gen = elasticsearch_fetch(url, auth, query)
 
+    if only_header:
+        df = pd.DataFrame(next(data_gen))
+        logger.warning(f"Downloading data sample for visualization of {df.shape[0]} rows...")
+        return df
+
     h = 1
     for dt in data_gen:
         df = pd.DataFrame(dt)
@@ -50,7 +59,10 @@ def download_covid(uf=None):
             h = 0
         else:
             df.to_csv(tempfile, mode="a", header=False)
+    
+    logger.info(f"{tempfile} stored at {CACHEPATH}.")
     df = pd.read_csv(tempfile, chunksize=5000)
+    
     return df
 
 
@@ -72,7 +84,8 @@ def elasticsearch_fetch(uri, auth, json_body={}):
                 ]  # for the continuation of the download, query parameter is not allowed
                 del json_body["size"]
         try:
-            response = requests.post(uri, auth=auth, headers=headers, json=json_body)
+            s = requests.Session()
+            response = s.post(uri, auth=auth, headers=headers, json=json_body)
             text = response.text
             try:
                 resp = json.loads(text)
@@ -84,7 +97,8 @@ def elasticsearch_fetch(uri, auth, json_body={}):
         try:
             if resp["hits"]["hits"] == []:
                 break
-        except KeyError:
+        except KeyError as e:
+            logger.error(e)
             print(resp)
         total += len(resp["hits"]["hits"])
         print(f"Downloaded {total} records\r", end="")
@@ -96,4 +110,4 @@ def elasticsearch_fetch(uri, auth, json_body={}):
 
 
 if __name__ == "__main__":
-    print(download_covid("ba"))
+    print(download_covid("ba", only_header=True))

@@ -2,23 +2,22 @@
 Downloads SIA data from Datasus FTP server
 Created on 21/09/18
 by fccoelho
-Modified on 18/04/21
+Modified on 22/11/22
 by bcbernardo
 license: GPL V3 or Later
 """
 
 import os
-import warnings
-from datetime import date
-from ftplib import FTP
-from typing import Dict, List, Optional, Tuple, Union
-from pprint import pprint
-
 import pandas as pd
-from dbfread import DBF
+
+from ftplib import FTP
+from datetime import date
+from loguru import logger
+from pprint import pprint
+from typing import Dict, List, Optional, Tuple, Union
 
 from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc, read_dbc_dbf, dbc2dbf
+from pysus.utilities.readdbc import read_dbc_dbf, dbc2dbf
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -77,11 +76,16 @@ def download(
         group = [group]
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
     ftype = "DBC"
     if year >= 1994 and year < 2008:
         ftp.cwd("/dissemin/publicos/SIASUS/199407_200712/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/199407_200712/Dados")
+
     elif year >= 2008:
         ftp.cwd("/dissemin/publicos/SIASUS/200801_/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/200801_/Dados")
+
     else:
         raise ValueError("SIA does not contain data before 1994")
 
@@ -99,7 +103,7 @@ def download(
             # NOTE: raise Warning instead of ValueError for
             # backwards-compatibility with older behavior of returning
             # (PA, None) for calls after 1994 and before Jan, 2008
-            warnings.warn(
+            logger.warning(
                 f"SIA does not contain data for {gname} "
                 f"before {available_date:%d/%m/%Y}"
             )
@@ -110,12 +114,14 @@ def download(
         # Check in Cache
         cachefile = os.path.join(CACHEPATH, "SIA_" + fname.split(".")[0] + "_.parquet")
         if os.path.exists(cachefile):
+            logger.info(f"Local parquet file found at {cachefile}")
             df = pd.read_parquet(cachefile)
         else:
             try:
                 df = _fetch_file(fname, ftp, ftype)
                 if cache and df:  # saves to cache if df is not None
                     df.to_parquet(cachefile)
+                    logger.info(f"Data stored as parquet at {cachefile}")
             except Exception as e:
                 df = None
                 print(e)
@@ -148,6 +154,8 @@ def _fetch_file(fname, ftp, ftype):
     df = read_dbc_dbf(fname)
 
     os.unlink(fname)
+    logger.debug(f"{fname} removed")
+
     return df
 
 
@@ -160,6 +168,7 @@ def download_multiples(fnames, ftp):
             ftp.retrbinary(f"RETR {fn}", fobj.write)
             dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
             os.unlink(fnfull)
+            logger.debug(f"{fnfull} removed")
         except Exception as exc:
             raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
 

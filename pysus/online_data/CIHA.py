@@ -9,11 +9,11 @@ license: GPL V3 or Later
 """
 
 import os
-from ftplib import FTP, error_perm
-
 import pandas as pd
-from dbfread import DBF
 
+from dbfread import DBF
+from loguru import logger
+from ftplib import FTP, error_perm
 from pysus.online_data import CACHEPATH
 from pysus.utilities.readdbc import read_dbc
 
@@ -32,21 +32,32 @@ def download(state: str, year: int, month: int, cache: bool = True) -> object:
         raise ValueError("CIHA does not contain data before 2008")
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
+    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+
     if year > 2008 and year < 2011:
         ftype = "DBC"
         ftp.cwd("/dissemin/publicos/CIH/200801_201012/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/CIH/200801_201012/Dados")
         fname = "CR{}{}{}.dbc".format(state, year2, month)
+
     if year >= 2011:
         ftype = "DBC"
         ftp.cwd("/dissemin/publicos/CIHA/201101_/Dados")
+        logger.debug("Changing FTP work dir to: /dissemin/publicos/CIHA/201101_/Dados")
         fname = "CIHA{}{}{}.dbc".format(state, str(year2).zfill(2), month)
+        
     cachefile = os.path.join(CACHEPATH, "CIHA_" + fname.split(".")[0] + "_.parquet")
+
     if os.path.exists(cachefile):
+        logger.info(f"Local parquet data found at {cachefile}")
         df = pd.read_parquet(cachefile)
         return df
+
     df = _fetch_file(fname, ftp, ftype)
+
     if cache:
         df.to_parquet(cachefile)
+        logger.info(f"Data stored as parquet at {cachefile}")
     return df
 
 
