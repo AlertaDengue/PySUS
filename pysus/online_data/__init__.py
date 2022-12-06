@@ -47,12 +47,15 @@ def _fetch_file(
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd(path)
+
+    Path('/tmp/pysus').mkdir(exist_ok=True)
+
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(f'/tmp/pysus/{fname}', "wb").write)
     except Exception:
         raise Exception("File {} not available on {}".format(fname, path))
     if return_df:
-        df = get_dataframe(fname, ftype)
+        df = get_dataframe(f'/tmp/pysus/{fname}', ftype)
         return df
     else:
         return pd.DataFrame()
@@ -65,6 +68,8 @@ def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
     :param ftype: 'DBC' or 'DBF'
     :return:  DataFrame
     """
+    fname = f'/tmp/pysus/{fname}'
+
     if ftype == "DBC":
         df = read_dbc(fname, encoding="iso-8859-1", raw=False)
     elif ftype == "DBF":
