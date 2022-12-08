@@ -153,7 +153,6 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
         logger.debug(f"{fname} file not found. Proceeding to download..")
         try:
             _fetch_file(fname, sus_path, "DBC", return_df=False)
-            shutil.move(Path(fname), data_path)
             logger.info(f"{fname} downloaded at {data_path}")
 
         except Exception as e:
