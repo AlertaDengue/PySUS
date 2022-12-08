@@ -132,7 +132,6 @@ def download(disease, year, return_chunks=False, data_path="/tmp/pysus"):
     logger.warning(
         "Now SINAN tables are no longer split by state. Returning country table" 
     ) #legacy
-    
     #Generate the path to be downloaded from the FTP Server
     pname = next(p for p in fyears if fname in p)
     sus_path = "/".join(pname.split("/")[:-1])
@@ -204,8 +203,6 @@ def download_all_years_in_chunks(disease, data_dir="/tmp/pysus"):
             )
 
             parquets.append(parquet_dir)
-
-    [logger.debug(f"{parquet} downloaded.") for parquet in parquets]
 
     return parquets
 
