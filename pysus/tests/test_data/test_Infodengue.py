@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 from pysus.online_data.Infodengue import (
     download,
-    geocode_by_cities,
+    # geocode_by_cities,
     search_cities,
 )
 
@@ -13,7 +13,7 @@ class InfoDengueTestCase(unittest.TestCase):
         city_name = search_cities("Rio de Janeiro")
         expected_geocode = 3304557
         pattern_city_names = dict(
-            search_cities(dict=geocode_by_cities, city_name="Rio de")
+            search_cities(city_name="Rio de")
         )
         math_cities = {"Rio de Contas": 2926707, "Rio de Janeiro": 3304557}
 
