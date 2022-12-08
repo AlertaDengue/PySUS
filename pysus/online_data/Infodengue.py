@@ -19,7 +19,6 @@ def search_cities(city_name: str) -> Dict[str, int]:
     Parameters
     ----------
         city_name: Substring of city name
-
     Returns
     -------
         dict: Dictionary with key and values 
@@ -78,7 +77,7 @@ def download(
         e_yw = str(eyw_end)
         ew_start, ey_start = s_yw[-2:], s_yw[:4]
         ew_end, ey_end = e_yw[-2:], e_yw[:4]
-        url = "http://127.0.0.1:8000/api/alertcity/api/alertcity"
+        url = "https://info.dengue.mat.br/api/alertcity"
         params = (
             "&disease="
             + f"{disease}"

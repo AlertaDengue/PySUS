@@ -10,10 +10,8 @@ from pysus.online_data.Infodengue import (
 
 class InfoDengueTestCase(unittest.TestCase):
     def test_search_cities(self):
-
         city_name = search_cities("Rio de Janeiro")
         expected_geocode = 3304557
-
         pattern_city_names = dict(
             search_cities(dict=geocode_by_cities, city_name="Rio de")
         )
@@ -29,7 +27,6 @@ class InfoDengueTestCase(unittest.TestCase):
             202152,
             "Rio de Janeiro",
         )
-
         df_size = (29, 52)
 
         self.assertIsInstance(df, pd.DataFrame)
