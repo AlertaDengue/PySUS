@@ -10,15 +10,12 @@ from pysus.online_data.Infodengue import (
 
 class InfoDengueTestCase(unittest.TestCase):
     def test_search_cities(self):
-        city_name = search_cities("Rio de Janeiro")
-        expected_geocode = 3304557
-        pattern_city_names = dict(
-            search_cities(city_name="Rio de")
-        )
-        math_cities = {"Rio de Contas": 2926707, "Rio de Janeiro": 3304557}
+        city_name = search_cities("Curitiba")
+        math_cities = {'Curitiba': 4106902, 'Curitibanos': 4204806}
+        pattern_city_names = search_cities(city_name="do Sul")
 
-        self.assertEqual(expected_geocode, city_name)
-        self.assertEqual(math_cities, pattern_city_names)
+        self.assertEqual(math_cities, city_name)
+        self.assertIn("Jaraguá do Sul", pattern_city_names.keys())
 
     def test_download(self):
         df = download(
