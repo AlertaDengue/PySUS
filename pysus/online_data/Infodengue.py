@@ -1,9 +1,12 @@
 import json
+import string
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict
 
 import pandas as pd
-from loguru import logger
+import unidecode
+
+# from loguru import logger
 
 APP_DIR = Path(__file__).resolve(strict=True).parent.parent
 CID10 = {"dengue": "A90", "chikungunya": "A92.0", "zika": "A928"}
@@ -12,24 +15,31 @@ with open(APP_DIR / "dataset/geocode_by_cities.json", "r") as f:
     geocode_by_cities = json.load(f)
 
 
-def search_cities(city_name: str) -> Dict[str, int]:
+def normalize(s):
+    for p in string.punctuation:
+        s = s.replace(p, '')
+
+    return unidecode.unidecode(s.lower().strip())
+
+
+def search_string(substr: str) -> Dict[str, int]:
     """
     Fetch geocode of the city name matching to the substring.
 
     Parameters
     ----------
-        city_name: Substring of city name
+        substr: Part of city name
     Returns
     -------
-        dict: Dictionary with key and values 
+        dict: Dictionary with key and values
             with city name and IBGE codes of all municipalities in Brazil
     """
 
-    result = []
-    for key in geocode_by_cities:
-        if city_name in key:
-            result.append((key, geocode_by_cities[key]))
-    return dict(result)
+    return {
+        key: geocode_by_cities[key]
+        for key in geocode_by_cities
+        if normalize(substr) in normalize(key)
+    }
 
 
 def download(
@@ -40,7 +50,7 @@ def download(
     format="csv",
 ) -> pd.DataFrame:
     """
-    Download InfoDengue API data by municipality and disease 
+    Download InfoDengue API data by municipality and disease
         in the epidemiological week.
 
     Parameters
@@ -68,10 +78,8 @@ def download(
             "started in the year 2010 until 2022. Example: 202248"
         )
     elif geocode is None:
-        list_of_cities = search_cities(city_name)
-        logger.warning(
-            f"You must choose one of these city names: {list_of_cities}"
-        )
+        list_of_cities = search_string(city_name)
+        print(f"You must choose one of these city names: {list_of_cities}")
     else:
         s_yw = str(eyw_start)
         e_yw = str(eyw_end)
