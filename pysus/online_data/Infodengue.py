@@ -1,5 +1,6 @@
 import json
 import string
+from difflib import get_close_matches
 from pathlib import Path
 from typing import Dict
 
@@ -35,10 +36,17 @@ def search_string(substr: str) -> Dict[str, int]:
             with city name and IBGE codes of all municipalities in Brazil
     """
 
+    cites_mathes = [
+        get_close_matches(
+            i, [normalize(cname) for cname in list(geocode_by_cities.keys())], n=55
+        )
+        for i in normalize(substr).split(".")
+    ]
+
     return {
         key: geocode_by_cities[key]
         for key in geocode_by_cities
-        if normalize(substr) in normalize(key)
+        if normalize(key) in list(*cites_mathes)
     }
 
 

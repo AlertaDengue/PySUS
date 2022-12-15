@@ -4,12 +4,12 @@ import pandas as pd
 from pysus.online_data.Infodengue import (
     download,
     # geocode_by_cities,
-    search_cities,
+    search_string,
 )
 
 
 class InfoDengueTestCase(unittest.TestCase):
-    def test_search_cities(self):
+    def search_string(self):
         city_name = search_cities("Curitiba")
         math_cities = {'Curitiba': 4106902, 'Curitibanos': 4204806}
         pattern_city_names = search_cities(city_name="do Sul")
