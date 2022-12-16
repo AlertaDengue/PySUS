@@ -35,10 +35,11 @@ def search_string(substr: str) -> Dict[str, int]:
         dict: Dictionary with key and values
             with city name and IBGE codes of all municipalities in Brazil
     """
-
-    cites_mathes = [
+    normalized_list = [normalize(f) for f in list(geocode_by_cities.keys())]
+    
+    matching_cities = [
         get_close_matches(
-            i, [normalize(cname) for cname in list(geocode_by_cities.keys())], n=55
+            i, normalized_list, n=55
         )
         for i in normalize(substr).split(".")
     ]
@@ -46,7 +47,7 @@ def search_string(substr: str) -> Dict[str, int]:
     return {
         key: geocode_by_cities[key]
         for key in geocode_by_cities
-        if normalize(key) in list(*cites_mathes)
+        if normalize(key) in list(*matching_cities)
     }
 
 
