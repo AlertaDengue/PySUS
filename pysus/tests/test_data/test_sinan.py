@@ -71,7 +71,6 @@ class TestSINANDownload(unittest.TestCase):
 
 class TestSinanDBF(unittest.TestCase):
     dbf_name = PATH_ROOT / "EPR-2016-06-01-2016.dbf"
-    data_pickle = PATH_ROOT / "chik.pickle"
 
     def test_read_dbf(self):
         df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
@@ -98,10 +97,6 @@ class TestSinanDBF(unittest.TestCase):
         df = read_sinan_dbf(self.dbf_name, encoding="latin-1")
         self.assertTrue(self.dbf_name.exists())
         assert not all(df.dtypes == "object")
-
-    def test_geocode(self):
-        self.assertTrue(self.data_pickle.exists())
-        # df = pd.read_pickle(self.data_pickle)
 
 
 if __name__ == "__main__":

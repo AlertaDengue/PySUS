@@ -1,0 +1,49 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniconda-version: "latest"
+        mamba-version: "*"
+        environment-file: conda/dev.yaml
+        channels: conda-forge,nodefaults
+        activate-environment: env-pysus
+        use-mamba: true
+        miniforge-variant: Mambaforge
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
+    - name: Test release
+      if: ${{ github.event_name != 'workflow_dispatch' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: make release-dry
+
+    - name: Release
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        poetry config pypi-token.pypi ${PYPI_TOKEN}
+        make release
+

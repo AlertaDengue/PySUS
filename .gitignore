@@ -21,8 +21,8 @@ pyvenv.cfg
 *.ipynb_checkpoints*
 *.dbc
 *.DBC
-*.dbf
-*.DBF
+# *.dbf
+# *.DBF
 *.pickle
 *.parquet
 

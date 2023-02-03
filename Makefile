@@ -23,6 +23,17 @@ help:
 
 DOCKER = docker-compose -p pysus -f docker/docker-compose.yaml
 SERVICE :=
+SEMANTIC_RELEASE = npx --yes \
+          -p semantic-release \
+          -p conventional-changelog-conventionalcommits \
+          -p "@semantic-release/commit-analyzer" \
+          -p "@semantic-release/release-notes-generator" \
+          -p "@semantic-release/changelog" \
+          -p "@semantic-release/exec" \
+          -p "@semantic-release/github" \
+          -p "@semantic-release/git" \
+          -p "@google/semantic-release-replace-plugin" \
+          semantic-release
 
 
 #* Poetry
@@ -106,3 +117,16 @@ clean-test: ## remove test and coverage artifacts
 	rm -f .coverage
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
+
+
+# RELEASE
+# =======
+
+.PHONY: release
+release:
+	$(SEMANTIC_RELEASE) --ci
+
+
+.PHONY: release-dry
+release-dry:
+	$(SEMANTIC_RELEASE) --dry-run
