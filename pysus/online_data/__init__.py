@@ -34,7 +34,11 @@ def cache_contents():
 
 
 def _fetch_file(
-    fname: str, path: str, ftype: str, return_df: bool = True
+    fname: str, 
+    path: str,
+    ftype: str, 
+    return_df: bool = True, 
+    data_path: str = '/tmp/pysus'
 ) -> pd.DataFrame:
     """
     Fetch a single file.
@@ -48,27 +52,27 @@ def _fetch_file(
     ftp.login()
     ftp.cwd(path)
 
-    Path('/tmp/pysus').mkdir(exist_ok=True)
+    Path(data_path).mkdir(exist_ok=True)
 
     try:
-        ftp.retrbinary(f"RETR {fname}", open(f'/tmp/pysus/{fname}', "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(f'{Path(data_path) / fname}', "wb").write)
     except Exception:
         raise Exception("File {} not available on {}".format(fname, path))
     if return_df:
-        df = get_dataframe(f'/tmp/pysus/{fname}', ftype)
+        df = get_dataframe(fname, ftype, data_path)
         return df
     else:
         return pd.DataFrame()
 
 
-def get_dataframe(fname: str, ftype: str) -> pd.DataFrame:
+def get_dataframe(fname: str, ftype: str, data_path: str = '/tmp/pysus') -> pd.DataFrame:
     """
     Return a dataframe read fom temporary file on disk.
     :param fname: temporary file name
     :param ftype: 'DBC' or 'DBF'
     :return:  DataFrame
     """
-    fname = f'/tmp/pysus/{fname}'
+    fname = Path(data_path) / fname
 
     if ftype == "DBC":
         df = read_dbc(fname, encoding="iso-8859-1", raw=False)
