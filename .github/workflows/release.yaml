@@ -28,6 +28,10 @@ jobs:
         use-mamba: true
         miniforge-variant: Mambaforge
 
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        
     - name: Test release
       if: ${{ github.event_name != 'workflow_dispatch' }}
       env:
