@@ -1,0 +1,80 @@
+{
+  "branches": ["main"],
+  "tagFormat": "${version}",
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer", {
+      "preset": "conventionalcommits"
+    }],
+    [
+      "@google/semantic-release-replace-plugin",
+      {
+        "replacements": [
+          {
+            "files": ["pysus/__init__.py"],
+            "from": "return \".*\"  # changed by semantic-release",
+            "to": "return \"${nextRelease.version}\"  # changed by semantic-release",
+            "results": [
+              {
+                "file": "pysus/__init__.py",
+                "hasChanged": true,
+                "numMatches": 1,
+                "numReplacements": 1
+              }
+            ],
+            "countMatches": true
+          },
+          {
+            "files": ["pyproject.toml"],
+            "from": "version = \".*\"  # changed by semantic-release",
+            "to": "version = \"${nextRelease.version}\"  # changed by semantic-release",
+            "results": [
+              {
+                "file": "pyproject.toml",
+                "hasChanged": true,
+                "numMatches": 1,
+                "numReplacements": 1
+              }
+            ],
+            "countMatches": true
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator", {
+        "preset": "conventionalcommits"
+      }],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogTitle": "Release Notes\n---",
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "poetry build",
+        "publishCmd": "poetry publish"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": ["dist/*.whl", "dist/*.tar.gz"]
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "pyproject.toml",
+          "CHANGELOG.md",
+          "pysus/__init__.py"
+        ],
+        "message": "chore(release): ${nextRelease.version}"
+      }
+    ]
+  ]
+}
