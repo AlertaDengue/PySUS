@@ -2,6 +2,7 @@
 """PySUS Python package"""
 
 from . import preprocessing, utilities
+from classes.sinan import SINAN
 from importlib import metadata as importlib_metadata
 
 
