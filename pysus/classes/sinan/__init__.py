@@ -1,84 +1,68 @@
-from diseases import DISEASE_CODE
-from typecast import COLUMN_TYPE
-from sqlalchemy import VARCHAR, DATE, NUMERIC
-from ftplib import FTP
-from dbfread import DBF
 import os
-from typing import List, Union
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+from ftplib import FTP
+from dbfread import DBF
 from pathlib import Path
+from typing import List, Union
+from sqlalchemy import VARCHAR, DATE, NUMERIC, INTEGER
+
+from .diseases import DISEASE_CODE
+from .typecast import COLUMN_TYPE
 from pysus.utilities.readdbc import dbc2dbf
 
 
 class SINAN:
     """
     Usage:
-        SINAN.diseases
-        SINAN.available_years('Zika')
-        SINAN.download('Zika', years = [19, 20, 21])
-        or
-        SINAN('Zika').download(years = [19, 20, 21])
+    - SINAN.diseases
+    - SINAN.available_years('Zika')
+    - SINAN.download_parquets('Zika', years = [19, 20, 21])
+    - SINAN.parquets_to_df('Zika', 19)
     """
 
     diseases = list(DISEASE_CODE.keys())
-    __ftp = FTP('ftp.datasus.gov.br')
-    __disease = None
-    __disease_years = None
-    __data_path = '/tmp/pysus'
 
-    def __init__(self, disease=None) -> None:
-        if disease:
-            self.__disease = Disease(disease)
-            self.__disease_years = self.__disease.get_years('all')
-
-    def available_years(self, disease: str = None, stage: str = 'all') -> list:
-        if not disease:
-            return self.__disease.get_years(stage)
+    def available_years(self, disease: str, stage: str = 'all') -> list:
         return Disease(disease).get_years(stage)
 
-    def download(
-        self,
-        disease: str = None,
+    def download_parquets(
+        disease: str,
         years: List[Union[(int, str)]] = None,
-        data_path: str = None,
+        data_path: str = '/tmp/pysus',
     ):
-
-        if data_path:
-            self.__data_path = data_path
-
-        if self.__disease:
-            _disease = self.__disease
-        else:
-            _disease = Disease(disease)
+        _disease = Disease(disease)
+        ftp = FTP('ftp.datasus.gov.br')
 
         if not years:
-            _years = self.__disease_years
+            _years = _disease.get_years()
         else:
             _years = years
 
         _paths = _disease.get_ftp_paths(_years)
-        Path(self.__data_path).mkdir(parents=True, exist_ok=True)
+        Path(data_path).mkdir(parents=True, exist_ok=True)
 
         for path in _paths:
             filename = str(path).split('/')[-1]
-            filepath = Path(self.__data_path) / filename
+            filepath = Path(data_path) / filename
             parquet_dir = f'{str(filepath)[:-4]}.parquet'
             Path(parquet_dir).mkdir(exist_ok=True, parents=True)
             if not any(os.listdir(parquet_dir)):
-                self.__ftp.login()
-                self.__ftp.retrbinary(
-                    f'RETR {path}', open(filepath, 'wb').write
-                )
+                ftp.login()
+                ftp.retrbinary(f'RETR {path}', open(filepath, 'wb').write)
                 parquet_dir = _dbc_to_parquet_chunks(str(filepath))
-            print(f'[INFO] {self.__disease} at {parquet_dir}')
+            print(f'[INFO] {_disease} at {parquet_dir}')
 
-    def parquet_to_dataframe(self, year: Union[(str, int)]):
-        dis = Disease(str(self.__disease))
+    def parquets_to_df(
+        disease: str, year: Union[(str, int)], data_path='/tmp/pysus'
+    ):
+        dis = Disease(disease)
         _year = str(year)[-2:].zfill(2)
-        parquet_dir = Path(self.__data_path) / f'{dis.code}BR{_year}.parquet'
-        if parquet_dir.exists():
+        parquet_dir = Path(data_path) / f'{dis.code}BR{_year}.parquet'
+
+        if parquet_dir.exists() and any(os.listdir(parquet_dir)):
             chunks = parquet_dir.glob('*.parquet')
             chunks_df = [
                 _convert_df_types(
@@ -86,7 +70,29 @@ class SINAN:
                 )
                 for f in chunks
             ]
-            return pd.concat(chunks_df, ignore_index=True)
+            df = pd.concat(chunks_df, ignore_index=True)
+            objs = df.select_dtypes(object)
+            df[objs.columns] = objs.apply(lambda x: x.str.replace('\x00', ''))
+            return df
+
+    def metadata_df(disease: str):
+        code = DISEASE_CODE[disease]
+        metadata_file = (
+            Path(__file__).parent.parent.parent
+            / 'metadata'
+            / 'SINAN'
+            / f'{code}.tar.gz'
+        )
+        df = pd.read_csv(
+            metadata_file,
+            compression='gzip',
+            header=0,
+            sep=',',
+            quotechar='"',
+            error_bad_lines=False,
+        )
+
+        return df.iloc[:, 1:]
 
 
 class Disease:
@@ -194,8 +200,6 @@ def _dbc_to_parquet_chunks(dbcfilepath: str) -> str:
                 if isinstance(x, bytes)
                 else x
             )
-            objs = df.select_dtypes(object)
-            df[objs.columns] = objs.apply(lambda x: x.str.replace('\x00', ''))
             parquet = pa.Table.from_pandas(df)
             pq.write_to_dataset(parquet, root_path=parquetpath)
 
@@ -210,13 +214,17 @@ def _convert_df_types(df: pd.DataFrame) -> pd.DataFrame:
     """Converts each column to its properly data types"""
     for column in df.columns:
         if column in COLUMN_TYPE.keys():
-            sql_type = COLUMN_TYPE[column]
-            if isinstance(sql_type, VARCHAR):
-                df = df.astype(dtype={column: 'string'})
-            elif isinstance(sql_type, NUMERIC):
-                df[column] = pd.to_numeric(df[column])
-            elif isinstance(sql_type, DATE):
-                df[column] = pd.to_datetime(df[column])
+            try:
+                sql_type = COLUMN_TYPE[column]
+                if sql_type is VARCHAR:
+                    df = df.astype(dtype={column: 'string'})
+                elif sql_type is NUMERIC or INTEGER:
+                    df[column] = pd.to_numeric(df[column])
+                elif sql_type is DATE:
+                    df[column] = pd.to_datetime(df[column])
+            except Exception:
+                df = df.astype(dtype={column: 'object'})
+
     return df
 
 
