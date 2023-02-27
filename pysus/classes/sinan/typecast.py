@@ -1,5 +1,4 @@
 from sqlalchemy import VARCHAR, DATE, NUMERIC
-import pandas as pd
 
 # Variables extracted from docs/metadata/SINAN files with converted to sqlalchemy types
 COLUMN_TYPE = {
