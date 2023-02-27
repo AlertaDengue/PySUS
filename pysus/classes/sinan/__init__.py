@@ -32,7 +32,7 @@ class SINAN:
         disease: str,
         years: List[Union[(int, str)]] = None,
         data_path: str = '/tmp/pysus',
-    ):
+    ) -> None:
         _disease = Disease(disease)
         ftp = FTP('ftp.datasus.gov.br')
 
@@ -57,7 +57,7 @@ class SINAN:
 
     def parquets_to_df(
         disease: str, year: Union[(str, int)], data_path='/tmp/pysus'
-    ):
+    ) -> pd.DataFrame:
         dis = Disease(disease)
         _year = str(year)[-2:].zfill(2)
         parquet_dir = Path(data_path) / f'{dis.code}BR{_year}.parquet'
@@ -74,8 +74,10 @@ class SINAN:
             objs = df.select_dtypes(object)
             df[objs.columns] = objs.apply(lambda x: x.str.replace('\x00', ''))
             return df
+        else:
+            return pd.DataFrame
 
-    def metadata_df(disease: str):
+    def metadata_df(disease: str) -> pd.DataFrame:
         code = DISEASE_CODE[disease]
         metadata_file = (
             Path(__file__).parent.parent.parent
