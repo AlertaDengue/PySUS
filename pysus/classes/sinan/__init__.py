@@ -1,18 +1,18 @@
 import os
 import re
+from ftplib import FTP
+from pathlib import Path
+from typing import List, Union
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-
-from ftplib import FTP
 from dbfread import DBF
-from pathlib import Path
-from typing import List, Union
-from sqlalchemy import VARCHAR, DATE, NUMERIC, INTEGER
+from pysus.utilities.readdbc import dbc2dbf
+from sqlalchemy import DATE, INTEGER, NUMERIC, VARCHAR
 
 from .diseases import DISEASE_CODE
 from .typecast import COLUMN_TYPE
-from pysus.utilities.readdbc import dbc2dbf
 
 
 class SINAN:
@@ -26,16 +26,16 @@ class SINAN:
 
     diseases = list(DISEASE_CODE.keys())
 
-    def available_years(self, disease: str, stage: str = 'all') -> list:
+    def available_years(self, disease: str, stage: str = "all") -> list:
         return Disease(disease).get_years(stage)
 
     def download_parquets(
         disease: str,
         years: List[Union[(int, str)]] = None,
-        data_path: str = '/tmp/pysus',
+        data_path: str = "/tmp/pysus",
     ) -> None:
         _disease = Disease(disease)
-        ftp = FTP('ftp.datasus.gov.br')
+        ftp = FTP("ftp.datasus.gov.br")
 
         if not years:
             _years = _disease.get_years()
@@ -46,34 +46,34 @@ class SINAN:
         Path(data_path).mkdir(parents=True, exist_ok=True)
 
         for path in _paths:
-            filename = str(path).split('/')[-1]
+            filename = str(path).split("/")[-1]
             filepath = Path(data_path) / filename
-            parquet_dir = f'{str(filepath)[:-4]}.parquet'
+            parquet_dir = f"{str(filepath)[:-4]}.parquet"
             Path(parquet_dir).mkdir(exist_ok=True, parents=True)
             if not any(os.listdir(parquet_dir)):
                 ftp.login()
-                ftp.retrbinary(f'RETR {path}', open(filepath, 'wb').write)
+                ftp.retrbinary(f"RETR {path}", open(filepath, "wb").write)
                 parquet_dir = _dbc_to_parquet_chunks(str(filepath))
-            print(f'[INFO] {_disease} at {parquet_dir}')
+            print(f"[INFO] {_disease} at {parquet_dir}")
 
     def parquets_to_df(
-        disease: str, year: Union[(str, int)], data_path='/tmp/pysus'
+        disease: str, year: Union[(str, int)], data_path="/tmp/pysus"
     ) -> pd.DataFrame:
         dis = Disease(disease)
         _year = str(year)[-2:].zfill(2)
-        parquet_dir = Path(data_path) / f'{dis.code}BR{_year}.parquet'
+        parquet_dir = Path(data_path) / f"{dis.code}BR{_year}.parquet"
 
         if parquet_dir.exists() and any(os.listdir(parquet_dir)):
-            chunks = parquet_dir.glob('*.parquet')
+            chunks = parquet_dir.glob("*.parquet")
             chunks_df = [
                 _convert_df_types(
-                    pd.read_parquet(str(f), engine='fastparquet')
+                    pd.read_parquet(str(f), engine="fastparquet")
                 )
                 for f in chunks
             ]
             df = pd.concat(chunks_df, ignore_index=True)
             objs = df.select_dtypes(object)
-            df[objs.columns] = objs.apply(lambda x: x.str.replace('\x00', ''))
+            df[objs.columns] = objs.apply(lambda x: x.str.replace("\x00", ""))
             return df
         else:
             return pd.DataFrame
@@ -82,15 +82,15 @@ class SINAN:
         code = DISEASE_CODE[disease]
         metadata_file = (
             Path(__file__).parent.parent.parent
-            / 'metadata'
-            / 'SINAN'
-            / f'{code}.tar.gz'
+            / "metadata"
+            / "SINAN"
+            / f"{code}.tar.gz"
         )
         df = pd.read_csv(
             metadata_file,
-            compression='gzip',
+            compression="gzip",
             header=0,
-            sep=',',
+            sep=",",
             quotechar='"',
             error_bad_lines=False,
         )
@@ -108,11 +108,11 @@ class Disease:
         return (
             name
             if name in DISEASE_CODE.keys()
-            else ValueError(f'{name} not found.')
+            else ValueError(f"{name} not found.")
         )
 
     def __repr__(self) -> str:
-        return f'SINAN Disease ({self.name})'
+        return f"SINAN Disease ({self.name})"
 
     def __str__(self) -> str:
         return self.name
@@ -121,7 +121,7 @@ class Disease:
     def code(self) -> str:
         return DISEASE_CODE[self.name]
 
-    def get_years(self, stage: str = 'all') -> list:
+    def get_years(self, stage: str = "all") -> list:
         """
         Returns the available years to download, if no stage
         is passed, it will return years from both finals and
@@ -129,17 +129,19 @@ class Disease:
         stage (str): 'finais' | 'prelim' | 'all'
         """
 
-        extract_years = lambda paths: [
-            str(path).split('/')[-1].split('.dbc')[0][-2:] for path in paths
-        ]
+        def extract_years(paths):
+            return [
+                str(path).split("/")[-1].split(".dbc")[0][-2:]
+                for path in paths
+            ]
 
         p = _ftp_list_datasets_paths
-        prelim_years = extract_years(p(self.name, 'prelim'))
-        finais_years = extract_years(p(self.name, 'finais'))
+        prelim_years = extract_years(p(self.name, "prelim"))
+        finais_years = extract_years(p(self.name, "finais"))
 
-        if stage == 'prelim':
+        if stage == "prelim":
             return sorted(prelim_years)
-        elif stage == 'finais':
+        elif stage == "finais":
             return sorted(finais_years)
         return sorted(prelim_years + finais_years)
 
@@ -151,11 +153,14 @@ class Disease:
                       in the result
         """
         p = _ftp_list_datasets_paths
-        prelim_paths = p(self.name, 'prelim')
-        finais_paths = p(self.name, 'finais')
+        prelim_paths = p(self.name, "prelim")
+        finais_paths = p(self.name, "finais")
         all_paths = prelim_paths + finais_paths
         ds_paths = list()
-        mask = lambda _year: str(_year)[-2:].zfill(2)
+
+        def mask(_year):
+            return str(_year)[-2:].zfill(2)
+
         for year in years:
             [ds_paths.append(path) for path in all_paths if mask(year) in path]
 
@@ -166,23 +171,23 @@ def _ftp_list_datasets_paths(disease: str, stage: str) -> list:
     """
     stage: 'f'|'finais' or 'p'|'prelim'
     """
-    datasets_path = '/dissemin/publicos/SINAN/DADOS/'
+    datasets_path = "/dissemin/publicos/SINAN/DADOS/"
 
-    if stage.startswith('f'):
-        datasets_path += 'FINAIS'
-    elif stage.startswith('p'):
-        datasets_path += 'PRELIM'
+    if stage.startswith("f"):
+        datasets_path += "FINAIS"
+    elif stage.startswith("p"):
+        datasets_path += "PRELIM"
     else:
-        raise ValueError(f'{stage}')
+        raise ValueError(f"{stage}")
 
     code = DISEASE_CODE[disease]
 
-    ftp = FTP('ftp.datasus.gov.br')
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     ftp.cwd(datasets_path)
-    available_dbcs = ftp.nlst(f'{code}BR*.dbc')
+    available_dbcs = ftp.nlst(f"{code}BR*.dbc")
 
-    return [f'{ftp.pwd()}/{dbc}' for dbc in available_dbcs]
+    return [f"{ftp.pwd()}/{dbc}" for dbc in available_dbcs]
 
 
 def _dbc_to_parquet_chunks(dbcfilepath: str) -> str:
@@ -190,16 +195,16 @@ def _dbc_to_parquet_chunks(dbcfilepath: str) -> str:
     Converts .dbc file to parquet chunks, removing the leftover files.
     Returns the parquet dir path.
     """
-    dbffilepath = f'{dbcfilepath[:-4]}.dbf'
-    parquetpath = f'{dbcfilepath[:-4]}.parquet'
+    dbffilepath = f"{dbcfilepath[:-4]}.dbf"
+    parquetpath = f"{dbcfilepath[:-4]}.parquet"
 
     dbc2dbf(dbcfilepath, dbffilepath)
     Path(dbcfilepath).unlink()
 
-    for d in _stream_DBF(DBF(dbffilepath, encoding='iso-8859-1', raw=True)):
+    for d in _stream_DBF(DBF(dbffilepath, encoding="iso-8859-1", raw=True)):
         try:
             df = pd.DataFrame(d).applymap(
-                lambda x: x.decode(encoding='iso-8859-1')
+                lambda x: x.decode(encoding="iso-8859-1")
                 if isinstance(x, bytes)
                 else x
             )
@@ -214,24 +219,34 @@ def _dbc_to_parquet_chunks(dbcfilepath: str) -> str:
 
 
 def _convert_df_types(df: pd.DataFrame) -> pd.DataFrame:
-    """Converts each column to its properly data types, if unable to cast, keep it as object"""
+    """
+    Converts each column to its properly data types,
+    if unable to cast, keep it as object
+    """
     for column in df.columns:
         if column in COLUMN_TYPE.keys():
             try:
-                remove_non_utf8 = lambda x: str(x).encode('utf-8', 'surrogatepass').decode('utf-8')
+                remove_non_utf8 = (
+                    lambda x: str(x)
+                    .encode("utf-8", "surrogatepass")
+                    .decode("utf-8")
+                )
                 df[column] = df[column].apply(remove_non_utf8)
                 sql_type = COLUMN_TYPE[column]
                 if sql_type is VARCHAR:
-                    df = df.astype(dtype={column: 'string'})
+                    df = df.astype(dtype={column: "string"})
                 elif sql_type is NUMERIC or INTEGER:
-                    non_numeric = re.compile(r'[^0-9]')
-                    subst_non_numerics = lambda x: re.sub(non_numeric, '', str(x))
+                    non_numeric = re.compile(r"[^0-9]")
+
+                    def subst_non_numerics(string):
+                        return re.sub(non_numeric, "", str(string))
+
                     df[column] = df[column].apply(subst_non_numerics)
                     df[column] = pd.to_numeric(df[column])
                 elif sql_type is DATE:
                     df[column] = pd.to_datetime(df[column])
             except Exception:
-                df = df.astype(dtype={column: 'object'})
+                df = df.astype(dtype={column: "object"})
 
     return df
 

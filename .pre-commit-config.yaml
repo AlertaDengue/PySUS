@@ -1,23 +1,48 @@
 repos:
-    - repo: https://github.com/asottile/seed-isort-config
-      rev: v2.2.0
-      hooks:
-        - id: seed-isort-config
-    - repo: https://github.com/timothycrosley/isort
-      rev: 5.9.3
-      hooks:
-        - id: isort
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: end-of-file-fixer
 
-    -   repo: https://github.com/psf/black
-        rev: 22.3.0
-        hooks:
-        -   id: black
-            exclude: ^dist/
+  - repo: local
+    hooks:
+    - entry: black
+      id: black
+      name: black
+      exclude: |
+        (?x)(
+          docs
+        )
+      files: ""
+      language: system
+      pass_filenames: true
+      stages:
+        - commit
+      types:
+        - python
+        - file
+        - python
 
+    - entry: flake8
+      exclude: ^$
+      files: ""
+      id: flake8
+      language: python
+      name: flake8
+      pass_filenames: true
+      stages:
+        - commit
+      types:
+        - python
 
-    - repo: https://gitlab.com/pycqa/flake8
-      rev: 3.9.2
-      hooks:
-        - id: flake8
-          types:
-            - python
+    - entry: isort
+      exclude: "^.*/js/.*$"
+      files: ""
+      id: isort
+      language: python
+      name: isort
+      pass_filenames: true
+      stages:
+        - commit
+      types:
+        - python
