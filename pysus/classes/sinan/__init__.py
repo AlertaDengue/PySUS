@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -213,14 +214,19 @@ def _dbc_to_parquet_chunks(dbcfilepath: str) -> str:
 
 
 def _convert_df_types(df: pd.DataFrame) -> pd.DataFrame:
-    """Converts each column to its properly data types"""
+    """Converts each column to its properly data types, if unable to cast, keep it as object"""
     for column in df.columns:
         if column in COLUMN_TYPE.keys():
             try:
+                remove_non_utf8 = lambda x: str(x).encode('utf-8', 'surrogatepass').decode('utf-8')
+                df[column] = df[column].apply(remove_non_utf8)
                 sql_type = COLUMN_TYPE[column]
                 if sql_type is VARCHAR:
                     df = df.astype(dtype={column: 'string'})
                 elif sql_type is NUMERIC or INTEGER:
+                    non_numeric = re.compile(r'[^0-9]')
+                    subst_non_numerics = lambda x: re.sub(non_numeric, '', str(x))
+                    df[column] = df[column].apply(subst_non_numerics)
                     df[column] = pd.to_numeric(df[column])
                 elif sql_type is DATE:
                     df[column] = pd.to_datetime(df[column])
