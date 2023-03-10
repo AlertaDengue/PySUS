@@ -77,9 +77,12 @@ def parquets_to_dataframe(
         ]
         df = pd.concat(chunks_list, ignore_index=True)
         df = df.applymap(
-            lambda x: x.decode("iso-8859-1") if isinstance(x, bytes) else x
-        )
-        df = df.convert_dtypes().dtypes
+            lambda x: "" if str(x).isspace() else x
+        )  # Remove all space values
+        df = df.convert_dtypes()
+
+        breakpoint()
+
         return df
 
     except Exception as e:
@@ -372,7 +375,9 @@ class FTP_Downloader:
         downloaded_parquets = []
         for path in dbc_paths:
             local_filepath = self._extract_dbc(path, local_dir=local_dir)
-            parquet_dir = self._dbfc_to_parquets(local_filepath)
+            parquet_dir = self._dbfc_to_parquets(
+                local_filepath, local_dir=local_dir
+            )
             downloaded_parquets.append(parquet_dir)
         return downloaded_parquets
 
@@ -411,10 +416,10 @@ class FTP_Downloader:
         def url_regex(
             month: str = None, year: str = None, UF: str = None
         ) -> re.Pattern:
-            """ 
+            """
             Each url case is matched using regex patterns, mostly databases
             have the same file pattern, but some discrepancies can be found,
-            for instance, lowercase UF and entire years and shortened years 
+            for instance, lowercase UF and entire years and shortened years
             at the same time.
             """
             if db == "SINAN":
@@ -496,11 +501,11 @@ class FTP_Downloader:
         finally:
             ftp.close()
 
-    def _dbfc_to_parquets(self, fpath: str) -> str(PosixPath):
+    def _dbfc_to_parquets(self, fpath: str, local_dir: str) -> str(PosixPath):
         """DBC/DBF files to parquets using Pandas & PyArrow"""
-        dbfile = str(Path(fpath).absolute()).split("/")[-1]
-
-        if Path(dbfile).suffix in [".dbc", ".DBC"] and Path(dbfile).exists():
+        db_path = Path(local_dir) / fpath
+        dbfile = str(db_path.absolute()).split("/")[-1]
+        if Path(dbfile).suffix in [".dbc", ".DBC"] and db_path.exists():
             outpath = f"{fpath[:-4]}.dbf"
             try:
                 dbc2dbf(fpath, outpath)
@@ -517,7 +522,14 @@ class FTP_Downloader:
         Path(parquet_dir).mkdir(exist_ok=True, parents=True)
         for d in self._stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
             try:
-                table = pa.Table.from_pandas(pd.DataFrame(d))
+                df = pd.DataFrame(d)
+                table = pa.Table.from_pandas(
+                    df.applymap(
+                        lambda x: x.decode(encoding="iso-8859-1")
+                        if isinstance(x, bytes)
+                        else x
+                    )
+                )
                 pq.write_to_dataset(table, root_path=parquet_dir)
 
             except Exception as e:
@@ -546,42 +558,42 @@ class FTP_Downloader:
 class FTP_SINAN:
     name: str
     diseases: dict = {
-    "Animais Peçonhentos": "ANIM",
-    "Botulismo": "BOTU",
-    "Cancer": "CANC",
-    "Chagas": "CHAG",
-    "Chikungunya": "CHIK",
-    "Colera": "COLE",
-    "Coqueluche": "COQU",
-    "Contact Communicable Disease": "ACBI",
-    "Acidentes de Trabalho": "ACGR",
-    "Dengue": "DENG",
-    "Difteria": "DIFT",
-    "Esquistossomose": "ESQU",
-    "Febre Amarela": "FAMA",
-    "Febre Maculosa": "FMAC",
-    "Febre Tifoide": "FTIF",
-    "Hanseniase": "HANS",
-    "Hantavirose": "HANT",
-    "Hepatites Virais": "HEPA",
-    "Intoxicação Exógena": "IEXO",
-    "Leishmaniose Visceral": "LEIV",
-    "Leptospirose": "LEPT",
-    "Leishmaniose Tegumentar": "LTAN",
-    "Malaria": "MALA",
-    "Meningite": "MENI",
-    "Peste": "PEST",
-    "Poliomielite": "PFAN",
-    "Raiva Humana": "RAIV",
-    "Sífilis Adquirida": "SIFA",
-    "Sífilis Congênita": "SIFC",
-    "Sífilis em Gestante": "SIFG",
-    "Tétano Acidental": "TETA",
-    "Tétano Neonatal": "TETN",
-    "Tuberculose": "TUBE",
-    "Violência Domestica": "VIOL",
-    "Zika": "ZIKA",
-}
+        "Animais Peçonhentos": "ANIM",
+        "Botulismo": "BOTU",
+        "Cancer": "CANC",
+        "Chagas": "CHAG",
+        "Chikungunya": "CHIK",
+        "Colera": "COLE",
+        "Coqueluche": "COQU",
+        "Contact Communicable Disease": "ACBI",
+        "Acidentes de Trabalho": "ACGR",
+        "Dengue": "DENG",
+        "Difteria": "DIFT",
+        "Esquistossomose": "ESQU",
+        "Febre Amarela": "FAMA",
+        "Febre Maculosa": "FMAC",
+        "Febre Tifoide": "FTIF",
+        "Hanseniase": "HANS",
+        "Hantavirose": "HANT",
+        "Hepatites Virais": "HEPA",
+        "Intoxicação Exógena": "IEXO",
+        "Leishmaniose Visceral": "LEIV",
+        "Leptospirose": "LEPT",
+        "Leishmaniose Tegumentar": "LTAN",
+        "Malaria": "MALA",
+        "Meningite": "MENI",
+        "Peste": "PEST",
+        "Poliomielite": "PFAN",
+        "Raiva Humana": "RAIV",
+        "Sífilis Adquirida": "SIFA",
+        "Sífilis Congênita": "SIFC",
+        "Sífilis em Gestante": "SIFG",
+        "Tétano Acidental": "TETA",
+        "Tétano Neonatal": "TETN",
+        "Tuberculose": "TUBE",
+        "Violência Domestica": "VIOL",
+        "Zika": "ZIKA",
+    }
 
     def __init__(self, name: str) -> None:
         self.name = self.__diseasecheck__(name)

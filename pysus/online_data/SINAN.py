@@ -2,8 +2,6 @@ from typing import Union
 from pysus.online_data import FTP_Downloader, FTP_Inspect, CACHEPATH, FTP_SINAN
 
 
-
-
 def list_diseases() -> list:
     """List available diseases on SINAN"""
     return list(FTP_SINAN.diseases.keys())
