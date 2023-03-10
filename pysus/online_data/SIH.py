@@ -4,83 +4,23 @@ Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
 """
-
-import os
-import pandas as pd
-
-from ftplib import FTP
-from dbfread import DBF
-from loguru import logger
-
-from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc
+from typing import Union
+from pysus.online_data import CACHEPATH, FTP_Downloader
 
 
-def download(state: str, year: int, month: int, cache: bool = True) -> object:
+def download(states: Union[str, list], years: Union[str, list, int], months: Union[str, list, int], data_dir: str=CACHEPATH) -> list:
     """
     Download SIH records for state year and month and returns dataframe
-    :param month: 1 to 12
-    :param state: 2 letter state code
-    :param year: 4 digit integer
-    :param cache: Whether to cache or not. defaults to True.
-    :return:
+    :param months: 1 to 12, can be a list
+    :param states: 2 letter state code, can be alist
+    :param years: 4 digit integer, can be a list
+    :param data_dir: Directory where parquets will be downloaded.
+    :return: a list of parquet paths
     """
-    state = state.upper()
-    year2 = int(str(year)[-2:])
-    year2 = str(year2).zfill(2)
-    month = str(month).zfill(2)
-
-    if year < 1992:
-        raise ValueError("SIH does not contain data before 1994")
-
-    if year < 2008:
-        ftype = "DBC"
-        path = "/dissemin/publicos/SIHSUS/199201_200712/Dados"
-        fname = f"RD{state}{year2}{month}.dbc"
-
-    if year >= 2008:
-        ftype = "DBC"
-        path = f"/dissemin/publicos/SIHSUS/200801_/Dados"
-        fname = f"RD{state}{year2}{month}.dbc"
-
-    cachefile = os.path.join(CACHEPATH, "SIH_" + fname.split(".")[0] + "_.parquet")
-
-    if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
-        df = pd.read_parquet(cachefile)
-
-        return df
-
-    df = _fetch_file(fname, path, ftype)
-    
-    if cache:
-        df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
-
-    return df
-
-
-def _fetch_file(fname, path, ftype):
-    ftp = FTP("ftp.datasus.gov.br")
-    ftp.login()
-    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
-    ftp.cwd(path)
-    logger.debug(f"Changing FTP work dir to: {path}")
-
-    try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
-
-    except:
-        raise Exception("File {} not available".format(fname))
-
-    if ftype == "DBC":
-        df = read_dbc(fname, encoding="iso-8859-1")
-
-    elif ftype == "DBF":
-        dbf = DBF(fname, encoding="iso-8859-1")
-        df = pd.DataFrame(list(dbf))
-
-    os.unlink(fname)
-    logger.debug(f"{fname} removed")
-
-    return df
+    return FTP_Downloader('SIH').download(
+        UFs=states,
+        years=years,
+        months=months,
+        SIH_group='RD',
+        local_dir=data_dir
+    )

@@ -3,23 +3,23 @@ Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
 """
-import logging
 import os
 import re
 import shutil
+import logging
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from ftplib import FTP
 from dbfread import DBF
 from typing import Union
 from itertools import product
 from datetime import datetime
+from ftplib import FTP, error_perm
 from pathlib import Path, PosixPath
 
 from pysus.online_data.SINAN import Disease
-from pysus.utilities.readdbc import dbc2dbf, read_dbc
+from pysus.utilities.readdbc import dbc2dbf
 
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(Path.home()), "pysus")
@@ -171,11 +171,9 @@ class FTP_Inspect:
                 raise ValueError("No disease assigned to SINAN_disease")
             dis = Disease(SINAN_disease)
             available_years = dis.get_years(stage="all")
-
         # SINASC
         elif self.database == "SINASC":
             list_years(2)
-
         # SIH
         elif self.database == "SIH":
             list_years(len(SIH_group), slice(-4, -2), SIH_group=SIH_group)
@@ -284,6 +282,7 @@ class FTP_Inspect:
 
 class FTP_Downloader:
     """
+    Databases: "SINAN", "SIM", "SINASC", "SIH", "SIA", "PNI", "CNES", "CIHA"
     FTP_Downloader will be responsible for fetching DBF and DBC files
     into parquet chunks, according to a DataSUS Database (DB_PATHS).
     The main function is `download`, each Database has its specific
@@ -378,6 +377,12 @@ class FTP_Downloader:
         def url_regex(
             month: str = None, year: str = None, UF: str = None
         ) -> re.Pattern:
+            """ 
+            Each url case is matched using regex patterns, mostly databases
+            have the same file pattern, but some discrepancies can be found,
+            for instance, lowercase UF and entire years and shortened years 
+            at the same time.
+            """
             if db == "SINAN":
                 if not year:
                     raise ValueError("Missing year(s)")
@@ -451,7 +456,7 @@ class FTP_Downloader:
                 open(f"{filepath}", "wb").write,
             )
             return str(filepath)
-        except Exception as e:
+        except error_perm as e:
             logging.error(f"Not able to download {filename}")
             raise e
         finally:
@@ -513,68 +518,6 @@ def cache_contents():
     return [os.path.join(CACHEPATH, f) for f in cached_data]
 
 
-def get_dataframe(
-    fname: str, ftype: str, data_path: str = "/tmp/pysus"
-) -> pd.DataFrame:
-    """
-    Return a dataframe read fom temporary file on disk.
-    :param fname: temporary file name
-    :param ftype: 'DBC' or 'DBF'
-    :return:  DataFrame
-    """
-    fname = Path(data_path) / fname
-
-    if ftype == "DBC":
-        df = read_dbc(fname, encoding="iso-8859-1", raw=False)
-    elif ftype == "DBF":
-        dbf = DBF(fname, encoding="iso-8859-1", raw=False)
-        df = pd.DataFrame(list(dbf))
-    if os.path.exists(fname):
-        os.unlink(fname)
-    df.applymap(
-        lambda x: x.decode("iso-8859-1") if isinstance(x, bytes) else x
-    )
-    return df
-
-
-def chunk_dbfiles_into_parquets(fpath: str) -> str(PosixPath):
-
-    dbfile = str(Path(fpath).absolute()).split("/")[-1]
-
-    if Path(dbfile).suffix in [".dbc", ".DBC"]:
-        outpath = f"{fpath[:-4]}.dbf"
-
-        try:
-            dbc2dbf(fpath, outpath)
-
-        except Exception as e:
-            logging.error(e)
-
-        fpath = outpath
-
-    parquet_dir = f"{fpath[:-4]}.parquet"
-    if not Path(parquet_dir).exists():
-        Path(parquet_dir).mkdir(exist_ok=True, parents=True)
-        for d in stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
-            try:
-                df = pd.DataFrame(d)
-                table = pa.Table.from_pandas(
-                    df.applymap(
-                        lambda x: x.decode(encoding="iso-8859-1")
-                        if isinstance(x, bytes)
-                        else x
-                    )
-                )
-                pq.write_to_dataset(table, root_path=parquet_dir)
-
-            except Exception as e:
-                logging.error(e)
-
-        logging.info(f"{fpath} chunked into parquets at {parquet_dir}")
-
-    return parquet_dir
-
-
 def parquets_to_dataframe(
     parquet_dir: str(PosixPath), clean_after_read=False
 ) -> pd.DataFrame:
@@ -595,71 +538,3 @@ def parquets_to_dataframe(
         if clean_after_read:
             shutil.rmtree(parquet_dir)
             logging.info(f"{parquet_dir} removed")
-
-
-def stream_DBF(dbf, chunk_size=30000):
-    """Fetches records in chunks to preserve memory"""
-    data = []
-    i = 0
-    for records in dbf:
-        data.append(records)
-        i += 1
-        if i == chunk_size:
-            yield data
-            data = []
-            i = 0
-    else:
-        yield data
-
-
-def _fetch_file(
-    fname: str,
-    path: str,
-    ftype: str,
-    return_df: bool = True,
-    data_path: str = "/tmp/pysus",
-) -> pd.DataFrame:
-    """
-    Fetch a single file.
-    :param fname: Name of the file
-    :param path: ftp path where file is located
-    :param ftype: 'DBC' or 'DBF'
-    :return:
-    Pandas Dataframe
-    """
-    ftp = FTP("ftp.datasus.gov.br")
-    ftp.login()
-    ftp.cwd(path)
-
-    Path(data_path).mkdir(exist_ok=True)
-
-    try:
-        ftp.retrbinary(
-            f"RETR {fname}", open(f"{Path(data_path) / fname}", "wb").write
-        )
-    except Exception:
-        raise Exception("File {} not available on {}".format(fname, path))
-    if return_df:
-        df = get_dataframe(fname, ftype, data_path)
-        return df
-    else:
-        return pd.DataFrame()
-
-
-def get_CID10_table(cache=True):
-    """
-    Fetch the CID10 table
-    :param cache:
-    :return:
-    """
-    fname = "CID10.DBF"
-    cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
-    )
-    if os.path.exists(cachefile):
-        df = pd.read_parquet(cachefile)
-        return df
-    df = _fetch_file(fname, "/dissemin/publicos/SIM/CID10/TABELAS", "DBF")
-    if cache:
-        df.to_parquet(cachefile)
-    return df

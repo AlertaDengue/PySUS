@@ -1,13 +1,5 @@
-import os
-import pandas as pd
-
-from dbfread import DBF
-from loguru import logger
-from datetime import datetime
-from ftplib import FTP, error_perm
-
-from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc
+from typing import Union
+from pysus.online_data import FTP_Downloader, CACHEPATH
 
 group_dict = {
     "LT": ["Leitos - A partir de Out/2005", 10, 2005],
@@ -27,10 +19,11 @@ group_dict = {
 
 
 def download(
-        group: str, state: str, year: int, month: int, cache: bool = True
-) -> pd.DataFrame:
+        group: str, states: Union[str, list], years: Union[str, list, int], months: Union[str, list, int], data_dir: str=CACHEPATH
+) -> list:
     """
-    Download CNES records for group, state, year and month and returns dataframe
+    Download CNES records for group, state, year and month and returns a 
+    list of local parquet files
     :param group:
         LT – Leitos - A partir de Out/2005
         ST – Estabelecimentos - A partir de Ago/2005
@@ -45,56 +38,14 @@ def download(
         EE - Estabelecimento de Ensino - A partir de Mar/2007
         EF - Estabelecimento Filantrópico - A partir de Mar/2007
         GM - Gestão e Metas - A partir de Jun/2007
-    :param month: 1 to 12
-    :param state: 2 letter state code
-    :param year: 4 digit integer
+    :param months: 1 to 12, can be a list of years
+    :param states: 2 letter state code, can be a list of UFs
+    :param years: 4 digit integer, can be a list of years
     """
-    state = state.upper()
-    assert len(str(year)) == 4
-    year2 = str(year)[-2:]
-    month = str(month).zfill(2)
-    input_date = datetime(int(year), int(month), 1)
-    avaiable_date = datetime(group_dict[group][2], group_dict[group][1], 1)
-
-    if input_date < avaiable_date:
-        raise ValueError(f"CNES does not contain data for {input_date}")
-
-    ftp = FTP("ftp.datasus.gov.br")
-    ftp.login()
-    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
-
-    if input_date >= avaiable_date:
-        ftype = "DBC"
-        ftp.cwd("dissemin/publicos/CNES/200508_/Dados/{}/".format(group))
-        logger.debug("Changing FTP work dir to: dissemin/publicos/CNES/200508_/Dados/{}/".format(group))
-        fname = "{}{}{}{}.dbc".format(group, state, str(year2).zfill(2), month)
-
-    cachefile = os.path.join(CACHEPATH, "CNES_" + fname.split(".")[0] + "_.parquet")
-
-    if os.path.exists(cachefile):
-        logger.info(f"Local parquet data found at {cachefile}")
-        df = pd.read_parquet(cachefile)
-        return df
-
-    df = _fetch_file(fname, ftp, ftype)
-
-    if cache:
-        df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
-
-    return df
-
-
-def _fetch_file(fname: str, ftp: FTP, ftype: str) -> pd.DataFrame:
-    try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
-    except error_perm:
-        raise Exception("File {} not available".format(fname))
-    if ftype == "DBC":
-        df = read_dbc(fname, encoding="iso-8859-1")
-    elif ftype == "DBF":
-        dbf = DBF(fname, encoding="iso-8859-1")
-        df = pd.DataFrame(list(dbf))
-    os.unlink(fname)
-    logger.debug(f"{fname} removed.")
-    return df
+    return FTP_Downloader('CNES').download(
+        CNES_group=group,
+        UFs=states,
+        years=years,
+        months=months,
+        local_dir=data_dir,
+    )

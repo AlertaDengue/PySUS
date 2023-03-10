@@ -4,83 +4,30 @@ Created on 12/12/18
 by fccoelho
 license: GPL V3 or Later
 """
-
 import os
 import pandas as pd
 
 from dbfread import DBF
+from typing import Union
 from loguru import logger
 from ftplib import FTP, error_perm
 
-from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc
+from pysus.online_data import CACHEPATH, FTP_Downloader
 
 
-def download(state, year, cache=True, folder=None):
+def download(states: Union[str, list], years: Union[str, list, int], data_dir: str=CACHEPATH):
     """
     Downloads data directly from Datasus ftp server
-    :param state: two-letter state identifier: MG == Minas Gerais
-    :param year: 4 digit integer
-    :return: pandas dataframe
+    :param states: two-letter state identifier: MG == Minas Gerais
+                   can be a list
+    :param years: 4 digit integer, can be a list
+    :return: a list of downloaded parquet paths
     """
-    year2 = str(year)[-2:].zfill(2)
-    state = state.upper()
-    ftp_dir = ""
-    fname = ""
-
-    if year < 1979:
-        raise ValueError("SIM does not contain data before 1979")
-
-    elif year >= 1996:
-        ftp_dir = "/dissemin/publicos/SIM/CID10/DORES"
-        fname = "DO{}{}.DBC".format(state, year)
-
-    else:
-        ftp_dir = "/dissemin/publicos/SIM/CID9/DORES"
-        fname = fname = "DOR{}{}.DBC".format(state, year2)
-
-    cache_fail = False
-    cachefile = os.path.join(CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
-
-    if folder:
-        fname = "{}/{}".format(folder, fname)
-
-    elif cache:
-        if os.path.exists(cachefile):
-            logger.info(f"Local parquet file found at {cachefile}")
-            df = pd.read_parquet(cachefile)
-
-            return df
-
-        else:
-            cache_fail = True
-
-    # Se tiver folder não tenta cache
-    if not folder and (cache_fail or not cache):
-        ftp = FTP("ftp.datasus.gov.br")
-        ftp.login()
-        logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
-        ftp.cwd(ftp_dir)
-        logger.debug(f"Changing FTP work dir to: {ftp_dir}")
-
-        try:
-            ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
-
-        except error_perm:
-            try:
-                ftp.retrbinary("RETR {}".format(fname.upper()), open(fname, "wb").write)
-
-            except:
-                raise Exception("File {} not available".format(fname))
-
-    df = read_dbc(fname, encoding="iso-8859-1")
-
-    df.to_parquet(cachefile)
-    logger.info(f"Data stored as parquet at {cachefile}")
-
-    os.unlink(fname)
-    logger.debug(f"{fname} removed")
-    return df
+    return FTP_Downloader('SIM').download(
+        UFs=states,
+        years=years,
+        local_dir=data_dir
+    )
 
 
 def get_CID10_chapters_table(cache=True):

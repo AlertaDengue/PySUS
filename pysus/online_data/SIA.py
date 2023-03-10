@@ -6,18 +6,10 @@ Modified on 22/11/22
 by bcbernardo
 license: GPL V3 or Later
 """
-
-import os
-import pandas as pd
-
-from ftplib import FTP
-from datetime import date
-from loguru import logger
 from pprint import pprint
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Tuple, Union
+from pysus.online_data import FTP_Downloader, CACHEPATH
 
-from pysus.online_data import CACHEPATH
-from pysus.utilities.readdbc import read_dbc_dbf, dbc2dbf
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -39,20 +31,20 @@ def show_datatypes():
     pprint(group_dict)
 
 def download(
-        state: str,
-        year: int,
-        month: int,
-        cache: bool = True,
-        group: Union[str, List[str]] = ["PA", "BI"],
-) -> Union[Optional[pd.DataFrame], Tuple[Optional[pd.DataFrame], ...]]:
+        states: Union[str, list],
+        years: Union[str, list, int],
+        months: Union[str, list, int],
+        data_dir: str=CACHEPATH,
+        group:str = "PA",
+) -> list:
     """
     Download SIASUS records for state year and month and returns dataframe
-    :param month: 1 to 12
-    :param state: 2 letter state code
-    :param year: 4 digit integer
-    :param cache: whether to cache files locally. default is True
-    :param groups: 2-3 letter document code or a list of 2-3 letter codes,
-        defaults to ['PA', 'BI']. Codes should be one of the following:
+    :param months: 1 to 12, can be a list
+    :param states: 2 letter state code, can be a list
+    :param years: 4 digit integer, can be a list
+    :param data_dir: whether to cache files locally. default is True
+    :param group: 2-3 letter document code, defaults to ['PA', 'BI']. 
+    Codes should be one of the following:
         PA - Produção Ambulatorial
         BI - Boletim de Produção Ambulatorial individualizado
         AD - APAC de Laudos Diversos
@@ -66,126 +58,12 @@ def download(
         AMP - APAC de Acompanhamento Multiprofissional
         SAD - RAAS de Atenção Domiciliar
         PS - RAAS Psicossocial
-    :return: A tuple of dataframes with the documents in the order given
-        by the , when they are found
+    :return: list of downloaded parquet paths
     """
-    state = state.upper()
-    year2 = str(year)[-2:]
-    month = str(month).zfill(2)
-    if isinstance(group, str):
-        group = [group]
-    ftp = FTP("ftp.datasus.gov.br")
-    ftp.login()
-    logger.debug(f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
-    ftype = "DBC"
-    if year >= 1994 and year < 2008:
-        ftp.cwd("/dissemin/publicos/SIASUS/199407_200712/Dados")
-        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/199407_200712/Dados")
-
-    elif year >= 2008:
-        ftp.cwd("/dissemin/publicos/SIASUS/200801_/Dados")
-        logger.debug("Changing FTP work dir to: /dissemin/publicos/SIASUS/200801_/Dados")
-
-    else:
-        raise ValueError("SIA does not contain data before 1994")
-
-    dfs: List[Optional[pd.DataFrame]] = []
-    for gname in group:
-        gname = gname.upper()
-        if gname not in group_dict:
-            raise ValueError(f"SIA does not contain files named {gname}")
-
-        # Check available
-        input_date = date(int(year), int(month), 1)
-        available_date = date(group_dict[gname][2], group_dict[gname][1], 1)
-        if input_date < available_date:
-            dfs.append(None)
-            # NOTE: raise Warning instead of ValueError for
-            # backwards-compatibility with older behavior of returning
-            # (PA, None) for calls after 1994 and before Jan, 2008
-            logger.warning(
-                f"SIA does not contain data for {gname} "
-                f"before {available_date:%d/%m/%Y}"
-            )
-            continue
-
-        fname = f"{gname}{state}{year2.zfill(2)}{month}.dbc"
-
-        # Check in Cache
-        cachefile = os.path.join(CACHEPATH, "SIA_" + fname.split(".")[0] + "_.parquet")
-        if os.path.exists(cachefile):
-            logger.info(f"Local parquet file found at {cachefile}")
-            df = pd.read_parquet(cachefile)
-        else:
-            try:
-                df = _fetch_file(fname, ftp, ftype)
-                if cache and df:  # saves to cache if df is not None
-                    df.to_parquet(cachefile)
-                    logger.info(f"Data stored as parquet at {cachefile}")
-            except Exception as e:
-                df = None
-                print(e)
-
-        dfs.append(df)
-
-    return tuple(dfs)
-
-
-def _fetch_file(fname, ftp, ftype):
-    """
-    Does the FTP fetching.
-    :param fname: file name
-    :param ftp: ftp connection object
-    :param ftype: file type: DBF|DBC
-    :return: pandas dataframe
-    """
-
-    multiples = False
-    fnames = check_file_split(fname, ftp)
-
-    multiples = len(fnames) > 1
-
-    if multiples:
-        download_multiples(fnames, ftp)
-        print(f"This download is split into the following files: {fnames}\n"
-              f"They have been downloaded in {CACHEPATH}.\n"
-              f"To load them, use the pysus.utilities.read_dbc_dbf function.")
-        return
-    df = read_dbc_dbf(fname)
-
-    os.unlink(fname)
-    logger.debug(f"{fname} removed")
-
-    return df
-
-
-def download_multiples(fnames, ftp):
-    for fn in fnames:
-        fnfull = os.path.join(CACHEPATH, fn)
-        print(f"Downloading {fn}...")
-        fobj = open(fnfull, "wb")
-        try:
-            ftp.retrbinary(f"RETR {fn}", fobj.write)
-            dbc2dbf(fnfull, fnfull.replace('.dbc', '.dbf'))
-            os.unlink(fnfull)
-            logger.debug(f"{fnfull} removed")
-        except Exception as exc:
-            raise Exception(f"Retrieval of file {fn} failed with the following error:\n {exc}")
-
-
-def check_file_split(fname: str, ftp: FTP) -> list:
-    """
-    Check for split filenames. Sometimes when files are too large, they are split into multiple files ending in a, b, c, ...
-    :param fname: filename
-    :param ftp: ftp conection
-    :return: list
-    """
-    files = []
-    flist = ftp.nlst()
-    if fname not in flist:
-        for l in ['a', 'b', 'c', 'd']:
-            nm, ext = fname.split('.')
-            if f'{nm}{l}.{ext}' in flist:
-                files.append(f'{nm}{l}.{ext}')
-
-    return files
+    return FTP_Downloader('SIA').download(
+        UFs=states,
+        years=years,
+        months=months,
+        local_dir=data_dir,
+        SIA_group=group
+    )
