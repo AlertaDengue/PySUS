@@ -18,7 +18,6 @@ from datetime import datetime
 from ftplib import FTP, error_perm
 from pathlib import Path, PosixPath
 
-from pysus.online_data.SINAN import Disease
 from pysus.utilities.readdbc import dbc2dbf
 
 CACHEPATH = os.getenv(
@@ -55,6 +54,41 @@ DB_PATHS = {
     "CNES": ["dissemin/publicos/CNES/200508_/Dados"],
     "CIHA": ["/dissemin/publicos/CIHA/201101_/Dados"],
 }
+
+
+def cache_contents():
+    """
+    List the files currently cached in ~/pysus
+    :return:
+    """
+    cached_data = os.listdir(CACHEPATH)
+    return [os.path.join(CACHEPATH, f) for f in cached_data]
+
+
+def parquets_to_dataframe(
+    parquet_dir: str(PosixPath), clean_after_read=False
+) -> pd.DataFrame:
+
+    parquets = Path(parquet_dir).glob("*.parquet")
+
+    try:
+        chunks_list = [
+            pd.read_parquet(str(f), engine="fastparquet") for f in parquets
+        ]
+        df = pd.concat(chunks_list, ignore_index=True)
+        df = df.applymap(
+            lambda x: x.decode("iso-8859-1") if isinstance(x, bytes) else x
+        )
+        df = df.convert_dtypes().dtypes
+        return df
+
+    except Exception as e:
+        logging.error(e)
+
+    finally:
+        if clean_after_read:
+            shutil.rmtree(parquet_dir)
+            logging.info(f"{parquet_dir} removed")
 
 
 class FTP_Inspect:
@@ -169,7 +203,7 @@ class FTP_Inspect:
         if self.database == "SINAN":
             if not SINAN_disease:
                 raise ValueError("No disease assigned to SINAN_disease")
-            dis = Disease(SINAN_disease)
+            dis = FTP_SINAN(SINAN_disease)
             available_years = dis.get_years(stage="all")
         # SINASC
         elif self.database == "SINASC":
@@ -264,7 +298,7 @@ class FTP_Inspect:
                         raise ValueError(
                             f"No disease assigned to SINAN_disease"
                         )
-                    disease = Disease(SINAN_disease)
+                    disease = FTP_SINAN(SINAN_disease)
                     available_dbs = disease.get_ftp_paths(
                         disease.get_years(stage="all")
                     )
@@ -362,7 +396,7 @@ class FTP_Downloader:
         list_files = self._ftp_db.list_all
         if db == "SINAN":
             all_dbcs = list_files(SINAN_disease)
-            sinan_dis = Disease(SINAN_disease)
+            sinan_dis = FTP_SINAN(SINAN_disease)
         elif db == "CNES":
             all_dbcs = list_files(CNES_group)
         elif db == "SIA":
@@ -509,32 +543,129 @@ class FTP_Downloader:
             yield data
 
 
-def cache_contents():
-    """
-    List the files currently cached in ~/pysus
-    :return:
-    """
-    cached_data = os.listdir(CACHEPATH)
-    return [os.path.join(CACHEPATH, f) for f in cached_data]
+class FTP_SINAN:
+    name: str
+    diseases: dict = {
+    "Animais Peçonhentos": "ANIM",
+    "Botulismo": "BOTU",
+    "Cancer": "CANC",
+    "Chagas": "CHAG",
+    "Chikungunya": "CHIK",
+    "Colera": "COLE",
+    "Coqueluche": "COQU",
+    "Contact Communicable Disease": "ACBI",
+    "Acidentes de Trabalho": "ACGR",
+    "Dengue": "DENG",
+    "Difteria": "DIFT",
+    "Esquistossomose": "ESQU",
+    "Febre Amarela": "FAMA",
+    "Febre Maculosa": "FMAC",
+    "Febre Tifoide": "FTIF",
+    "Hanseniase": "HANS",
+    "Hantavirose": "HANT",
+    "Hepatites Virais": "HEPA",
+    "Intoxicação Exógena": "IEXO",
+    "Leishmaniose Visceral": "LEIV",
+    "Leptospirose": "LEPT",
+    "Leishmaniose Tegumentar": "LTAN",
+    "Malaria": "MALA",
+    "Meningite": "MENI",
+    "Peste": "PEST",
+    "Poliomielite": "PFAN",
+    "Raiva Humana": "RAIV",
+    "Sífilis Adquirida": "SIFA",
+    "Sífilis Congênita": "SIFC",
+    "Sífilis em Gestante": "SIFG",
+    "Tétano Acidental": "TETA",
+    "Tétano Neonatal": "TETN",
+    "Tuberculose": "TUBE",
+    "Violência Domestica": "VIOL",
+    "Zika": "ZIKA",
+}
 
+    def __init__(self, name: str) -> None:
+        self.name = self.__diseasecheck__(name)
 
-def parquets_to_dataframe(
-    parquet_dir: str(PosixPath), clean_after_read=False
-) -> pd.DataFrame:
+    def __diseasecheck__(self, name: str) -> str:
+        return (
+            name
+            if name in self.diseases.keys()
+            else ValueError(f"{name} not found.")
+        )
 
-    parquets = Path(parquet_dir).glob("*.parquet")
+    def __repr__(self) -> str:
+        return f"SINAN Disease ({self.name})"
 
-    try:
-        chunks_list = [
-            pd.read_parquet(str(f), engine="fastparquet") for f in parquets
-        ]
+    def __str__(self) -> str:
+        return self.name
 
-        return pd.concat(chunks_list, ignore_index=True)
+    @property
+    def code(self) -> str:
+        return self.diseases[self.name]
 
-    except Exception as e:
-        logging.error(e)
+    def get_years(self, stage: str = "all") -> list:
+        """
+        Returns the available years to download, if no stage
+        is assigned, it will return years from both finals and
+        preliminaries datasets.
+        stage (str): 'finais' | 'prelim' | 'all'
+        """
 
-    finally:
-        if clean_after_read:
-            shutil.rmtree(parquet_dir)
-            logging.info(f"{parquet_dir} removed")
+        def extract_years(paths):
+            return [
+                str(path).split("/")[-1].split(".dbc")[0][-2:]
+                for path in paths
+            ]
+
+        p = self._ftp_list_datasets_paths
+        prelim_years = extract_years(p(self.name, "prelim"))
+        finais_years = extract_years(p(self.name, "finais"))
+
+        if stage == "prelim":
+            return sorted(prelim_years)
+        elif stage == "finais":
+            return sorted(finais_years)
+        return sorted(prelim_years + finais_years)
+
+    def get_ftp_paths(self, years: list) -> list:
+        """
+        Returns the FTP path available for years to download.
+        years (list): a list with years to download, if year
+                      is not available, it won't be included
+                      in the result
+        """
+        p = self._ftp_list_datasets_paths
+        prelim_paths = p(self.name, "prelim")
+        finais_paths = p(self.name, "finais")
+        all_paths = prelim_paths + finais_paths
+        ds_paths = list()
+
+        def mask(_year):
+            return str(_year)[-2:].zfill(2)
+
+        for year in years:
+            [ds_paths.append(path) for path in all_paths if mask(year) in path]
+
+        return ds_paths
+
+    def _ftp_list_datasets_paths(self, disease: str, stage: str) -> list:
+        """
+        stage: 'f'|'finais' or 'p'|'prelim'
+        """
+        datasets_path = "/dissemin/publicos/SINAN/DADOS/"
+
+        if stage.startswith("f"):
+            datasets_path += "FINAIS"
+        elif stage.startswith("p"):
+            datasets_path += "PRELIM"
+        else:
+            raise ValueError(f"{stage}")
+
+        code = self.diseases[disease]
+
+        ftp = FTP("ftp.datasus.gov.br")
+        ftp.login()
+        ftp.cwd(datasets_path)
+        available_dbcs = ftp.nlst(f"{code}BR*.dbc")
+
+        return [f"{ftp.pwd()}/{dbc}" for dbc in available_dbcs]

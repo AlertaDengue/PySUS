@@ -8,8 +8,8 @@ license: GPL V3 or Later
 """
 from pprint import pprint
 from typing import Dict, Tuple, Union
-from pysus.online_data import FTP_Downloader, CACHEPATH
 
+from pysus.online_data import CACHEPATH, FTP_Downloader
 
 group_dict: Dict[str, Tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
@@ -27,15 +27,17 @@ group_dict: Dict[str, Tuple[str, int, int]] = {
     "PS": ("RAAS Psicossocial", 1, 2008),
 }
 
+
 def show_datatypes():
     pprint(group_dict)
 
+
 def download(
-        states: Union[str, list],
-        years: Union[str, list, int],
-        months: Union[str, list, int],
-        data_dir: str=CACHEPATH,
-        group:str = "PA",
+    states: Union[str, list],
+    years: Union[str, list, int],
+    months: Union[str, list, int],
+    data_dir: str = CACHEPATH,
+    group: str = "PA",
 ) -> list:
     """
     Download SIASUS records for state year and month and returns dataframe
@@ -43,7 +45,7 @@ def download(
     :param states: 2 letter state code, can be a list
     :param years: 4 digit integer, can be a list
     :param data_dir: whether to cache files locally. default is True
-    :param group: 2-3 letter document code, defaults to ['PA', 'BI']. 
+    :param group: 2-3 letter document code, defaults to ['PA', 'BI'].
     Codes should be one of the following:
         PA - Produção Ambulatorial
         BI - Boletim de Produção Ambulatorial individualizado
@@ -60,10 +62,10 @@ def download(
         PS - RAAS Psicossocial
     :return: list of downloaded parquet paths
     """
-    return FTP_Downloader('SIA').download(
+    return FTP_Downloader("SIA").download(
         UFs=states,
         years=years,
         months=months,
         local_dir=data_dir,
-        SIA_group=group
+        SIA_group=group,
     )
