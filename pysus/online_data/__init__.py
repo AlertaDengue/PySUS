@@ -68,6 +68,12 @@ def cache_contents():
 def parquets_to_dataframe(
     parquet_dir: str(PosixPath), clean_after_read=False
 ) -> pd.DataFrame:
+    """ 
+    Receives a parquet directory path and returns it as a
+    dataframe, trying to clean white spaces and convert to
+    the properly data types. Can read only one parquet dir
+    at time. 
+    """
 
     parquets = Path(parquet_dir).glob("*.parquet")
 
@@ -80,9 +86,6 @@ def parquets_to_dataframe(
             lambda x: "" if str(x).isspace() else x
         )  # Remove all space values
         df = df.convert_dtypes()
-
-        breakpoint()
-
         return df
 
     except Exception as e:
@@ -96,6 +99,7 @@ def parquets_to_dataframe(
 
 class FTP_Inspect:
     """
+    Databases: "SINAN", "SIM", "SINASC", "SIH", "SIA", "PNI", "CNES", "CIHA"
     FTP_Inspect will focus mainly on enter in DataSUS ftp server
     and list the DBCs or DBFs paths for a database according to
     DB_PATH dict. Receives a Database as parameter.

@@ -1,3 +1,5 @@
+import pandas as pd
+from pathlib import Path
 from typing import Union
 from pysus.online_data import FTP_Downloader, FTP_Inspect, CACHEPATH, FTP_SINAN
 
@@ -29,3 +31,27 @@ def download(
     return FTP_Downloader("SINAN").download(
         SINAN_disease=disease, years=years, local_dir=data_path
     )
+
+
+def metadata_df(disease: str) -> pd.DataFrame:
+    code = FTP_SINAN(disease).code
+    metadata_file = (
+        Path(__file__).parent.parent
+        / "metadata"
+        / "SINAN"
+        / f"{code}.tar.gz"
+    )
+    if metadata_file.exists():
+        df = pd.read_csv(
+            metadata_file,
+            compression="gzip",
+            header=0,
+            sep=",",
+            quotechar='"',
+            error_bad_lines=False,
+        )
+
+        return df.iloc[:, 1:]
+    else:
+        print(f'No metadata available for {disease}')
+        return
