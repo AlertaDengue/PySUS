@@ -36,10 +36,7 @@ def download(
 def metadata_df(disease: str) -> pd.DataFrame:
     code = FTP_SINAN(disease).code
     metadata_file = (
-        Path(__file__).parent.parent
-        / "metadata"
-        / "SINAN"
-        / f"{code}.tar.gz"
+        Path(__file__).parent.parent / "metadata" / "SINAN" / f"{code}.tar.gz"
     )
     if metadata_file.exists():
         df = pd.read_csv(
@@ -53,5 +50,5 @@ def metadata_df(disease: str) -> pd.DataFrame:
 
         return df.iloc[:, 1:]
     else:
-        print(f'No metadata available for {disease}')
+        print(f"No metadata available for {disease}")
         return

@@ -5,6 +5,7 @@ Helper functions to download official statistics from IBGE SIDRA
 import urllib3
 import requests
 import pandas as pd
+
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
 from urllib.error import HTTPError
@@ -13,16 +14,16 @@ APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
 
 def get_sidra_table(
-        table_id,
-        territorial_level,
-        geocode="all",
-        period=None,
-        variables=None,
-        classification=None,
-        categories=None,
-        format=None,
-        decimals=None,
-        headers=None,
+    table_id,
+    territorial_level,
+    geocode="all",
+    period=None,
+    variables=None,
+    classification=None,
+    categories=None,
+    format=None,
+    decimals=None,
+    headers=None,
 ):
     """
     Wrapper for the SIDRA API. More information here: http://apisidra.ibge.gov.br/home/ajuda
@@ -98,10 +99,7 @@ def get_sidra_table(
     url = base_url + query
     print(f"Requesting data from {url}")
     try:
-        with (
-            get_legacy_session() as s,
-            s.get(url) as response
-        ):
+        with (get_legacy_session() as s, s.get(url) as response):
             df = pd.DataFrame(response.json())
     except HTTPError as exc:
         response = requests.get(url)
@@ -122,10 +120,7 @@ def list_agregados(**kwargs):
     url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
     print(f"Fetching Data groupings from {url}")
     try:
-        with (
-            get_legacy_session() as s,
-            s.get(url) as response
-        ):
+        with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
     except requests.exceptions.SSLError as e:
         print(f"Failed fetching aggregates: {e}")
@@ -143,10 +138,7 @@ def localidades_por_agregado(agregado: int, nivel: str):
     """
     url = APIBASE + f"agregados/{agregado}/localidades/{nivel}"
     try:
-        with (
-            get_legacy_session() as s,
-            s.get(url) as response
-        ):
+        with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
@@ -162,10 +154,7 @@ def metadados(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/metadados"
     try:
-        with (
-            get_legacy_session() as s,
-            s.get(url) as response
-        ):
+        with (get_legacy_session() as s, s.get(url) as response):
             data = response.json()
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
@@ -181,10 +170,7 @@ def lista_periodos(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/periodos"
     try:
-        with (
-            get_legacy_session() as s,
-            s.get(url) as response
-        ):
+        with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
     except:
         return None
@@ -242,9 +228,12 @@ class FetchData:
             metadados, de forma que os resultados vêm a partir do segundo elemento
     """
 
-    def __init__(self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs):
+    def __init__(
+        self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs
+    ):
         self.url = (
-                APIBASE + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
+            APIBASE
+            + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
         )
         self.url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
         self.JSON = None
@@ -253,17 +242,13 @@ class FetchData:
     def _fetch_JSON(self):
         try:
             print(f"Fetching {self.url}")
-            with (
-                get_legacy_session() as s,
-                s.get(self.url) as response
-            ):
+            with (get_legacy_session() as s, s.get(self.url) as response):
                 self.JSON = response.json()
         except Exception as e:
             print(f"Couldn't download data:\n{e}")
 
     def to_dataframe(self):
         return pd.DataFrame(self.JSON)
-
 
 
 """
@@ -277,10 +262,10 @@ HTTPSConnectionPool(host='servicodados.ibge.gov.br', port=443):
 SOLUTION: https://github.com/scrapy/scrapy/issues/5491#issuecomment-1241862323
 """
 
-import ssl # Builtin
+import ssl  # Builtin
 
 
-class CustomHttpAdapter (requests.adapters.HTTPAdapter):
+class CustomHttpAdapter(requests.adapters.HTTPAdapter):
     # "Transport adapter" that allows us to use custom ssl_context.
 
     def __init__(self, ssl_context=None, **kwargs):
@@ -289,13 +274,16 @@ class CustomHttpAdapter (requests.adapters.HTTPAdapter):
 
     def init_poolmanager(self, connections, maxsize, block=False):
         self.poolmanager = urllib3.poolmanager.PoolManager(
-            num_pools=connections, maxsize=maxsize,
-            block=block, ssl_context=self.ssl_context)
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            ssl_context=self.ssl_context,
+        )
 
 
 def get_legacy_session():
     ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
     ctx.options |= 0x4  # OP_LEGACY_SERVER_CONNECT
     session = requests.session()
-    session.mount('https://', CustomHttpAdapter(ctx))
+    session.mount("https://", CustomHttpAdapter(ctx))
     return session

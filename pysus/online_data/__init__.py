@@ -68,11 +68,11 @@ def cache_contents():
 def parquets_to_dataframe(
     parquet_dir: str(PosixPath), clean_after_read=False
 ) -> pd.DataFrame:
-    """ 
+    """
     Receives a parquet directory path and returns it as a
     dataframe, trying to clean white spaces and convert to
     the correct data types. Can read only one parquet dir
-    at time. 
+    at time.
     """
 
     parquets = Path(parquet_dir).glob("*.parquet")
@@ -82,8 +82,7 @@ def parquets_to_dataframe(
             pd.read_parquet(str(f), engine="fastparquet") for f in parquets
         ]
         df = pd.concat(chunks_list, ignore_index=True)
-        
-        
+
         return _parse_dftypes(df)
 
     except Exception as e:
@@ -96,24 +95,27 @@ def parquets_to_dataframe(
 
 
 def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
-    """ 
+    """
     Parse DataFrame values, cleaning blank spaces if needed
     and converting dtypes into correct types.
     """
-    def str_to_int(string: str) -> Union[int,float]:
+
+    def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
         # return int(value)
-        if string.replace(' ', '').isnumeric():
+        if string.replace(" ", "").isnumeric():
             return int(string)
 
-    df = df.applymap(str_to_int)
+    if "CODMUNRES" in df.columns:
+        df["CODMUNRES"] = df["CODMUNRES"].map(str_to_int)
 
     df = df.applymap(
-            lambda x: "" if str(x).isspace() else x
-        )  # Remove all space values
-    
+        lambda x: "" if str(x).isspace() else x
+    )  # Remove all space values
+
     df = df.convert_dtypes()
     return df
+
 
 class FTP_Inspect:
     """
