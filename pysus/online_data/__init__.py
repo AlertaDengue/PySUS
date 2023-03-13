@@ -82,11 +82,9 @@ def parquets_to_dataframe(
             pd.read_parquet(str(f), engine="fastparquet") for f in parquets
         ]
         df = pd.concat(chunks_list, ignore_index=True)
-        df = df.applymap(
-            lambda x: "" if str(x).isspace() else x
-        )  # Remove all space values
-        df = df.convert_dtypes()
-        return df
+        
+        
+        return _parse_dftypes(df)
 
     except Exception as e:
         logging.error(e)
@@ -96,6 +94,26 @@ def parquets_to_dataframe(
             shutil.rmtree(parquet_dir)
             logging.info(f"{parquet_dir} removed")
 
+
+def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
+    """ 
+    Parse DataFrame values, cleaning blank spaces if needed
+    and converting dtypes into correct types.
+    """
+    def str_to_int(string: str) -> Union[int,float]:
+        # If removing spaces, all characters are int,
+        # return int(value)
+        if string.replace(' ', '').isnumeric():
+            return int(string)
+
+    df = df.applymap(str_to_int)
+
+    df = df.applymap(
+            lambda x: "" if str(x).isspace() else x
+        )  # Remove all space values
+    
+    df = df.convert_dtypes()
+    return df
 
 class FTP_Inspect:
     """
