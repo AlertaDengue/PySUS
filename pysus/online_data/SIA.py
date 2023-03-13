@@ -36,8 +36,8 @@ def download(
     states: Union[str, list],
     years: Union[str, list, int],
     months: Union[str, list, int],
-    data_dir: str = CACHEPATH,
     group: str = "PA",
+    data_dir: str = CACHEPATH,
 ) -> list:
     """
     Download SIASUS records for state year and month and returns dataframe

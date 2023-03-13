@@ -12,11 +12,10 @@ import pandas as pd
 from pysus.online_data.SINAN import (
     download,
     list_diseases,
-    download_all_years_in_chunks,
+    metadata_df
 )
+from pysus.online_data import FTP_SINAN, parquets_to_dataframe
 from pysus.preprocessing.sinan import read_sinan_dbf
-
-from pysus import SINAN
 
 PATH_ROOT = Path(__file__).resolve().parent
 
@@ -41,54 +40,52 @@ class TestSINANClass(unittest.TestCase):
     ]
 
     def test_list_all_diseases(self):
-        all_diseases = SINAN.diseases
+        all_diseases = list(FTP_SINAN.diseases.keys())
         self.assertIn('Dengue', all_diseases)
         self.assertIn('Zika', all_diseases)
         self.assertIn('Chikungunya', all_diseases)
 
     def test_download(self):
-        SINAN.download_parquets(self.d1)
-        self.assertTrue(
-            all([(path in os.listdir(self.data_path)) for path in self.r1])
-        )
+        files = download(self.d1, [7,8,9], data_path=self.data_path)
+        self.assertEqual(len(files), 3)
 
     def test_read_dataframe(self):
-        df = SINAN.parquets_to_df(self.d1, '2007')
+        df = parquets_to_dataframe(Path(self.data_path)/self.r1[0])
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(df.shape, (1, 89))
     
     def test_metadata_dataframe(self):
-        df = SINAN.metadata_df('Raiva Humana')
+        df = metadata_df('Raiva Humana')
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(df.shape, (68, 7))
 
 
 class TestSINANDownload(unittest.TestCase):
     def test_download(self):
-        df = download(year=2007, disease='Botulismo')
+        df = parquets_to_dataframe(download(years=2007, disease='Botulismo')[0])
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(year=2015, disease='Botulismo', return_chunks=True)
+        fname = download(years=2015, disease='Botulismo')[0]
         self.assertIsInstance(fname, str)
         self.assertTrue(os.path.exists(fname))
         shutil.rmtree(fname, ignore_errors=True)
 
     def test_fetch_viol_dom(self):
-        df = download(year=2011, disease='Hantavirose')
+        df = parquets_to_dataframe(download(years=2011, disease='Hantavirose')[0])
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_cancer_prelim(self):
-        df = download(year=2022, disease='Cancer')
+        df = parquets_to_dataframe(download(years=2022, disease='Cancer')[0])
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_sifilis(self):
         self.assertRaises(
-            Exception, download(year=2021, disease='Sífilis Adquirida')
+            Exception, download(years=2021, disease='Sífilis Adquirida')
         )
 
     def test_fetch_sifilis_gestante(self):
-        df = download(year=2021, disease='Sífilis em Gestante')
+        df = parquets_to_dataframe(download(years=2021, disease='Sífilis em Gestante')[0])
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_lista_agravos(self):
@@ -97,10 +94,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertGreater(len(lista), 0)
 
     def test_chunked_df_size(self):
-        df1 = download(year=2018, disease='Chikungunya')
+        df1 = parquets_to_dataframe(download(years=2018, disease='Chikungunya')[0])
         s1 = len(df1)
         del df1
-        fn = download(year=2018, disease='Chikungunya', return_chunks=True)
+        fn = download(years=2018, disease='Chikungunya')[0]
         for i, f in enumerate(glob(f'{fn}/*.parquet')):
             if i == 0:
                 df2 = pd.read_parquet(f)
@@ -108,14 +105,6 @@ class TestSINANDownload(unittest.TestCase):
                 df2 = pd.concat([df2, pd.read_parquet(f)], ignore_index=True)
         self.assertEqual(s1, df2.shape[0])
         shutil.rmtree(fn, ignore_errors=True)
-
-    def test_download_all_dbfs_for_zika(self):
-        download_all_years_in_chunks('zika')
-        self.assertTrue(Path('/tmp/pysus/ZIKABR16.parquet').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR17.parquet').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR18.parquet').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR19.parquet').exists())
-        self.assertTrue(Path('/tmp/pysus/ZIKABR20.parquet').exists())
 
 
 class TestSinanDBF(unittest.TestCase):

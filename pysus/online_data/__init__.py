@@ -71,7 +71,7 @@ def parquets_to_dataframe(
     """ 
     Receives a parquet directory path and returns it as a
     dataframe, trying to clean white spaces and convert to
-    the properly data types. Can read only one parquet dir
+    the correct data types. Can read only one parquet dir
     at time. 
     """
 
@@ -177,7 +177,7 @@ class FTP_Inspect:
         UF: str = None,
         SINAN_disease: str = None,
         CNES_group: str = None,
-        SIA_group: str = None,
+        SIA_group: str = "PA",
         PNI_group: str = "CPNI",
         SIH_group: str = "RD",
     ):
@@ -261,7 +261,7 @@ class FTP_Inspect:
         self,
         SINAN_disease: str = None,
         CNES_group: str = None,
-        SIA_group: str = None,
+        SIA_group: str = "PA",
         PNI_group: str = "CPNI",
         SIH_group: str = "RD",
     ) -> list:
@@ -360,7 +360,7 @@ class FTP_Downloader:
         months: Union[str, int, list] = None,
         SINAN_disease: str = None,
         CNES_group: str = None,
-        SIA_group: str = None,
+        SIA_group: str = "PA",
         SIH_group: str = "RD",
         PNI_group: str = "CPNI",
         local_dir: str = cache_dir,
@@ -392,7 +392,7 @@ class FTP_Downloader:
         months: Union[str, int, list] = None,
         SINAN_disease: str = None,
         CNES_group: str = None,
-        SIA_group: str = None,
+        SIA_group: str = "PA",
         SIH_group: str = "RD",
         PNI_group: str = "CPNI",
     ) -> list:
@@ -404,16 +404,16 @@ class FTP_Downloader:
         db = self._ftp_db.database
         list_files = self._ftp_db.list_all
         if db == "SINAN":
-            all_dbcs = list_files(SINAN_disease)
+            all_dbcs = list_files(SINAN_disease=SINAN_disease)
             sinan_dis = FTP_SINAN(SINAN_disease)
         elif db == "CNES":
-            all_dbcs = list_files(CNES_group)
+            all_dbcs = list_files(CNES_group=CNES_group)
         elif db == "SIA":
-            all_dbcs = list_files(SIA_group)
+            all_dbcs = list_files(SIA_group=SIA_group)
         elif db == "SIH":
-            all_dbcs = list_files(SIH_group)
+            all_dbcs = list_files(SIH_group=SIH_group)
         elif db == "PNI":
-            all_dbcs = list_files(PNI_group)
+            all_dbcs = list_files(PNI_group=PNI_group)
         else:
             all_dbcs = list_files()
 

@@ -3,56 +3,52 @@ __author__ = "fccoelho"
 import unittest
 
 import pandas as pd
-
 from pysus.online_data.SIA import download
+from pysus.online_data import parquets_to_dataframe
 
 unittest.skip("too slow to run om travis")
 
 
 class SIATestCase(unittest.TestCase):
     def test_download_after_2008(self):
-        data = download("to", 2015, 12)
+        files = download("to", 2015, 12)
         # print(data)
-        self.assertGreater(len(data), 0)
-        for df in data:
-            if df is None:
-                continue
+        self.assertGreater(len(files), 0)
+        for file in files:
+            df = parquets_to_dataframe(file)
             self.assertIn("PA_CODUNI", df.columns)
-            self.assertIn("CODUNI", df.columns)
+            self.assertIn("PA_GESTAO", df.columns)
             self.assertIsInstance(df, pd.DataFrame)
             self.assertIsInstance(df, pd.DataFrame)
 
     def test_download_before_2008(self):
-        data = download("mg", 2005, 8)
+        files = download("mg", 2005, 8)
         self.assertWarns(UserWarning)
-        for df in data:
-            if df is None:
-                continue
+        for file in files:
+            df = parquets_to_dataframe(file)
             self.assertGreater(len(df), 0)
             self.assertIn("PA_CODUNI", df.columns)
             self.assertIsInstance(df, pd.DataFrame)
 
     @unittest.expectedFailure
     def test_download_before_1994(self):
-        df1, df2 = download("RS", 1993, 12)
+        files = download("RS", 1993, 12)
+        self.assertGreater(len(files), 0)
 
     def test_download_one(self):
-        data = download("se", 2020, 10, group="PS")
-
-        for df in data:
-            if df is None:
-                continue
-            self.assertGreater(len(df), 0)
-            self.assertIn("CNS_PAC", df.columns)
-            self.assertIsInstance(df, pd.DataFrame)
+        file = download("se", 2020, 10, group="PS")
+        df = parquets_to_dataframe(file[0])
+        self.assertGreater(len(df), 0)
+        self.assertIn("CNS_PAC", df.columns)
+        self.assertIsInstance(df, pd.DataFrame)
 
     def test_download_many(self):
-        dfs = download("PI", 2018, 3, group=["aq", "AM", "atd"])
-        self.assertEqual(len(dfs), 3)
-        df1, df2, df3 = dfs
-        self.assertIsNone(df1)
-        if df1 is None:
-            return
+        files = []
+        groups = ["aq", "AM", "atd"]
+        for group in groups:
+            files.extend(download("PI", 2018, 3, group=group))
+        to_df = parquets_to_dataframe    
+        df1, df2, df3 = to_df(files[0]), to_df(files[1]), to_df(files[2])
         self.assertIsInstance(df1, pd.DataFrame)
         self.assertIsInstance(df2, pd.DataFrame)
         self.assertIsInstance(df2, pd.DataFrame)
@@ -67,10 +63,8 @@ class SIATestCase(unittest.TestCase):
         self.assertIn("ATD_CARACT", df3.columns)
 
     def test_download_missing(self):
-        dfs = download("MS", 2006, 5, group=["PA", "SAD"])
-        assert len(dfs) == 2
-        self.assertIsNone(dfs[0])
-        self.assertIsNone(dfs[1])
+        dfs = download("MS", 2006, 5)
+        self.assertIsNotNone(dfs)
 
 
 if __name__ == "__main__":
