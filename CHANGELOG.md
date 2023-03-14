@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.8.0](https://github.com/AlertaDengue/PySUS/compare/0.7.0...0.8.0) (2023-03-14)
+
+
+### Features
+
+* **SINAN:** moving EGH changes to PySUS ([72f2d93](https://github.com/AlertaDengue/PySUS/commit/72f2d938e4d4b742b730d5e599564357a05825f8))
+
 ## [0.7.0](https://github.com/AlertaDengue/PySUS/compare/v0.6.4...0.7.0) (2023-02-06)
 
 

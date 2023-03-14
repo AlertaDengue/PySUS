@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pysus"
-version = "0.7.0"  # changed by semantic-release
+version = "0.8.0"  # changed by semantic-release
 description = "Tools for dealing with Brazil's Public health data"
 authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>"]
 license = "GPL"
