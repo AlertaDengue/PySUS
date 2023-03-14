@@ -18,7 +18,7 @@ with open(APP_DIR / "dataset/geocode_by_cities.json", "r") as f:
 
 def normalize(s):
     for p in string.punctuation:
-        s = s.replace(p, '')
+        s = s.replace(p, "")
 
     return unidecode.unidecode(s.lower().strip())
 
@@ -36,11 +36,9 @@ def search_string(substr: str) -> Dict[str, int]:
             with city name and IBGE codes of all municipalities in Brazil
     """
     normalized_list = [normalize(f) for f in list(geocode_by_cities.keys())]
-    
+
     matching_cities = [
-        get_close_matches(
-            i, normalized_list, n=55
-        )
+        get_close_matches(i, normalized_list, n=55)
         for i in normalize(substr).split(".")
     ]
 

@@ -33,8 +33,11 @@ def download_covid(uf=None, only_header=False):
         UF = "BR"
     else:
         UF = uf.upper()
-        query = {"query": {"match": {"paciente_endereco_uf": UF}}, "size": 10000}
-    
+        query = {
+            "query": {"match": {"paciente_endereco_uf": UF}},
+            "size": 10000,
+        }
+
     logger.info(f"Searching for COVID data of {UF}")
     tempfile = os.path.join(CACHEPATH, f"Vaccine_temp_{UF}.csv.gz")
     if os.path.exists(tempfile):
@@ -48,7 +51,9 @@ def download_covid(uf=None, only_header=False):
 
     if only_header:
         df = pd.DataFrame(next(data_gen))
-        logger.warning(f"Downloading data sample for visualization of {df.shape[0]} rows...")
+        logger.warning(
+            f"Downloading data sample for visualization of {df.shape[0]} rows..."
+        )
         return df
 
     h = 1
@@ -59,10 +64,10 @@ def download_covid(uf=None, only_header=False):
             h = 0
         else:
             df.to_csv(tempfile, mode="a", header=False)
-    
+
     logger.info(f"{tempfile} stored at {CACHEPATH}.")
     df = pd.read_csv(tempfile, chunksize=5000)
-    
+
     return df
 
 

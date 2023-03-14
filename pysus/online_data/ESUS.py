@@ -7,6 +7,7 @@ from elasticsearch import Elasticsearch, helpers
 
 from pysus.online_data import CACHEPATH
 
+
 def download(uf, cache=True, checkmemory=True):
     """
     Download ESUS data by UF
