@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 from numpy import dtype
-from pysus.online_data import last_update
+from pysus.online_data import FTP_Inspect
 
 
 class TestInitFunctions(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestInitFunctions(unittest.TestCase):
             "CNES",
             "CIHA",
         ]:
-            df = last_update(db)
+            df = FTP_Inspect(db).last_update_df()
             self.assertIsInstance(df, pd.DataFrame)
             self.assertGreater(df.size, 0)
             self.assertIn("folder", df.columns)

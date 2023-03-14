@@ -16,7 +16,6 @@ import pandas as pd
 
 from pysus.online_data.SIM import (
     get_CID10_chapters_table,
-    get_CID10_table,
     get_municipios,
 )
 
@@ -153,14 +152,14 @@ def columns_as_category(series, nan_string=None):
 
 
 def translate_variables_SIM(
-    dataframe,
-    age_unit="Y",
-    age_classes=None,
-    classify_args={},
-    classify_cid10_chapters=False,
-    geocode_dv=True,
-    nan_string="nan",
-    category_columns=True,
+        dataframe: pd.DataFrame,
+        age_unit: str = "Y",
+        age_classes=None,
+        classify_args: dict = {},
+        classify_cid10_chapters=False,
+        geocode_dv=True,
+        nan_marker=None,
+        category_columns=True,
 ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
@@ -174,17 +173,17 @@ def translate_variables_SIM(
         if age_classes:
             df[column_name] = classify_age(df[column_name], **classify_args)
             df[column_name] = df[column_name].astype("category")
-            df[column_name] = df[column_name].cat.add_categories([nan_string])
-            df[column_name] = df[column_name].fillna(nan_string)
+            df[column_name] = df[column_name].cat.add_categories(["NA"])
+            df[column_name] = df[column_name].fillna("NA")
 
     # SEXO
     if "SEXO" in variables_names:
-        df["SEXO"].replace(
-            {"0": np.nan, "9": np.nan, "1": "Masculino", "2": "Feminino"}, inplace=True
+        df['SEXO'] = df.SEXO.str.strip().replace(
+            {"0": None, "9": None, "1": "Masculino", "2": "Feminino"}
         )
         df["SEXO"] = df["SEXO"].astype("category")
-        df["SEXO"] = df["SEXO"].cat.add_categories([nan_string])
-        df["SEXO"] = df["SEXO"].fillna(nan_string)
+        df["SEXO"] = df["SEXO"].cat.add_categories(["NA"])
+        df["SEXO"] = df["SEXO"].fillna("NA")
 
     # MUNRES
     if "MUNIRES" in variables_names:
@@ -198,30 +197,29 @@ def translate_variables_SIM(
         df["CODMUNRES"] = df["CODMUNRES"].astype("int64")
         df.loc[~df["CODMUNRES"].isin(valid_mun), "CODMUNRES"] = pd.NA
         df["CODMUNRES"] = df["CODMUNRES"].astype("category")
-        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories([nan_string])
-        df["CODMUNRES"] = df["CODMUNRES"].fillna(nan_string)
+        df["CODMUNRES"] = df["CODMUNRES"].cat.add_categories(["NA"])
+        df["CODMUNRES"] = df["CODMUNRES"].fillna("NA")
 
     # RACACOR
     if "RACACOR" in variables_names:
-        df["RACACOR"].replace(
+        df["RACACOR"] = df["RACACOR"].str.strip().replace(
             {
-                "0": np.nan,
+                "0": None,
                 "1": "Branca",
                 "2": "Preta",
                 "3": "Amarela",
                 "4": "Parda",
                 "5": "Indígena",
-                "6": np.nan,
-                "7": np.nan,
-                "8": np.nan,
-                "9": np.nan,
-                "": np.nan,
+                "6": None,
+                "7": None,
+                "8": None,
+                "9": None,
+                "": None,
             },
-            inplace=True,
         )
         df["RACACOR"] = df["RACACOR"].astype("category")
-        df["RACACOR"] = df["RACACOR"].cat.add_categories([nan_string])
-        df["RACACOR"] = df["RACACOR"].fillna(nan_string)
+        df["RACACOR"] = df["RACACOR"].cat.add_categories(["NA"])
+        df["RACACOR"] = df["RACACOR"].fillna("NA")
 
     # CAUSABAS IN CID10 CHAPTER
     if classify_cid10_chapters:
