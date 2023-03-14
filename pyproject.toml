@@ -51,4 +51,14 @@ target-version = ["py39"]
 line-length = 79
 color = true
 
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+    "-ra -q"
+]
+testpaths = [
+    "tests"
+]
+
+
 exclude = ["*.git", "docs/"]
