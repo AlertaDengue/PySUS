@@ -3,21 +3,20 @@ Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
 """
+import logging
 import os
 import re
 import shutil
-import logging
+from datetime import datetime
+from ftplib import FTP, error_perm
+from itertools import product
+from pathlib import Path, PosixPath
+from typing import Union
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-
 from dbfread import DBF
-from typing import Union
-from itertools import product
-from datetime import datetime
-from ftplib import FTP, error_perm
-from pathlib import Path, PosixPath
-
 from pysus.utilities.readdbc import dbc2dbf
 
 CACHEPATH = os.getenv(
@@ -100,15 +99,25 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     and converting dtypes into correct types.
     """
 
+    def map_column_func(column_names: list[str], func):
+        # Maps a function to each value in each column
+        for columns in column_names:
+            if columns in df.columns:
+                df[columns] = df[columns].map(func)
+
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
         # return int(value)
-        if string.replace(" ", "").isnumeric():
-            return int(string)
+        if str(string).replace(" ", "").isnumeric():
+            return int(string.replace(" ", ""))
 
-    if "CODMUNRES" in df.columns:
-        df["CODMUNRES"] = df["CODMUNRES"].map(str_to_int)
+    def str_to_date(string: str) -> datetime.date:
+        if isinstance(string, str):
+            return datetime.strptime(string, '%Y%m%d').date()
 
+    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
+    map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
+    
     df = df.applymap(
         lambda x: "" if str(x).isspace() else x
     )  # Remove all space values
