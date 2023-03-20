@@ -113,7 +113,11 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
 
     def str_to_date(string: str) -> datetime.date:
         if isinstance(string, str):
-            return datetime.strptime(string, '%Y%m%d').date()
+            try:
+                return datetime.strptime(string, '%Y%m%d').date()
+            except Exception:
+                # Ignore errors, bad value
+                pass
 
     map_column_func(["CODMUNRES", "SEXO"], str_to_int)
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
