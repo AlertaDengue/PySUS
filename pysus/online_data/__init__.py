@@ -425,7 +425,11 @@ class FTP_Downloader:
                 )
                 downloaded_parquets.append(parquet_dir)
 
-        return downloaded_parquets
+        return (
+            downloaded_parquets[0] 
+            if len(downloaded_parquets) == 1 
+            else tuple(downloaded_parquets)
+        )
 
     def _get_dbc_paths(
         self,
