@@ -396,7 +396,7 @@ class FTP_Downloader:
         SIH_group: str = "RD",
         PNI_group: str = "CPNI",
         local_dir: str = cache_dir,
-    ) -> str:
+    ) -> Union[tuple[str], str]:
         dbc_paths = self._get_dbc_paths(
             UFs=UFs,
             years=years,
@@ -423,7 +423,7 @@ class FTP_Downloader:
                 parquet_dir = self._dbfc_to_parquets(
                     local_filepath, local_dir=local_dir
                 )
-                downloaded_parquets.append(parquet_dir)
+                downloaded_parquets.append(str(parquet_dir))
 
         return (
             downloaded_parquets[0] 
