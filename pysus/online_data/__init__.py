@@ -101,13 +101,12 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
 
     def map_column_func(column_names: list[str], func):
         # Maps a function to each value in each column
-        for columns in column_names:
-            if columns in df.columns:
-                df[columns] = df[columns].map(func)
+        df[[c for c in df.columns if c in column_names]].applymap(func)
 
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
-        # return int(value)
+        # return int(value). @warning it removes in between
+        # spaces as wel 
         if str(string).replace(" ", "").isnumeric():
             return int(string.replace(" ", ""))
 
