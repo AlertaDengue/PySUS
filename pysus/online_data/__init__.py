@@ -3,21 +3,20 @@ Created on 21/09/18
 by fccoelho
 license: GPL V3 or Later
 """
+import logging
 import os
 import re
 import shutil
-import logging
+from datetime import datetime
+from ftplib import FTP, error_perm
+from itertools import product
+from pathlib import Path, PosixPath
+from typing import Union
+
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-
 from dbfread import DBF
-from typing import Union
-from itertools import product
-from datetime import datetime
-from ftplib import FTP, error_perm
-from pathlib import Path, PosixPath
-
 from pysus.utilities.readdbc import dbc2dbf
 
 CACHEPATH = os.getenv(
@@ -100,14 +99,27 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     and converting dtypes into correct types.
     """
 
+    def map_column_func(column_names: list[str], func):
+        # Maps a function to each value in each column
+        df[[c for c in df.columns if c in column_names]].applymap(func)
+
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
-        # return int(value)
-        if string.replace(" ", "").isnumeric():
-            return int(string)
+        # return int(value). @warning it removes in between
+        # spaces as wel 
+        if str(string).replace(" ", "").isnumeric():
+            return int(string.replace(" ", ""))
 
-    if "CODMUNRES" in df.columns:
-        df["CODMUNRES"] = df["CODMUNRES"].map(str_to_int)
+    def str_to_date(string: str) -> datetime.date:
+        if isinstance(string, str):
+            try:
+                return datetime.strptime(string, "%Y%m%d").date()
+            except Exception:
+                # Ignore errors, bad value
+                pass
+
+    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
+    map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
 
     df = df.applymap(
         lambda x: "" if str(x).isspace() else x
@@ -395,14 +407,24 @@ class FTP_Downloader:
             SIH_group=SIH_group,
             PNI_group=PNI_group,
         )
+        data_dir = Path(local_dir)
 
         downloaded_parquets = []
         for path in dbc_paths:
-            local_filepath = self._extract_dbc(path, local_dir=local_dir)
-            parquet_dir = self._dbfc_to_parquets(
-                local_filepath, local_dir=local_dir
+
+            parquet_dir = data_dir / str(path).split("/")[-1].upper().replace(
+                ".DBC", ".parquet"
             )
-            downloaded_parquets.append(parquet_dir)
+
+            if Path(parquet_dir).exists():
+                downloaded_parquets.append(parquet_dir)
+            else:
+                local_filepath = self._extract_dbc(path, local_dir=local_dir)
+                parquet_dir = self._dbfc_to_parquets(
+                    local_filepath, local_dir=local_dir
+                )
+                downloaded_parquets.append(parquet_dir)
+
         return downloaded_parquets
 
     def _get_dbc_paths(
@@ -505,10 +527,7 @@ class FTP_Downloader:
         filename = DBC_path.split("/")[-1]
         filedir = DBC_path.replace(filename, "")
         filepath = Path(local_dir) / filename
-        if (
-            Path(filepath).exists()
-            or Path(str(filepath)[:-4] + ".parquet").exists()
-        ):
+        if Path(filepath).exists():
             return str(filepath)
         try:
             ftp = FTP("ftp.datasus.gov.br")
@@ -544,16 +563,20 @@ class FTP_Downloader:
         if Path(parquet_dir).exists() and any(os.listdir(parquet_dir)):
             return parquet_dir
         Path(parquet_dir).mkdir(exist_ok=True, parents=True)
+
+        def decode_column(value):
+            # https://stackoverflow.com/questions/57371164/django-postgres-a-string-literal-cannot-contain-nul-0x00-characters
+            if isinstance(value, bytes):
+                return value.decode(encoding="iso-8859-1").replace("\x00", "")
+            elif isinstance(value, str):
+                return str(value).replace("\x00", "")
+            else:
+                return value
+
         for d in self._stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
             try:
                 df = pd.DataFrame(d)
-                table = pa.Table.from_pandas(
-                    df.applymap(
-                        lambda x: x.decode(encoding="iso-8859-1")
-                        if isinstance(x, bytes)
-                        else x
-                    )
-                )
+                table = pa.Table.from_pandas(df.applymap(decode_column))
                 pq.write_to_dataset(table, root_path=parquet_dir)
 
             except Exception as e:
