@@ -18,7 +18,7 @@ class PNITestCase(unittest.TestCase):
 
     def test_download(self):
         files = download("RO", 2000)
-        df = parquets_to_dataframe(files[0])
+        df = parquets_to_dataframe(files)
         self.assertIsInstance(df, pd.DataFrame)
 
 

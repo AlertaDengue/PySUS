@@ -14,12 +14,12 @@ from pysus.online_data import parquets_to_dataframe as to_df
 
 class TestDownload(unittest.TestCase):
     def test_download_CID10(self):
-        df = to_df(download("ba", 2007)[0])
+        df = to_df(download("ba", 2007))
         self.assertIn("IDADEMAE", df.columns)
         self.assertGreater(len(df), 0)
 
     def test_download_CID9(self):
-        df = to_df(download("mg", 1987)[0])
+        df = to_df(download("mg", 1987))
         self.assertIn("NECROPSIA", df.columns)
         self.assertGreater(len(df), 0)
 

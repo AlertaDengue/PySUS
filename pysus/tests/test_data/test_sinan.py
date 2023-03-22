@@ -62,21 +62,21 @@ class TestSINANClass(unittest.TestCase):
 
 class TestSINANDownload(unittest.TestCase):
     def test_download(self):
-        df = parquets_to_dataframe(download(years=2007, disease='Botulismo')[0])
+        df = parquets_to_dataframe(download(years=2007, disease='Botulismo'))
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_filename_only(self):
-        fname = download(years=2015, disease='Botulismo')[0]
+        fname = download(years=2015, disease='Botulismo')
         self.assertIsInstance(fname, str)
         self.assertTrue(os.path.exists(fname))
         shutil.rmtree(fname, ignore_errors=True)
 
     def test_fetch_viol_dom(self):
-        df = parquets_to_dataframe(download(years=2011, disease='Hantavirose')[0])
+        df = parquets_to_dataframe(download(years=2011, disease='Hantavirose'))
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_cancer_prelim(self):
-        df = parquets_to_dataframe(download(years=2022, disease='Cancer')[0])
+        df = parquets_to_dataframe(download(years=2022, disease='Cancer'))
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_fetch_sifilis(self):
@@ -85,7 +85,7 @@ class TestSINANDownload(unittest.TestCase):
         )
 
     def test_fetch_sifilis_gestante(self):
-        df = parquets_to_dataframe(download(years=2021, disease='Sífilis em Gestante')[0])
+        df = parquets_to_dataframe(download(years=2021, disease='Sífilis em Gestante'))
         self.assertIsInstance(df, pd.DataFrame)
 
     def test_lista_agravos(self):
@@ -94,10 +94,10 @@ class TestSINANDownload(unittest.TestCase):
         self.assertGreater(len(lista), 0)
 
     def test_chunked_df_size(self):
-        df1 = parquets_to_dataframe(download(years=2018, disease='Chikungunya')[0])
+        df1 = parquets_to_dataframe(download(years=2018, disease='Chikungunya'))
         s1 = len(df1)
         del df1
-        fn = download(years=2018, disease='Chikungunya')[0]
+        fn = download(years=2018, disease='Chikungunya')
         for i, f in enumerate(glob(f'{fn}/*.parquet')):
             if i == 0:
                 df2 = pd.read_parquet(f)

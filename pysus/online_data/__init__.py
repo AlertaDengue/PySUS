@@ -101,7 +101,8 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
 
     def map_column_func(column_names: list[str], func):
         # Maps a function to each value in each column
-        df[[c for c in df.columns if c in column_names]].applymap(func)
+        columns = [c for c in df.columns if c in column_names]
+        df[columns] = df[columns].applymap(func)
 
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
@@ -118,8 +119,8 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
                 # Ignore errors, bad value
                 pass
 
-    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
+    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
 
     df = df.applymap(
         lambda x: "" if str(x).isspace() else x
@@ -396,7 +397,7 @@ class FTP_Downloader:
         SIH_group: str = "RD",
         PNI_group: str = "CPNI",
         local_dir: str = cache_dir,
-    ) -> str:
+    ) -> Union[tuple[str], str]:
         dbc_paths = self._get_dbc_paths(
             UFs=UFs,
             years=years,
@@ -417,15 +418,19 @@ class FTP_Downloader:
             )
 
             if Path(parquet_dir).exists():
-                downloaded_parquets.append(parquet_dir)
+                downloaded_parquets.append(str(parquet_dir))
             else:
                 local_filepath = self._extract_dbc(path, local_dir=local_dir)
                 parquet_dir = self._dbfc_to_parquets(
                     local_filepath, local_dir=local_dir
                 )
-                downloaded_parquets.append(parquet_dir)
+                downloaded_parquets.append(str(parquet_dir))
 
-        return downloaded_parquets
+        return (
+            downloaded_parquets[0] 
+            if len(downloaded_parquets) == 1 
+            else tuple(downloaded_parquets)
+        )
 
     def _get_dbc_paths(
         self,
