@@ -13,7 +13,7 @@ class TestDownload(unittest.TestCase):
         self.assertGreater(len(df), 0)
 
     def test_download_old(self):
-        df = to_df(download("AL", 1994))
+        df = to_df(download("AL", 1994)[0]) #[0] bc there is a file duplicity in the ftp sever
         self.assertIn("IDADE_MAE", df.columns)
         self.assertGreater(len(df), 0)
 

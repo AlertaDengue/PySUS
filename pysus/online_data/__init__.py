@@ -418,7 +418,7 @@ class FTP_Downloader:
             )
 
             if Path(parquet_dir).exists():
-                downloaded_parquets.append(parquet_dir)
+                downloaded_parquets.append(str(parquet_dir))
             else:
                 local_filepath = self._extract_dbc(path, local_dir=local_dir)
                 parquet_dir = self._dbfc_to_parquets(
