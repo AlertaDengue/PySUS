@@ -101,7 +101,8 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
 
     def map_column_func(column_names: list[str], func):
         # Maps a function to each value in each column
-        df[[c for c in df.columns if c in column_names]].applymap(func)
+        columns = [c for c in df.columns if c in column_names]
+        df[columns] = df[columns].applymap(func)
 
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
@@ -118,8 +119,8 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
                 # Ignore errors, bad value
                 pass
 
-    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
+    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
 
     df = df.applymap(
         lambda x: "" if str(x).isspace() else x
