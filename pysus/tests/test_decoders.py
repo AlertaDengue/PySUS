@@ -68,7 +68,7 @@ class TestDecoder(unittest.TestCase):
         self.assertTrue(decoders.is_valid_geocode(3304557))
 
     def test_translate_variables(self):
-        df = to_df(download("sp", 2010)[0])
+        df = to_df(download("sp", 2010))
         df = decoders.translate_variables_SIM(df)
         sex_array = set(df["SEXO"].unique().tolist())
         assert sex_array <= set(["Masculino", "Feminino", "NA"])
@@ -100,7 +100,7 @@ class TestDecoder(unittest.TestCase):
         assert_array_equal(results, [1, 1, 2, -1, 3, 7, 7, 8, -1, 20, 20, -1, 22])
 
     def test_group_and_count(self):
-        df = to_df(download("se", 2010)[0])
+        df = to_df(download("se", 2010))
         df = decoders.translate_variables_SIM(df)
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = group_and_count(df, variables)
@@ -110,7 +110,7 @@ class TestDecoder(unittest.TestCase):
         self.assertGreater(sum(sample), 0)
 
     def test_redistribute(self):
-        df = to_df(download("sp", 2010)[0])
+        df = to_df(download("sp", 2010))
         df = decoders.translate_variables_SIM(
             df, age_classes=True, classify_cid10_chapters=True
         )

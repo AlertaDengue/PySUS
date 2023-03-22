@@ -20,14 +20,14 @@ from pysus.online_data import parquets_to_dataframe as to_df
 
 class TestDecoder(unittest.TestCase):
     def test_group_and_count(self):
-        df = to_df(download("se", 2010)[0])
+        df = to_df(download("se", 2010))
         df = decoders.translate_variables_SIM(df)
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = SIM.group_and_count(df, variables)
         self.assertGreater(counts.COUNTS.sum(), 0)
 
     def test_redistribute_missing(self):
-        df = to_df(download("se", 2010)[0])
+        df = to_df(download("se", 2010))
         df = decoders.translate_variables_SIM(df)
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = SIM.group_and_count(df, variables)
@@ -40,7 +40,7 @@ class TestDecoder(unittest.TestCase):
 
 
     def test_redistribute_missing_partial(self):
-        df = to_df(download("se", 2010)[0])
+        df = to_df(download("se", 2010))
         df = decoders.translate_variables_SIM(
             df, age_classes=True, classify_cid10_chapters=True
         )

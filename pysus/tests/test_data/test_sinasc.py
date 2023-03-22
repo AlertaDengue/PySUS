@@ -8,12 +8,12 @@ from pysus.online_data import parquets_to_dataframe as to_df
 
 class TestDownload(unittest.TestCase):
     def test_download_new(self):
-        df = to_df(download("SE", 2015)[0])
+        df = to_df(download("SE", 2015))
         self.assertIn("IDADEMAE", df.columns)
         self.assertGreater(len(df), 0)
 
     def test_download_old(self):
-        df = to_df(download("AL", 1994)[0])
+        df = to_df(download("AL", 1994))
         self.assertIn("IDADE_MAE", df.columns)
         self.assertGreater(len(df), 0)
 
