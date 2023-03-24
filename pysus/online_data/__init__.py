@@ -495,7 +495,7 @@ class FTP_Downloader:
                 if not year or not month or not UF:
                     raise ValueError("Missing year(s), month(s) or UF(s)")
                 file_pattern = re.compile(
-                    rf"{SIA_group}{UF}{year}{month}.dbc", re.I
+                    rf"{SIA_group}{UF}{year}{month}[abc]?.dbc", re.I
                 )
             elif db == "PNI":
                 if not year or not UF:
@@ -557,6 +557,7 @@ class FTP_Downloader:
             outpath = f"{fpath[:-4]}.dbf"
             try:
                 dbc2dbf(fpath, outpath)
+                # breakpoint()
                 if Path(fpath).exists():
                     Path(fpath).unlink()
                 fpath = outpath
@@ -649,6 +650,12 @@ class FTP_SINAN:
 
     def __init__(self, name: str) -> None:
         self.name = self.__diseasecheck__(name)
+        ftp = FTP("ftp.datasus.gov.br")
+        ftp.login()
+        code = self.diseases[self.name]
+        self.finals = ftp.nlst(f"{DB_PATHS['SINAN'][0]}/{code}BR*.dbc")
+        self.prelims = ftp.nlst(f"{DB_PATHS['SINAN'][1]}/{code}BR*.dbc")
+        ftp.quit()
 
     def __diseasecheck__(self, name: str) -> str:
         return (
@@ -681,9 +688,8 @@ class FTP_SINAN:
                 for path in paths
             ]
 
-        p = self._ftp_list_datasets_paths
-        prelim_years = extract_years(p(self.name, "prelim"))
-        finais_years = extract_years(p(self.name, "finais"))
+        prelim_years = extract_years(self.prelims)
+        finais_years = extract_years(self.finals)
 
         if stage == "prelim":
             return sorted(prelim_years)
@@ -698,9 +704,8 @@ class FTP_SINAN:
                       is not available, it won't be included
                       in the result
         """
-        p = self._ftp_list_datasets_paths
-        prelim_paths = p(self.name, "prelim")
-        finais_paths = p(self.name, "finais")
+        prelim_paths = self.prelims
+        finais_paths = self.finals
         all_paths = prelim_paths + finais_paths
         ds_paths = list()
 
@@ -711,25 +716,3 @@ class FTP_SINAN:
             [ds_paths.append(path) for path in all_paths if mask(year) in path]
 
         return ds_paths
-
-    def _ftp_list_datasets_paths(self, disease: str, stage: str) -> list:
-        """
-        stage: 'f'|'finais' or 'p'|'prelim'
-        """
-        datasets_path = "/dissemin/publicos/SINAN/DADOS/"
-
-        if stage.startswith("f"):
-            datasets_path += "FINAIS"
-        elif stage.startswith("p"):
-            datasets_path += "PRELIM"
-        else:
-            raise ValueError(f"{stage}")
-
-        code = self.diseases[disease]
-
-        ftp = FTP("ftp.datasus.gov.br")
-        ftp.login()
-        ftp.cwd(datasets_path)
-        available_dbcs = ftp.nlst(f"{code}BR*.dbc")
-
-        return [f"{ftp.pwd()}/{dbc}" for dbc in available_dbcs]
