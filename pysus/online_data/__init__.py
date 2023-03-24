@@ -12,6 +12,7 @@ from ftplib import FTP, error_perm
 from itertools import product
 from pathlib import Path, PosixPath
 from typing import Union
+from functools import lru_cache
 
 import pandas as pd
 import pyarrow as pa
@@ -53,6 +54,12 @@ DB_PATHS = {
     "CNES": ["dissemin/publicos/CNES/200508_/Dados"],
     "CIHA": ["/dissemin/publicos/CIHA/201101_/Dados"],
 }
+
+@lru_cache
+def FTP_datasus():
+    ftp = FTP("ftp.datasus.gov.br")
+    ftp.login()
+    return ftp
 
 
 def cache_contents():
@@ -150,7 +157,7 @@ class FTP_Inspect:
 
     database: str
     _ds_paths: list
-    ftp_server: FTP = FTP("ftp.datasus.gov.br")
+    ftp_server: FTP = FTP_datasus()
     available_dbs: list = list(DB_PATHS.keys())
 
     def __init__(self, database: str) -> None:
@@ -180,8 +187,7 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        with FTP("ftp.datasus.gov.br") as ftp:
-            ftp.login()
+        with FTP_datasus() as ftp:
             response = {
                 "folder": [],
                 "date": [],
@@ -308,8 +314,7 @@ class FTP_Inspect:
         available_dbs = list()
         for path in self._ds_paths:
             try:
-                ftp = FTP("ftp.datasus.gov.br")
-                ftp.login()
+                ftp = FTP_datasus()
                 # CNES
                 if self.database == "CNES":
                     if not CNES_group:
@@ -349,8 +354,6 @@ class FTP_Inspect:
                     )
             except Exception as e:
                 raise e
-            finally:
-                FTP("ftp.datasus.gov.br").close()
         return available_dbs
 
 
@@ -535,8 +538,7 @@ class FTP_Downloader:
         if Path(filepath).exists():
             return str(filepath)
         try:
-            ftp = FTP("ftp.datasus.gov.br")
-            ftp.login()
+            ftp = FTP_datasus()
             ftp.cwd(filedir)
             ftp.retrbinary(
                 f"RETR {filename}",
@@ -546,8 +548,6 @@ class FTP_Downloader:
         except error_perm as e:
             logging.error(f"Not able to download {filename}")
             raise e
-        finally:
-            ftp.close()
 
     def _dbfc_to_parquets(self, fpath: str, local_dir: str) -> str(PosixPath):
         """DBC/DBF files to parquets using Pandas & PyArrow"""
@@ -557,7 +557,6 @@ class FTP_Downloader:
             outpath = f"{fpath[:-4]}.dbf"
             try:
                 dbc2dbf(fpath, outpath)
-                # breakpoint()
                 if Path(fpath).exists():
                     Path(fpath).unlink()
                 fpath = outpath
@@ -650,12 +649,10 @@ class FTP_SINAN:
 
     def __init__(self, name: str) -> None:
         self.name = self.__diseasecheck__(name)
-        ftp = FTP("ftp.datasus.gov.br")
-        ftp.login()
+        ftp = FTP_datasus()
         code = self.diseases[self.name]
         self.finals = ftp.nlst(f"{DB_PATHS['SINAN'][0]}/{code}BR*.dbc")
         self.prelims = ftp.nlst(f"{DB_PATHS['SINAN'][1]}/{code}BR*.dbc")
-        ftp.quit()
 
     def __diseasecheck__(self, name: str) -> str:
         return (
