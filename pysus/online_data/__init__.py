@@ -81,8 +81,8 @@ def parquets_to_dataframe(
     at time.
     """
 
-    parquets = Path(parquet_dir).glob("*.parquet")
-
+    parquets = list(map(str, Path(parquet_dir).glob("*.parquet")))
+    
     try:
         chunks_list = [
             pd.read_parquet(str(f), engine="fastparquet") for f in parquets
@@ -157,7 +157,7 @@ class FTP_Inspect:
 
     database: str
     _ds_paths: list
-    ftp_server: FTP = FTP_datasus()
+    ftp_server: FTP = FTP("ftp.datasus.gov.br")
     available_dbs: list = list(DB_PATHS.keys())
 
     def __init__(self, database: str) -> None:
@@ -187,7 +187,7 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        with FTP_datasus() as ftp:
+        with self.ftp_server.login() as ftp:
             response = {
                 "folder": [],
                 "date": [],
@@ -312,9 +312,10 @@ class FTP_Inspect:
         chunks, to preserve memory, that are read using pandas and pyarrow.
         """
         available_dbs = list()
+        ftp = FTP("ftp.datasus.gov.br")
+        ftp.login()
         for path in self._ds_paths:
             try:
-                ftp = FTP_datasus()
                 # CNES
                 if self.database == "CNES":
                     if not CNES_group:
@@ -538,7 +539,8 @@ class FTP_Downloader:
         if Path(filepath).exists():
             return str(filepath)
         try:
-            ftp = FTP_datasus()
+            ftp = ftp = FTP("ftp.datasus.gov.br")
+            ftp.login()
             ftp.cwd(filedir)
             ftp.retrbinary(
                 f"RETR {filename}",
