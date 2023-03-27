@@ -12,7 +12,6 @@ from ftplib import FTP, error_perm
 from itertools import product
 from pathlib import Path, PosixPath
 from typing import Union
-from functools import lru_cache
 
 import pandas as pd
 import pyarrow as pa
@@ -55,7 +54,6 @@ DB_PATHS = {
     "CIHA": ["/dissemin/publicos/CIHA/201101_/Dados"],
 }
 
-@lru_cache
 def FTP_datasus():
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
