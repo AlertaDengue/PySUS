@@ -1,6 +1,24 @@
 Release Notes
 ---
 
+## [0.9.0](https://github.com/AlertaDengue/PySUS/compare/0.8.0...0.9.0) (2023-03-28)
+
+
+### Features
+
+* **sinan:** add more parsed columns to final dataframe ([cc653f0](https://github.com/AlertaDengue/PySUS/commit/cc653f0dfc4793a50ed5b76d1ed40520ae4e75f9))
+
+
+### Bug Fixes
+
+* **notebooks:** update notebooks ([12dbb16](https://github.com/AlertaDengue/PySUS/commit/12dbb16e24208f7c24b0f790259d55bcad3b4562))
+* **notebook:** update download references in notebooks ([3682fe6](https://github.com/AlertaDengue/PySUS/commit/3682fe61be27235c806ec90112157b0b366bb4af))
+
+
+### Performance Improvements
+
+* **sinan:** remove unnecessary cwd's in FTP_SINAN ([#123](https://github.com/AlertaDengue/PySUS/issues/123)) ([5199685](https://github.com/AlertaDengue/PySUS/commit/519968537c6493c19e65de0e9e1856c47850e4dd))
+
 ## [0.8.0](https://github.com/AlertaDengue/PySUS/compare/0.7.0...0.8.0) (2023-03-14)
 
 
