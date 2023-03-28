@@ -54,6 +54,11 @@ DB_PATHS = {
     "CIHA": ["/dissemin/publicos/CIHA/201101_/Dados"],
 }
 
+def FTP_datasus():
+    ftp = FTP("ftp.datasus.gov.br")
+    ftp.login()
+    return ftp
+
 
 def cache_contents():
     """
@@ -74,8 +79,8 @@ def parquets_to_dataframe(
     at time.
     """
 
-    parquets = Path(parquet_dir).glob("*.parquet")
-
+    parquets = list(map(str, Path(parquet_dir).glob("*.parquet")))
+    
     try:
         chunks_list = [
             pd.read_parquet(str(f), engine="fastparquet") for f in parquets
@@ -180,8 +185,7 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        with FTP("ftp.datasus.gov.br") as ftp:
-            ftp.login()
+        with self.ftp_server.login() as ftp:
             response = {
                 "folder": [],
                 "date": [],
@@ -306,10 +310,10 @@ class FTP_Inspect:
         chunks, to preserve memory, that are read using pandas and pyarrow.
         """
         available_dbs = list()
+        ftp = FTP("ftp.datasus.gov.br")
+        ftp.login()
         for path in self._ds_paths:
             try:
-                ftp = FTP("ftp.datasus.gov.br")
-                ftp.login()
                 # CNES
                 if self.database == "CNES":
                     if not CNES_group:
@@ -349,8 +353,6 @@ class FTP_Inspect:
                     )
             except Exception as e:
                 raise e
-            finally:
-                FTP("ftp.datasus.gov.br").close()
         return available_dbs
 
 
@@ -495,7 +497,7 @@ class FTP_Downloader:
                 if not year or not month or not UF:
                     raise ValueError("Missing year(s), month(s) or UF(s)")
                 file_pattern = re.compile(
-                    rf"{SIA_group}{UF}{year}{month}.dbc", re.I
+                    rf"{SIA_group}{UF}{year}{month}[abc]?.dbc", re.I
                 )
             elif db == "PNI":
                 if not year or not UF:
@@ -535,7 +537,7 @@ class FTP_Downloader:
         if Path(filepath).exists():
             return str(filepath)
         try:
-            ftp = FTP("ftp.datasus.gov.br")
+            ftp = ftp = FTP("ftp.datasus.gov.br")
             ftp.login()
             ftp.cwd(filedir)
             ftp.retrbinary(
@@ -546,8 +548,6 @@ class FTP_Downloader:
         except error_perm as e:
             logging.error(f"Not able to download {filename}")
             raise e
-        finally:
-            ftp.close()
 
     def _dbfc_to_parquets(self, fpath: str, local_dir: str) -> str(PosixPath):
         """DBC/DBF files to parquets using Pandas & PyArrow"""
@@ -649,6 +649,10 @@ class FTP_SINAN:
 
     def __init__(self, name: str) -> None:
         self.name = self.__diseasecheck__(name)
+        ftp = FTP_datasus()
+        code = self.diseases[self.name]
+        self.finals = ftp.nlst(f"{DB_PATHS['SINAN'][0]}/{code}BR*.dbc")
+        self.prelims = ftp.nlst(f"{DB_PATHS['SINAN'][1]}/{code}BR*.dbc")
 
     def __diseasecheck__(self, name: str) -> str:
         return (
@@ -681,9 +685,8 @@ class FTP_SINAN:
                 for path in paths
             ]
 
-        p = self._ftp_list_datasets_paths
-        prelim_years = extract_years(p(self.name, "prelim"))
-        finais_years = extract_years(p(self.name, "finais"))
+        prelim_years = extract_years(self.prelims)
+        finais_years = extract_years(self.finals)
 
         if stage == "prelim":
             return sorted(prelim_years)
@@ -698,9 +701,8 @@ class FTP_SINAN:
                       is not available, it won't be included
                       in the result
         """
-        p = self._ftp_list_datasets_paths
-        prelim_paths = p(self.name, "prelim")
-        finais_paths = p(self.name, "finais")
+        prelim_paths = self.prelims
+        finais_paths = self.finals
         all_paths = prelim_paths + finais_paths
         ds_paths = list()
 
@@ -711,25 +713,3 @@ class FTP_SINAN:
             [ds_paths.append(path) for path in all_paths if mask(year) in path]
 
         return ds_paths
-
-    def _ftp_list_datasets_paths(self, disease: str, stage: str) -> list:
-        """
-        stage: 'f'|'finais' or 'p'|'prelim'
-        """
-        datasets_path = "/dissemin/publicos/SINAN/DADOS/"
-
-        if stage.startswith("f"):
-            datasets_path += "FINAIS"
-        elif stage.startswith("p"):
-            datasets_path += "PRELIM"
-        else:
-            raise ValueError(f"{stage}")
-
-        code = self.diseases[disease]
-
-        ftp = FTP("ftp.datasus.gov.br")
-        ftp.login()
-        ftp.cwd(datasets_path)
-        available_dbcs = ftp.nlst(f"{code}BR*.dbc")
-
-        return [f"{ftp.pwd()}/{dbc}" for dbc in available_dbcs]
