@@ -34,7 +34,7 @@ def download(
 
 
 def metadata_df(disease: str) -> pd.DataFrame:
-    code = FTP_SINAN(disease).code
+    code = FTP_SINAN.diseases[disease]
     metadata_file = (
         Path(__file__).parent.parent / "metadata" / "SINAN" / f"{code}.tar.gz"
     )
