@@ -13,6 +13,7 @@ from itertools import product
 from pathlib import Path, PosixPath
 from typing import Union
 from functools import lru_cache
+from collections import ChainMap
 
 import pandas as pd
 import pyarrow as pa
@@ -130,6 +131,171 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.convert_dtypes()
     return df
+
+
+@lru_cache
+def load_ftp_content(ftp_conn: FTP, databases: tuple) -> dict:
+    """ databases: tuple(["SINAN", "SIM", "SINASC", "SIH", "SIA", "PNI", "CNES", "CIHA"]) """
+    content = dict()
+    trim_path = lambda path: str(path).split('/')[-1]
+    for db in databases:
+        for path in DB_PATHS[db]:
+            if db == 'CNES':
+                content[path] = dict(ChainMap(*[
+                    {
+                        trim_path(group):list(map(
+                            trim_path,
+                            ftp_conn.nlst(group)))
+                    } 
+                    for group in ftp_conn.nlst(path)
+                ]))
+            else:
+                content[path] = list(map(trim_path, ftp_conn.nlst(path)))
+    return content
+
+
+def filter_paths_to_download(database: str, filepaths: list, **kwargs) -> list:
+    param = lambda p: kwargs[p] if p in kwargs else None
+    UFs = param('UFs')
+    years = param('years')
+    months = param('months')
+
+    files = list()
+    for y, m, uf in product(
+        years or [], months or [], UFs or []
+    ):  # Allows None
+        norm = lambda y: str(y)[-2:].zfill(2)
+        regex = next(_url_filter_regex(db=database, year=norm(y), month=norm(m), uf=str(uf), **kwargs))
+        filtered = list(filter(regex.search, filepaths))
+        files.extend(filtered)
+    return files
+
+
+def _url_filter_regex(db: str, **kwargs) -> re.Pattern:
+    """
+    Each url case is matched using regex patterns, mostly databases
+    have the same file pattern, but some discrepancies can be found,
+    for instance, lowercase UF and entire years and shortened years
+    at the same time.
+    """
+    param = lambda p: kwargs[p] if p in kwargs else None
+    uf = param('uf')
+    year = param('year')
+    month = param('month')
+    SINAN_disease = param('SINAN_disease')
+    SIH_group = param('SIH_group')
+    SIA_group = param('SIA_group')
+    PNI_group = param('PNI_group')
+    CNES_group = param('CNES_group')
+
+    if db == 'SINAN':
+        if not year:
+            raise ValueError('Missing year(s)')
+        file_pattern = re.compile(
+            f'{SINAN_disease.code}BR{year}.dbc', re.I
+        )
+    elif db == 'SIM' or db == 'SINASC':
+        if not year or not uf:
+            raise ValueError('Missing year(s) or UF(s)')
+        file_pattern = re.compile(
+            rf'[DON]+R?{uf}\d?\d?{year}.dbc', re.I
+        )
+    elif db == 'SIH':
+        if not year or not month or not uf:
+            raise ValueError('Missing year(s), month(s) or UF(s)')
+        file_pattern = re.compile(
+            rf'{SIH_group}{uf}{year}{month}.dbc', re.I
+        )
+    elif db == 'SIA':
+        if not year or not month or not uf:
+            raise ValueError('Missing year(s), month(s) or UF(s)')
+        file_pattern = re.compile(
+            rf'{SIA_group}{uf}{year}{month}[abc]?.dbc', re.I
+        )
+    elif db == 'PNI':
+        if not year or not uf:
+            raise ValueError('Missing year(s) or UF(s)')
+        file_pattern = re.compile(rf'{PNI_group}{uf}{year}.dbf', re.I)
+    elif db == 'CNES':
+        if not year or not month or not uf:
+            raise ValueError('Missing year(s), month(s) or UF(s)')
+        file_pattern = re.compile(
+            rf'{CNES_group}/{CNES_group}{uf}{year}{month}.dbc', re.I
+        )
+    elif db == 'CIHA':
+        if not year or not month or not uf:
+            raise ValueError('Missing year(s), month(s) or UF(s)')
+        file_pattern = re.compile(rf'CIHA{uf}{year}{month}.dbc', re.I)
+    yield file_pattern
+
+
+
+
+async def async_download(ftp_conn: FTP, ftp_file_path:str, local_dir_path:str):
+    """ 
+    ftp_path: full DBC or DBF path 
+    returns file path on host
+    """
+    filename = ftp_file_path.split('/')[-1]
+    local_path = Path(local_dir_path) / filename
+    # with ftp_conn as ftp:
+    try:
+        ftp_conn.retrbinary(
+            f'RETR {ftp_file_path}',
+            open(f'{str(local_path)}', 'wb').write,
+        )
+        yield str(local_path)
+    except error_perm as e:
+        logging.debug(f'{filename} not found, ignoring..')
+        # raise e
+
+
+async def async_file2parquet(ftp_conn:FTP, ftp_file_path:str, local_dir_path:str):
+    file_path = await async_download(ftp_conn, ftp_file_path, local_dir_path)
+
+    parquet_dir_path = f'{file_path[:-4]}.parquet'
+    is_dbc = True if file_path.upper().endswith('.DBC') else False
+
+    if is_dbc:
+        dbf_path = f'{file_path[:-4]}.dbf'
+        dbc2dbf(file_path, dbf_path)
+        Path(file_path).unlink(missing_ok=True)
+    else:
+        dbf_path = file_path
+
+    for d in _stream_DBF(DBF(dbf_path, encoding='iso-8859-1', raw=True)):
+        df = pd.DataFrame(d)
+        table = pa.Table.from_pandas(df.applymap(_decode_column))
+        pq.write_to_dataset(table, root_path=parquet_dir_path)
+    Path(dbf_path).unlink(missing_ok=True)
+
+
+def _stream_DBF(dbf, chunk_size=30000):
+    """Fetches records in chunks to preserve memory"""
+    data = []
+    i = 0
+    for records in dbf:
+        data.append(records)
+        i += 1
+        if i == chunk_size:
+            yield data
+            data = []
+            i = 0
+    else:
+        yield data
+
+def _decode_column(value):
+    if isinstance(value, bytes):
+        yield value.decode(encoding='iso-8859-1').replace('\x00', '')
+    elif isinstance(value, str):
+        yield str(value).replace('\x00', '')
+    else:
+        yield value
+
+
+
+
+
 
 
 class FTP_Inspect:
