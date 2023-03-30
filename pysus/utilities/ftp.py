@@ -46,18 +46,26 @@ class FTPDataSUSClient:
         self.conn_time = None
 
     def connect(self):
-        self.conn_time = time.time()
-        self.keepalive_proc = Process(
-            target=self._keep_alive_loop, daemon=True
-        )
-        self.server.connect()
-        self.keepalive_proc.start()
+        proc = self.keepalive_proc
+        if not proc:
+            self._spawn_proc()
+        elif not proc.is_alive():
+            self._spawn_proc()
+        
 
     def close(self):
         self.server.close()
         self.keepalive_proc.close()
         self.keepalive_proc = None
         self.conn_time = None
+
+    def _spawn_proc(self):
+        self.conn_time = time.time()
+        self.keepalive_proc = Process(
+            target=self._keep_alive_loop, daemon=True
+        )
+        self.server.connect()
+        self.keepalive_proc.start()
 
     def _keep_alive_loop(self):
         while time.time() - self.conn_time < self.timeout:
