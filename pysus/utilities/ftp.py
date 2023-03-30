@@ -4,33 +4,32 @@ import ftplib
 import time
 
 
-class FTP_DataSUS:
+class FTPDataSUS:
     """Common class to connect to DataSUS FTP server"""
 
     def __init__(self):
         self.host = 'ftp.datasus.gov.br'
-        self.ftp = None
+        self.FTP = None
 
     def connect(self):
-        self.ftp = ftplib.FTP(self.host)
-        self.ftp.connect()
-        self.ftp.login()
+        self.FTP = ftplib.FTP(self.host)
+        self.FTP.connect()
+        self.FTP.login()
 
-    def close(self):
-        if self.ftp is not None:
-            self.ftp.quit()
-            self.ftp = None
-
-    def keep_alive(self):
+    def reconnect(self):
         """Verifies if the connection is up, reconnects if needed"""
         try:
-            self.ftp.voidcmd('NOOP')
+            self.FTP.voidcmd('NOOP')
         except (BrokenPipeError, ConnectionResetError):
             self.connect()
             logging.debug(f'Reconnecting to {self.host}')
 
+    def close(self):
+        if self.FTP is not None:
+            self.FTP.quit()
+            self.FTP = None
 
-class FTP_DataSUS_Client:
+class FTPDataSUSClient:
     """
     The client will keep the connection alive as a Process
     running in the background, according to its timeout. It
@@ -41,7 +40,7 @@ class FTP_DataSUS_Client:
     """
 
     def __init__(self, keepalive_timeout=3600):
-        self.server = FTP_DataSUS()
+        self.server = FTPDataSUS()
         self.keepalive_proc: Process = None
         self.timeout = keepalive_timeout
         self.conn_time = None
@@ -62,7 +61,7 @@ class FTP_DataSUS_Client:
 
     def _keep_alive_loop(self):
         while time.time() - self.conn_time < self.timeout:
-            self.server.keep_alive()
+            self.server.reconnect()
             time.sleep(15)
         logging.debug(f'Connection timed out')
         self.close()

@@ -52,7 +52,7 @@ class TestSINANClass(unittest.TestCase):
     def test_read_dataframe(self):
         df = parquets_to_dataframe(Path(self.data_path)/self.r1[0])
         self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(df.shape, (1, 89))
+        self.assertEqual(df.shape, (110, 94))
     
     def test_metadata_dataframe(self):
         df = metadata_df('Raiva Humana')

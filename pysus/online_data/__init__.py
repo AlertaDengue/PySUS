@@ -19,7 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from dbfread import DBF
 from pysus.utilities.readdbc import dbc2dbf
-from pysus.utilities.ftp import FTP_DataSUS
+from pysus.utilities.ftp import FTPDataSUS
 
 CACHEPATH = os.getenv(
     'PYSUS_CACHEPATH', os.path.join(str(Path.home()), 'pysus')
@@ -152,7 +152,7 @@ class FTP_Inspect:
 
     database: str
     _ds_paths: list
-    ftp_server = FTP_DataSUS()
+    ftp_server = FTPDataSUS()
     available_dbs: list = list(DB_PATHS.keys())
 
     def __init__(self, database: str) -> None:
@@ -244,7 +244,7 @@ class FTP_Inspect:
         if self.database == 'SINAN':
             if not SINAN_disease:
                 raise ValueError('No disease assigned to SINAN_disease')
-            dis = FTP_SINAN(SINAN_disease)
+            dis = FTP_SINAN(SINAN_disease, self.ftp_server.FTP)
             available_years = dis.get_years(stage='all')
         # SINASC
         elif self.database == 'SINASC':
@@ -308,7 +308,7 @@ class FTP_Inspect:
         """
         available_dbs = list()
         self.ftp_server.connect()
-        ftp = self.ftp_server.ftp
+        ftp = self.ftp_server.FTP
         for path in self._ds_paths:
             try:
                 # CNES
@@ -339,7 +339,7 @@ class FTP_Inspect:
                         raise ValueError(
                             f'No disease assigned to SINAN_disease'
                         )
-                    disease = FTP_SINAN(SINAN_disease)
+                    disease = FTP_SINAN(SINAN_disease, self.ftp_server.FTP)
                     available_dbs = disease.get_ftp_paths(
                         disease.get_years(stage='all')
                     )
@@ -381,7 +381,7 @@ class FTP_Downloader:
     """
 
     _ftp_db: FTP_Inspect
-    _ftp_conn = FTP_DataSUS()
+    _ftp_conn = FTPDataSUS()
     _dbc_paths: list = None
     cache_dir: str = CACHEPATH
 
@@ -454,7 +454,7 @@ class FTP_Downloader:
         list_files = self._ftp_db.list_all
         if db == 'SINAN':
             all_dbcs = list_files(SINAN_disease=SINAN_disease)
-            sinan_dis = FTP_SINAN(SINAN_disease)
+            sinan_dis = FTP_SINAN(SINAN_disease, self._ftp_conn.FTP)
         elif db == 'CNES':
             all_dbcs = list_files(CNES_group=CNES_group)
         elif db == 'SIA':
@@ -538,8 +538,8 @@ class FTP_Downloader:
             return str(filepath)
         try:
             self._ftp_conn.connect()
-            self._ftp_conn.ftp.cwd(filedir)
-            self._ftp_conn.ftp.retrbinary(
+            self._ftp_conn.FTP.cwd(filedir)
+            self._ftp_conn.FTP.retrbinary(
                 f'RETR {filename}',
                 open(f'{filepath}', 'wb').write,
             )
