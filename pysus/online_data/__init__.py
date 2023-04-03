@@ -154,20 +154,10 @@ def load_ftp_content(ftp_conn: FTP, databases: tuple) -> dict:
     return content
 
 
-def filter_paths_to_download(database: str, filepaths: list, **kwargs) -> list:
-    param = lambda p: kwargs[p] if p in kwargs else None
-    UFs = param('UFs')
-    years = param('years')
-    months = param('months')
-
-    files = list()
-    for y, m, uf in product(
-        years or [], months or [], UFs or []
-    ):  # Allows None
-        norm = lambda y: str(y)[-2:].zfill(2)
-        regex = next(_url_filter_regex(db=database, year=norm(y), month=norm(m), uf=str(uf), **kwargs))
-        filtered = list(filter(regex.search, filepaths))
-        files.extend(filtered)
+def filter_content_files(content: list[str], rgx_patterns: list[tuple[re.Pattern]]) -> list[str]:
+    files = set()
+    for patterns in rgx_patterns:
+        files = [files.union(list(filter(pat, content))) for pat in patterns]
     return files
 
 
@@ -249,6 +239,14 @@ async def async_download(ftp_conn: FTP, ftp_file_path:str, local_dir_path:str):
         logging.debug(f'{filename} not found, ignoring..')
         # raise e
 
+
+from multiprocessing import Queue, Process
+
+p = Process(target=async_download, args={})
+
+a = Queue()
+a.get()
+a.put(p)
 
 async def async_file2parquet(ftp_conn:FTP, ftp_file_path:str, local_dir_path:str):
     file_path = await async_download(ftp_conn, ftp_file_path, local_dir_path)
