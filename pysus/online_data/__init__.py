@@ -427,7 +427,6 @@ class FTP_Downloader:
                     local_filepath, local_dir=local_dir
                 )
                 downloaded_parquets.append(str(parquet_dir))
-
         return (
             downloaded_parquets[0] 
             if len(downloaded_parquets) == 1 
@@ -514,7 +513,6 @@ class FTP_Downloader:
                     raise ValueError("Missing year(s), month(s) or UF(s)")
                 file_pattern = re.compile(rf"CIHA{UF}{year}{month}.dbc", re.I)
             return file_pattern
-
         files = list()
         for y, m, uf in product(
             years or [], months or [], UFs or []

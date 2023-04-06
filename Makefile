@@ -80,6 +80,7 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 .PHONY: test
 test: ## run tests quickly with the default Python
 	poetry run pytest -vv pysus/tests/
+	poetry run pytest --nbmake docs/source/*.ipynb pysus/Notebooks/*.ipynb
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pysus/tests/ -m pytest
