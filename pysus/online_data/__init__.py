@@ -185,8 +185,7 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        ftp = self.ftp_server
-        ftp.login()
+        ftp = FTP_datasus()
         response = {
             "folder": [],
             "date": [],
@@ -208,6 +207,8 @@ class FTP_Inspect:
         for pth in DB_PATHS[self.database]:
             ftp.cwd(pth)
             flist = ftp.retrlines("LIST", parse)
+        
+        ftp.close()
         return pd.DataFrame(response)
 
     def list_available_years(
@@ -354,6 +355,7 @@ class FTP_Inspect:
                     )
             except Exception as e:
                 raise e
+        ftp.close()
         return available_dbs
 
 
@@ -543,6 +545,7 @@ class FTP_Downloader:
                 f"RETR {filename}",
                 open(f"{filepath}", "wb").write,
             )
+            ftp.close()
             return str(filepath)
         except error_perm as e:
             logging.error(f"Not able to download {filename}")
