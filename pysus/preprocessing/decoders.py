@@ -178,8 +178,8 @@ def translate_variables_SIM(
 
     # SEXO
     if "SEXO" in variables_names:
-        df['SEXO'] = df.SEXO.str.strip().replace(
-            {"0": None, "9": None, "1": "Masculino", "2": "Feminino"}
+        df['SEXO'] = df.SEXO.replace(
+            {0: None, 9: None, 1: "Masculino", 2: "Feminino"}
         )
         df["SEXO"] = df["SEXO"].astype("category")
         df["SEXO"] = df["SEXO"].cat.add_categories(["NA"])

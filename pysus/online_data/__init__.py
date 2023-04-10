@@ -185,28 +185,29 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        with self.ftp_server.login() as ftp:
-            response = {
-                "folder": [],
-                "date": [],
-                "file_size": [],
-                "file_name": [],
-            }
+        ftp = self.ftp_server
+        ftp.login()
+        response = {
+            "folder": [],
+            "date": [],
+            "file_size": [],
+            "file_name": [],
+        }
 
-            def parse(line):
-                data = line.strip().split()
-                response["folder"].append(pth)
-                response["date"].append(
-                    pd.to_datetime(" ".join([data[0], data[1]]))
-                )
-                response["file_size"].append(
-                    0 if data[2] == "<DIR>" else int(data[2])
-                )
-                response["file_name"].append(data[3])
+        def parse(line):
+            data = line.strip().split()
+            response["folder"].append(pth)
+            response["date"].append(
+                pd.to_datetime(" ".join([data[0], data[1]]))
+            )
+            response["file_size"].append(
+                0 if data[2] == "<DIR>" else int(data[2])
+            )
+            response["file_name"].append(data[3])
 
-            for pth in DB_PATHS[self.database]:
-                ftp.cwd(pth)
-                flist = ftp.retrlines("LIST", parse)
+        for pth in DB_PATHS[self.database]:
+            ftp.cwd(pth)
+            flist = ftp.retrlines("LIST", parse)
         return pd.DataFrame(response)
 
     def list_available_years(
