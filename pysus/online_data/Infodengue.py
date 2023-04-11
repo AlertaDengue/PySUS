@@ -111,5 +111,4 @@ def download(
         )
 
         url_resp = "?".join([url, params])
-        breakpoint()
         return pd.read_csv(url_resp, index_col="SE").T
