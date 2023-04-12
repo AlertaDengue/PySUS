@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.9.1](https://github.com/AlertaDengue/PySUS/compare/0.9.0...0.9.1) (2023-04-12)
+
+
+### Bug Fixes
+
+* **docs:** fix docs and add test for notebooks ([ebedd2b](https://github.com/AlertaDengue/PySUS/commit/ebedd2bec2d9be58f9eb2aa5433a11d04a688379))
+
 ## [0.9.0](https://github.com/AlertaDengue/PySUS/compare/0.8.0...0.9.0) (2023-03-28)
 
 
