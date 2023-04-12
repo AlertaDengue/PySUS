@@ -185,28 +185,30 @@ class FTP_Inspect:
             )
             return pd.DataFrame()
 
-        with self.ftp_server.login() as ftp:
-            response = {
-                "folder": [],
-                "date": [],
-                "file_size": [],
-                "file_name": [],
-            }
+        ftp = FTP_datasus()
+        response = {
+            "folder": [],
+            "date": [],
+            "file_size": [],
+            "file_name": [],
+        }
 
-            def parse(line):
-                data = line.strip().split()
-                response["folder"].append(pth)
-                response["date"].append(
-                    pd.to_datetime(" ".join([data[0], data[1]]))
-                )
-                response["file_size"].append(
-                    0 if data[2] == "<DIR>" else int(data[2])
-                )
-                response["file_name"].append(data[3])
+        def parse(line):
+            data = line.strip().split()
+            response["folder"].append(pth)
+            response["date"].append(
+                pd.to_datetime(" ".join([data[0], data[1]]))
+            )
+            response["file_size"].append(
+                0 if data[2] == "<DIR>" else int(data[2])
+            )
+            response["file_name"].append(data[3])
 
-            for pth in DB_PATHS[self.database]:
-                ftp.cwd(pth)
-                flist = ftp.retrlines("LIST", parse)
+        for pth in DB_PATHS[self.database]:
+            ftp.cwd(pth)
+            flist = ftp.retrlines("LIST", parse)
+        
+        ftp.close()
         return pd.DataFrame(response)
 
     def list_available_years(
@@ -353,6 +355,7 @@ class FTP_Inspect:
                     )
             except Exception as e:
                 raise e
+        ftp.close()
         return available_dbs
 
 
@@ -427,7 +430,6 @@ class FTP_Downloader:
                     local_filepath, local_dir=local_dir
                 )
                 downloaded_parquets.append(str(parquet_dir))
-
         return (
             downloaded_parquets[0] 
             if len(downloaded_parquets) == 1 
@@ -514,7 +516,6 @@ class FTP_Downloader:
                     raise ValueError("Missing year(s), month(s) or UF(s)")
                 file_pattern = re.compile(rf"CIHA{UF}{year}{month}.dbc", re.I)
             return file_pattern
-
         files = list()
         for y, m, uf in product(
             years or [], months or [], UFs or []
@@ -544,6 +545,7 @@ class FTP_Downloader:
                 f"RETR {filename}",
                 open(f"{filepath}", "wb").write,
             )
+            ftp.close()
             return str(filepath)
         except error_perm as e:
             logging.error(f"Not able to download {filename}")
