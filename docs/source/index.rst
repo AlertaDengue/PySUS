@@ -25,6 +25,7 @@ Contents:
    Analyzing Zika data <Zika.ipynb>
    Downloading COVID data from ESUS <ESUS.ipynb>
    Downloading Infogripe data <Infogripe.ipynb>
+   Downloading Infodengue data <Infodengue.ipynb>
    Getting Official Statistics <IBGE_data.ipynb>
 
 
