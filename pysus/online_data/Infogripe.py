@@ -9,7 +9,7 @@ DATASETS = {
     'Alerta de situação': r'tabela_de_alerta.csv',
     'Casos por idade, sexo e virus': r'dados_semanais_faixa_etaria_sexo_virus.csv.gz',
     'Casos Totais e estimativas': r'serie_temporal_com_estimativas_recentes.csv.gz',
-    'Valores esperados por localidades': 'valores_esperados_por_localidade.csv'
+    'Valores esperados por localidades': 'valores_esperados_por_localidade.csv',
 }
 
 

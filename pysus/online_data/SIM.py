@@ -26,7 +26,7 @@ def download(
     :param years: 4 digit integer, can be a list
     :return: a list of downloaded parquet paths
     """
-    return FTP_Downloader("SIM").download(
+    return FTP_Downloader('SIM').download(
         UFs=states, years=years, local_dir=data_dir
     )
 
@@ -37,42 +37,42 @@ def get_CID10_chapters_table(cache=True):
     :param cache: If set to True, stores data as parquets.
     :return: Pandas DataFrame
     """
-    ftp = FTP("ftp.datasus.gov.br")
+    ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+        f'Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}'
     )
-    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+        'Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS'
     )
 
-    fname = "CIDCAP10.DBF"
+    fname = 'CIDCAP10.DBF'
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+        CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet'
     )
 
     if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
+        logger.info(f'Local parquet file found at {cachefile}')
         df = pd.read_parquet(cachefile)
 
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception('Could not download {}'.format(fname))
 
-    dbf = DBF(fname, encoding="iso-8859-1")
+    dbf = DBF(fname, encoding='iso-8859-1')
     df = pd.DataFrame(list(dbf))
 
     if cache:
         df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
+        logger.info(f'Data stored as parquet at {cachefile}')
 
     os.unlink(fname)
-    logger.debug(f"{fname} removed")
+    logger.debug(f'{fname} removed')
 
     return df
 
@@ -83,42 +83,42 @@ def get_CID10_table(cache=True):
     :param cache: If set to True, stores data as parquets.
     :return: Pandas DataFrame
     """
-    ftp = FTP("ftp.datasus.gov.br")
+    ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+        f'Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}'
     )
-    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+        'Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS'
     )
 
-    fname = "CID10.DBF"
+    fname = 'CID10.DBF'
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+        CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet'
     )
 
     if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
+        logger.info(f'Local parquet file found at {cachefile}')
         df = pd.read_parquet(cachefile)
 
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception('Could not download {}'.format(fname))
 
-    dbf = DBF(fname, encoding="iso-8859-1")
+    dbf = DBF(fname, encoding='iso-8859-1')
     df = pd.DataFrame(list(dbf))
 
     if cache:
         df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
+        logger.info(f'Data stored as parquet at {cachefile}')
 
     os.unlink(fname)
-    logger.debug(f"{fname} removed")
+    logger.debug(f'{fname} removed')
 
     return df
 
@@ -129,42 +129,42 @@ def get_CID9_table(cache=True):
     :param cache: If set to True, stores data as parquets.
     :return: Pandas DataFrame
     """
-    ftp = FTP("ftp.datasus.gov.br")
+    ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+        f'Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}'
     )
-    ftp.cwd("/dissemin/publicos/SIM/CID9/TABELAS")
+    ftp.cwd('/dissemin/publicos/SIM/CID9/TABELAS')
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID9/TABELAS"
+        'Changing FTP work dir to: /dissemin/publicos/SIM/CID9/TABELAS'
     )
 
-    fname = "CID9.DBF"
+    fname = 'CID9.DBF'
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+        CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet'
     )
 
     if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
+        logger.info(f'Local parquet file found at {cachefile}')
         df = pd.read_parquet(cachefile)
 
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception('Could not download {}'.format(fname))
 
-    dbf = DBF(fname, encoding="iso-8859-1")
+    dbf = DBF(fname, encoding='iso-8859-1')
     df = pd.DataFrame(list(dbf))
 
     if cache:
         df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
+        logger.info(f'Data stored as parquet at {cachefile}')
 
     os.unlink(fname)
-    logger.debug(f"{fname} removed")
+    logger.debug(f'{fname} removed')
 
     return df
 
@@ -175,42 +175,42 @@ def get_municipios(cache=True):
     :param cache: If set to True, stores data as parquets.
     :return: Pandas DataFrame
     """
-    ftp = FTP("ftp.datasus.gov.br")
+    ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+        f'Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}'
     )
-    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+        'Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS'
     )
 
-    fname = "CADMUN.DBF"
+    fname = 'CADMUN.DBF'
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+        CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet'
     )
 
     if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
+        logger.info(f'Local parquet file found at {cachefile}')
         df = pd.read_parquet(cachefile)
 
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
 
     except:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception('Could not download {}'.format(fname))
 
-    dbf = DBF(fname, encoding="iso-8859-1")
+    dbf = DBF(fname, encoding='iso-8859-1')
     df = pd.DataFrame(list(dbf))
 
     if cache:
         df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
+        logger.info(f'Data stored as parquet at {cachefile}')
 
     os.unlink(fname)
-    logger.debug(f"{fname} removed")
+    logger.debug(f'{fname} removed')
 
     return df
 
@@ -221,40 +221,40 @@ def get_ocupations(cache=True):
     :param cache: If set to True, stores data as parquets.
     :return: Pandas DataFrame
     """
-    ftp = FTP("ftp.datasus.gov.br")
+    ftp = FTP('ftp.datasus.gov.br')
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+        f'Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}'
     )
-    ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
+    ftp.cwd('/dissemin/publicos/SIM/CID10/TABELAS')
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+        'Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS'
     )
-    fname = "TABOCUP.DBF"
+    fname = 'TABOCUP.DBF'
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+        CACHEPATH, 'SIM_' + fname.split('.')[0] + '_.parquet'
     )
 
     if os.path.exists(cachefile):
-        logger.info(f"Local parquet file found at {cachefile}")
+        logger.info(f'Local parquet file found at {cachefile}')
         df = pd.read_parquet(cachefile)
 
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary('RETR {}'.format(fname), open(fname, 'wb').write)
 
     except:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception('Could not download {}'.format(fname))
 
-    dbf = DBF(fname, encoding="iso-8859-1")
+    dbf = DBF(fname, encoding='iso-8859-1')
     df = pd.DataFrame(list(dbf))
 
     if cache:
         df.to_parquet(cachefile)
-        logger.info(f"Data stored as parquet at {cachefile}")
+        logger.info(f'Data stored as parquet at {cachefile}')
 
     os.unlink(fname)
-    logger.debug(f"{fname} removed")
+    logger.debug(f'{fname} removed')
 
     return df

@@ -23,7 +23,7 @@ def download(
     :param states: 2 letter state code,
     :param years: 4 digit integer
     """
-    return FTP_Downloader("CIHA").download(
+    return FTP_Downloader('CIHA').download(
         UFs=states,
         years=years,
         months=months,

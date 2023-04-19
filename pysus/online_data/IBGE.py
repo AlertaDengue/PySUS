@@ -10,13 +10,13 @@ import pandas as pd
 
 from urllib.error import HTTPError
 
-APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
+APIBASE = 'https://servicodados.ibge.gov.br/api/v3/'
 
 
 def get_sidra_table(
     table_id,
     territorial_level,
-    geocode="all",
+    geocode='all',
     period=None,
     variables=None,
     classification=None,
@@ -79,31 +79,31 @@ def get_sidra_table(
     :param headers: `y` para receber o header (valor default, caso o parâmetro h não seja especificado). `n` para não receber o header.
     :return:
     """
-    base_url = "https://apisidra.ibge.gov.br/values"
-    query = f"/t/{table_id}/n{territorial_level}/{geocode}"
+    base_url = 'https://apisidra.ibge.gov.br/values'
+    query = f'/t/{table_id}/n{territorial_level}/{geocode}'
     if period is not None:
-        query += f"/p/{period}"
+        query += f'/p/{period}'
     if variables is not None:
-        query += f"/v/{variables}"
+        query += f'/v/{variables}'
     if classification is not None:
-        query += f"/c{classification}"
+        query += f'/c{classification}'
     if categories is not None:
-        query += f"/{categories}"
+        query += f'/{categories}'
     if format is not None:
-        query += f"/f/{format}"
+        query += f'/f/{format}'
     if decimals is not None:
-        query += f"/d/{decimals}"
+        query += f'/d/{decimals}'
     if headers is not None:
-        query += f"/h/{headers}"
+        query += f'/h/{headers}'
 
     url = base_url + query
-    print(f"Requesting data from {url}")
+    print(f'Requesting data from {url}')
     try:
         with (get_legacy_session() as s, s.get(url) as response):
             df = pd.DataFrame(response.json())
     except HTTPError as exc:
         response = requests.get(url)
-        print(f"Consulta falhou: {response.text}")
+        print(f'Consulta falhou: {response.text}')
         return None
     return df
 
@@ -116,14 +116,14 @@ def list_agregados(**kwargs):
     :param kwargs: parâmetros válidos: período, assunto, classificacao, periodicidade,nivel.
     :return: Dataframe
     """
-    url = APIBASE + "agregados?"
-    url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
-    print(f"Fetching Data groupings from {url}")
+    url = APIBASE + 'agregados?'
+    url += '&'.join([f'{k}={v}' for k, v in kwargs.items()])
+    print(f'Fetching Data groupings from {url}')
     try:
         with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
     except requests.exceptions.SSLError as e:
-        print(f"Failed fetching aggregates: {e}")
+        print(f'Failed fetching aggregates: {e}')
         return pd.DataFrame()
     return table
 
@@ -136,12 +136,12 @@ def localidades_por_agregado(agregado: int, nivel: str):
     delimitados pelo caracter | (pipe). p.ex. N7|N6
     :return:
     """
-    url = APIBASE + f"agregados/{agregado}/localidades/{nivel}"
+    url = APIBASE + f'agregados/{agregado}/localidades/{nivel}'
     try:
         with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
     except Exception as e:
-        print(f"Could not download from {url}\n{e}")
+        print(f'Could not download from {url}\n{e}')
         return None
     return table
 
@@ -152,12 +152,12 @@ def metadados(agregado: int):
 
     :param agregado: Identificador do agregado
     """
-    url = APIBASE + f"agregados/{agregado}/metadados"
+    url = APIBASE + f'agregados/{agregado}/metadados'
     try:
         with (get_legacy_session() as s, s.get(url) as response):
             data = response.json()
     except Exception as e:
-        print(f"Could not download from {url}\n{e}")
+        print(f'Could not download from {url}\n{e}')
         return None
     return data
 
@@ -168,7 +168,7 @@ def lista_periodos(agregado: int):
     :param agregado:
     :return: pd.DataFrame com os períodos de atualização
     """
-    url = APIBASE + f"agregados/{agregado}/periodos"
+    url = APIBASE + f'agregados/{agregado}/periodos'
     try:
         with (get_legacy_session() as s, s.get(url) as response):
             table = pd.DataFrame(response.json())
@@ -229,19 +229,19 @@ class FetchData:
     """
 
     def __init__(
-        self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs
+        self, agregado: int, periodos: str, variavel: str = 'allxp', **kwargs
     ):
         self.url = (
             APIBASE
-            + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
+            + f'agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?'
         )
-        self.url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
+        self.url += '&'.join([f'{k}={v}' for k, v in kwargs.items()])
         self.JSON = None
         self._fetch_JSON()
 
     def _fetch_JSON(self):
         try:
-            print(f"Fetching {self.url}")
+            print(f'Fetching {self.url}')
             with (get_legacy_session() as s, s.get(self.url) as response):
                 self.JSON = response.json()
         except Exception as e:
@@ -285,5 +285,5 @@ def get_legacy_session():
     ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
     ctx.options |= 0x4  # OP_LEGACY_SERVER_CONNECT
     session = requests.session()
-    session.mount("https://", CustomHttpAdapter(ctx))
+    session.mount('https://', CustomHttpAdapter(ctx))
     return session

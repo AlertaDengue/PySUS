@@ -23,10 +23,10 @@ def download(
     :param data_dir: Directory where parquets will be downloaded.
     :return: a list of parquet paths
     """
-    return FTP_Downloader("SIH").download(
+    return FTP_Downloader('SIH').download(
         UFs=states,
         years=years,
         months=months,
-        SIH_group="RD",
+        SIH_group='RD',
         local_dir=data_dir,
     )
