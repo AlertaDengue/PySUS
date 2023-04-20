@@ -15,7 +15,7 @@ def get_available_years(disease: str) -> list:
     :param disease: Disease name. See `SINAN.list_diseases` for valid names
     :return: A list of DBC files from a specific disease found in the FTP Server.
     """
-    return FTP_Inspect("SINAN").list_available_years(SINAN_disease=disease)
+    return FTP_Inspect('SINAN').list_available_years(SINAN_disease=disease)
 
 
 def download(
@@ -28,7 +28,7 @@ def download(
     :param data_path: The directory where the chunks will be downloaded to.
     :return: list of downloaded parquet directories.
     """
-    return FTP_Downloader("SINAN").download(
+    return FTP_Downloader('SINAN').download(
         SINAN_disease=disease, years=years, local_dir=data_path
     )
 
@@ -36,19 +36,19 @@ def download(
 def metadata_df(disease: str) -> pd.DataFrame:
     code = FTP_SINAN(disease).code
     metadata_file = (
-        Path(__file__).parent.parent / "metadata" / "SINAN" / f"{code}.tar.gz"
+        Path(__file__).parent.parent / 'metadata' / 'SINAN' / f'{code}.tar.gz'
     )
     if metadata_file.exists():
         df = pd.read_csv(
             metadata_file,
-            compression="gzip",
+            compression='gzip',
             header=0,
-            sep=",",
+            sep=',',
             quotechar='"',
             error_bad_lines=False,
         )
 
         return df.iloc[:, 1:]
     else:
-        print(f"No metadata available for {disease}")
+        print(f'No metadata available for {disease}')
         return

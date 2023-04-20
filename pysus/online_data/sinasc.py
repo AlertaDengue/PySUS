@@ -21,10 +21,10 @@ def download(
     :param year: 4 digit integer, can be a list
     :return: list of downloaded parquet paths
     """
-    return FTP_Downloader("SINASC").download(
+    return FTP_Downloader('SINASC').download(
         UFs=states, years=years, local_dir=data_dir
     )
 
 
 def get_available_years(state):
-    return FTP_Inspect("SINASC").list_available_years(UF=state)
+    return FTP_Inspect('SINASC').list_available_years(UF=state)
