@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.9.2](https://github.com/AlertaDengue/PySUS/compare/0.9.1...0.9.2) (2023-04-20)
+
+
+### Bug Fixes
+
+* **version:** linter online_data to bump version ([#128](https://github.com/AlertaDengue/PySUS/issues/128)) ([eddb93c](https://github.com/AlertaDengue/PySUS/commit/eddb93c5094a7bfebca51d57f33fbc3891f1d54f))
+
 ## [0.9.1](https://github.com/AlertaDengue/PySUS/compare/0.9.0...0.9.1) (2023-04-12)
 
 
