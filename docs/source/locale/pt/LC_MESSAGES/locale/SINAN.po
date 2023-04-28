@@ -1,0 +1,126 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2016, Flavio Codeco Coelho
+# This file is distributed under the same license as the PySUS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PySUS 0.1.13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-04-28 16:27-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../source/SINAN.ipynb:9
+msgid "Downloading data from the SINAN database"
+msgstr "Baixando dados do banco de dados do SINAN"
+
+#: ../../source/SINAN.ipynb:31
+msgid ""
+"SINAN is a database of reported cases of certain diseases that Brazilian "
+"law requires to be reported. Unfortunately the data available for free "
+"download, corresponds only to the investigated cases not the totality of "
+"the reported cases. Nevertheless it's an interesting dataset."
+msgstr ""
+"SINAN é um banco de dados de casos notificados de certas doenças que a "
+"lei brasileira exige que sejam reportadas. Infelizmente, os dados "
+"disponíveis para download gratuito correspondem apenas aos casos "
+"investigados, não à totalidade dos casos reportados. No entanto, é um "
+"conjunto de dados interessante."
+
+#: ../../source/SINAN.ipynb:33
+msgid "To find out what are these diseases, we can use PySUS:"
+msgstr "Para descobrir quais são essas doenças, podemos usar o PySUS:"
+
+#: ../../source/SINAN.ipynb:181
+msgid ""
+"These diseases are available in countrywide tables, so if we want to see "
+"the cases of ``Chagas`` disease in the state of Minas Gerais, first we "
+"can check which years are available:"
+msgstr ""
+"Essas doenças estão disponíveis em tabelas de todo o país, então, se "
+"quisermos ver os casos de doença de `Chagas` no estado de Minas Gerais, "
+"primeiro podemos verificar quais anos estão disponíveis:"
+
+#: ../../source/SINAN.ipynb:287
+msgid ""
+"We can also check when it was last updated for every disease, and if the "
+"table is preliminary or final."
+msgstr ""
+"Também podemos verificar quando foi a última atualização para cada "
+"doença e se a tabela é preliminar ou final."
+
+#: ../../source/SINAN.ipynb:884
+msgid ""
+"We can see, that we have data in final form, from 2000 until 2019, and "
+"preliminary data for 2020. Now we can download it:"
+msgstr ""
+"Podemos ver que temos dados em forma final, de 2000 até 2019, e dados "
+"preliminares para 2020. Agora podemos baixá-los:"
+
+#: ../../source/SINAN.ipynb:1371
+msgid "Downloading large files"
+msgstr "Baixando arquivos grandes"
+
+#: ../../source/SINAN.ipynb:1373
+msgid ""
+"Some SINAN files can be quite large and can take a bit longer to download"
+" and convert. As the default behavior is to download data in chunks, some"
+" folders may contain lots of parquet chunks"
+msgstr ""
+"Alguns arquivos do SINAN podem ser bastante grandes e podem demorar um "
+"pouco mais para serem baixados e convertidos. Como o comportamento "
+"padrão é baixar dados em blocos, algumas pastas podem conter muitos "
+"pedaços de parquet."
+
+#: ../../source/SINAN.ipynb:1394
+msgid ""
+"The cases of dengue where downloaded to multiple chunks to the directory "
+"above"
+msgstr ""
+"Os casos de dengue foram baixados em vários pedaços para o diretório "
+"acima"
+
+#: ../../source/SINAN.ipynb:1478 ../../source/SINAN.ipynb:1969
+msgid "Decoding the age in SINAN tables"
+msgstr "Decodificando a idade nas tabelas do SINAN"
+
+#: ../../source/SINAN.ipynb:1480 ../../source/SINAN.ipynb:1971
+msgid ""
+"In SINAN the age comes encoded. PySUS can decode the age column "
+"``NU_IDADE_N`` into any of these units: years, months, days, or hours."
+msgstr ""
+"No SINAN, a idade vem codificada. O PySUS pode decodificar a coluna de "
+"idade `NU_IDADE_N` em qualquer uma dessas unidades: anos, meses, dias "
+"ou horas."
+
+#: ../../source/SINAN.ipynb:2497
+msgid "We can easily convert dates and numerical fields in the dataframe:"
+msgstr "Podemos facilmente converter datas e campos numéricos no dataframe:"
+
+#: ../../source/SINAN.ipynb:2865
+msgid "Let's convert the age to years and save it on a different column."
+msgstr "Vamos converter a idade para anos e salvá-la em uma coluna diferente."
+
+#: ../../source/SINAN.ipynb:3046
+msgid "Saving the Modified data"
+msgstr "Salvando os dados modificados"
+
+#: ../../source/SINAN.ipynb:3048
+msgid ""
+"We can save our dataframe in any format we wish to avoid having to redo "
+"this analysis next time. If we want to keep only the data from the state "
+"of Minas Gerais we need to filter the table using the UF code ``31``."
+msgstr ""
+"Pode-se salvar nosso conjunto de dados em qualquer formato que desejarmos "
+"para evitar ter que refazer esta análise na próxima vez. Se quisermos manter "
+"apenas os dados do estado de Minas Gerais, precisamos filtrar a tabela usando "
+"o código UF `31`."

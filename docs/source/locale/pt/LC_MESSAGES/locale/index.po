@@ -1,0 +1,107 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2016, Flavio Codeco Coelho
+# This file is distributed under the same license as the PySUS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PySUS 0.1.13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-04-28 16:27-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../source/index.rst:14
+msgid "Data Sources"
+msgstr "Bases de dados"
+
+#: ../../source/index.rst:14
+msgid "Tutorials"
+msgstr "Tutoriais"
+
+#: ../../source/index.rst:14
+msgid "Loading SINAN data"
+msgstr "Extração de dados (SINAN)"
+
+#: ../../source/index.rst:14
+msgid "Loading SIM data"
+msgstr "Extração de dados (SIM)"
+
+#: ../../source/index.rst:14
+msgid "Loading SIA data"
+msgstr "Extração de dados (SIA)"
+
+#: ../../source/index.rst:14
+msgid "LOADING PNI data"
+msgstr "Extração de dados (PNI)"
+
+#: ../../source/index.rst:14
+msgid "Analyzing Dengue data"
+msgstr "Análise de dados (Dengue)"
+
+#: ../../source/index.rst:14
+msgid "Analyzing Chikungunya data"
+msgstr "Análise de dados (Chikungunya)"
+
+#: ../../source/index.rst:14
+msgid "Analyzing Zika data"
+msgstr "Análise de dados (Zika)"
+
+#: ../../source/index.rst:14
+msgid "Downloading COVID data from ESUS"
+msgstr "Extração de dados de COVID (ESUS)"
+
+#: ../../source/index.rst:14
+msgid "Downloading Infogripe data"
+msgstr "Extração de dados (Infogripe)"
+
+#: ../../source/index.rst:14
+msgid "Downloading Infodengue data"
+msgstr "Extração de dados (Infodengue)"
+
+#: ../../source/index.rst:14
+msgid "Getting Official Statistics"
+msgstr "Estatísticas Oficiais"
+
+#: ../../source/index.rst:7
+msgid "Welcome to PySUS's documentation!"
+msgstr "Bem-vindo(a) à documentação do PySUS"
+
+#: ../../source/index.rst:9
+msgid ""
+"PySUS is a library which is a collection of helper codes for people which"
+" need to analyze data from SUS (Brazilian Universal Health System). "
+"Contributions are welcome!"
+msgstr ""
+"PySUS é uma biblioteca que consiste em uma coleção de códigos auxiliares para "
+"pessoas que precisam analisar dados do SUS (Sistema Único de Saúde). "
+"Contribuições são bem-vindas!"
+
+#: ../../source/index.rst:12
+msgid "Contents:"
+msgstr "Conteúdo:"
+
+#: ../../source/index.rst:35
+msgid "Indices and tables"
+msgstr "Tabelas e índices"
+
+#: ../../source/index.rst:37
+msgid ":ref:`genindex`"
+msgstr ":ref:`genindex`"
+
+#: ../../source/index.rst:38
+msgid ":ref:`modindex`"
+msgstr ":ref:`modindex`"
+
+#: ../../source/index.rst:39
+msgid ":ref:`search`"
+msgstr ":ref:`search`"
+
