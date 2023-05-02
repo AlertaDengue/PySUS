@@ -1,0 +1,98 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2016, Flavio Codeco Coelho
+# This file is distributed under the same license as the PySUS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PySUS 0.1.13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-04-28 16:27-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../source/IBGE_data.ipynb:9
+msgid "Obtaining data from IBGE"
+msgstr "Extraindo dados do IBGE"
+
+#: ../../source/IBGE_data.ipynb:35
+msgid "Listing Subject Areas"
+msgstr "Listando Grupos de dados"
+
+#: ../../source/IBGE_data.ipynb:37
+msgid ""
+"IBGE makes available data from a number of surveys on different subjects."
+" We can find out what is available, before downloading data."
+msgstr ""
+"O IBGE disponibiliza dados de várias pesquisas sobre diferentes assuntos. "
+"Podemos descobrir o que está disponível antes de baixar os dados."
+
+#: ../../source/IBGE_data.ipynb:293
+msgid ""
+"Let's look at the datasets (called \"agregados\") available within the "
+"category of \"Censo Demografico\"."
+msgstr ""
+"Vamos dar uma olhada nos conjuntos de dados (chamados \"agregados\") "
+"disponíveis dentro da categoria de \"Censo Demográfico\"."
+
+#: ../../source/IBGE_data.ipynb:545
+msgid "Again for population projections"
+msgstr "Novamente para projeções populacionais"
+
+#: ../../source/IBGE_data.ipynb:670
+msgid "Downloading data"
+msgstr "Extraindo dados"
+
+#: ../../source/IBGE_data.ipynb:672
+msgid ""
+"Before downloading the data, it may be useful to look at the metadata of "
+"the dataset we are interested in."
+msgstr ""
+"Antes de baixar os dados, pode ser útil olhar para os metadados do "
+"conjunto de dados que estamos interessados."
+
+#: ../../source/IBGE_data.ipynb:1325
+msgid ""
+"To actually download the data after chosing the dataset, we can use the "
+"``FetchData`` class, which will fetch the data and make it available both"
+" in JSON format and Dataframe as exemplified below."
+msgstr ""
+"Para baixar os dados depois de escolher o conjunto de dados, podemos usar a classe "
+"`FetchData`, que irá buscar os dados e disponibilizá-los tanto em formato JSON quanto em "
+"Dataframe, conforme exemplificado abaixo."
+
+#: ../../source/IBGE_data.ipynb:1990
+msgid "Using the SIDRA endpoint"
+msgstr "Usando o endpoint SIDRA"
+
+#: ../../source/IBGE_data.ipynb:1992
+msgid ""
+"IBGE also has a simpler API at https://api.sidra.ibge.gov.br that PySUS "
+"also gives access through a simple function. Below we have table 200, "
+"which is a sample from the resident population. classification ``2`` is "
+"sex, of which I am fetching all categories: ``total``, ``Homens``, and "
+"``Mulheres``. Terrotorial level 6 is municipality."
+msgstr ""
+"O IBGE também possui uma API mais simples em https://api.sidra.ibge.gov.br "
+"que o PySUS também acessa através de uma função simples. Abaixo temos a tabela "
+"200, que é uma amostra da população residente. A classificação 2 é o sexo, do "
+"qual estou buscando todas as categorias: total, Homens e Mulheres. "
+"O nível territorial 6 é o município."
+
+#: ../../source/IBGE_data.ipynb:2572
+msgid ""
+"Suppose we just wanted a single municipality, ``Balneário Rincão (SC)``: "
+"Unfortunately for this one there is no data available, thus the ``...`` "
+"in the column ``Valor``. Try another one."
+msgstr ""
+"Suponha que quiséssemos apenas um município, `Balneário Rincão (SC)`: "
+"Infelizmente, para este não há dados disponíveis, portanto, há um `...` "
+"na coluna `Valor`. Tente outro município."
