@@ -74,7 +74,7 @@ release = "0.1.13"
 # Usually you set "language" from the command line for these cases.
 language = 'en'
 
-locale_dirs = ['locale/']
+locale_dirs = ['locale']
 gettext_compact = False 
 
 # There are two options for replacing |today|: either, you set today to some

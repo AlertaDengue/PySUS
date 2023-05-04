@@ -1,0 +1,97 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2016, Flavio Codeco Coelho
+# This file is distributed under the same license as the PySUS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PySUS 0.1.13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-04-28 16:27-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../source/Infodengue.ipynb:9
+msgid "Working with Infodengue datasets"
+msgstr "Trabalhando com conjuntos de dados do Infodengue"
+
+#: ../../source/Infodengue.ipynb:11
+msgid ""
+"`InfoDengue <https://info.dengue.mat.br/>`__ is an alert system designed "
+"to track arboviruses using a unique hybrid data approach that integrates "
+"social web data with climatic and epidemiological data. In this tutorial,"
+" we will walk through the process of using InfoDengue's API with Python "
+"to fetch up-to-date arbovirus data."
+msgstr ""
+"O `InfoDengue <https://info.dengue.mat.br/>`__ é um sistema de alerta projetado "
+"para rastrear arbovírus usando uma abordagem de dados híbridos exclusiva que "
+"integra dados de mídias sociais com dados climáticos e epidemiológicos. Neste "
+"tutorial, iremos percorrer o processo de uso da API do InfoDengue com Python para "
+"buscar dados atualizados sobre arbovírus."
+
+#: ../../source/Infodengue.ipynb:32
+msgid ""
+"Infodengue is a national-wide system, use the ``search_string`` method to"
+" check how the city is found in the API:"
+msgstr ""
+"Infodengue é um sistema nacional, use o método `search_string` para verificar "
+"como o município é encontrado na API:"
+
+#: ../../source/Infodengue.ipynb:135
+msgid ""
+"The download method extracts data for a specified range of "
+"Epidemiological Weeks (SE in pt) in the format ``YYYYWW``. The output is "
+"a Pandas DataFrame containing all the EWs within this range."
+msgstr ""
+"O método de download extrai dados para um intervalo específico de semanas "
+"epidemiológicas no formato `YYYYWW`. A saída é um DataFrame do Pandas "
+"contendo todas as semanas epidemiológicas dentro deste intervalo."
+
+#: ../../source/Infodengue.ipynb:614
+msgid "You can save the dataframe in a CSV file"
+msgstr "Você pode salvar o dataframe em um arquivo CSV"
+
+#: ../../source/Infodengue.ipynb:635
+msgid ""
+"In order to fetch data with different parameters, it is possible to "
+"iterate over a list, for instance:"
+msgstr ""
+"Para buscar dados com diferentes parâmetros, é possível iterar sobre "
+"uma lista, por exemplo:"
+
+#: ../../source/Infodengue.ipynb:663
+msgid "Expected files:"
+msgstr "Arquivos esperados:"
+
+#: ../../source/Infodengue.ipynb:665
+msgid "dengue_rio_de_janeiro_se01_04.csv"
+msgstr "dengue_rio_de_janeiro_se01_04.csv"
+
+#: ../../source/Infodengue.ipynb:666
+msgid "dengue_rio_do_antônio_se01_04.csv"
+msgstr "dengue_rio_do_antônio_se01_04.csv"
+
+#: ../../source/Infodengue.ipynb:667
+msgid "dengue_rio_do_pires_se01_04.csv"
+msgstr "dengue_rio_do_pires_se01_04.csv"
+
+#: ../../source/Infodengue.ipynb:668
+msgid "zika_rio_de_janeiro_se01_04.csv"
+msgstr "zika_rio_de_janeiro_se01_04.csv"
+
+#: ../../source/Infodengue.ipynb:669
+msgid "zika_rio_do_antônio_se01_04.csv"
+msgstr "zika_rio_do_antônio_se01_04.csv"
+
+#: ../../source/Infodengue.ipynb:670
+msgid "zika_rio_do_pires_se01_04.csv"
+msgstr "zika_rio_do_pires_se01_04.csv"
+

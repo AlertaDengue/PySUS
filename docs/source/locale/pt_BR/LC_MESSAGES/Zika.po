@@ -1,0 +1,77 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2016, Flavio Codeco Coelho
+# This file is distributed under the same license as the PySUS package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PySUS 0.1.13\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-02 14:39-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pt\n"
+"Language-Team: pt <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: ../../source/Zika.ipynb:9
+msgid "Análise exploratória de casos de Zika notificado pelo SUS"
+msgstr ""
+
+#: ../../source/Zika.ipynb:11
+msgid ""
+"Neste tutorial vamos explorar como começar a entender a descrição de "
+"casos do sistema de notificação de agravos do SUS, o SINAN. Estes dados "
+"são bastante ricos e a `documentação "
+"<www.sgc.goias.gov.br/upload/arquivos/2013-08/dengue2.pdf>`__ sobre o "
+"significado de cada uma das variáveis pode ser encontrada `aqui "
+"<www.sgc.goias.gov.br/upload/arquivos/2013-08/dengue2.pdf>`__."
+msgstr ""
+
+#: ../../source/Zika.ipynb:60
+msgid ""
+"Primeiro vamos começar pelo carregamento dos dados a partir do site do "
+"InfoDengue. Como o dado está no formato parquet, nós vamos utilizar a "
+"biblioteca pandas para carregar os dados em um Dataframe."
+msgstr ""
+
+#: ../../source/Zika.ipynb:87
+msgid "Vejamos os nomes da variáveis"
+msgstr ""
+
+#: ../../source/Zika.ipynb:434
+msgid ""
+"Estes dados correspondem a todos os casos de Zika notificados ao SUS "
+"durante um período. Neste caso de 2015 a 2016. Para podermos tratar "
+"adequadamente estes dados para fins de visualização ou análise precisamos"
+" corrigir os tipos das colunas. Por exemplo vamos converter as datas."
+msgstr ""
+
+#: ../../source/Zika.ipynb:456
+msgid ""
+"Para poder organizar os dados temporalmente, é útil indexar a tabela por "
+"alguma variável temporal. Vamos usar a data de notifiacão de cada caso "
+"como índice"
+msgstr ""
+
+#: ../../source/Zika.ipynb:477
+msgid ""
+"Agora podemos plotar o número de casos por semana de dengue na cidade do "
+"Rio de Janeiro."
+msgstr ""
+
+#: ../../source/Zika.ipynb:532
+msgid ""
+"Suponhamos agora que desejamos visualizar em um mapa os casos que "
+"ocorreram, por exemplo entre janeiro e agosto de 2016."
+msgstr ""
+
+#: ../../source/Zika.ipynb:544
+msgid "Usando Kepler.gl para visualização"
+msgstr ""
+
