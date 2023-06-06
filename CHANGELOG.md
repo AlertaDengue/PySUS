@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.9.3](https://github.com/AlertaDengue/PySUS/compare/0.9.2...0.9.3) (2023-06-06)
+
+
+### Bug Fixes
+
+* **docs:** pt and pt_BR build ([12b21de](https://github.com/AlertaDengue/PySUS/commit/12b21de78a6220ca8d158a39ccd6f152f5b343e0))
+
 ## [0.9.2](https://github.com/AlertaDengue/PySUS/compare/0.9.1...0.9.2) (2023-04-20)
 
 
