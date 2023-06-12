@@ -1,6 +1,14 @@
 from pysus.ftp import Database, File
 import humanize
 import datetime
+from typing import Union
+from pysus.utilities.brasil import STATES
+
+
+def zfill_year(year: Union[str, int]) -> int:
+    current_year = str(datetime.datetime.now().year)[-2:]
+    suffix = "19" if str(year) > current_year else "20"
+    return int(suffix + str(year))
 
 
 class SINAN(Database):
@@ -33,13 +41,13 @@ class SINAN(Database):
     )
 
     diseases = dict(
+        ACBI="Acidente de trabalho com material biológico",
         ACGR="Acidente de trabalho",
         ANIM="Acidente por Animais Peçonhentos",
         ANTR="Atendimento Antirrabico",
         BOTU="Botulismo",
         CANC="Cancêr relacionado ao trabalho",
         CHAG="Doença de Chagas Aguda",
-        ACBI="Acidente de trabalho com material biológico",
         CHIK="Febre de Chikungunya",
         COLE="Cólera",
         COQU="Coqueluche",
@@ -95,14 +103,51 @@ class SINAN(Database):
                 if not file.name.startswith("SRC")
                 else file.name[:3]
             ],
-            year=self._get_year(file.name),
+            year=self._get_year(file),
             size=humanize.naturalsize(file.size),
             last_update=file.date.strftime("%m/%d/%Y %H:%M"),
         )
         return description
 
-    def _get_year(self, file: str) -> int:
-        current_year = str(datetime.datetime.now().year)[-2:]
-        year = file.lower().split(".dbc")[0][-2:]
-        suffix = "19" if year > current_year else "20"
-        return int(suffix + year)
+    def _get_year(self, file: File) -> int:
+        year = file.name.lower().split(".dbc")[0][-2:]
+        return zfill_year(year)
+
+
+class SIM(Database):
+    name = "SIM"
+    paths = [
+        "/dissemin/publicos/SIM/CID10/DORES",
+        "/dissemin/publicos/SIM/CID9/DORES",
+    ]
+    metadata = dict(
+        long_name="Sistema de Informação sobre Mortalidade",
+        source="http://sim.saude.gov.br",
+        description="",
+    )
+
+    def describe(self, file: File) -> dict:
+        groups = dict(DO="CID10", DOR="CID9")
+
+        group, uf, year = self.format(file)
+        state = "Brasil" if uf == "BR" else STATES[uf]
+
+        description = dict(
+            name=file.name, state=state, year=year, group=groups[group]
+        )
+
+        return description
+
+    def format(self, file: File) -> tuple:
+        fname = file.name.upper().split(".DBC")[0]
+
+        if "CID9" in str(file.path):
+            group = fname[:-4]
+            uf = fname[-4:-2]
+            year = zfill_year(fname[-2:])
+        else:
+            group = fname[:-6]
+            uf = fname[-6:-4]
+            year = fname[-4:]
+
+        return group, uf, year
