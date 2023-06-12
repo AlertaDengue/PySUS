@@ -39,10 +39,10 @@ class Database:
         self.ftp = FTP("ftp.datasus.gov.br")
         self.files = self.all_files()
 
-    def describe(self, file: File):
-        pass
+    def __repr__(self) -> str:
+        return f'{self.name} - {self.metadata["long_name"]}'
 
-    def filter_files(self):
+    def describe(self, file: File):
         pass
 
     @lru_cache

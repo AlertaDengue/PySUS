@@ -133,7 +133,12 @@ class SIM(Database):
         state = "Brasil" if uf == "BR" else STATES[uf]
 
         description = dict(
-            name=file.name, state=state, year=year, group=groups[group]
+            name=file.name,
+            state=state,
+            year=year,
+            group=groups[group],
+            size=humanize.naturalsize(file.size),
+            last_update=file.date.strftime("%m/%d/%Y %H:%M"),
         )
 
         return description
@@ -142,12 +147,48 @@ class SIM(Database):
         fname = file.name.upper().split(".DBC")[0]
 
         if "CID9" in str(file.path):
-            group = fname[:-4]
-            uf = fname[-4:-2]
-            year = zfill_year(fname[-2:])
+            group, uf, year = fname[:-4], fname[-4:-2], zfill_year(fname[-2:])
         else:
-            group = fname[:-6]
-            uf = fname[-6:-4]
-            year = fname[-4:]
+            group, uf, year = fname[:-6], fname[-6:-4], fname[-4:]
 
         return group, uf, year
+
+
+class SINASC(Database):
+    name = "SINASC"
+    paths = [
+        "/dissemin/publicos/SINASC/NOV/DNRES",
+        "/dissemin/publicos/SINASC/ANT/DNRES",
+    ]
+    metadata = dict(
+        long_name="Sistema de Informações sobre Nascidos Vivos",
+        source="http://sinasc.saude.gov.br/",
+        description="",
+    )
+
+    def describe(self, file: File) -> dict:
+        uf, year = self.format(file)
+
+        if uf == "BR":
+            state = "Brasil"
+        elif uf == "EX":  # DNEX2021.dbc
+            state = None
+        else:
+            state = STATES[uf]
+
+        description = dict(
+            name=file.name,
+            state=state,
+            year=year,
+            size=humanize.naturalsize(file.size),
+            last_update=file.date.strftime("%m/%d/%Y %H:%M"),
+        )
+
+        return description
+
+    def format(self, file: File) -> tuple:
+        fname = file.name.upper().split(".DBC")[0]
+        year = zfill_year(fname[-2:])
+        charname = "".join([c for c in fname if not c.isnumeric()])
+        uf = charname[-2:]
+        return uf, year
