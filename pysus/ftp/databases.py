@@ -1,11 +1,21 @@
 from pysus.ftp import Database, File
 import humanize
 import datetime
-from typing import Union
+from typing import Union, Any, List
+from itertools import product
 from pysus.utilities.brasil import STATES
 
 
+def to_list(ite: Any) -> list:
+    """Parse any builtin data type into a list"""
+    return [ite] if type(ite) in [str, float, int] else list(ite)
+
+
 def zfill_year(year: Union[str, int]) -> int:
+    """
+    Formats a len(2) year into len(4) with the correct year preffix
+    E.g: 20 -> 2020; 99 -> 1999
+    """
     current_year = str(datetime.datetime.now().year)[-2:]
     suffix = "19" if str(year) > current_year else "20"
     return int(suffix + str(year))
@@ -93,25 +103,53 @@ class SINAN(Database):
     )
 
     def describe(self, file: File) -> dict:
-        if file.name == "LEIBR22.dbc":
-            file.name = "LEIVBR22.dbc"
+        dis_code, year = self.format(file)
 
         description = dict(
             name=file.name,
-            disease=self.diseases[
-                file.name[:4]
-                if not file.name.startswith("SRC")
-                else file.name[:3]
-            ],
-            year=self._get_year(file),
+            disease=self.diseases[dis_code],
+            year=year,
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%m/%d/%Y %H:%M"),
+            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
         )
         return description
 
-    def _get_year(self, file: File) -> int:
-        year = file.name.lower().split(".dbc")[0][-2:]
-        return zfill_year(year)
+    def get_files(
+        self,
+        dis_codes: Union[str, list],
+        years: Union[str, int, list],
+    ) -> List:
+
+        codes = [c.upper() for c in to_list(dis_codes)]
+        fyears = [str(y)[-2:].zfill(2) for y in to_list(years)]
+
+        if not all(code in self.diseases for code in codes):
+            raise ValueError(
+                f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
+            )
+
+        targets = [f"{c}BR{y}.dbc" for c, y in list(product(codes, fyears))]
+
+        files = list()
+        for file in self.files:
+            if file.name in targets:
+                files.append(file)
+
+        return files
+
+    def format(self, file: File) -> tuple:
+        fname = file.name.split(".dbc")[0]
+
+        if fname.startswith("SRC"):
+            dis_code = fname[:3]
+        elif fname == "LEIBR22":
+            dis_code = "LEIV"  # MISPELLED FILE NAME
+        else:
+            dis_code = fname[:4]
+
+        year = zfill_year(fname[-2:])
+
+        return dis_code, year
 
 
 class SIM(Database):
@@ -138,7 +176,7 @@ class SIM(Database):
             year=year,
             group=groups[group],
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%m/%d/%Y %H:%M"),
+            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
         )
 
         return description
@@ -149,7 +187,7 @@ class SIM(Database):
         if "CID9" in str(file.path):
             group, uf, year = fname[:-4], fname[-4:-2], zfill_year(fname[-2:])
         else:
-            group, uf, year = fname[:-6], fname[-6:-4], fname[-4:]
+            group, uf, year = fname[:-6], fname[-6:-4], int(fname[-4:])
 
         return group, uf, year
 
@@ -181,7 +219,7 @@ class SINASC(Database):
             state=state,
             year=year,
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%m/%d/%Y %H:%M"),
+            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
         )
 
         return description
