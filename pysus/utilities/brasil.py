@@ -1,4 +1,5 @@
-STATES = {
+UFs = {
+    "BR": "Brasil",
     "AC": "Acre",
     "AL": "Alagoas",
     "AP": "Amapá",

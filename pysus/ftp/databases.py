@@ -3,7 +3,7 @@ import humanize
 import datetime
 from typing import Union, Any, List
 from itertools import product
-from pysus.utilities.brasil import STATES
+from pysus.utilities.brasil import UFs
 
 
 def to_list(ite: Any) -> list:
@@ -16,9 +16,22 @@ def zfill_year(year: Union[str, int]) -> int:
     Formats a len(2) year into len(4) with the correct year preffix
     E.g: 20 -> 2020; 99 -> 1999
     """
+    year = str(year)[-2:]
     current_year = str(datetime.datetime.now().year)[-2:]
     suffix = "19" if str(year) > current_year else "20"
     return int(suffix + str(year))
+
+
+def parse_UFs(UF: Union[list[str], str]) -> list:
+    """
+    Formats states abbreviations into correct format and retuns a list.
+    Also checks if there is an incorrect UF in the list.
+    E.g: ['SC', 'mt', 'ba'] -> ['SC', 'MT', 'BA']
+    """
+    ufs = [uf.upper() for uf in to_list(UF)]
+    if not all([uf in list(UFs) for uf in ufs]):
+        raise ValueError(f"Unknown UF(s): {set(ufs).difference(list(UFs))}")
+    return ufs
 
 
 class SINAN(Database):
@@ -106,20 +119,31 @@ class SINAN(Database):
         dis_code, year = self.format(file)
 
         description = dict(
-            name=file.name,
+            name=file.basename,
             disease=self.diseases[dis_code],
-            year=year,
+            year=zfill_year(year),
             size=humanize.naturalsize(file.size),
             last_update=file.date.strftime("%d/%m/%Y %H:%M"),
         )
         return description
 
+    def format(self, file: File) -> tuple:
+        year = file.name[-2:]
+
+        if file.name.startswith("SRC"):
+            dis_code = file.name[:3]
+        elif file.name == "LEIBR22":
+            dis_code = "LEIV"  # MISPELLED FILE NAME
+        else:
+            dis_code = file.name[:4]
+
+        return dis_code, year
+
     def get_files(
         self,
         dis_codes: Union[str, list],
         years: Union[str, int, list],
-    ) -> List:
-
+    ) -> List[File]:
         codes = [c.upper() for c in to_list(dis_codes)]
         fyears = [str(y)[-2:].zfill(2) for y in to_list(years)]
 
@@ -128,7 +152,7 @@ class SINAN(Database):
                 f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
             )
 
-        targets = [f"{c}BR{y}.dbc" for c, y in list(product(codes, fyears))]
+        targets = [f"{c}BR{y}" for c, y in list(product(codes, fyears))]
 
         files = list()
         for file in self.files:
@@ -136,20 +160,6 @@ class SINAN(Database):
                 files.append(file)
 
         return files
-
-    def format(self, file: File) -> tuple:
-        fname = file.name.split(".dbc")[0]
-
-        if fname.startswith("SRC"):
-            dis_code = fname[:3]
-        elif fname == "LEIBR22":
-            dis_code = "LEIV"  # MISPELLED FILE NAME
-        else:
-            dis_code = fname[:4]
-
-        year = zfill_year(fname[-2:])
-
-        return dis_code, year
 
 
 class SIM(Database):
@@ -163,18 +173,17 @@ class SIM(Database):
         source="http://sim.saude.gov.br",
         description="",
     )
+    groups = dict(DO="CID10", DOR="CID9")
 
     def describe(self, file: File) -> dict:
-        groups = dict(DO="CID10", DOR="CID9")
-
         group, uf, year = self.format(file)
-        state = "Brasil" if uf == "BR" else STATES[uf]
+        state = UFs[uf]
 
         description = dict(
-            name=file.name,
+            name=file.basename,
             state=state,
             year=year,
-            group=groups[group],
+            group=self.groups[group],
             size=humanize.naturalsize(file.size),
             last_update=file.date.strftime("%d/%m/%Y %H:%M"),
         )
@@ -182,14 +191,53 @@ class SIM(Database):
         return description
 
     def format(self, file: File) -> tuple:
-        fname = file.name.upper().split(".DBC")[0]
-
         if "CID9" in str(file.path):
-            group, uf, year = fname[:-4], fname[-4:-2], zfill_year(fname[-2:])
+            group, uf, year = file.name[:-4], file.name[-4:-2], file.name[-2:]
         else:
-            group, uf, year = fname[:-6], fname[-6:-4], int(fname[-4:])
+            group, uf, year = file.name[:-6], file.name[-6:-4], file.name[-4:]
 
         return group, uf, year
+
+    def get_files(
+        self,
+        groups: Union[list[str], str],
+        ufs: Union[list[str], str],
+        years: Union[list, str, int],
+    ) -> List[File]:
+        groups = [g.upper() for g in to_list(groups)]
+        ufs = parse_UFs(ufs)
+        years = to_list(years)
+
+        if not all([gr in list(self.groups.values()) for gr in groups]):
+            raise ValueError(
+                f"Unknown group(s): {set(groups).difference(self.groups.values())}"
+            )
+
+        targets = []
+        for group in groups:
+            if group == "CID9":
+                cid9_years = [str(y)[-2:].zfill(2) for y in years]
+                targets.extend(
+                    [
+                        f"DOR{uf}{year}"
+                        for uf, year in list(product(ufs, cid9_years))
+                    ]
+                )
+            elif group == "CID10":
+                cid10_years = [zfill_year(y) for y in years]
+                targets.extend(
+                    [
+                        f"DO{uf}{year}"
+                        for uf, year in list(product(ufs, cid10_years))
+                    ]
+                )
+
+        files = []
+        for file in self.files:
+            if file.name in targets:
+                files.append(file)
+
+        return files
 
 
 class SINASC(Database):
@@ -207,15 +255,13 @@ class SINASC(Database):
     def describe(self, file: File) -> dict:
         uf, year = self.format(file)
 
-        if uf == "BR":
-            state = "Brasil"
-        elif uf == "EX":  # DNEX2021.dbc
+        if uf == "EX":  # DNEX2021.dbc
             state = None
         else:
-            state = STATES[uf]
+            state = UFs[uf]
 
         description = dict(
-            name=file.name,
+            name=file.basename,
             state=state,
             year=year,
             size=humanize.naturalsize(file.size),
@@ -225,8 +271,12 @@ class SINASC(Database):
         return description
 
     def format(self, file: File) -> tuple:
-        fname = file.name.upper().split(".DBC")[0]
-        year = zfill_year(fname[-2:])
-        charname = "".join([c for c in fname if not c.isnumeric()])
+        year = zfill_year(file.name[-2:])
+        charname = "".join([c for c in file.name if not c.isnumeric()])
         uf = charname[-2:]
         return uf, year
+
+
+# How to test all functionalities in one line:
+# a = SINAN()
+# [a.describe(y[0]) for y in [a.get_files(*x) for x in [a.format(f) for f in a.files]]]

@@ -26,8 +26,16 @@ class File:
     def __init__(
         self, path: str, name: str, size: int, date: datetime.datetime
     ) -> None:
+        try:
+            name, extension = name.split(".")
+            self.name = name
+            self.extension = extension
+            self.basename = (".").join([name, extension])
+        except ValueError:
+            self.name = name
+            self.extension = None
+            self.basename = name
         self.path = path
-        self.name = name
         self.size = size
         self.date = date
 
@@ -91,8 +99,8 @@ class Database:
 
     def format(self, file: File) -> tuple:
         """
-        Formats a File based on the database specifications, extracting
-        the file's parameters given a pattern.
+        Formats a File based on the database specifications,
+        extracting its name's parameters given a pattern.
 
         Parameters
             file [File]: a `File` instance
