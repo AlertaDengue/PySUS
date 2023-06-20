@@ -1,3 +1,4 @@
+import os
 from ftplib import FTP
 from dateparser import parse
 import datetime
@@ -23,19 +24,12 @@ class File:
 
     """
 
-    def __init__(
-        self, path: str, name: str, size: int, date: datetime.datetime
-    ) -> None:
-        try:
-            name, extension = name.split(".")
-            self.name = name
-            self.extension = extension
-            self.basename = (".").join([name, extension])
-        except ValueError:
-            self.name = name
-            self.extension = None
-            self.basename = name
+    def __init__(self, path: str, name: str, size: int, date: str) -> None:
+        name, extension = os.path.splitext(name)
         self.path = path
+        self.name = name
+        self.extension = extension
+        self.basename = name + extension
         self.size = size
         self.date = date
 
@@ -132,7 +126,7 @@ class Database:
 
             def file_parse(line: str):
                 data = line.strip().split()
-                date = parse(" ".join([data[0], data[1]]))
+                date = " ".join([data[0], data[1]])
                 size = 0 if data[2] == "<DIR>" else int(data[2])
                 name = data[3]
                 files.append(File(path, name, size, date))

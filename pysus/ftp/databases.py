@@ -3,7 +3,7 @@ import humanize
 import datetime
 from typing import Union, Any, List
 from itertools import product
-from pysus.utilities.brasil import UFs
+from pysus.utilities.brasil import UFs, MONTHS
 
 
 def to_list(ite: Any) -> list:
@@ -123,7 +123,7 @@ class SINAN(Database):
             disease=self.diseases[dis_code],
             year=zfill_year(year),
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
+            last_update=file.date,
         )
         return description
 
@@ -177,15 +177,14 @@ class SIM(Database):
 
     def describe(self, file: File) -> dict:
         group, uf, year = self.format(file)
-        state = UFs[uf]
 
         description = dict(
             name=file.basename,
-            state=state,
+            uf=UFs[uf],
             year=year,
             group=self.groups[group],
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
+            last_update=file.date,
         )
 
         return description
@@ -262,21 +261,152 @@ class SINASC(Database):
 
         description = dict(
             name=file.basename,
-            state=state,
+            uf=state,
             year=year,
             size=humanize.naturalsize(file.size),
-            last_update=file.date.strftime("%d/%m/%Y %H:%M"),
+            last_update=file.date,
         )
 
         return description
 
     def format(self, file: File) -> tuple:
+        if file.name == "DNEX2021":
+            pass
+
         year = zfill_year(file.name[-2:])
         charname = "".join([c for c in file.name if not c.isnumeric()])
         uf = charname[-2:]
         return uf, year
 
+    def get_files(
+        self,
+        ufs: Union[list[str], str],
+        years: Union[list, str, int],
+    ) -> List[File]:
+        if "EX" in to_list(ufs):
+            # DNEX2021
+            if len(to_list(ufs)) == 1:
+                return []
+            else:
+                ufs = to_list(ufs).remove("EX")
+
+        ufs = parse_UFs(ufs)
+        years = [str(y)[-2:].zfill(2) for y in to_list(years)]
+
+        # Fist filter years to reduce the list size
+        year_files = []
+        for file in self.files:
+            for year in years:
+                if year in file.name:
+                    year_files.append(file)
+
+        files = []
+        for file in year_files:
+            if "ANT/DNRES" in file.path:
+                for uf in ufs:
+                    if uf in file.name[3:]:
+                        files.append(file)
+            else:
+                for uf in ufs:
+                    if uf in file.name[2:]:
+                        files.append(file)
+
+        return files
+
+
+class SIH(Database):
+    name = "SINASC"
+    paths = [
+        "/dissemin/publicos/SIHSUS/199201_200712/Dados",
+        "/dissemin/publicos/SIHSUS/200801_/Dados",
+    ]
+    metadata = dict(
+        long_name="Sistema de Informações Hospitalares",
+        source=(
+            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",
+            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",
+        ),
+        description=(
+            "A finalidade do AIH (Sistema SIHSUS) é a de transcrever todos os "
+            "atendimentos que provenientes de internações hospitalares que "
+            "foram financiadas pelo sus, e após o processamento, gerarem "
+            "relatórios para os gestores que lhes possibilitem fazer os pagamentos "
+            "dos estabelecimentos de saúde. Além disso, o nível Federal recebe "
+            "mensalmente uma base de dados de todas as internações autorizadas "
+            "(aprovadas ou não para pagamento) para que possam ser repassados às "
+            "Secretarias de Saúde os valores de Produção de Média e Alta complexidade "
+            "além dos valores de CNRAC, FAEC e de Hospitais Universitários – em suas "
+            "variadas formas de contrato de gestão."
+        ),
+    )
+    groups = dict(
+        RD="AIH Reduzida",
+        RJ="AIH Rejeitada",
+        ER="AIH Rejeitada com erro",
+        SP="Serviços Profissionais",
+        CH="Cadastro Hospitalar",
+        CM="",  # TODO
+    )
+
+    def describe(self, file: File) -> dict:
+        if file.extension.upper() == ".DBC":
+            group, uf, year, month = self.format(file)
+
+            description = dict(
+                name=file.basename,
+                group=self.groups[group],
+                uf=UFs[uf],
+                month=MONTHS[int(month)],
+                year=zfill_year(year),
+                size=humanize.naturalsize(file.size),
+                last_update=file.date,
+            )
+
+            return description
+
+    def format(self, file: File) -> tuple:
+        group, uf = file.name[:2].upper(), file.name[2:4].upper()
+        year, month = file.name[-4:-2], file.name[-2:]
+        return group, uf, year, month
+
+    def get_files(
+        self,
+        groups: Union[List[str], str],
+        ufs: Union[List[str], str],
+        months: Union[list, str, int],
+        years: Union[list, str, int],
+    ) -> List[File]:
+        groups = [gr.upper() for gr in to_list(groups)]
+        ufs = parse_UFs(ufs)
+        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
+        years = [str(m)[-2:].zfill(2) for m in to_list(years)]
+
+        if not all([gr in list(self.groups) for gr in groups]):
+            raise ValueError(
+                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+            )
+
+        # Fist filter files by group to reduce the files list length
+        groups_files = []
+        for file in self.files:
+            if file.name[:2] in groups:
+                groups_files.append(file)
+
+        targets = ["".join(t) for t in product(ufs, months, years)]
+
+        files = []
+        for file in groups_files:
+            if file.name[2:] in targets:
+                files.append(file)
+
+        return files
+
 
 # How to test all functionalities in one line:
 # a = SINAN()
 # [a.describe(y[0]) for y in [a.get_files(*x) for x in [a.format(f) for f in a.files]]]
+
+# b = SIM()
+# bf = [b.format(f) for f in b.files]
+# bc = [(a.groups[g],s,y) for g,s,y in b]
+# [b.describe(y[0]) for y in [a.get_files(*x) for x in bc]]
