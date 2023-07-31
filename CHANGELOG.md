@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.9.4](https://github.com/AlertaDengue/PySUS/compare/0.9.3...0.9.4) (2023-07-31)
+
+
+### Bug Fixes
+
+* **dependencies:** minor dependencies fix ([#142](https://github.com/AlertaDengue/PySUS/issues/142)) ([acbf6e0](https://github.com/AlertaDengue/PySUS/commit/acbf6e0f5dde21348723f474761f687090256258))
+
 ## [0.9.3](https://github.com/AlertaDengue/PySUS/compare/0.9.2...0.9.3) (2023-06-06)
 
 
