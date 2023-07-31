@@ -14,3 +14,5 @@ dependencies:
   - pip:
     - urllib3 ==1.26.15
     - requests
+    - pandas
+    - sqlalchemy
