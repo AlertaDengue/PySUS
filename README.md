@@ -1,5 +1,6 @@
 # PySUS
 [![DOI](https://zenodo.org/badge/63720586.svg)](https://zenodo.org/badge/latestdoi/63720586)
+[![release](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml/badge.svg)](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
