@@ -25,7 +25,7 @@ elasticsearch = "7.16.2"
 dateparser = "^1.1.8"
 pandas = ">=1.5.3"
 urwid = "^2.1.2"
-# Machine Learn Packages
+# Preprocessing Packages
 geobr = { version = "^0.2.0", extras=["preprocessing"] }
 geocoder = { version = "^1.38.1", extras=["ml"] }
 
