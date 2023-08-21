@@ -5,6 +5,8 @@ license: GPL V3 or Later
 """
 
 import unittest
+import pytest 
+
 from pathlib import Path
 
 import pandas as pd
@@ -24,6 +26,7 @@ class TestReadDbc(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         self.assertGreater(df.size, 0)
 
+    @pytest.mark.timeout(2)
     def test_read_dbf(self):
         df = read_dbc_dbf(str(self.dbf_fname))
         self.assertIsInstance(df, pd.DataFrame)

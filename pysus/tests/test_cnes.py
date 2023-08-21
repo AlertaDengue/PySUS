@@ -1,4 +1,5 @@
 import unittest
+import pytest
 
 import pandas as pd
 
@@ -13,10 +14,8 @@ class CNESTestCase(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         # self.assertEqual(True, False)  # add assertion here
 
+    @pytest.mark.timeout(5)
     def test_fetch_equipamentos(self):
         df = to_df(download(group="EQ", states="RO", years=2021, months=9))
         self.assertIsInstance(df, pd.DataFrame)
 
-
-# if __name__ == "__main__":
-#     unittest.main()

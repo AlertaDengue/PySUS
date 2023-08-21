@@ -1,10 +1,12 @@
 import unittest
+import pytest
 
 from pysus.online_data.ESUS import download
 
 
 class MyTestCase(unittest.TestCase):
-    @unittest.skip  # long test. Uncomment to run once.
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download(self):
         df = download(uf="se")
         self.assertGreater(len(df), 0)

@@ -2,15 +2,18 @@ __author__ = "fccoelho"
 
 from pathlib import Path
 import unittest
+import pytest
 
 import pandas as pd
 from pysus.online_data.SIA import download
 from pysus.online_data import parquets_to_dataframe
 
 unittest.skip("too slow to run om travis")
-
+ 
 
 class SIATestCase(unittest.TestCase):
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download_after_2008(self):
         parquerts = download("to", 2015, 12)
         df = parquets_to_dataframe(parquerts)
@@ -19,6 +22,8 @@ class SIATestCase(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download_before_2008(self):
         parquets = download("mg", 2005, 8)
         # self.assertWarns(UserWarning)
@@ -26,17 +31,22 @@ class SIATestCase(unittest.TestCase):
         self.assertIn("PA_CODUNI", df.columns)
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.timeout(5)
     @unittest.expectedFailure
     def test_download_before_1994(self):
         file = download("RS", 1993, 12)
         self.assertTrue(Path(file).exists())
 
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download_one(self):
         file = download("se", 2020, 10, group="PS")
         df = parquets_to_dataframe(file)
         self.assertIn("CNS_PAC", df.columns)
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download_many(self):
         files = []
         groups = ["aq", "AM", "atd"]
@@ -57,6 +67,8 @@ class SIATestCase(unittest.TestCase):
         self.assertIn("AM_PESO", df2.columns)
         self.assertIn("ATD_CARACT", df3.columns)
 
+    @pytest.mark.skip(reason="This test takes too long")
+    @pytest.mark.timeout(5)
     def test_download_missing(self):
         dfs = parquets_to_dataframe(download("MS", 2006, 5))
         self.assertIsNotNone(dfs)
