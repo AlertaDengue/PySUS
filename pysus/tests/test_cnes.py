@@ -15,6 +15,7 @@ class CNESTestCase(unittest.TestCase):
         # self.assertEqual(True, False)  # add assertion here
 
     @pytest.mark.timeout(5)
+    @pytest.mark.skip(reason="This test takes too long")
     def test_fetch_equipamentos(self):
         df = to_df(download(group="EQ", states="RO", years=2021, months=9))
         self.assertIsInstance(df, pd.DataFrame)

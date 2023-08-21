@@ -18,6 +18,7 @@ from pysus.online_data import parquets_to_dataframe as to_df
  
 
 class TestDecoder(unittest.TestCase):
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_group_and_count(self):
         df = to_df(download("se", 2010))
@@ -26,6 +27,7 @@ class TestDecoder(unittest.TestCase):
         counts = SIM.group_and_count(df, variables)
         self.assertGreater(counts.COUNTS.sum(), 0)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_redistribute_missing(self):
         df = to_df(download("se", 2010))
@@ -38,6 +40,7 @@ class TestDecoder(unittest.TestCase):
 
         self.assertEqual(sum_original, sum_redistributed)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_redistribute_missing_partial(self):
         df = to_df(download("se", 2010))

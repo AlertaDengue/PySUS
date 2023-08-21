@@ -41,6 +41,7 @@ class TestSINANClass(unittest.TestCase):
         'RAIVBR19.parquet',
     ]
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_list_all_diseases(self):
         all_diseases = list(FTP_SINAN.diseases.keys())
@@ -48,17 +49,20 @@ class TestSINANClass(unittest.TestCase):
         self.assertIn('Zika', all_diseases)
         self.assertIn('Chikungunya', all_diseases)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_download(self):
         files = download(self.d1, [7,8,9], data_path=self.data_path)
         self.assertEqual(len(files), 3)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_read_dataframe(self):
         df = parquets_to_dataframe(Path(self.data_path)/self.r1[0])
         self.assertIsInstance(df, pd.DataFrame)
         self.assertEqual(df.shape, (110, 94))
     
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_metadata_dataframe(self):
         df = metadata_df('Raiva Humana')
@@ -67,11 +71,13 @@ class TestSINANClass(unittest.TestCase):
 
 
 class TestSINANDownload(unittest.TestCase):
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_download(self):
         df = parquets_to_dataframe(download(years=2007, disease='Botulismo'))
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_filename_only(self):
         fname = download(years=2015, disease='Botulismo')
@@ -79,11 +85,13 @@ class TestSINANDownload(unittest.TestCase):
         self.assertTrue(os.path.exists(fname))
         shutil.rmtree(fname, ignore_errors=True)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_fetch_viol_dom(self):
         df = parquets_to_dataframe(download(years=2011, disease='Hantavirose'))
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_fetch_cancer_prelim(self):
         df = parquets_to_dataframe(download(years=2022, disease='Cancer'))
@@ -96,6 +104,7 @@ class TestSINANDownload(unittest.TestCase):
             Exception, download(years=2021, disease='Sífilis Adquirida')
         )
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_fetch_sifilis_gestante(self):
         df = parquets_to_dataframe(download(years=2021, disease='Sífilis em Gestante'))

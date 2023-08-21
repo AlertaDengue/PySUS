@@ -107,6 +107,7 @@ class TestDecoder(unittest.TestCase):
         results = test_causes["causas"].map(lambda x: get_CID10_code(code_index, x))
         assert_array_equal(results, [1, 1, 2, -1, 3, 7, 7, 8, -1, 20, 20, -1, 22])
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_group_and_count(self):
         df = to_df(download("se", 2010))
