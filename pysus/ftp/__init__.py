@@ -1,7 +1,6 @@
 import os
 from ftplib import FTP
-from dateparser import parse
-import datetime
+from urllib.parse import urljoin
 from functools import lru_cache
 
 
@@ -26,10 +25,10 @@ class File:
 
     def __init__(self, path: str, name: str, size: int, date: str) -> None:
         name, extension = os.path.splitext(name)
-        self.path = path
         self.name = name
         self.extension = extension
-        self.basename = name + extension
+        self.basename = self.name + self.extension
+        self.path = urljoin(path, self.basename)
         self.size = size
         self.date = date
 
@@ -39,9 +38,46 @@ class File:
     def __repr__(self) -> str:
         return str(self.name)
 
+    def __hash__(self):
+        return hash(self.path)
+
+    def __eq__(self, other):
+        if isinstance(other, File):
+            return self.path == other.path
+        return False
+
     def download(self):  # -> task.run
         """TODO"""
         ...
+
+
+class Directory:
+    """
+    FTP Directory class. 
+
+    Parameters
+        path [str]: entire directory path where the directory is located
+                    inside the FTP server
+        name [str]: directory name
+    """
+
+    def __init__(self, path: str, name: str) -> None:
+        self.basename = name
+        self.path = urljoin(path, self.basename)
+
+    def __str__(self) -> str:
+        return str(self.path)
+
+    def __repr__(self) -> str:
+        return str(self.path)
+
+    def __hash__(self):
+        return hash(self.path)
+
+    def __eq__(self, other):
+        if isinstance(other, Directory):
+            return self.path == other.path
+        return False
 
 
 class Database:
@@ -125,11 +161,11 @@ class Database:
             self.ftp.cwd(path)
 
             def file_parse(line: str):
-                data = line.strip().split()
-                date = " ".join([data[0], data[1]])
-                size = 0 if data[2] == "<DIR>" else int(data[2])
-                name = data[3]
-                files.append(File(path, name, size, date))
+                date, time, size, name = line.strip().split()
+                date = " ".join([date, time])
+                if size == "<DIR>":
+                    files.append(Directory(path, name))
+                files.append(File(path, name, int(size), date))
 
             self.ftp.retrlines("LIST", file_parse)
         self.ftp.close()

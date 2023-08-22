@@ -1,7 +1,7 @@
 from pysus.ftp import Database, File
 import humanize
 import datetime
-from typing import Union, Any, List
+from typing import Union, Any, List, Optional
 from itertools import product
 from pysus.utilities.brasil import UFs, MONTHS
 
@@ -141,25 +141,29 @@ class SINAN(Database):
 
     def get_files(
         self,
-        dis_codes: Union[str, list],
-        years: Union[str, int, list],
+        dis_codes: Optional[Union[str, list]] = None,
+        years: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
-        codes = [c.upper() for c in to_list(dis_codes)]
-        fyears = [str(y)[-2:].zfill(2) for y in to_list(years)]
+        codes = [c.upper() for c in to_list(dis_codes)] if dis_codes else None
+        fyears = [str(y)[-2:].zfill(2) for y in to_list(years)] if years else None
 
-        if not all(code in self.diseases for code in codes):
+        if codes and not all(code in self.diseases for code in codes):
             raise ValueError(
                 f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
             )
 
+        if not codes and not fyears:
+            return self.files
+        elif not codes and fyears:
+            return list((f for f in self.files if any(y in str(f) for y in fyears)))
+        elif not fyears and codes:
+            return list((
+                f for f in self.files 
+                if any(str(f).startswith(c+"BR") for c in codes)
+            ))
+
         targets = [f"{c}BR{y}" for c, y in list(product(codes, fyears))]
-
-        files = list()
-        for file in self.files:
-            if file.name in targets:
-                files.append(file)
-
-        return files
+        return list((f for f in self.files if any(str(f)==t for t in targets)))
 
 
 class SIM(Database):
@@ -255,23 +259,27 @@ class SINASC(Database):
         DNR="Dados dos Nascidos Vivos por UF de residência",
     )
 
-    def describe(self, file: File) -> dict:
-        uf, year = self.format(file)
+    def describe(self, files: Union[File, list[File]]) -> dict:
+        files = to_list(files)
+        description = dict()
 
-        if uf == "EX":  # DNEX2021.dbc
-            state = None
-        else:
-            state = UFs[uf]
+        for file in files:
+            uf, year = self.format(file)
 
-        description = dict(
-            name=file.basename,
-            uf=state,
-            year=year,
-            size=humanize.naturalsize(file.size),
-            last_update=file.date,
-        )
+            if uf == "EX":  # DNEX2021.dbc
+                state = None
+            else:
+                state = UFs[uf]
 
-        return description
+            description = dict(
+                name=file.basename,
+                uf=state,
+                year=year,
+                size=humanize.naturalsize(file.size),
+                last_update=file.date,
+            )
+
+            return description
 
     def format(self, file: File) -> tuple:
         if file.name == "DNEX2021":
@@ -367,6 +375,8 @@ class SIH(Database):
             )
 
             return description
+        else:
+            return {}
 
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()
@@ -464,6 +474,8 @@ class SIA(Database):
             )
 
             return description
+        else:
+            return {}
 
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()

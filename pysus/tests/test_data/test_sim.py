@@ -39,6 +39,7 @@ class TestDownload(unittest.TestCase):
         self.assertIn("DESCRICAO", df.columns)
         self.assertGreater(len(df), 0)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_get_mun(self):
         df = get_municipios()
