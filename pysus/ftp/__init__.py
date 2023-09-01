@@ -1,7 +1,28 @@
-import os
+from datetime import datetime
 from ftplib import FTP
-from urllib.parse import urljoin
 from functools import lru_cache
+import os
+import pathlib
+from urllib.parse import urljoin
+
+
+# aioftp.Client.parse_list_line_custom
+def line_file_parser(file_line):
+    file_line = file_line.decode(encoding="utf-8").rstrip()
+    info = {}
+    if "<DIR>" in file_line:
+        date, time, _, *name = file_line.strip().split()
+        info["size"] = 0
+        info["type"] = "dir"
+        name = " ".join(name)
+    else:
+        date, time, size, name = file_line.strip().split()
+        info["size"] = size
+        info["type"] = "file"
+
+    modify = datetime.strptime(" ".join([date, time]), "%m-%d-%y %I:%M%p")
+    info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
+    return pathlib.PurePosixPath(name), info
 
 
 class File:
@@ -28,9 +49,13 @@ class File:
         self.name = name
         self.extension = extension
         self.basename = self.name + self.extension
-        self.path = urljoin(path, self.basename)
+        self.path = (
+            path+"/"+self.basename 
+            if not path.endswith("/") 
+            else path+self.basename
+        )
         self.size = size
-        self.date = date
+        self.date = self.parse_date(date)
 
     def __str__(self) -> str:
         return str(self.name)
@@ -38,13 +63,16 @@ class File:
     def __repr__(self) -> str:
         return str(self.name)
 
-    def __hash__(self):
+    def __hash__(self): 
         return hash(self.path)
 
     def __eq__(self, other):
         if isinstance(other, File):
             return self.path == other.path
         return False
+
+    def parse_date(self, date: str) -> datetime:
+        return datetime.strptime(date, "%m-%d-%y %I:%M%p")
 
     def download(self):  # -> task.run
         """TODO"""
