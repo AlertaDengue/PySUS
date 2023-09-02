@@ -1,8 +1,12 @@
+from loguru import logger
 from datetime import datetime
 from ftplib import FTP
 import os
 import pathlib
-from typing import List, Union, Optional
+from aioftp import Client
+from typing import List, Optional, Union
+
+from pysus.online_data import CACHEPATH
 
 
 class File:
@@ -50,9 +54,65 @@ class File:
             return self.path == other.path
         return False
 
-    def download(self):  # -> task.run
-        """TODO"""
-        ...
+    def download(self, local_dir: str = CACHEPATH) -> str:
+        dir = pathlib.Path(local_dir)
+        dir.mkdir(exist_ok=True, parents=True)
+        filepath = dir / self.basename
+
+        if filepath.exists():
+            return str(filepath)
+
+        ftp = ftp = FTP("ftp.datasus.gov.br")
+        ftp.login()
+        ftp.retrbinary(
+            f"RETR {self.path}",
+            open(f"{filepath}", "wb").write,
+        )
+        ftp.close()
+        return str(filepath)
+
+    async def async_download(self, local_dir: str = CACHEPATH) -> None:
+        # aioftp.Client.parse_list_line_custom
+        def line_file_parser(file_line):
+            line = file_line.decode("utf-8")
+            info = {}
+            if "<DIR>" in line:
+                date, time, _, *name = str(line).strip().split()
+                info["size"] = 0
+                info["type"] = "dir"
+                name = " ".join(name)
+            else:
+                date, time, size, name = str(line).strip().split()
+                info["size"] = size
+                info["type"] = "file"
+
+            modify = datetime.strptime(
+                " ".join([date, time]), "%m-%d-%y %I:%M%p"
+            )
+            info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
+
+            return pathlib.PurePosixPath(name), info
+
+        dir = pathlib.Path(local_dir)
+        dir.mkdir(exist_ok=True, parents=True)
+        filepath = dir / self.basename
+
+        output = (
+            local_dir + str(self.basename)
+            if local_dir.endswith("/")
+            else local_dir + "/" + str(self.basename)
+        )
+
+        if filepath.exists():
+            logger.debug(output)
+            pass
+
+        async with Client.context(
+            host="ftp.datasus.gov.br", parse_list_line_custom=line_file_parser
+        ) as client:
+            await client.login()
+            await client.download(self.path, output, write_into=True)
+            logger.debug(output)
 
 
 class Directory:
@@ -88,25 +148,6 @@ class Directory:
         if isinstance(other, Directory):
             return self.path == other.path
         return False
-
-
-# aioftp.Client.parse_list_line_custom
-def line_file_parser(file_line):
-    info = {}
-    if "<DIR>" in file_line:
-        date, time, _, *name = str(file_line).strip().split()
-        info["size"] = 0
-        info["type"] = "dir"
-        name = " ".join(name)
-    else:
-        date, time, size, name = str(file_line).strip().split()
-        info["size"] = size
-        info["type"] = "file"
-
-    modify = datetime.strptime(" ".join([date, time]), "%m-%d-%y %I:%M%p")
-    info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
-
-    return pathlib.PurePosixPath(name), info
 
 
 def list_path(path: str) -> List[Union[Directory, File]]:

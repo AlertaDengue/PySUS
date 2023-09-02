@@ -116,16 +116,19 @@ class SINAN(Database):
     )
 
     def describe(self, file: File) -> dict:
-        dis_code, year = self.format(file)
+        if file.extension.upper() == ".DBC":
+            dis_code, year = self.format(file)
 
-        description = dict(
-            name=str(file.basename),
-            disease=self.diseases[dis_code],
-            year=zfill_year(year),
-            size=humanize.naturalsize(file.info["size"]),
-            last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
-        )
-        return description
+            description = dict(
+                name=str(file.basename),
+                disease=self.diseases[dis_code],
+                year=zfill_year(year),
+                size=humanize.naturalsize(file.info["size"]),
+                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+            )
+            return description
+        else:
+            return {}
 
     def format(self, file: File) -> tuple:
         year = file.name[-2:]
@@ -270,11 +273,8 @@ class SINASC(Database):
         DNR="Dados dos Nascidos Vivos por UF de residência",
     )
 
-    def describe(self, files: Union[File, list[File]]) -> dict:
-        files = to_list(files)
-        description = dict()
-
-        for file in files:
+    def describe(self, file: File) -> dict:
+        if file.extension.upper() == ".DBC":
             uf, year = self.format(file)
 
             if uf == "EX":  # DNEX2021.dbc
@@ -291,6 +291,8 @@ class SINASC(Database):
             )
 
             return description
+        else:
+            return {}
 
     def format(self, file: File) -> tuple:
         if file.name == "DNEX2021":

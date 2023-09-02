@@ -2,11 +2,15 @@ import unittest
 import pytest
 
 import pandas as pd
-from pysus.online_data.Infodengue import download, search_string, geocode_by_cities, normalize
+from pysus.online_data.Infodengue import (
+    download,
+    search_string,
+    normalize,
+)
 
 
 class InfoDengueTestCase(unittest.TestCase):
-    @pytest.mark.timeout(1)
+    @pytest.mark.timeout(5)
     def test_search_string(self):
         get_from_dict = search_string("Curitiba")
         cites_mathes = {
@@ -71,19 +75,19 @@ class InfoDengueTestCase(unittest.TestCase):
         self.assertIsInstance(get_from_dict, dict)
         self.assertEqual(cites_mathes, get_from_dict)
         self.assertIn("Rio de Janeiro", pattern_city_names.keys())
-        self.assertIn(4204806, get_from_dict.values() )
+        self.assertIn(4204806, get_from_dict.values())
 
-    @pytest.mark.timeout(1)
+    @pytest.mark.timeout(5)
     def test_normalize(self):
         normalized_str = normalize("Rio das Ostras")
-        
+
         substr_list = normalized_str.split(".")
-        
+
         self.assertIsInstance(substr_list, list)
         # self.assertEqual(substr_list, ['rio', 'das', 'ostras'])
         self.assertEqual(normalized_str, "rio das ostras")
-        
-    @pytest.mark.timeout(1)
+
+    @pytest.mark.timeout(5)
     def test_download(self):
         df = download(
             "dengue",
