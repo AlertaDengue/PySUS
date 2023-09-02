@@ -1171,6 +1171,20 @@ pyproj = ">=2.2.0"
 shapely = "*"
 
 [[package]]
+name = "humanize"
+version = "4.8.0"
+description = "Python humanize utilities"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "humanize-4.8.0-py3-none-any.whl", hash = "sha256:8bc9e2bb9315e61ec06bf690151ae35aeb65651ab091266941edf97c90836404"},
+    {file = "humanize-4.8.0.tar.gz", hash = "sha256:9783373bf1eec713a770ecaa7c2d7a7902c98398009dfa3d8a2df91eec9311e8"},
+]
+
+[package.extras]
+tests = ["freezegun", "pytest", "pytest-cov"]
+
+[[package]]
 name = "identify"
 version = "2.5.27"
 description = "File identification library for Python"
@@ -3867,4 +3881,4 @@ preprocessing = ["geobr", "geocoder"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "200be3b8afc74095d8627f0838928ae8b49f749ccd6ad974d978452c98e64b3f"
+content-hash = "8fe14860e97c6e4e091161ce6c7b92c455e8e161a538b4306163980f07439c55"

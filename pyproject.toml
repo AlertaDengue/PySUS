@@ -29,6 +29,7 @@ urwid = "^2.1.2"
 geobr = { version = "^0.2.0", extras=["preprocessing"] }
 geocoder = { version = "^1.38.1", extras=["ml"] }
 aioftp = "^0.21.4"
+humanize = "^4.8.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"
