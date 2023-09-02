@@ -14,7 +14,7 @@ from loguru import logger
 from json import JSONDecodeError
 from requests.auth import HTTPBasicAuth
 
-from pysus.online_data import CACHEPATH
+from pysus.ftp import CACHEPATH
 
 
 def download_covid(uf=None, only_header=False):

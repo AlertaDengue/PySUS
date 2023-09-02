@@ -8,7 +8,8 @@ license: GPL V3 or Later
 """
 from typing import Union
 
-from pysus.online_data import CACHEPATH, FTP_Downloader
+from pysus.online_data import FTP_Downloader
+from pysus.ftp import CACHEPATH
 
 
 def download(

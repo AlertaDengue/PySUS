@@ -1,6 +1,7 @@
 from typing import Union
 
-from pysus.online_data import CACHEPATH, FTP_Downloader
+from pysus.online_data import FTP_Downloader
+from pysus.ftp import CACHEPATH
 
 group_dict = {
     'LT': ['Leitos - A partir de Out/2005', 10, 2005],

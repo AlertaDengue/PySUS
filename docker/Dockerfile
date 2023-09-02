@@ -39,7 +39,8 @@ RUN curl -sSL https://install.python-poetry.org/ | POETRY_HOME=/opt/poetry pytho
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
 
-RUN chmod -R a+rwx /home/pysus/.config/pypoetry/
+RUN chmod -R a+rwx /home/pysus/.config/pypoetry/ \
+    && chown -R pysus:pysus /opt/conda/bin/
 
 USER pysus
 

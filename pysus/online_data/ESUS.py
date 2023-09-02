@@ -5,7 +5,7 @@ from datetime import date
 from loguru import logger
 from elasticsearch import Elasticsearch, helpers
 
-from pysus.online_data import CACHEPATH
+from pysus.ftp import CACHEPATH
 
 
 def download(uf, cache=True, checkmemory=True):

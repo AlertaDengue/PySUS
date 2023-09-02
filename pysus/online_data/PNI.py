@@ -3,7 +3,8 @@ Download data from the national immunization program
 """
 from typing import Union
 
-from pysus.online_data import CACHEPATH, FTP_Downloader, FTP_Inspect
+from pysus.online_data import FTP_Downloader, FTP_Inspect
+from pysus.ftp import CACHEPATH
 
 
 def download(
