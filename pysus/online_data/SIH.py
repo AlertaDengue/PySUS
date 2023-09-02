@@ -6,7 +6,7 @@ license: GPL V3 or Later
 """
 from typing import Union
 
-from pysus.online_data import CACHEPATH
+from pysus.ftp import CACHEPATH
 from pysus.ftp.databases import SIH
 
 sih = SIH()

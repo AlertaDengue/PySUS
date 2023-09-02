@@ -7,11 +7,11 @@ license: GPL V3 or Later
 import os
 from ftplib import FTP, error_perm
 from typing import Union
-
 import pandas as pd
 from dbfread import DBF
 from loguru import logger
-from pysus.online_data import CACHEPATH
+
+from pysus.ftp import CACHEPATH
 from pysus.ftp.databases import SIM
 
 

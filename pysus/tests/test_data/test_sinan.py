@@ -113,7 +113,7 @@ class TestSINANDownload(unittest.TestCase):
     @pytest.mark.timeout(5)
     def test_lista_agravos(self):
         lista = list_diseases()
-        self.assertIsInstance(lista, list)
+        self.assertIsInstance(lista, dict)
         self.assertGreater(len(lista), 0)
 
     @pytest.mark.skip(reason="This test takes too long")

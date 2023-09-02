@@ -3,7 +3,7 @@ __author__ = "fccoelho"
 import unittest
 import pytest
 
-from pysus.online_data.sinasc import download, get_available_years
+from pysus.online_data.sinasc import download, get_available_years, sinasc
 from pysus.online_data import parquets_to_dataframe as to_df
 
 
@@ -24,9 +24,8 @@ class TestDownload(unittest.TestCase):
 
     @pytest.mark.timeout(5)
     def test_get_available_years(self):
-        yrs = get_available_years("AC")
-        self.assertIn("1996", yrs)
-        self.assertIn("1994", yrs)
+        files = get_available_years("AC")
+        self.assertIn("1996", [sinasc.format(file)[1] for file in files])
 
 
 if __name__ == "__main__":

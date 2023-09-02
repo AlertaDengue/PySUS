@@ -6,8 +6,10 @@ import pathlib
 from aioftp import Client
 from typing import List, Optional, Union
 
-from pysus.online_data import CACHEPATH
 
+CACHEPATH = os.getenv(
+    'PYSUS_CACHEPATH', os.path.join(str(pathlib.Path.home()), 'pysus')
+)
 
 class File:
     """

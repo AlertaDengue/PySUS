@@ -509,7 +509,7 @@ class SIA(Database):
 
         if not all([gr in list(self.groups) for gr in groups]):
             raise ValueError(
-                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+              f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         # Fist filter files by group to reduce the files list length

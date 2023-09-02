@@ -1,7 +1,8 @@
 import pandas as pd
 from pathlib import Path
 from typing import Union
-from pysus.online_data import CACHEPATH
+
+from pysus.ftp import CACHEPATH
 from pysus.ftp.databases import SINAN
 
 

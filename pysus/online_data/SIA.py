@@ -9,7 +9,7 @@ license: GPL V3 or Later
 from pprint import pprint
 from typing import Dict, Tuple, Union
 
-from pysus.online_data import CACHEPATH
+from pysus.ftp import CACHEPATH
 from pysus.ftp.databases import SIA
 
 sia = SIA()
