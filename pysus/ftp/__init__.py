@@ -1,28 +1,8 @@
 from datetime import datetime
 from ftplib import FTP
-from functools import lru_cache
 import os
 import pathlib
-from urllib.parse import urljoin
-
-
-# aioftp.Client.parse_list_line_custom
-def line_file_parser(file_line):
-    file_line = file_line.decode(encoding="utf-8").rstrip()
-    info = {}
-    if "<DIR>" in file_line:
-        date, time, _, *name = file_line.strip().split()
-        info["size"] = 0
-        info["type"] = "dir"
-        name = " ".join(name)
-    else:
-        date, time, size, name = file_line.strip().split()
-        info["size"] = size
-        info["type"] = "file"
-
-    modify = datetime.strptime(" ".join([date, time]), "%m-%d-%y %I:%M%p")
-    info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
-    return pathlib.PurePosixPath(name), info
+from typing import List, Union, Optional
 
 
 class File:
@@ -44,35 +24,31 @@ class File:
 
     """
 
-    def __init__(self, path: str, name: str, size: int, date: str) -> None:
+    def __init__(self, path: str, name: str, info: dict) -> None:
         name, extension = os.path.splitext(name)
         self.name = name
         self.extension = extension
-        self.basename = self.name + self.extension
-        self.path = (
-            path+"/"+self.basename 
-            if not path.endswith("/") 
-            else path+self.basename
+        self.basename = pathlib.PurePosixPath(self.name + self.extension)
+        self.path = pathlib.PurePosixPath(
+            path + str(self.basename)
+            if path.endswith("/")
+            else path + "/" + str(self.basename)
         )
-        self.size = size
-        self.date = self.parse_date(date)
+        self.info = info
 
     def __str__(self) -> str:
-        return str(self.name)
+        return str(self.basename)
 
     def __repr__(self) -> str:
-        return str(self.name)
+        return str(self.basename)
 
-    def __hash__(self): 
+    def __hash__(self):
         return hash(self.path)
 
     def __eq__(self, other):
         if isinstance(other, File):
             return self.path == other.path
         return False
-
-    def parse_date(self, date: str) -> datetime:
-        return datetime.strptime(date, "%m-%d-%y %I:%M%p")
 
     def download(self):  # -> task.run
         """TODO"""
@@ -81,7 +57,7 @@ class File:
 
 class Directory:
     """
-    FTP Directory class. 
+    FTP Directory class.
 
     Parameters
         path [str]: entire directory path where the directory is located
@@ -89,9 +65,15 @@ class Directory:
         name [str]: directory name
     """
 
-    def __init__(self, path: str, name: str) -> None:
-        self.basename = name
-        self.path = urljoin(path, self.basename)
+    def __init__(
+        self,
+        path: str,
+        info: dict,
+        content: Optional[List] = None,
+    ) -> None:
+        self.path = pathlib.PurePosixPath(path)
+        self.info = info
+        self.content = content
 
     def __str__(self) -> str:
         return str(self.path)
@@ -106,6 +88,66 @@ class Directory:
         if isinstance(other, Directory):
             return self.path == other.path
         return False
+
+
+# aioftp.Client.parse_list_line_custom
+def line_file_parser(file_line):
+    info = {}
+    if "<DIR>" in file_line:
+        date, time, _, *name = str(file_line).strip().split()
+        info["size"] = 0
+        info["type"] = "dir"
+        name = " ".join(name)
+    else:
+        date, time, size, name = str(file_line).strip().split()
+        info["size"] = size
+        info["type"] = "file"
+
+    modify = datetime.strptime(" ".join([date, time]), "%m-%d-%y %I:%M%p")
+    info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
+
+    return pathlib.PurePosixPath(name), info
+
+
+def list_path(path: str) -> List[Union[Directory, File]]:
+    """
+    This method is responsible for listing all the database's
+    files when the database class is firstly called. It will
+    convert the files found within the paths into `File`s,
+    returning a list of Files and Directories.
+    """
+    content = list()
+    ftp = FTP("ftp.datasus.gov.br")
+    ftp.connect()
+    ftp.login()
+    ftp.cwd(path)
+
+    def line_file_parser(file_line):
+        info = {}
+        if "<DIR>" in file_line:
+            date, time, _, *name = str(file_line).strip().split()
+            info["size"] = 0
+            info["type"] = "dir"
+            name = " ".join(name)
+            modify = datetime.strptime(
+                " ".join([date, time]), "%m-%d-%y %I:%M%p"
+            )
+            info["modify"] = modify
+            xpath = path + name if path.endswith("/") else path + "/" + name
+            content.append(Directory(xpath, info))
+        else:
+            date, time, size, name = str(file_line).strip().split()
+            info["size"] = size
+            info["type"] = "file"
+            modify = datetime.strptime(
+                " ".join([date, time]), "%m-%d-%y %I:%M%p"
+            )
+            info["modify"] = modify
+            content.append(File(path, name, info))
+
+    ftp.retrlines("LIST", line_file_parser)
+    ftp.close()
+    return content
 
 
 class Database:
@@ -133,16 +175,30 @@ class Database:
 
     ftp: FTP
     name: str
-    paths: list
-    files: list
+    paths: List[str]
+    content: List[Union[Directory, File]]
+    files: List[File]
     metadata: dict
 
     def __init__(self) -> None:
         self.ftp = FTP("ftp.datasus.gov.br")
-        self.files = self.all_files()
+        self.content = self.load(self.paths)
+        self.files = [f for f in self.content if isinstance(f, File)]
 
     def __repr__(self) -> str:
         return f'{self.name} - {self.metadata["long_name"]}'
+
+    def load(self, paths: List[str]):
+        """
+        This method is responsible for listing all the database's
+        files when the database class is firstly called. It will
+        convert the files found within the paths into `File`s,
+        and `Directory`(ies).
+        """
+        content = []
+        for path in paths:
+            content.extend(list_path(path))
+        return content
 
     def describe(self, file: File) -> dict:
         """
@@ -173,29 +229,3 @@ class Database:
         pattern and possible extra characters in its basename
         """
         ...
-
-    @lru_cache
-    def all_files(self) -> list[File]:
-        """
-        This method is responsible for listing all the database's
-        files when the database class is firstly called. It will
-        convert the files found within the paths into `File`s,
-        returning a cached list
-        """
-        files = list()
-
-        self.ftp.login()
-        for path in self.paths:
-            self.ftp.cwd(path)
-
-            def file_parse(line: str):
-                date, time, size, name = line.strip().split()
-                date = " ".join([date, time])
-                if size == "<DIR>":
-                    files.append(Directory(path, name))
-                files.append(File(path, name, int(size), date))
-
-            self.ftp.retrlines("LIST", file_parse)
-        self.ftp.close()
-
-        return files

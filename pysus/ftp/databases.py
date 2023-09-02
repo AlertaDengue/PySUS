@@ -119,11 +119,11 @@ class SINAN(Database):
         dis_code, year = self.format(file)
 
         description = dict(
-            name=file.basename,
+            name=str(file.basename),
             disease=self.diseases[dis_code],
             year=zfill_year(year),
-            size=humanize.naturalsize(file.size),
-            last_update=file.date,
+            size=humanize.naturalsize(file.info["size"]),
+            last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
         )
         return description
 
@@ -134,6 +134,8 @@ class SINAN(Database):
             dis_code = file.name[:3]
         elif file.name == "LEIBR22":
             dis_code = "LEIV"  # MISPELLED FILE NAME
+        elif file.name == "LERBR19":
+            dis_code = "LERD"  # ANOTHER ONE
         else:
             dis_code = file.name[:4]
 
@@ -145,7 +147,9 @@ class SINAN(Database):
         years: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
         codes = [c.upper() for c in to_list(dis_codes)] if dis_codes else None
-        fyears = [str(y)[-2:].zfill(2) for y in to_list(years)] if years else None
+        fyears = (
+            [str(y)[-2:].zfill(2) for y in to_list(years)] if years else None
+        )
 
         if codes and not all(code in self.diseases for code in codes):
             raise ValueError(
@@ -155,15 +159,22 @@ class SINAN(Database):
         if not codes and not fyears:
             return self.files
         elif not codes and fyears:
-            return list((f for f in self.files if any(y in str(f) for y in fyears)))
+            return list(
+                (f for f in self.files if any(y in str(f) for y in fyears))
+            )
         elif not fyears and codes:
-            return list((
-                f for f in self.files 
-                if any(str(f).startswith(c+"BR") for c in codes)
-            ))
+            return list(
+                (
+                    f
+                    for f in self.files
+                    if any(str(f).startswith(c + "BR") for c in codes)
+                )
+            )
 
         targets = [f"{c}BR{y}" for c, y in list(product(codes, fyears))]
-        return list((f for f in self.files if any(str(f)==t for t in targets)))
+        return list(
+            (f for f in self.files if any(f.name == t for t in targets))
+        )
 
 
 class SIM(Database):
@@ -183,12 +194,12 @@ class SIM(Database):
         group, uf, year = self.format(file)
 
         description = dict(
-            name=file.basename,
+            name=str(file.basename),
             uf=UFs[uf],
             year=year,
             group=self.groups[group],
-            size=humanize.naturalsize(file.size),
-            last_update=file.date,
+            size=humanize.naturalsize(file.info["size"]),
+            last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
         )
 
         return description
@@ -272,11 +283,11 @@ class SINASC(Database):
                 state = UFs[uf]
 
             description = dict(
-                name=file.basename,
+                name=str(file.basename),
                 uf=state,
                 year=year,
-                size=humanize.naturalsize(file.size),
-                last_update=file.date,
+                size=humanize.naturalsize(file.info["size"]),
+                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
             )
 
             return description
@@ -370,8 +381,8 @@ class SIH(Database):
                 uf=UFs[uf],
                 month=MONTHS[int(month)],
                 year=zfill_year(year),
-                size=humanize.naturalsize(file.size),
-                last_update=file.date,
+                size=humanize.naturalsize(file.info["size"]),
+                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
             )
 
             return description
@@ -464,13 +475,13 @@ class SIA(Database):
             group, uf, year, month = self.format(file)
 
             description = dict(
-                name=file.basename,
+                name=str(file.basename),
                 group=self.groups[group],
                 uf=UFs[uf],
                 month=MONTHS[int(month)],
                 year=zfill_year(year),
-                size=humanize.naturalsize(file.size),
-                last_update=file.date,
+                size=humanize.naturalsize(file.info["size"]),
+                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
             )
 
             return description
