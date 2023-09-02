@@ -60,5 +60,5 @@ def metadata_df(disease_code: str) -> pd.DataFrame:
 
         return df.iloc[:, 1:]
     else:
-        print(f"No metadata available for {disease}")
+        print(f"No metadata available for {disease_code}")
         return
