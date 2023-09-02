@@ -1,54 +1,64 @@
 import pandas as pd
 from pathlib import Path
 from typing import Union
-from pysus.online_data import FTP_Downloader, FTP_Inspect, CACHEPATH, FTP_SINAN
+from pysus.online_data import CACHEPATH
+from pysus.ftp.databases import SINAN
 
 
-def list_diseases() -> list:
+sinan = SINAN()
+
+
+def list_diseases() -> dict:
     """List available diseases on SINAN"""
-    return list(FTP_SINAN.diseases.keys())
+    return sinan.diseases
 
 
-def get_available_years(disease: str) -> list:
+def get_available_years(disease_code: str) -> list:
     """
     Fetch available years for data related to specific disease
-    :param disease: Disease name. See `SINAN.list_diseases` for valid names
+    :param disease_code: Disease code. See `SINAN.list_diseases` for valid codes
     :return: A list of DBC files from a specific disease found in the FTP Server.
     """
-    return FTP_Inspect('SINAN').list_available_years(SINAN_disease=disease)
+    return sinan.get_files(dis_codes=disease_code)
 
 
 def download(
-    disease, years: Union[str, list, int], data_path: str = CACHEPATH
+    diseases: Union[str, list],
+    years: Union[str, list, int],
+    data_path: str = CACHEPATH,
 ) -> list:
     """
     Downloads SINAN data directly from Datasus ftp server.
     :param disease: Disease according to `agravos`.
     :param years: 4 digit integer, can be a list of years.
-    :param data_path: The directory where the chunks will be downloaded to.
-    :return: list of downloaded parquet directories.
+    :param data_path: The directory where the file will be downloaded to.
+    :return: list of downloaded files.
     """
-    return FTP_Downloader('SINAN').download(
-        SINAN_disease=disease, years=years, local_dir=data_path
-    )
+    downloaded = []
+    files = sinan.get_files(dis_codes=diseases, years=years)
+    for file in files:
+        downloaded.append(file.download(local_dir=data_path))
+    return downloaded
 
 
-def metadata_df(disease: str) -> pd.DataFrame:
-    code = FTP_SINAN(disease).code
+def metadata_df(disease_code: str) -> pd.DataFrame:
     metadata_file = (
-        Path(__file__).parent.parent / 'metadata' / 'SINAN' / f'{code}.tar.gz'
+        Path(__file__).parent.parent
+        / "metadata"
+        / "SINAN"
+        / f"{disease_code}.tar.gz"
     )
     if metadata_file.exists():
         df = pd.read_csv(
             metadata_file,
-            compression='gzip',
+            compression="gzip",
             header=0,
-            sep=',',
+            sep=",",
             quotechar='"',
             error_bad_lines=False,
         )
 
         return df.iloc[:, 1:]
     else:
-        print(f'No metadata available for {disease}')
+        print(f"No metadata available for {disease}")
         return

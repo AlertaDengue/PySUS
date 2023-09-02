@@ -142,7 +142,7 @@ class SINAN(Database):
         else:
             dis_code = file.name[:4]
 
-        return dis_code, year
+        return dis_code, zfill_year(year)
 
     def get_files(
         self,
@@ -213,7 +213,7 @@ class SIM(Database):
         else:
             group, uf, year = file.name[:-6], file.name[-6:-4], file.name[-4:]
 
-        return group, uf, year
+        return group, uf, zfill_year(year)
 
     def get_files(
         self,
@@ -301,7 +301,7 @@ class SINASC(Database):
         year = zfill_year(file.name[-2:])
         charname = "".join([c for c in file.name if not c.isnumeric()])
         uf = charname[-2:]
-        return uf, year
+        return uf, zfill_year(year)
 
     def get_files(
         self,
@@ -394,7 +394,7 @@ class SIH(Database):
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
-        return group, uf, year, month
+        return group, uf, zfill_year(year), month
 
     def get_files(
         self,
@@ -493,7 +493,7 @@ class SIA(Database):
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
-        return group, uf, year, month
+        return group, uf, zfill_year(year), month
 
     def get_files(
         self,
