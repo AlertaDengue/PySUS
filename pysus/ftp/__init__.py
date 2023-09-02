@@ -20,12 +20,13 @@ class File:
         path [str]: entire directory path where the file is located
                     inside the FTP server
         name [str]: basename of the file
-        size [int]: file size in bytes
-        date [datetime]: last update date of the file in the FTP server
+        info [dict]: a dict containing the keys [size, type, modify], which
+                     are present in every FTP server. In PySUS, this info
+                     is extract using `line_file_parser` with FTP LIST.
 
     Methods
-        download(): TODO
-
+        download(local_dir): extract the file to local_dir
+        async_download(local_dir): async extract the file to local_dir
     """
 
     def __init__(self, path: str, name: str, info: dict) -> None:
@@ -123,6 +124,10 @@ class Directory:
         path [str]: entire directory path where the directory is located
                     inside the FTP server
         name [str]: directory name
+        info [dict]: a dict containing the keys [size, type, modify], which
+                     are present in every FTP server. In PySUS, this info
+                     is extract using `line_file_parser` with FTP LIST.
+                     OBS: A Directory should have size=0
     """
 
     def __init__(

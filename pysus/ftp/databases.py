@@ -327,7 +327,7 @@ class SINASC(Database):
 
         files = []
         for file in year_files:
-            if "ANT/DNRES" in file.path:
+            if "ANT/DNRES" in str(file.path):
                 for uf in ufs:
                     if uf in file.name[3:]:
                         files.append(file)
@@ -526,13 +526,3 @@ class SIA(Database):
                 files.append(file)
 
         return files
-
-
-# How to test all functionalities in one line:
-# a = SINAN()
-# [a.describe(y[0]) for y in [a.get_files(*x) for x in [a.format(f) for f in a.files]]]
-
-# b = SIM()
-# bf = [b.format(f) for f in b.files]
-# bc = [(a.groups[g],s,y) for g,s,y in b]
-# [b.describe(y[0]) for y in [a.get_files(*x) for x in bc]]
