@@ -6,7 +6,10 @@ license: GPL V3 or Later
 """
 from typing import Union
 
-from pysus.online_data import CACHEPATH, FTP_Downloader, FTP_Inspect
+from pysus.online_data import CACHEPATH
+from pysus.ftp.databases import SINASC
+
+sinasc = SINASC()
 
 
 def download(
@@ -16,15 +19,26 @@ def download(
 ) -> list:
     """
     Downloads data directly from Datasus ftp server
-    :param state: two-letter state identifier: MG == Minas Gerais,
-                  can be a list
-    :param year: 4 digit integer, can be a list
-    :return: list of downloaded parquet paths
+    :param states: two-letter state identifier: MG == Minas Gerais,
+                   can be a list
+    :param years: years to download
+    :return: list of downloaded files
     """
-    return FTP_Downloader('SINASC').download(
-        UFs=states, years=years, local_dir=data_dir
-    )
+    files = sinasc.get_files(ufs=states, years=years)
+    downloaded = []
+
+    for file in files:
+        downloaded.append(file.download(local_dir=data_dir))
+
+    return downloaded
 
 
 def get_available_years(state):
-    return FTP_Inspect('SINASC').list_available_years(UF=state)
+    years = list(set([f.name[-2:] for f in sinasc.files]))
+    files = set(sinasc.get_files(ufs=state, years=years))
+
+    def sort_year(file):
+        _, year = sinasc.format(file)
+        return int(year)
+
+    return sorted(files, key=sort_year)
