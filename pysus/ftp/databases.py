@@ -1,9 +1,10 @@
-from pysus.ftp import Database, File
-import humanize
 import datetime
-from typing import Union, Any, List, Optional
 from itertools import product
-from pysus.utilities.brasil import UFs, MONTHS
+from typing import Any, List, Optional, Union
+
+import humanize
+from pysus.ftp import Database, File
+from pysus.utilities.brasil import MONTHS, UFs
 
 
 def to_list(ite: Any) -> list:
@@ -119,16 +120,15 @@ class SINAN(Database):
         if file.extension.upper() == ".DBC":
             dis_code, year = self.format(file)
 
-            description = dict(
-                name=str(file.basename),
-                disease=self.diseases[dis_code],
-                year=zfill_year(year),
-                size=humanize.naturalsize(file.info["size"]),
-                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
-            )
+            description = {
+                "name": str(file.basename),
+                "disease": self.diseases[dis_code],
+                "year": zfill_year(year),
+                "size": humanize.naturalsize(file.info["size"]),
+                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+            }
             return description
-        else:
-            return {}
+        return {}
 
     def format(self, file: File) -> tuple:
         year = file.name[-2:]
@@ -489,6 +489,95 @@ class SIA(Database):
             return description
         else:
             return {}
+
+    def format(self, file: File) -> tuple:
+        group, uf = file.name[:2].upper(), file.name[2:4].upper()
+        year, month = file.name[-4:-2], file.name[-2:]
+        return group, uf, zfill_year(year), month
+
+    def get_files(
+        self,
+        groups: Union[List[str], str],
+        ufs: Union[List[str], str],
+        months: Union[list, str, int],
+        years: Union[list, str, int],
+    ) -> List[File]:
+        groups = [gr.upper() for gr in to_list(groups)]
+        ufs = parse_UFs(ufs)
+        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
+        years = [str(m)[-2:].zfill(2) for m in to_list(years)]
+
+        if not all([gr in list(self.groups) for gr in groups]):
+            raise ValueError(
+              f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+            )
+
+        # Fist filter files by group to reduce the files list length
+        groups_files = []
+        for file in self.files:
+            if file.name[:2] in groups:
+                groups_files.append(file)
+
+        targets = ["".join(t) for t in product(ufs, months, years)]
+
+        files = []
+        for file in groups_files:
+            if file.name[2:] in targets:
+                files.append(file)
+
+        return files
+
+
+class CNES(Database):
+    name = "CNES"
+    paths = [
+        "/dissemin/publicos/CNES/200508_/Dados"
+    ]
+    metadata = {
+        "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
+        "source": "https://cnes.datasus.gov.br/",
+        "description": (
+            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o sistema "
+            "de informação oficial de cadastramento de informações de todos os "
+            "estabelecimentos de saúde no país, independentemente de sua natureza "
+            "jurídica ou de integrarem o Sistema Único de Saúde (SUS). Trata-se do "
+            "cadastro oficial do Ministério da Saúde (MS) no tocante à realidade da "
+            "capacidade instalada e mão-de-obra assistencial de saúde no Brasil em "
+            "estabelecimentos de saúde públicos ou privados, com convênio SUS ou não."
+        ),
+    }
+    groups = {
+        "DC": "Dados Complementares",
+        "EE": "Estabelecimento de Ensino",
+        "EF": "Estabelecimento Filantrópico",
+        "EP": "Equipes",
+        "EQ": "Equipamentos",
+        "GM": "Gestão e Metas",
+        "HB": "Habilitação",
+        "IN": "Incentivos",
+        "LT": "Leitos",
+        "PF": "Profissional",
+        "RC": "Regra Contratual",
+        "SR": "Serviço Especializado",
+        "ST": "Estabelecimentos",
+    }
+
+    def describe(self, file: File) -> dict:
+        if file.extension.upper() == ".DBC":
+            group, uf, year, month = self.format(file)
+
+            description = {
+                "name": str(file.basename),
+                "group": self.groups[group],
+                "uf": UFs[uf],
+                "month": MONTHS[int(month)],
+                "year": zfill_year(year),
+                "size": humanize.naturalsize(file.info["size"]),
+                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+            }
+
+            return description
+        return {}
 
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()

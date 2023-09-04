@@ -1,15 +1,17 @@
-from loguru import logger
-from datetime import datetime
-from ftplib import FTP
 import os
 import pathlib
-from aioftp import Client
-from typing import List, Optional, Union
+from datetime import datetime
+from ftplib import FTP
+from functools import lru_cache
+from typing import List, Optional, Set, Union
 
+from aioftp import Client
+from loguru import logger
 
 CACHEPATH = os.getenv(
-    'PYSUS_CACHEPATH', os.path.join(str(pathlib.Path.home()), 'pysus')
+    "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
+
 
 class File:
     """
@@ -19,8 +21,8 @@ class File:
     databases' files to share state and its reusability.
 
     Parameters
-        path [str]: entire directory path where the file is located
-                    inside the FTP server
+        path [PurePosixPath]: entire directory path where the file is located
+                              inside the FTP server
         name [str]: basename of the file
         info [dict]: a dict containing the keys [size, type, modify], which
                      are present in every FTP server. In PySUS, this info
@@ -123,8 +125,8 @@ class Directory:
     FTP Directory class.
 
     Parameters
-        path [str]: entire directory path where the directory is located
-                    inside the FTP server
+        path [PurePosixPath]: entire directory path where the directory is located
+                              inside the FTP server
         name [str]: directory name
         info [dict]: a dict containing the keys [size, type, modify], which
                      are present in every FTP server. In PySUS, this info
@@ -132,15 +134,16 @@ class Directory:
                      OBS: A Directory should have size=0
     """
 
+    __content__: Optional[List] = None
+
     def __init__(
         self,
         path: str,
         info: dict,
-        content: Optional[List] = None,
     ) -> None:
         self.path = pathlib.PurePosixPath(path)
+        self.name = str(self.path).rsplit("/", maxsplit=1)[-1]
         self.info = info
-        self.content = content
 
     def __str__(self) -> str:
         return str(self.path)
@@ -156,6 +159,22 @@ class Directory:
             return self.path == other.path
         return False
 
+    @property
+    @lru_cache
+    def content(self):
+        """
+        Returns a list of Files and Directories in the Directory
+        """
+        if not self.__content__:
+            self.load()
+        return self.__content__
+
+    def load(self):
+        """
+        The content of a Directory must be explicity loaded
+        """
+        self.__content__ = list_path(self.path)
+
 
 def list_path(path: str) -> List[Union[Directory, File]]:
     """
@@ -164,37 +183,43 @@ def list_path(path: str) -> List[Union[Directory, File]]:
     convert the files found within the paths into `File`s,
     returning a list of Files and Directories.
     """
-    content = list()
+    path = str(path)
+    content = []
     ftp = FTP("ftp.datasus.gov.br")
-    ftp.connect()
-    ftp.login()
-    ftp.cwd(path)
 
-    def line_file_parser(file_line):
-        info = {}
-        if "<DIR>" in file_line:
-            date, time, _, *name = str(file_line).strip().split()
-            info["size"] = 0
-            info["type"] = "dir"
-            name = " ".join(name)
-            modify = datetime.strptime(
-                " ".join([date, time]), "%m-%d-%y %I:%M%p"
-            )
-            info["modify"] = modify
-            xpath = path + name if path.endswith("/") else path + "/" + name
-            content.append(Directory(xpath, info))
-        else:
-            date, time, size, name = str(file_line).strip().split()
-            info["size"] = size
-            info["type"] = "file"
-            modify = datetime.strptime(
-                " ".join([date, time]), "%m-%d-%y %I:%M%p"
-            )
-            info["modify"] = modify
-            content.append(File(path, name, info))
+    try:
+        ftp.connect()
+        ftp.login()
+        ftp.cwd(path)
+        def line_file_parser(file_line):
+            info = {}
+            if "<DIR>" in file_line:
+                date, time, _, *name = str(file_line).strip().split()
+                info["size"] = 0
+                info["type"] = "dir"
+                name = " ".join(name)
+                modify = datetime.strptime(
+                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
+                )
+                info["modify"] = modify
+                xpath = path + name if path.endswith("/") else path + "/" + name
+                content.append(Directory(xpath, info))
+            else:
+                date, time, size, name = str(file_line).strip().split()
+                info["size"] = size
+                info["type"] = "file"
+                modify = datetime.strptime(
+                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
+                )
+                info["modify"] = modify
+                content.append(File(path, name, info))
 
-    ftp.retrlines("LIST", line_file_parser)
-    ftp.close()
+        ftp.retrlines("LIST", line_file_parser)
+    except Exception as exc:
+        raise RuntimeError("Bad FTP Connection" + f"\n{exc}")
+    finally:
+        ftp.close()
+
     return content
 
 
@@ -224,29 +249,53 @@ class Database:
     ftp: FTP
     name: str
     paths: List[str]
-    content: List[Union[Directory, File]]
-    files: List[File]
     metadata: dict
+    __content__: Set[Union[Directory, File]]
 
     def __init__(self) -> None:
         self.ftp = FTP("ftp.datasus.gov.br")
-        self.content = self.load(self.paths)
-        self.files = [f for f in self.content if isinstance(f, File)]
+        self.__content__ = set()
 
     def __repr__(self) -> str:
         return f'{self.name} - {self.metadata["long_name"]}'
 
-    def load(self, paths: List[str]):
+    @property
+    @lru_cache
+    def content(self) -> List[Union[Directory, File]]:
         """
-        This method is responsible for listing all the database's
-        files when the database class is firstly called. It will
-        convert the files found within the paths into `File`s,
-        and `Directory`(ies).
+        Lists Database content. The `paths` will be loaded if this property is 
+        called or if explicty using `load()`. To add specific Directory inside
+        content, `load()` the directory and call `content` again.
         """
+        if not self.__content__:
+            logger.info("content is not loaded, use `load()` to load default paths")
+            return []
+        return sorted(list(self.__content__), key=str)
+
+    @property
+    @lru_cache
+    def files(self) -> List[File]:
+        """
+        Lists Files inside content. To load a specific Directory inside
+        content, just `load()` this directory and list files again.
+        """
+        if not self.__content__:
+            logger.info("content is not loaded, use `load()` to load default paths")
+            return []
+        return sorted(list(filter(lambda f: isinstance(f, File), self.__content__)), key=str)
+
+    def load(self, paths: Optional[List[str]] = None) -> None:
+        """
+        Loads specific paths to Database content, can receive Directories as well.
+        It will convert the files found within the paths into Database.content.
+        """
+        if not paths:
+            paths = self.paths
+
         content = []
         for path in paths:
-            content.extend(list_path(path))
-        return content
+            content.extend(list_path(str(path)))
+        self.__content__.update(set(content))
 
     def describe(self, file: File) -> dict:
         """
