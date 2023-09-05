@@ -564,7 +564,7 @@ class CNES(Database):
         self,
         paths: Optional[List[str]] = None,
         groups: Optional[List[str]] = None,
-    ) -> None:
+    ):
         """
         Loads specific paths to Database content, can receive CNES Groups as well.
         It will convert the files found within the paths into content.
@@ -607,6 +607,7 @@ class CNES(Database):
         for path in xpaths:
             content.extend(list_path(str(path)))
         self.__content__.update(set(content))
+        return self
 
     def describe(self, file: File):
         if not isinstance(file, File):

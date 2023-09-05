@@ -297,7 +297,7 @@ class Database:
             key=str,
         )
 
-    def load(self, paths: Optional[List[str]] = None) -> None:
+    def load(self, paths: Optional[List[str]] = None):
         """
         Loads specific paths to Database content, can receive Directories as well.
         It will convert the files found within the paths into Database.content.
@@ -312,6 +312,7 @@ class Database:
         for path in paths:
             content.extend(list_path(str(path)))
         self.__content__.update(set(content))
+        return self
 
     def describe(self, file: File) -> dict:
         """
