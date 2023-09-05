@@ -1,15 +1,11 @@
 import datetime
 from itertools import product
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 
 import humanize
-from pysus.ftp import Database, File
+from loguru import logger
+from pysus.ftp import Database, Directory, File, list_path, to_list
 from pysus.utilities.brasil import MONTHS, UFs
-
-
-def to_list(ite: Any) -> list:
-    """Parse any builtin data type into a list"""
-    return [ite] if type(ite) in [str, float, int] else list(ite)
 
 
 def zfill_year(year: Union[str, int]) -> int:
@@ -30,7 +26,7 @@ def parse_UFs(UF: Union[list[str], str]) -> list:
     E.g: ['SC', 'mt', 'ba'] -> ['SC', 'MT', 'BA']
     """
     ufs = [uf.upper() for uf in to_list(UF)]
-    if not all([uf in list(UFs) for uf in ufs]):
+    if not all(uf in list(UFs) for uf in ufs):
         raise ValueError(f"Unknown UF(s): {set(ufs).difference(list(UFs))}")
     return ufs
 
@@ -64,57 +60,57 @@ class SINAN(Database):
         ),
     )
 
-    diseases = dict(
-        ACBI="Acidente de trabalho com material biológico",
-        ACGR="Acidente de trabalho",
-        ANIM="Acidente por Animais Peçonhentos",
-        ANTR="Atendimento Antirrabico",
-        BOTU="Botulismo",
-        CANC="Cancêr relacionado ao trabalho",
-        CHAG="Doença de Chagas Aguda",
-        CHIK="Febre de Chikungunya",
-        COLE="Cólera",
-        COQU="Coqueluche",
-        DENG="Dengue",
-        DERM="Dermatoses ocupacionais",
-        DIFT="Difteria",
-        ESQU="Esquistossomose",
-        EXAN="Doença exantemáticas",
-        FMAC="Febre Maculosa",
-        FTIF="Febre Tifóide",
-        HANS="Hanseníase",
-        HANT="Hantavirose",
-        HEPA="Hepatites Virais",
-        IEXO="Intoxicação Exógena",
-        INFL="Influenza Pandêmica",
-        LEIV="Leishmaniose Visceral",
-        LEPT="Leptospirose",
-        LERD="LER/Dort",
-        LTAN="Leishmaniose Tegumentar Americana",
-        MALA="Malária",
-        MENI="Meningite",
-        MENT="Transtornos mentais relacionados ao trabalho",
-        NTRA="Notificação de Tracoma",
-        PAIR="Perda auditiva por ruído relacionado ao trabalho",
-        PEST="Peste",
-        PFAN="Paralisia Flácida Aguda",
-        PNEU="Pneumoconioses realacionadas ao trabalho",
-        RAIV="Raiva",
-        SDTA="Surto Doenças Transmitidas por Alimentos",
-        SIFA="Sífilis Adquirida",
-        SIFC="Sífilis Congênita",
-        SIFG="Sífilis em Gestante",
-        SRC="Síndrome da Rubéola Congênia",
-        TETA="Tétano Acidental",
-        TETN="Tétano Neonatal",
-        TOXC="Toxoplasmose Congênita",
-        TOXG="Toxoplasmose Gestacional",
-        TRAC="Inquérito de Tracoma",
-        TUBE="Tuberculose",
-        VARC="Varicela",
-        VIOL="Violência doméstica, sexual e/ou outras violências",
-        ZIKA="Zika Vírus",
-    )
+    diseases = {
+        "ACBI": "Acidente de trabalho com material biológico",
+        "ACGR": "Acidente de trabalho",
+        "ANIM": "Acidente por Animais Peçonhentos",
+        "ANTR": "Atendimento Antirrabico",
+        "BOTU": "Botulismo",
+        "CANC": "Cancêr relacionado ao trabalho",
+        "CHAG": "Doença de Chagas Aguda",
+        "CHIK": "Febre de Chikungunya",
+        "COLE": "Cólera",
+        "COQU": "Coqueluche",
+        "DENG": "Dengue",
+        "DERM": "Dermatoses ocupacionais",
+        "DIFT": "Difteria",
+        "ESQU": "Esquistossomose",
+        "EXAN": "Doença exantemáticas",
+        "FMAC": "Febre Maculosa",
+        "FTIF": "Febre Tifóide",
+        "HANS": "Hanseníase",
+        "HANT": "Hantavirose",
+        "HEPA": "Hepatites Virais",
+        "IEXO": "Intoxicação Exógena",
+        "INFL": "Influenza Pandêmica",
+        "LEIV": "Leishmaniose Visceral",
+        "LEPT": "Leptospirose",
+        "LERD": "LER/Dort",
+        "LTAN": "Leishmaniose Tegumentar Americana",
+        "MALA": "Malária",
+        "MENI": "Meningite",
+        "MENT": "Transtornos mentais relacionados ao trabalho",
+        "NTRA": "Notificação de Tracoma",
+        "PAIR": "Perda auditiva por ruído relacionado ao trabalho",
+        "PEST": "Peste",
+        "PFAN": "Paralisia Flácida Aguda",
+        "PNEU": "Pneumoconioses realacionadas ao trabalho",
+        "RAIV": "Raiva",
+        "SDTA": "Surto Doenças Transmitidas por Alimentos",
+        "SIFA": "Sífilis Adquirida",
+        "SIFC": "Sífilis Congênita",
+        "SIFG": "Sífilis em Gestante",
+        "SRC": "Síndrome da Rubéola Congênia",
+        "TETA": "Tétano Acidental",
+        "TETN": "Tétano Neonatal",
+        "TOXC": "Toxoplasmose Congênita",
+        "TOXG": "Toxoplasmose Gestacional",
+        "TRAC": "Inquérito de Tracoma",
+        "TUBE": "Tuberculose",
+        "VARC": "Varicela",
+        "VIOL": "Violência doméstica, sexual e/ou outras violências",
+        "ZIKA": "Zika Vírus",
+    }
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() == ".DBC":
@@ -125,7 +121,9 @@ class SINAN(Database):
                 "disease": self.diseases[dis_code],
                 "year": zfill_year(year),
                 "size": humanize.naturalsize(file.info["size"]),
-                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+                "last_update": file.info["modify"].strftime(
+                    "%m-%d-%Y %I:%M%p"
+                ),
             }
             return description
         return {}
@@ -186,12 +184,12 @@ class SIM(Database):
         "/dissemin/publicos/SIM/CID10/DORES",
         "/dissemin/publicos/SIM/CID9/DORES",
     ]
-    metadata = dict(
-        long_name="Sistema de Informação sobre Mortalidade",
-        source="http://sim.saude.gov.br",
-        description="",
-    )
-    groups = dict(DO="CID10", DOR="CID9")
+    metadata = {
+        "long_name": "Sistema de Informação sobre Mortalidade",
+        "source": "http://sim.saude.gov.br",
+        "description": "",
+    }
+    groups = {"DO": "CID10", "DOR": "CID9"}
 
     def describe(self, file: File) -> dict:
         group, uf, year = self.format(file)
@@ -227,7 +225,8 @@ class SIM(Database):
 
         if not all([gr in list(self.groups.values()) for gr in groups]):
             raise ValueError(
-                f"Unknown group(s): {set(groups).difference(self.groups.values())}"
+                "Unknown group(s): "
+                f"{set(groups).difference(self.groups.values())}"
             )
 
         targets = []
@@ -345,13 +344,13 @@ class SIH(Database):
         "/dissemin/publicos/SIHSUS/199201_200712/Dados",
         "/dissemin/publicos/SIHSUS/200801_/Dados",
     ]
-    metadata = dict(
-        long_name="Sistema de Informações Hospitalares",
-        source=(
+    metadata = {
+        "long_name": "Sistema de Informações Hospitalares",
+        "source": (
             "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",
             "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",
         ),
-        description=(
+        "description": (
             "A finalidade do AIH (Sistema SIHSUS) é a de transcrever todos os "
             "atendimentos que provenientes de internações hospitalares que "
             "foram financiadas pelo SUS, e após o processamento, gerarem "
@@ -363,15 +362,15 @@ class SIH(Database):
             "além dos valores de CNRAC, FAEC e de Hospitais Universitários – em suas "
             "variadas formas de contrato de gestão."
         ),
-    )
-    groups = dict(
-        RD="AIH Reduzida",
-        RJ="AIH Rejeitada",
-        ER="AIH Rejeitada com erro",
-        SP="Serviços Profissionais",
-        CH="Cadastro Hospitalar",
-        CM="",  # TODO
-    )
+    }
+    groups = {
+        "RD": "AIH Reduzida",
+        "RJ": "AIH Rejeitada",
+        "ER": "AIH Rejeitada com erro",
+        "SP": "Serviços Profissionais",
+        "CH": "Cadastro Hospitalar",
+        "CM": "",  # TODO
+    }
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() == ".DBC":
@@ -509,7 +508,7 @@ class SIA(Database):
 
         if not all([gr in list(self.groups) for gr in groups]):
             raise ValueError(
-              f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         # Fist filter files by group to reduce the files list length
@@ -530,9 +529,7 @@ class SIA(Database):
 
 class CNES(Database):
     name = "CNES"
-    paths = [
-        "/dissemin/publicos/CNES/200508_/Dados"
-    ]
+    paths = ["/dissemin/publicos/CNES/200508_/Dados"]
     metadata = {
         "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
         "source": "https://cnes.datasus.gov.br/",
@@ -561,9 +558,61 @@ class CNES(Database):
         "SR": "Serviço Especializado",
         "ST": "Estabelecimentos",
     }
+    __loaded__ = []
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() == ".DBC":
+    def load(
+        self,
+        paths: Optional[List[str]] = None,
+        groups: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Loads specific paths to Database content, can receive CNES Groups as well.
+        It will convert the files found within the paths into content.
+        """
+        xpaths = []
+
+        if not paths and not groups:
+            xpaths.extend(self.paths)
+
+        if paths:
+            if not isinstance(paths, list):
+                raise ValueError("paths must a list")
+
+            xpaths.extend(paths)
+
+        if groups:
+            if not self.__content__:
+                self.load()
+
+            if not isinstance(groups, list):
+                raise ValueError("groups must a list")
+
+            if not all(
+                group in self.groups for group in [gr.upper() for gr in groups]
+            ):
+                raise ValueError(
+                    f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
+                )
+
+            dirs = list(
+                filter(lambda c: isinstance(c, Directory), self.__content__)
+            )
+
+            for directory in dirs:
+                if directory.name in [gr.upper() for gr in groups]:
+                    xpaths.append(directory.path)
+                    self.__loaded__.append(directory.name)
+
+        content = []
+        for path in xpaths:
+            content.extend(list_path(str(path)))
+        self.__content__.update(set(content))
+
+    def describe(self, file: File):
+        if not isinstance(file, File):
+            return file
+
+        if file.extension.upper() in [".DBC", ".DBF"]:
             group, uf, year, month = self.format(file)
 
             description = {
@@ -573,11 +622,13 @@ class CNES(Database):
                 "month": MONTHS[int(month)],
                 "year": zfill_year(year),
                 "size": humanize.naturalsize(file.info["size"]),
-                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+                "last_update": file.info["modify"].strftime(
+                    "%m-%d-%Y %I:%M%p"
+                ),
             }
 
             return description
-        return {}
+        return file
 
     def format(self, file: File) -> tuple:
         group, uf = file.name[:2].upper(), file.name[2:4].upper()
@@ -588,30 +639,23 @@ class CNES(Database):
         self,
         groups: Union[List[str], str],
         ufs: Union[List[str], str],
-        months: Union[list, str, int],
         years: Union[list, str, int],
+        months: Union[list, str, int],
     ) -> List[File]:
         groups = [gr.upper() for gr in to_list(groups)]
         ufs = parse_UFs(ufs)
-        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
         years = [str(m)[-2:].zfill(2) for m in to_list(years)]
+        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
 
         if not all([gr in list(self.groups) for gr in groups]):
             raise ValueError(
-              f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown CNES Group(s): {set(groups).difference(list(self.groups))}"
             )
 
-        # Fist filter files by group to reduce the files list length
-        groups_files = []
-        for file in self.files:
-            if file.name[:2] in groups:
-                groups_files.append(file)
+        for group in groups:
+            if group not in self.__loaded__:
+                self.load(groups=group)
 
-        targets = ["".join(t) for t in product(ufs, months, years)]
+        targets = ["".join(t) for t in product(groups, ufs, years, months)]
 
-        files = []
-        for file in groups_files:
-            if file.name[2:] in targets:
-                files.append(file)
-
-        return files
+        return [f for f in self.files if f.name in targets]

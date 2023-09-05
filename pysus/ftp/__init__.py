@@ -3,7 +3,7 @@ import pathlib
 from datetime import datetime
 from ftplib import FTP
 from functools import lru_cache
-from typing import List, Optional, Set, Union
+from typing import Any, List, Optional, Set, Union
 
 from aioftp import Client
 from loguru import logger
@@ -11,6 +11,11 @@ from loguru import logger
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
+
+
+def to_list(ite: Any) -> list:
+    """Parse any builtin data type into a list"""
+    return [ite] if type(ite) in [str, float, int] else list(ite)
 
 
 class File:
@@ -191,6 +196,7 @@ def list_path(path: str) -> List[Union[Directory, File]]:
         ftp.connect()
         ftp.login()
         ftp.cwd(path)
+
         def line_file_parser(file_line):
             info = {}
             if "<DIR>" in file_line:
@@ -202,7 +208,9 @@ def list_path(path: str) -> List[Union[Directory, File]]:
                     " ".join([date, time]), "%m-%d-%y %I:%M%p"
                 )
                 info["modify"] = modify
-                xpath = path + name if path.endswith("/") else path + "/" + name
+                xpath = (
+                    path + name if path.endswith("/") else path + "/" + name
+                )
                 content.append(Directory(xpath, info))
             else:
                 date, time, size, name = str(file_line).strip().split()
@@ -260,29 +268,34 @@ class Database:
         return f'{self.name} - {self.metadata["long_name"]}'
 
     @property
-    @lru_cache
     def content(self) -> List[Union[Directory, File]]:
         """
-        Lists Database content. The `paths` will be loaded if this property is 
+        Lists Database content. The `paths` will be loaded if this property is
         called or if explicty using `load()`. To add specific Directory inside
         content, `load()` the directory and call `content` again.
         """
         if not self.__content__:
-            logger.info("content is not loaded, use `load()` to load default paths")
+            logger.info(
+                "content is not loaded, use `load()` to load default paths"
+            )
             return []
         return sorted(list(self.__content__), key=str)
 
     @property
-    @lru_cache
     def files(self) -> List[File]:
         """
         Lists Files inside content. To load a specific Directory inside
         content, just `load()` this directory and list files again.
         """
         if not self.__content__:
-            logger.info("content is not loaded, use `load()` to load default paths")
+            logger.info(
+                "content is not loaded, use `load()` to load default paths"
+            )
             return []
-        return sorted(list(filter(lambda f: isinstance(f, File), self.__content__)), key=str)
+        return sorted(
+            list(filter(lambda f: isinstance(f, File), self.__content__)),
+            key=str,
+        )
 
     def load(self, paths: Optional[List[str]] = None) -> None:
         """
@@ -291,6 +304,9 @@ class Database:
         """
         if not paths:
             paths = self.paths
+
+        if not isinstance(paths, list):
+            raise ValueError("paths must a list")
 
         content = []
         for path in paths:
