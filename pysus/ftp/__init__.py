@@ -361,6 +361,3 @@ class Database:
 
         tasks = [download_file(file) for file in files]
         await asyncio.gather(*tasks)
-
-
-
