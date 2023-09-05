@@ -2,7 +2,6 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from functools import lru_cache
 from typing import Any, List, Optional, Set, Union
 
 from aioftp import Client
@@ -165,7 +164,6 @@ class Directory:
         return False
 
     @property
-    @lru_cache
     def content(self):
         """
         Returns a list of Files and Directories in the Directory
