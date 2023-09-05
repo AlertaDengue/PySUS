@@ -1,5 +1,6 @@
 import os
 import pathlib
+import asyncio
 from datetime import datetime
 from ftplib import FTP
 from typing import Any, List, Optional, Set, Union
@@ -78,6 +79,7 @@ class File:
             open(f"{filepath}", "wb").write,
         )
         ftp.close()
+        logger.info(f"{self.basename} downloaded at {local_dir}")
         return str(filepath)
 
     async def async_download(self, local_dir: str = CACHEPATH) -> None:
@@ -340,3 +342,25 @@ class Database:
         pattern and possible extra characters in its basename
         """
         ...
+
+    def download(self, files: List[File], local_dir: str = CACHEPATH):
+        """
+        Downloads a list of Files.
+        """
+        for file in files:
+            if isinstance(file, File):
+                file.download(local_dir=local_dir)
+
+    async def async_download(self, files: List[File], local_dir: str = CACHEPATH):
+        """
+        Asynchronously downloads a list of files
+        """
+        async def download_file(file):
+            if isinstance(file, File):
+                await file.async_download(local_dir=local_dir)
+
+        tasks = [download_file(file) for file in files]
+        await asyncio.gather(*tasks)
+
+
+
