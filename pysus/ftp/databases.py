@@ -310,8 +310,8 @@ class SINASC(Database):
             # DNEX2021
             if len(to_list(ufs)) == 1:
                 return []
-            else:
-                to_list(ufs).remove("EX")
+
+            to_list(ufs).remove("EX")
 
         ufs = parse_UFs(ufs)
         years = [str(y)[-2:].zfill(2) for y in to_list(years)]
@@ -319,9 +319,8 @@ class SINASC(Database):
         # Fist filter years to reduce the list size
         year_files = []
         for file in self.files:
-            for year in years:
-                if year in file.name:
-                    year_files.append(file)
+            if str(file.info["modify"].year) in years:
+                year_files.append(file)
 
         files = []
         for file in year_files:

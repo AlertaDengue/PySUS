@@ -140,16 +140,17 @@ class Directory:
                      OBS: A Directory should have size=0
     """
 
-    __content__: Optional[List] = None
+    path: pathlib.PurePosixPath
+    name: str
+    info: dict
+    __content__: List
 
     def __init__(
         self,
         path: str,
-        info: dict,
     ) -> None:
-        self.path = pathlib.PurePosixPath(path)
-        self.name = str(self.path).rsplit("/", maxsplit=1)[-1]
-        self.info = info
+        self.__self_load__(path)
+        self.__content__ = []
 
     def __str__(self) -> str:
         return str(self.path)
@@ -165,6 +166,47 @@ class Directory:
             return self.path == other.path
         return False
 
+    def __self_load__(self, path: str) -> None:
+        if str(path) == "/":
+            raise ValueError("Don't use root dir")
+
+        self.path = pathlib.PurePosixPath(path)
+        path, self.name = str(self.path).rsplit("/", maxsplit=1)
+
+        content = []
+        ftp = FTP("ftp.datasus.gov.br")
+
+        try:
+            ftp.connect()
+            ftp.login()
+            ftp.cwd(path)
+
+            def line_file_parser(file_line):
+                info = {}
+
+                if not "<DIR>" in file_line:
+                    pass
+
+                date, time, _, *name = str(file_line).strip().split()
+                name = " ".join(name)
+                modify = datetime.strptime(
+                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
+                )
+                info["type"] = "dir"
+                info["modify"] = modify
+                content.append((name, info))
+
+            ftp.retrlines("LIST", line_file_parser)
+        except Exception as exc:
+            raise RuntimeError("Bad FTP Connection" + f"\n{exc}")
+        finally:
+            ftp.close()
+
+        if self.name not in [n for n,i in content]:
+            raise ValueError(f"Not a directory: {self.path}")
+
+        self.info = [i for n,i in content if n == self.name]
+
     @property
     def content(self):
         """
@@ -179,14 +221,15 @@ class Directory:
         The content of a Directory must be explicity loaded
         """
         self.__content__ = list_path(self.path)
+        return self
 
 
 def list_path(path: str) -> List[Union[Directory, File]]:
     """
     This method is responsible for listing all the database's
     files when the database class is firstly called. It will
-    convert the files found within the paths into `File`s,
-    returning a list of Files and Directories.
+    convert the files found within the paths into `File`s or
+    Directories, returning its content.
     """
     path = str(path)
     content = []
@@ -211,7 +254,7 @@ def list_path(path: str) -> List[Union[Directory, File]]:
                 xpath = (
                     path + name if path.endswith("/") else path + "/" + name
                 )
-                content.append(Directory(xpath, info))
+                content.append(Directory(xpath))
             else:
                 date, time, size, name = str(file_line).strip().split()
                 info["size"] = size
