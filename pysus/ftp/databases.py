@@ -3,7 +3,6 @@ from itertools import product
 from typing import List, Optional, Union
 
 import humanize
-from loguru import logger
 from pysus.ftp import Database, Directory, File, list_path, to_list
 from pysus.utilities.brasil import MONTHS, UFs
 
