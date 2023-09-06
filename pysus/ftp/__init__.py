@@ -344,15 +344,21 @@ class Database:
         """
         ...
 
-    def download(self, files: List[File], local_dir: str = CACHEPATH):
+    def download(
+        self, files: List[File], local_dir: str = CACHEPATH
+    ) -> List[str]:
         """
         Downloads a list of Files.
         """
+        dfiles = []
         for file in files:
             if isinstance(file, File):
-                file.download(local_dir=local_dir)
+                dfiles.append(file.download(local_dir=local_dir))
+        return dfiles
 
-    async def async_download(self, files: List[File], local_dir: str = CACHEPATH):
+    async def async_download(
+        self, files: List[File], local_dir: str = CACHEPATH
+    ):
         """
         Asynchronously downloads a list of files
         """
