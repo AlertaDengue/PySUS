@@ -144,70 +144,66 @@ class File:
             logger.debug(output)
 
 
-class RootTrees(object):
-    content: Set
+CACHE: Dict = {}
 
-    def __init__(self) -> None:
-        self.content = set()
-        self.__load_root__()
-
-    def __getattr__(self, attr):
-        return self.__dict__[attr]
-
-    def __load_root__(self) -> None:
-        ftp = FTP("ftp.datasus.gov.br")
-        try:
-            ftp.connect()
-            ftp.login()
-            ftp.cwd("/")
-
-            def line_file_parser(file_line):
-                if not "<DIR>" in file_line:
-                    pass
-                _, _, _, *name = str(file_line).strip().split()
-                name = " ".join(name)
-                setattr(self, name, Node(name))
-                self.content.add(name)
-
-            ftp.retrlines("LIST", line_file_parser)
-        except Exception as exc:
-            logger.error("Bad FTP Connection")
-            raise exc
-        finally:
-            ftp.close()
-
-
-CACHE_TREE = RootTrees()
-
-ROOT_DIR = None
-
-CACHE: Dict = {"/": None}
 
 class Directory():
     """
     FTP Directory class.
 
     Parameters
-        path [PurePosixPath]: entire directory path where the directory is located
-                              inside the FTP server
-        name [str]: directory name
+        path [str]: entire directory path where the directory is located
+                    inside the FTP server
     """
 
     name: str
-    path: pathlib.PurePosixPath
+    path: str
     parent: Self # Directory?
-    loaded: bool
-    __content__: Set
+    loaded: bool = False
+    __content__: Set = set()
 
-    def __new__(cls, path: str) -> Self:
+    def __new__(cls, path: str, unsafe_is_root_child=False) -> Self:
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith('/') else path
-        if not path:
-            return CACHE["/"]
 
-        parent_path, name = path.rsplit("/")
-        if not parent_path:
-            parent_path = "/"
+        if not path: # Load root, store on CACHE
+            path = "/"
+            try:
+                directory = CACHE["/"]
+            except KeyError:
+                directory = object.__new__(cls)
+                directory.parent = directory
+                directory.name = "/"
+                directory.path = "/"
+                directory.__content__ = set()
+                CACHE["/"] = directory
+
+                ftp = FTP("ftp.datasus.gov.br")
+                ftp.connect()
+                ftp.login()
+                ftp.cwd("/")
+                def line_file_parser(file_line):
+                    if not "<DIR>" in file_line:
+                        pass
+                    _, _, _, *name = str(file_line).strip().split()
+                    name = "/" + " ".join(name)
+                    child = Directory(name, unsafe_is_root_child=True)
+                    CACHE[name] = child
+                    directory.__content__.add(child)
+
+                ftp.retrlines("LIST", line_file_parser)
+                directory.loaded = True
+            return directory
+
+        parent_path, name = path.rsplit("/", maxsplit=1)
+
+        if unsafe_is_root_child:
+            # WARNING: This parameter is for internal meanings, do not use
+            directory = object.__new__(cls)
+            directory.parent = CACHE["/"]
+            directory.name = name
+            CACHE[path] = directory
+            return directory
 
         try:
             directory = CACHE[path]
@@ -216,42 +212,33 @@ class Directory():
                 ftp = FTP("ftp.datasus.gov.br")
                 ftp.connect()
                 ftp.login()
-                ftp.cwd(path) # Checks if Dir exists
+                ftp.cwd(path) # Checks if parent dir exists on DATASUS
             except Exception as exc:
-                if "error_perm: 550" in str(exc):
+                if "cannot find the path" in str(exc):
                     logger.error(f"Not a directory {path}")
-                else:
-                    logger.error("Bad FTP Connection")
+                elif "access is denied" in str(exc).lower():
+                    directory = object.__new__(cls)
+                    directory.parent = Directory(parent_path)
+                    directory.name = name
+                    CACHE[path] = directory
+                    return directory
                 raise exc
             finally:
                 ftp.close()
-
-            # Create the parents paths structure until path in CACHE
-            _path = path
-            dir_path = [] # Stack
-            while _path not in CACHE:
-                _parent_path, _ = _path.rsplit("/", maxsplit=1)
-                if not _parent_path:
-                    _parent_path = "/"
-                dir_path.append(_path)
-                _path = _parent_path # Consumes _path, add onto stack
-
-            while dir_path:
-                filo = dir_path.pop()
-                CACHE[filo] = None # Pre-populate CACHE
 
             directory = object.__new__(cls)
             directory.parent = Directory(parent_path)
             directory.name = name
             CACHE[path] = directory
+
         return directory
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, unsafe_is_root_child=False) -> None:
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith('/') else path
-        self.path = pathlib.PurePosixPath(path)
-        self.loaded = False
-        self.__content__ = []
+        if not path:
+            path = "/"
+        self.path = path
 
     def __str__(self) -> str:
         return str(self.path)
@@ -272,9 +259,9 @@ class Directory():
         """
         Returns a list of Files and Directories in the Directory
         """
-        if not self.__content__:
+        if not self.loaded:
             self.load()
-        return self.__content__
+        return list(self.__content__)
 
     def load(self):
         """
@@ -284,9 +271,7 @@ class Directory():
         return self
 
 
-CACHE["/"] = Directory("/").load()
-
-ROOT_DIR = Directory("/").load()
+CACHE["/"] = Directory("/")
 
 
 def list_path(path: str) -> List[Union[Directory, File]]:
@@ -332,7 +317,8 @@ def list_path(path: str) -> List[Union[Directory, File]]:
 
         ftp.retrlines("LIST", line_file_parser)
     except Exception as exc:
-        raise RuntimeError("Bad FTP Connection" + f"\n{exc}")
+        logger.error("Bad FTP Connection")
+        raise exc
     finally:
         ftp.close()
 
