@@ -28,6 +28,7 @@ urwid = "^2.1.2"
 # Preprocessing Packages
 geobr = { version = "^0.2.0", extras=["preprocessing"] }
 geocoder = { version = "^1.38.1", extras=["preprocessing"] }
+jsonschema = "^4.19.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"

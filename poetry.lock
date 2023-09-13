@@ -3867,4 +3867,4 @@ preprocessing = ["geobr", "geocoder"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "bf4c9d35ac5e49794dd22736d30732661aad91dbf9e7702f2456d99db68ad85f"
+content-hash = "f04348d03189f26d9bafcc700512f97f445867d67a20b18eeed5ef66f2e2d265"
