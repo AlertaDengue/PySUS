@@ -46,6 +46,7 @@ keplergl = "^0.3.2"
 jupyterlab = "^4.0.5"
 ipykernel = "^6.25.1"
 pytest-timeout = "^2.1.0"
+tomli = "^2.0.1"
 
 
 [tool.poetry.group.ftp.dependencies]
