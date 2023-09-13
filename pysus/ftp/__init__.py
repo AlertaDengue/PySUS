@@ -3,15 +3,16 @@ import pathlib
 import asyncio
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, List, Optional, Set, Union
+from typing import Any, List, Optional, Set, Union, Tuple, Dict, Self
 
 from aioftp import Client
+from bigtree import Node, add_path_to_tree
+from bigtree.tree.export import T
 from loguru import logger
 
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
-
 
 def to_list(ite: Any) -> list:
     """Parse any builtin data type into a list"""
@@ -37,6 +38,11 @@ class File:
         download(local_dir): extract the file to local_dir
         async_download(local_dir): async extract the file to local_dir
     """
+    name: str
+    extension: str
+    basename: pathlib.PurePosixPath
+    path: pathlib.PurePosixPath
+    __info__: Set[Union[int, str, datetime]]
 
     def __init__(self, path: str, name: str, info: dict) -> None:
         name, extension = os.path.splitext(name)
@@ -48,7 +54,7 @@ class File:
             if path.endswith("/")
             else path + "/" + str(self.basename)
         )
-        self.info = info
+        self.__info__ = info
 
     def __str__(self) -> str:
         return str(self.basename)
@@ -63,6 +69,18 @@ class File:
         if isinstance(other, File):
             return self.path == other.path
         return False
+
+    @property
+    def info(self):
+        """
+        Parse File info to a dict
+        """
+        info = {}
+        size, ftype, modify = self.__info__
+        info["size"] = size
+        info["type"] = ftype
+        info["modify"] = modify
+        return info
 
     def download(self, local_dir: str = CACHEPATH) -> str:
         dir = pathlib.Path(local_dir)
@@ -126,7 +144,46 @@ class File:
             logger.debug(output)
 
 
-class Directory:
+class RootTrees(object):
+    content: Set
+
+    def __init__(self) -> None:
+        self.content = set()
+        self.__load_root__()
+
+    def __getattr__(self, attr):
+        return self.__dict__[attr]
+
+    def __load_root__(self) -> None:
+        ftp = FTP("ftp.datasus.gov.br")
+        try:
+            ftp.connect()
+            ftp.login()
+            ftp.cwd("/")
+
+            def line_file_parser(file_line):
+                if not "<DIR>" in file_line:
+                    pass
+                _, _, _, *name = str(file_line).strip().split()
+                name = " ".join(name)
+                setattr(self, name, Node(name))
+                self.content.add(name)
+
+            ftp.retrlines("LIST", line_file_parser)
+        except Exception as exc:
+            logger.error("Bad FTP Connection")
+            raise exc
+        finally:
+            ftp.close()
+
+
+CACHE_TREE = RootTrees()
+
+ROOT_DIR = None
+
+CACHE: Dict = {"/": None}
+
+class Directory():
     """
     FTP Directory class.
 
@@ -134,22 +191,66 @@ class Directory:
         path [PurePosixPath]: entire directory path where the directory is located
                               inside the FTP server
         name [str]: directory name
-        info [dict]: a dict containing the keys [size, type, modify], which
-                     are present in every FTP server. In PySUS, this info
-                     is extract using `line_file_parser` with FTP LIST.
-                     OBS: A Directory should have size=0
     """
 
-    path: pathlib.PurePosixPath
     name: str
-    info: dict
-    __content__: List
+    path: pathlib.PurePosixPath
+    parent: Self # Directory?
+    loaded: bool
+    __content__: Set
 
-    def __init__(
-        self,
-        path: str,
-    ) -> None:
-        self.__self_load__(path)
+    def __new__(cls, path: str) -> Self:
+        path = f"/{path}" if not str(path).startswith("/") else path
+        path = path[:-1] if path.endswith('/') else path
+        if not path:
+            return CACHE["/"]
+
+        parent_path, name = path.rsplit("/")
+        if not parent_path:
+            parent_path = "/"
+
+        try:
+            directory = CACHE[path]
+        except KeyError:
+            try:
+                ftp = FTP("ftp.datasus.gov.br")
+                ftp.connect()
+                ftp.login()
+                ftp.cwd(path) # Checks if Dir exists
+            except Exception as exc:
+                if "error_perm: 550" in str(exc):
+                    logger.error(f"Not a directory {path}")
+                else:
+                    logger.error("Bad FTP Connection")
+                raise exc
+            finally:
+                ftp.close()
+
+            # Create the parents paths structure until path in CACHE
+            _path = path
+            dir_path = [] # Stack
+            while _path not in CACHE:
+                _parent_path, _ = _path.rsplit("/", maxsplit=1)
+                if not _parent_path:
+                    _parent_path = "/"
+                dir_path.append(_path)
+                _path = _parent_path # Consumes _path, add onto stack
+
+            while dir_path:
+                filo = dir_path.pop()
+                CACHE[filo] = None # Pre-populate CACHE
+
+            directory = object.__new__(cls)
+            directory.parent = Directory(parent_path)
+            directory.name = name
+            CACHE[path] = directory
+        return directory
+
+    def __init__(self, path: str) -> None:
+        path = f"/{path}" if not str(path).startswith("/") else path
+        path = path[:-1] if path.endswith('/') else path
+        self.path = pathlib.PurePosixPath(path)
+        self.loaded = False
         self.__content__ = []
 
     def __str__(self) -> str:
@@ -166,47 +267,6 @@ class Directory:
             return self.path == other.path
         return False
 
-    def __self_load__(self, path: str) -> None:
-        if str(path) == "/":
-            raise ValueError("Don't use root dir")
-
-        self.path = pathlib.PurePosixPath(path)
-        path, self.name = str(self.path).rsplit("/", maxsplit=1)
-
-        content = []
-        ftp = FTP("ftp.datasus.gov.br")
-
-        try:
-            ftp.connect()
-            ftp.login()
-            ftp.cwd(path)
-
-            def line_file_parser(file_line):
-                info = {}
-
-                if not "<DIR>" in file_line:
-                    pass
-
-                date, time, _, *name = str(file_line).strip().split()
-                name = " ".join(name)
-                modify = datetime.strptime(
-                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
-                )
-                info["type"] = "dir"
-                info["modify"] = modify
-                content.append((name, info))
-
-            ftp.retrlines("LIST", line_file_parser)
-        except Exception as exc:
-            raise RuntimeError("Bad FTP Connection" + f"\n{exc}")
-        finally:
-            ftp.close()
-
-        if self.name not in [n for n,i in content]:
-            raise ValueError(f"Not a directory: {self.path}")
-
-        self.info = [i for n,i in content if n == self.name]
-
     @property
     def content(self):
         """
@@ -222,6 +282,11 @@ class Directory:
         """
         self.__content__ = list_path(self.path)
         return self
+
+
+CACHE["/"] = Directory("/").load()
+
+ROOT_DIR = Directory("/").load()
 
 
 def list_path(path: str) -> List[Union[Directory, File]]:
