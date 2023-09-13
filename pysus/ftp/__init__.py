@@ -4,10 +4,7 @@ import asyncio
 from datetime import datetime
 from ftplib import FTP
 from typing import Any, List, Optional, Set, Union, Tuple, Dict, Self
-
 from aioftp import Client
-from bigtree import Node, add_path_to_tree
-from bigtree.tree.export import T
 from loguru import logger
 
 CACHEPATH = os.getenv(
@@ -27,7 +24,7 @@ class File:
     databases' files to share state and its reusability.
 
     Parameters
-        path [PurePosixPath]: entire directory path where the file is located
+        path [str]: entire directory path where the file is located
                               inside the FTP server
         name [str]: basename of the file
         info [dict]: a dict containing the keys [size, type, modify], which
@@ -40,19 +37,19 @@ class File:
     """
     name: str
     extension: str
-    basename: pathlib.PurePosixPath
-    path: pathlib.PurePosixPath
+    basename: str
+    path: str
     __info__: Set[Union[int, str, datetime]]
 
     def __init__(self, path: str, name: str, info: dict) -> None:
         name, extension = os.path.splitext(name)
         self.name = name
         self.extension = extension
-        self.basename = pathlib.PurePosixPath(self.name + self.extension)
-        self.path = pathlib.PurePosixPath(
-            path + str(self.basename)
+        self.basename = self.name + self.extension
+        self.path = (
+            path + self.basename
             if path.endswith("/")
-            else path + "/" + str(self.basename)
+            else path + "/" + self.basename
         )
         self.__info__ = info
 
@@ -120,7 +117,7 @@ class File:
             )
             info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
 
-            return pathlib.PurePosixPath(name), info
+            return name, info
 
         dir = pathlib.Path(local_dir)
         dir.mkdir(exist_ok=True, parents=True)
@@ -149,11 +146,21 @@ CACHE: Dict = {}
 
 class Directory():
     """
-    FTP Directory class.
+    FTP Directory class. The Directory does not load its content when called.
+    Instead, it will cache all the parents Directories until root "/". To load
+    the content, the attr content or the method load() should be called. When 
+    firstly instantiated, it will CWD into the path provided and store self and 
+    all parents in cache
 
     Parameters
         path [str]: entire directory path where the directory is located
                     inside the FTP server
+    Attrs
+        name [str]: Directory name
+        path [str]: Directory path
+        parent [Directory]: parent Directory
+        loaded [bool]: True if content is loaded
+        content [list]: A list of Files and/or Directories inside the Directory 
     """
 
     name: str
@@ -162,7 +169,7 @@ class Directory():
     loaded: bool = False
     __content__: Set = set()
 
-    def __new__(cls, path: str, unsafe_is_root_child=False) -> Self:
+    def __new__(cls, path: str, _is_root_child=False) -> Self:
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith('/') else path
 
@@ -187,8 +194,8 @@ class Directory():
                         pass
                     _, _, _, *name = str(file_line).strip().split()
                     name = "/" + " ".join(name)
-                    child = Directory(name, unsafe_is_root_child=True)
-                    CACHE[name] = child
+                    child = Directory(name, _is_root_child=True)
+                    CACHE[name] = child # Store root children on CACHE
                     directory.__content__.add(child)
 
                 ftp.retrlines("LIST", line_file_parser)
@@ -197,7 +204,7 @@ class Directory():
 
         parent_path, name = path.rsplit("/", maxsplit=1)
 
-        if unsafe_is_root_child:
+        if _is_root_child:
             # WARNING: This parameter is for internal meanings, do not use
             directory = object.__new__(cls)
             directory.parent = CACHE["/"]
@@ -227,13 +234,16 @@ class Directory():
                 ftp.close()
 
             directory = object.__new__(cls)
+            # TODO: In this step, all the parent directories will be generated,
+            # but it cwds into every parent, while its certain that they exist
+            # in ftp server. The best approach should be to skip the cwds
             directory.parent = Directory(parent_path)
             directory.name = name
             CACHE[path] = directory
 
         return directory
 
-    def __init__(self, path: str, unsafe_is_root_child=False) -> None:
+    def __init__(self, path: str, _is_root_child=False) -> None:
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith('/') else path
         if not path:
@@ -241,10 +251,10 @@ class Directory():
         self.path = path
 
     def __str__(self) -> str:
-        return str(self.path)
+        return self.path
 
     def __repr__(self) -> str:
-        return str(self.path)
+        return self.path
 
     def __hash__(self):
         return hash(self.path)
@@ -254,10 +264,18 @@ class Directory():
             return self.path == other.path
         return False
 
+    def __truediv__(self, path: str):
+        if isinstance(path, str):
+            path = f"/{path}" if not path.startswith("/") else path
+            path = path[:-1] if path.endswith('/') else path
+            return Directory(self.path + path)
+        raise ValueError("Unsupported division")
+
     @property
     def content(self):
         """
-        Returns a list of Files and Directories in the Directory
+        Returns a list of Files and Directories in the Directory, will load
+        if needed
         """
         if not self.loaded:
             self.load()
@@ -268,13 +286,21 @@ class Directory():
         The content of a Directory must be explicity loaded
         """
         self.__content__ = list_path(self.path)
+        self.loaded = True
         return self
+
+    def reload(self):
+        """
+        Reloads the content of the Directory
+        """
+        self.loaded = False
+        return self.load()
 
 
 CACHE["/"] = Directory("/")
 
 
-def list_path(path: str) -> List[Union[Directory, File]]:
+def list_path(path: str) -> Set[Union[Directory, File]]:
     """
     This method is responsible for listing all the database's
     files when the database class is firstly called. It will
@@ -282,7 +308,7 @@ def list_path(path: str) -> List[Union[Directory, File]]:
     Directories, returning its content.
     """
     path = str(path)
-    content = []
+    content = set()
     ftp = FTP("ftp.datasus.gov.br")
 
     try:
@@ -304,7 +330,7 @@ def list_path(path: str) -> List[Union[Directory, File]]:
                 xpath = (
                     path + name if path.endswith("/") else path + "/" + name
                 )
-                content.append(Directory(xpath))
+                content.add(Directory(xpath))
             else:
                 date, time, size, name = str(file_line).strip().split()
                 info["size"] = size
@@ -313,7 +339,7 @@ def list_path(path: str) -> List[Union[Directory, File]]:
                     " ".join([date, time]), "%m-%d-%y %I:%M%p"
                 )
                 info["modify"] = modify
-                content.append(File(path, name, info))
+                content.add(File(path, name, info))
 
         ftp.retrlines("LIST", line_file_parser)
     except Exception as exc:
@@ -350,7 +376,7 @@ class Database:
 
     ftp: FTP
     name: str
-    paths: List[str]
+    paths: List[Directory]
     metadata: dict
     __content__: Set[Union[Directory, File]]
 
