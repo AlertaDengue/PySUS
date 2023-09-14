@@ -165,14 +165,15 @@ class Directory:
         path [str]: Directory path
         parent [Directory]: parent Directory
         loaded [bool]: True if content is loaded
-        content [list]: A list of Files and/or Directories inside the Directory
+        content [dict[str:[File, Directory]]]: A dictionary with name and File
+            or Directory inside the Directory (e.g: "name": Directory("name"))
     """
 
     name: str
     path: str
     parent: Self  # Directory?
     loaded: bool = False
-    __content__: Set = set()
+    __content__: Dict = {}
 
     def __new__(cls, path: str, _is_root_child=False) -> Self:
         path = f"/{path}" if not str(path).startswith("/") else path
@@ -187,7 +188,7 @@ class Directory:
                 directory.parent = directory
                 directory.name = "/"
                 directory.path = "/"
-                directory.__content__ = set()
+                directory.__content__ = {}
                 CACHE["/"] = directory
 
                 ftp = FTP("ftp.datasus.gov.br")
@@ -202,7 +203,7 @@ class Directory:
                     name = "/" + " ".join(name)
                     child = Directory(name, _is_root_child=True)
                     CACHE[name] = child  # Store root children on CACHE
-                    directory.__content__.add(child)
+                    directory.__content__[name] = child
 
                 ftp.retrlines("LIST", line_file_parser)
                 directory.loaded = True
@@ -233,6 +234,8 @@ class Directory:
                     directory = object.__new__(cls)
                     directory.parent = Directory(parent_path)
                     directory.name = name
+                    directory.loaded = False
+                    directory.__content__ = {}
                     CACHE[path] = directory
                     return directory
                 raise exc
@@ -245,8 +248,9 @@ class Directory:
             # in ftp server. The best approach should be to skip the cwds
             directory.parent = Directory(parent_path)
             directory.name = name
+            directory.loaded = False
+            directory.__content__ = {}
             CACHE[path] = directory
-
         return directory
 
     def __init__(self, path: str, _is_root_child=False) -> None:
@@ -285,13 +289,13 @@ class Directory:
         """
         if not self.loaded:
             self.load()
-        return list(self.__content__)
+        return list(self.__content__.values())
 
     def load(self):
         """
         The content of a Directory must be explicity loaded
         """
-        self.__content__ = list_path(self.path)
+        self.__content__ |= load_path(self.path)
         self.loaded = True
         return self
 
@@ -306,15 +310,14 @@ class Directory:
 CACHE["/"] = Directory("/")
 
 
-def list_path(path: str) -> Set[Union[Directory, File]]:
+def load_path(path: str) -> Dict[str, Union[Directory, File]]:
     """
-    This method is responsible for listing all the database's
-    files when the database class is firstly called. It will
-    convert the files found within the paths into `File`s or
+    This method is responsible for listing all the FTP directory's.
+    Converts the items found within a valid DATASUS path into `File`s or
     Directories, returning its content.
     """
     path = str(path)
-    content = set()
+    content = {}
     ftp = FTP("ftp.datasus.gov.br")
 
     try:
@@ -336,7 +339,7 @@ def list_path(path: str) -> Set[Union[Directory, File]]:
                 xpath = (
                     path + name if path.endswith("/") else path + "/" + name
                 )
-                content.add(Directory(xpath))
+                content[name] = Directory(xpath)
             else:
                 date, time, size, name = str(file_line).strip().split()
                 info["size"] = size
@@ -345,11 +348,10 @@ def list_path(path: str) -> Set[Union[Directory, File]]:
                     " ".join([date, time]), "%m-%d-%y %I:%M%p"
                 )
                 info["modify"] = modify
-                content.add(File(path, name, info))
+                content[name] = File(path, name, info)
 
         ftp.retrlines("LIST", line_file_parser)
     except Exception as exc:
-        logger.error("Bad FTP Connection")
         raise exc
     finally:
         ftp.close()
@@ -384,11 +386,11 @@ class Database:
     name: str
     paths: List[Directory]
     metadata: dict
-    __content__: Set[Union[Directory, File]]
+    __content__: Dict[str, Union[Directory, File]]
 
     def __init__(self) -> None:
         self.ftp = FTP("ftp.datasus.gov.br")
-        self.__content__ = set()
+        self.__content__ = {}
 
     def __repr__(self) -> str:
         return f'{self.name} - {self.metadata["long_name"]}'
@@ -405,7 +407,7 @@ class Database:
                 "content is not loaded, use `load()` to load default paths"
             )
             return []
-        return sorted(list(self.__content__), key=str)
+        return sorted(list(self.__content__.values()), key=str)
 
     @property
     def files(self) -> List[File]:
@@ -413,15 +415,7 @@ class Database:
         Lists Files inside content. To load a specific Directory inside
         content, just `load()` this directory and list files again.
         """
-        if not self.__content__:
-            logger.info(
-                "content is not loaded, use `load()` to load default paths"
-            )
-            return []
-        return sorted(
-            list(filter(lambda f: isinstance(f, File), self.__content__)),
-            key=str,
-        )
+        return list(filter(lambda f: isinstance(f, File), self.content))
 
     def load(
         self, directories: Optional[Union[Directory, List[Directory]]] = None
@@ -435,17 +429,16 @@ class Database:
 
         directories = to_list(directories)
 
-        for path in directories:
+        for i, path in enumerate(directories):
             if isinstance(path, str):
                 path = Directory(path)
+                directories[i] = path
 
             if not isinstance(path, Directory):
                 raise ValueError("path must a valid DATASUS directory")
 
-        content = []
         for directory in directories:
-            content.extend(directory.content)
-        self.__content__.update(set(content))
+            self.__content__ |= directory.content
         return self
 
     def describe(self, file: File) -> dict:

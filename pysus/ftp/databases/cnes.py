@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from itertools import product
 import humanize
 
@@ -37,19 +37,19 @@ class CNES(Database):
         "SR": "Serviço Especializado",
         "ST": "Estabelecimentos",
     }
-    __loaded__ = []
+    __loaded__ = set()
 
     def load(
         self,
         groups: Union[str, List[str]] = None,
     ):
         """
-        Loads specific paths to Database content, can receive CNES Groups as well.
-        It will convert the files found within the paths into content.
+        Loads CNES Groups into content. Will convert the files and directories 
+        found within FTP Directories into self.content
         """
         if not self.__content__:
             self.paths.load()
-            self.__content__.update(self.paths.content)
+            self.__content__ |= self.paths.__content__
 
         if groups:
             groups = to_list(groups)
@@ -61,14 +61,13 @@ class CNES(Database):
                     f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
                 )
 
-            dirs = list(
-                filter(lambda c: isinstance(c, Directory), self.__content__)
-            )
-
-            for directory in dirs:
-                if directory.name in [gr.upper() for gr in groups]:
-                    self.__content__.update(directory.content)
-
+            for group in groups:
+                group = group.upper()
+                if group not in self.__loaded__:
+                    directory = self.__content__[group]
+                    directory.load()
+                    self.__content__ |= directory.__content__
+                    self.__loaded__.add(directory.name)
         return self
 
     def describe(self, file: File):
@@ -76,12 +75,12 @@ class CNES(Database):
             return file
 
         if file.extension.upper() in [".DBC", ".DBF"]:
-            group, uf, year, month = self.format(file)
+            group, _uf, year, month = self.format(file)
 
             description = {
                 "name": str(file.basename),
                 "group": self.groups[group],
-                "uf": UFs[uf],
+                "uf": UFs[_uf],
                 "month": MONTHS[int(month)],
                 "year": zfill_year(year),
                 "size": humanize.naturalsize(file.info["size"]),
@@ -94,31 +93,36 @@ class CNES(Database):
         return file
 
     def format(self, file: File) -> tuple:
-        group, uf = file.name[:2].upper(), file.name[2:4].upper()
+        group, _uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
-        return group, uf, zfill_year(year), month
+        return group, _uf, zfill_year(year), month
 
     def get_files(
         self,
-        groups: Union[List[str], str],
-        ufs: Union[List[str], str],
-        years: Union[list, str, int],
-        months: Union[list, str, int],
+        group: Union[List[str], str],
+        uf: Optional[Union[List[str], str]] = None,
+        year: Optional[Union[list, str, int]] = None,
+        month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        groups = [gr.upper() for gr in to_list(groups)]
-        ufs = parse_UFs(ufs)
-        years = [str(m)[-2:].zfill(2) for m in to_list(years)]
-        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
+        if not group:
+            raise ValueError("At least one CNES group is required")
 
-        if not all([gr in list(self.groups) for gr in groups]):
-            raise ValueError(
-                f"Unknown CNES Group(s): {set(groups).difference(list(self.groups))}"
-            )
+        groups = [gr.upper() for gr in to_list(group)]
 
-        for group in groups:
-            if group not in self.__loaded__:
-                self.load(groups=group)
+        self.load(groups)
 
-        targets = ["".join(t) for t in product(groups, ufs, years, months)]
+        files = list(filter(lambda f: f.name[:2] in groups, self.files))
 
-        return [f for f in self.files if f.name in targets]
+        if uf:
+            ufs = parse_UFs(uf)
+            files = list(filter(lambda f: f.name[2:4] in ufs, files))
+
+        if year:
+            years = [str(m)[-2:].zfill(2) for m in to_list(year)]
+            files = list(filter(lambda f: f.name[-4:-2] in years, files))
+
+        if month:
+            months = [str(y)[-2:].zfill(2) for y in to_list(month)]
+            files = list(filter(lambda f: f.name[-2:] in months, files))
+
+        return files
