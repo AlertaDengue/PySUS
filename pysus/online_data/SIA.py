@@ -10,9 +10,9 @@ from pprint import pprint
 from typing import Dict, Tuple, Union
 
 from pysus.ftp import CACHEPATH
-from pysus.ftp.databases import SIA
+from pysus.ftp.databases.sia import SIA
 
-sia = SIA()
+sia = SIA().load()
 
 
 group_dict: Dict[str, Tuple[str, int, int]] = {

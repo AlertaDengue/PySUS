@@ -1,9 +1,10 @@
+import asyncio
 import os
 import pathlib
-import asyncio
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, List, Optional, Set, Union, Tuple, Dict, Self
+from typing import Any, Dict, List, Optional, Self, Set, Union
+
 from aioftp import Client
 from loguru import logger
 
@@ -11,9 +12,12 @@ CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
 
+
 def to_list(ite: Any) -> list:
     """Parse any builtin data type into a list"""
-    return [ite] if type(ite) in [str, float, int] else list(ite)
+    return (
+        [ite] if type(ite) in [str, float, int, Directory, File] else list(ite)
+    )
 
 
 class File:
@@ -35,6 +39,7 @@ class File:
         download(local_dir): extract the file to local_dir
         async_download(local_dir): async extract the file to local_dir
     """
+
     name: str
     extension: str
     basename: str
@@ -144,12 +149,12 @@ class File:
 CACHE: Dict = {}
 
 
-class Directory():
+class Directory:
     """
     FTP Directory class. The Directory does not load its content when called.
     Instead, it will cache all the parents Directories until root "/". To load
-    the content, the attr content or the method load() should be called. When 
-    firstly instantiated, it will CWD into the path provided and store self and 
+    the content, the attr content or the method load() should be called. When
+    firstly instantiated, it will CWD into the path provided and store self and
     all parents in cache
 
     Parameters
@@ -160,20 +165,20 @@ class Directory():
         path [str]: Directory path
         parent [Directory]: parent Directory
         loaded [bool]: True if content is loaded
-        content [list]: A list of Files and/or Directories inside the Directory 
+        content [list]: A list of Files and/or Directories inside the Directory
     """
 
     name: str
     path: str
-    parent: Self # Directory?
+    parent: Self  # Directory?
     loaded: bool = False
     __content__: Set = set()
 
     def __new__(cls, path: str, _is_root_child=False) -> Self:
         path = f"/{path}" if not str(path).startswith("/") else path
-        path = path[:-1] if path.endswith('/') else path
+        path = path[:-1] if path.endswith("/") else path
 
-        if not path: # Load root, store on CACHE
+        if not path:  # Load root, store on CACHE
             path = "/"
             try:
                 directory = CACHE["/"]
@@ -189,13 +194,14 @@ class Directory():
                 ftp.connect()
                 ftp.login()
                 ftp.cwd("/")
+
                 def line_file_parser(file_line):
-                    if not "<DIR>" in file_line:
+                    if "<DIR>" not in file_line:
                         pass
                     _, _, _, *name = str(file_line).strip().split()
                     name = "/" + " ".join(name)
                     child = Directory(name, _is_root_child=True)
-                    CACHE[name] = child # Store root children on CACHE
+                    CACHE[name] = child  # Store root children on CACHE
                     directory.__content__.add(child)
 
                 ftp.retrlines("LIST", line_file_parser)
@@ -219,7 +225,7 @@ class Directory():
                 ftp = FTP("ftp.datasus.gov.br")
                 ftp.connect()
                 ftp.login()
-                ftp.cwd(path) # Checks if parent dir exists on DATASUS
+                ftp.cwd(path)  # Checks if parent dir exists on DATASUS
             except Exception as exc:
                 if "cannot find the path" in str(exc):
                     logger.error(f"Not a directory {path}")
@@ -245,7 +251,7 @@ class Directory():
 
     def __init__(self, path: str, _is_root_child=False) -> None:
         path = f"/{path}" if not str(path).startswith("/") else path
-        path = path[:-1] if path.endswith('/') else path
+        path = path[:-1] if path.endswith("/") else path
         if not path:
             path = "/"
         self.path = path
@@ -267,7 +273,7 @@ class Directory():
     def __truediv__(self, path: str):
         if isinstance(path, str):
             path = f"/{path}" if not path.startswith("/") else path
-            path = path[:-1] if path.endswith('/') else path
+            path = path[:-1] if path.endswith("/") else path
             return Directory(self.path + path)
         raise ValueError("Unsupported division")
 
@@ -417,20 +423,28 @@ class Database:
             key=str,
         )
 
-    def load(self, paths: Optional[List[str]] = None):
+    def load(
+        self, directories: Optional[Union[Directory, List[Directory]]] = None
+    ) -> Self:
         """
-        Loads specific paths to Database content, can receive Directories as well.
-        It will convert the files found within the paths into Database.content.
+        Loads specific directories to Database content. Will aggregate the
+        files found within Directories into Database.content.
         """
-        if not paths:
-            paths = self.paths
+        if not directories:
+            directories = self.paths
 
-        if not isinstance(paths, list):
-            raise ValueError("paths must a list")
+        directories = to_list(directories)
+
+        for path in directories:
+            if isinstance(path, str):
+                path = Directory(path)
+
+            if not isinstance(path, Directory):
+                raise ValueError("path must a valid DATASUS directory")
 
         content = []
-        for path in paths:
-            content.extend(list_path(str(path)))
+        for directory in directories:
+            content.extend(directory.content)
         self.__content__.update(set(content))
         return self
 
@@ -482,6 +496,7 @@ class Database:
         """
         Asynchronously downloads a list of files
         """
+
         async def download_file(file):
             if isinstance(file, File):
                 await file.async_download(local_dir=local_dir)

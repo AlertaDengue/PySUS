@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Union
 
 from pysus.ftp import CACHEPATH
-from pysus.ftp.databases import SINAN
+from pysus.ftp.databases.sinan import SINAN
 
 
-sinan = SINAN()
+sinan = SINAN().load()
 
 
 def list_diseases() -> dict:

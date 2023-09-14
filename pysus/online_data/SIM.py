@@ -12,10 +12,10 @@ from dbfread import DBF
 from loguru import logger
 
 from pysus.ftp import CACHEPATH
-from pysus.ftp.databases import SIM
+from pysus.ftp.databases.sim import SIM
 
 
-sim = SIM()
+sim = SIM().load()
 
 
 def download(

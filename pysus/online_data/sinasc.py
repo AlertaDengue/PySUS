@@ -7,9 +7,9 @@ license: GPL V3 or Later
 from typing import Union
 
 from pysus.ftp import CACHEPATH
-from pysus.ftp.databases import SINASC
+from pysus.ftp.databases.sinasc import SINASC
 
-sinasc = SINASC()
+sinasc = SINASC().load()
 
 
 def download(
