@@ -36,21 +36,6 @@ SEMANTIC_RELEASE = npx --yes \
           semantic-release
 
 
-#* Poetry
-.PHONY: poetry-download
-poetry-download:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) -
-
-.PHONY: poetry-remove
-poetry-remove:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) - --uninstall
-
-#* Installation
-.PHONY: install
-install:
-	poetry lock -n && poetry export --without-hashes > requirements.txt
-	poetry build && poetry install
-
 .PHONY: pre-commit-install
 pre-commit-install:
 	poetry run pre-commit install
