@@ -556,6 +556,17 @@ test = ["pytest"]
 typing = ["mypy (>=0.990)"]
 
 [[package]]
+name = "compose-go"
+version = "2.21.0"
+description = "Docker Compose v2 (GoLang) wrapped in a Python Package"
+optional = false
+python-versions = ">=3.7.0,<4.0.0"
+files = [
+    {file = "compose_go-2.21.0-cp311-cp311-manylinux_2_35_x86_64.whl", hash = "sha256:5881629e53d1ea1d6dc3bbae88bf2752ab5ffb01b9478f9d66c2495a0f6646a1"},
+    {file = "compose_go-2.21.0.tar.gz", hash = "sha256:85381d5afa8a666001c53325830716984de4e057f50daa2f12166ec1c4609731"},
+]
+
+[[package]]
 name = "contourpy"
 version = "1.1.0"
 description = "Python library for calculating contours of 2D quadrilateral grids"
@@ -3878,4 +3889,4 @@ preprocessing = ["geobr", "geocoder"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d160fece68c8539880cb97ce80dfeaee6506c2181526c87c88c4afd3051e3cf4"
+content-hash = "bbce95a3b4ebe52790fd5b4f8816f9ad4f80b22a51dc714ca79d3513d78729c8"
