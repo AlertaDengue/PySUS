@@ -7,5 +7,6 @@ dependencies:
   - cffi
   - gcc
   - make
+  - nbsphinx
   - pip
   - poetry >= 1.3.2
