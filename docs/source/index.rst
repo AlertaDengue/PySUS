@@ -14,20 +14,7 @@ Contents:
    :maxdepth: 2
 
    Data Sources <databases/data-sources>
-   Tutorials <tutorials>
-   Loading SINAN data <SINAN.ipynb>
-   Loading SIM data <SIM.ipynb>
-   Loading SIA data <Analyzing SIA.ipynb>
-   LOADING PNI data <PNI.ipynb>
-   Analyzing Dengue data <Dengue.ipynb>
-   Analyzing Chikungunya data <Chikungunya.ipynb>
-   Analyzing Zika data <Zika.ipynb>
-   Downloading COVID data from ESUS <ESUS.ipynb>
-   Downloading Infogripe data <Infogripe.ipynb>
-   Downloading Infodengue data <Infodengue.ipynb>
-   Getting Official Statistics <IBGE_data.ipynb>
-
-
+   Tutorials <tutorials/tutorials>
 
 
 Indices and tables
