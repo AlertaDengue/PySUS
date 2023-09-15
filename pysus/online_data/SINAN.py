@@ -20,7 +20,7 @@ def get_available_years(disease_code: str) -> list:
     :param disease_code: Disease code. See `SINAN.list_diseases` for valid codes
     :return: A list of DBC files from a specific disease found in the FTP Server.
     """
-    return sinan.get_files(dis_codes=disease_code)
+    return sinan.get_files(dis_code=disease_code)
 
 
 def download(
@@ -35,7 +35,7 @@ def download(
     :param data_path: The directory where the file will be downloaded to.
     :return: list of downloaded files.
     """
-    files = sinan.get_files(dis_codes=diseases, years=years)
+    files = sinan.get_files(dis_code=diseases, year=years)
     return sinan.download(files, local_dir=data_path)
 
 

@@ -73,7 +73,7 @@ class SINASC(Database):
             ufs = parse_UFs(uf)
             files = list(filter(lambda f: self.format(f)[1] in ufs, files))
 
-        if year:
+        if year or str(year) in ["0", "00"]:
             years = [zfill_year(str(y)[-2:]) for y in to_list(year)]
             files = list(filter(lambda f: self.format(f)[2] in years, files))
 

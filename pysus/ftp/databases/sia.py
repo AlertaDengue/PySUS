@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from itertools import product
 
 from pysus.ftp import Database, Directory, File
@@ -66,7 +66,7 @@ class SIA(Database):
         return {}
 
     def format(self, file: File) -> tuple:
-        if file.extension.upper() == ".DBC":
+        if file.extension.upper() in [".DBC", ".DBF"]:
             year, month = file.name[-4:-2], file.name[-2:]
             group, _uf = file.name[:-6].upper(), file.name[-6:-4].upper()
             return group, _uf, zfill_year(year), month
@@ -74,32 +74,34 @@ class SIA(Database):
 
     def get_files(
         self,
-        groups: Union[List[str], str],
-        ufs: Union[List[str], str],
-        months: Union[list, str, int],
-        years: Union[list, str, int],
+        group: Union[List[str], str],
+        uf: Optional[Union[List[str], str]] = None,
+        year: Optional[Union[list, str, int]] = None,
+        month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        groups = [gr.upper() for gr in to_list(groups)]
-        ufs = parse_UFs(ufs)
-        months = [str(y)[-2:].zfill(2) for y in to_list(months)]
-        years = [str(m)[-2:].zfill(2) for m in to_list(years)]
+        files = list(filter(
+            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+        ))
+
+        groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
                 f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
             )
 
-        # Fist filter files by group to reduce the files list length
-        groups_files = []
-        for file in self.files:
-            if file.name[:-6] in groups:
-                groups_files.append(file)
+        files = list(filter(lambda f: self.format(f)[0] in groups, files))
 
-        targets = ["".join(t) for t in product(ufs, years, months)]
+        if uf:
+            ufs = parse_UFs(uf)
+            files = list(filter(lambda f: self.format(f)[1] in ufs, files))
 
-        files = []
-        for file in groups_files:
-            if file.name[-6:] in targets:
-                files.append(file)
+        if year or str(year) in ["0", "00"]:
+            years = [zfill_year(str(m)[-2:]) for m in to_list(year)]
+            files = list(filter(lambda f: self.format(f)[2] in years, files))
+
+        if month:
+            months = [str(y)[-2:].zfill(2) for y in to_list(month)]
+            files = list(filter(lambda f: self.format(f)[3] in months, files))
 
         return files

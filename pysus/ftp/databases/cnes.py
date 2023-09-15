@@ -113,7 +113,7 @@ class CNES(Database):
             ufs = parse_UFs(uf)
             files = list(filter(lambda f: f.name[2:4] in ufs, files))
 
-        if year:
+        if year or str(year) in ["0", "00"]:
             years = [str(m)[-2:].zfill(2) for m in to_list(year)]
             files = list(filter(lambda f: f.name[-4:-2] in years, files))
 

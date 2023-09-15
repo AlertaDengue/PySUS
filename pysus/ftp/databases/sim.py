@@ -55,7 +55,7 @@ class SIM(Database):
             ufs = parse_UFs(uf)
             files = list(filter(lambda f: self.format(f)[1] in ufs, files))
 
-        if year:
+        if year or str(year) in ["0", "00"]:
             years = [zfill_year(y) for y in to_list(year)]
             files = list(filter(lambda f: self.format(f)[2] in years, files))
 

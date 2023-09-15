@@ -116,37 +116,27 @@ class SINAN(Database):
 
     def get_files(
         self,
-        dis_codes: Optional[Union[str, list]] = None,
-        years: Optional[Union[str, int, list]] = None,
+        dis_code: Optional[Union[str, list]] = None,
+        year: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
-        codes = [c.upper() for c in to_list(dis_codes)] if dis_codes else None
-        fyears = (
-            [str(y)[-2:].zfill(2) for y in to_list(years)] if years else None
-        )
+        files = list(filter(
+            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+        ))
 
-        if codes and not all(code in self.diseases for code in codes):
-            raise ValueError(
-                f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
-            )
+        if dis_code:
+            codes = [c.upper() for c in to_list(dis_code)]
 
-        if not codes and not fyears:
-            return self.files
-
-        if not codes and fyears:
-            return list(
-                (f for f in self.files if any(y in str(f) for y in fyears))
-            )
-
-        if not fyears and codes:
-            return list(
-                (
-                    f
-                    for f in self.files
-                    if any(str(f).startswith(c + "BR") for c in codes)
+            if codes and not all(code in self.diseases for code in codes):
+                raise ValueError(
+                    f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
                 )
-            )
 
-        targets = [f"{c}BR{y}" for c, y in list(product(codes, fyears))]
-        return list(
-            (f for f in self.files if any(f.name == t for t in targets))
-        )
+            files = list(filter(lambda f: self.format(f)[0] in codes, files))
+
+        if year or str(year) in ["0", "00"]:
+            years = (
+                [zfill_year(str(y)[-2:]) for y in to_list(year)]
+            )
+            files = list(filter(lambda f: self.format(f)[1] in years, files))
+
+        return files
