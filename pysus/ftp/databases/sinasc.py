@@ -1,5 +1,4 @@
-from typing import List, Union
-import humanize
+from typing import List, Union, Optional
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
@@ -23,19 +22,20 @@ class SINASC(Database):
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() == ".DBC":
-            uf, year = self.format(file)
+            group, _uf, year = self.format(file)
 
-            if uf == "EX":  # DNEX2021.dbc
+            if _uf == "EX":  # DNEX2021.dbc
                 state = None
             else:
-                state = UFs[uf]
+                state = UFs[_uf]
 
             description = {
-                "name": str(file.basename),
+                "name": file.basename,
+                "group": self.groups[group],
                 "uf": state,
                 "year": year,
-                "size": humanize.naturalsize(file.info["size"]),
-                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+                "size": file.info["size"],
+                "last_update": file.info["modify"],
             }
 
             return description
@@ -47,39 +47,34 @@ class SINASC(Database):
 
         year = zfill_year(file.name[-2:])
         charname = "".join([c for c in file.name if not c.isnumeric()])
-        uf = charname[-2:]
-        return uf, zfill_year(year)
+        group, _uf = charname[:-2], charname[-2:]
+        return group, _uf, zfill_year(year)
 
     def get_files(
         self,
-        ufs: Union[list[str], str],
-        years: Union[list, str, int],
+        group: Union[List[str], str],
+        uf: Optional[Union[List[str], str]] = None,
+        year: Optional[Union[List, str, int]] = None,
     ) -> List[File]:
-        if "EX" in to_list(ufs):
-            # DNEX2021
-            if len(to_list(ufs)) == 1:
-                return []
+        files = self.files
 
-            to_list(ufs).remove("EX")
+        groups = to_list(group)
 
-        ufs = parse_UFs(ufs)
-        years = [str(y)[-2:].zfill(2) for y in to_list(years)]
+        files = list(filter(lambda f: self.format(f)[0] in groups, files))
 
-        # Fist filter years to reduce the list size
-        year_files = []
-        for file in self.files:
-            if str(file.info["modify"].year) in years:
-                year_files.append(file)
+        if uf:
+            if "EX" in to_list(uf):
+                # DNEX2021
+                if len(to_list(uf)) == 1:
+                    return []
 
-        files = []
-        for file in year_files:
-            if "ANT/DNRES" in str(file.path):
-                for uf in ufs:
-                    if uf in file.name[3:]:
-                        files.append(file)
-            else:
-                for uf in ufs:
-                    if uf in file.name[2:]:
-                        files.append(file)
+                to_list(uf).remove("EX")
+
+            ufs = parse_UFs(uf)
+            files = list(filter(lambda f: self.format(f)[1] in ufs, files))
+
+        if year:
+            years = [zfill_year(str(y)[-2:]) for y in to_list(year)]
+            files = list(filter(lambda f: self.format(f)[2] in years, files))
 
         return files
