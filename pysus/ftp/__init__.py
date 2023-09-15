@@ -76,7 +76,7 @@ class File:
     @property
     def info(self):
         """
-        Parse File info to a dict
+        Parse File info to human format
         """
         info = {}
         info["size"] = humanize.naturalsize(self.__info__["size"])
@@ -85,20 +85,27 @@ class File:
         return info
 
     def download(self, local_dir: str = CACHEPATH) -> str:
-        dir = pathlib.Path(local_dir)
-        dir.mkdir(exist_ok=True, parents=True)
-        filepath = dir / self.basename
+        _dir = pathlib.Path(local_dir)
+        _dir.mkdir(exist_ok=True, parents=True)
+        filepath = _dir / self.basename
 
         if filepath.exists():
             return str(filepath)
 
-        ftp = ftp = FTP("ftp.datasus.gov.br")
-        ftp.login()
-        ftp.retrbinary(
-            f"RETR {self.path}",
-            open(f"{filepath}", "wb").write,
-        )
-        ftp.close()
+        try:
+            ftp = ftp = FTP("ftp.datasus.gov.br")
+            ftp.login()
+            output = open(f"{filepath}", "wb")
+            ftp.retrbinary(
+                f"RETR {self.path}",
+                output.write,
+            )
+        except Exception as exc:
+            raise exc
+        finally:
+            ftp.close()
+            output.close()
+
         logger.info(f"{self.basename} downloaded at {local_dir}")
         return str(filepath)
 
@@ -124,9 +131,9 @@ class File:
 
             return name, info
 
-        dir = pathlib.Path(local_dir)
-        dir.mkdir(exist_ok=True, parents=True)
-        filepath = dir / self.basename
+        _dir = pathlib.Path(local_dir)
+        _dir.mkdir(exist_ok=True, parents=True)
+        filepath = _dir / self.basename
 
         output = (
             local_dir + str(self.basename)
@@ -136,14 +143,13 @@ class File:
 
         if filepath.exists():
             logger.debug(output)
-            pass
-
-        async with Client.context(
-            host="ftp.datasus.gov.br", parse_list_line_custom=line_file_parser
-        ) as client:
-            await client.login()
-            await client.download(self.path, output, write_into=True)
-            logger.debug(output)
+        else:
+            async with Client.context(
+                host="ftp.datasus.gov.br", parse_list_line_custom=line_file_parser
+            ) as client:
+                await client.login()
+                await client.download(self.path, output, write_into=True)
+                logger.debug(output)
 
 
 CACHE: Dict = {}
@@ -176,6 +182,7 @@ class Directory:
     __content__: Dict = {}
 
     def __new__(cls, path: str, _is_root_child=False) -> Self:
+        ftp = FTP("ftp.datasus.gov.br")
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith("/") else path
 
@@ -191,7 +198,6 @@ class Directory:
                 directory.__content__ = {}
                 CACHE["/"] = directory
 
-                ftp = FTP("ftp.datasus.gov.br")
                 ftp.connect()
                 ftp.login()
                 ftp.cwd("/")
@@ -207,6 +213,8 @@ class Directory:
 
                 ftp.retrlines("LIST", line_file_parser)
                 directory.loaded = True
+            finally:
+                ftp.close()
             return directory
 
         parent_path, name = path.rsplit("/", maxsplit=1)
@@ -223,7 +231,6 @@ class Directory:
             directory = CACHE[path]
         except KeyError:
             try:
-                ftp = FTP("ftp.datasus.gov.br")
                 ftp.connect()
                 ftp.login()
                 ftp.cwd(path)  # Checks if parent dir exists on DATASUS
