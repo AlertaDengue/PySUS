@@ -1,6 +1,5 @@
 from itertools import product
 from typing import List, Union
-import humanize
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
@@ -20,26 +19,26 @@ class SIM(Database):
     groups = {"DO": "CID10", "DOR": "CID9"}
 
     def describe(self, file: File) -> dict:
-        group, uf, year = self.format(file)
+        group, _uf, year = self.format(file)
 
-        description = dict(
-            name=str(file.basename),
-            uf=UFs[uf],
-            year=year,
-            group=self.groups[group],
-            size=humanize.naturalsize(file.info["size"]),
-            last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
-        )
+        description = {
+            "name": str(file.basename),
+            "uf": UFs[_uf],
+            "year": year,
+            "group": self.groups[group],
+            "size": file.info["size"],
+            "last_update": file.info["modify"],
+        }
 
         return description
 
     def format(self, file: File) -> tuple:
         if "CID9" in str(file.path):
-            group, uf, year = file.name[:-4], file.name[-4:-2], file.name[-2:]
+            group, _uf, year = file.name[:-4], file.name[-4:-2], file.name[-2:]
         else:
-            group, uf, year = file.name[:-6], file.name[-6:-4], file.name[-4:]
+            group, _uf, year = file.name[:-6], file.name[-6:-4], file.name[-4:]
 
-        return group, uf, zfill_year(year)
+        return group, _uf, zfill_year(year)
 
     def get_files(
         self,

@@ -1,6 +1,5 @@
 from typing import List, Union
 from itertools import product
-import humanize
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
@@ -59,8 +58,8 @@ class SIA(Database):
                 "uf": UFs[_uf],
                 "month": MONTHS[int(month)],
                 "year": zfill_year(year),
-                "size": humanize.naturalsize(file.info["size"]),
-                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+                "size": file.info["size"],
+                "last_update": file.info["modify"],
             }
 
             return description

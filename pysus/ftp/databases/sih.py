@@ -1,6 +1,5 @@
 from typing import List, Union
 from itertools import product
-import humanize
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
@@ -42,25 +41,25 @@ class SIH(Database):
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() == ".DBC":
-            group, uf, year, month = self.format(file)
+            group, _uf, year, month = self.format(file)
 
-            description = dict(
-                name=file.basename,
-                group=self.groups[group],
-                uf=UFs[uf],
-                month=MONTHS[int(month)],
-                year=zfill_year(year),
-                size=humanize.naturalsize(file.info["size"]),
-                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
-            )
+            description = {
+                "name": file.basename,
+                "group": self.groups[group],
+                "uf": UFs[_uf],
+                "month": MONTHS[int(month)],
+                "year": zfill_year(year),
+                "size": file.info["size"],
+                "last_update": file.info["modify"],
+            }
 
             return description
         return {}
 
     def format(self, file: File) -> tuple:
-        group, uf = file.name[:2].upper(), file.name[2:4].upper()
+        group, _uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
-        return group, uf, zfill_year(year), month
+        return group, _uf, zfill_year(year), month
 
     def get_files(
         self,

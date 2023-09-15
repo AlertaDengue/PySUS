@@ -5,6 +5,7 @@ from datetime import datetime
 from ftplib import FTP
 from typing import Any, Dict, List, Optional, Self, Set, Union
 
+import humanize
 from aioftp import Client
 from loguru import logger
 
@@ -78,10 +79,9 @@ class File:
         Parse File info to a dict
         """
         info = {}
-        size, ftype, modify = self.__info__
-        info["size"] = size
-        info["type"] = ftype
-        info["modify"] = modify
+        info["size"] = humanize.naturalsize(self.__info__["size"])
+        info["type"] = self.extension[1:].upper() + " file"
+        info["modify"] = self.__info__["modify"].strftime("%Y-%m-%d %I:%M%p")
         return info
 
     def download(self, local_dir: str = CACHEPATH) -> str:

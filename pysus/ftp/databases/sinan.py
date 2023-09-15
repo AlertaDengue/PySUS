@@ -1,6 +1,5 @@
 from itertools import product
 from typing import Optional, List, Union
-import humanize
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list
@@ -95,10 +94,8 @@ class SINAN(Database):
                 "name": str(file.basename),
                 "disease": self.diseases[dis_code],
                 "year": zfill_year(year),
-                "size": humanize.naturalsize(file.info["size"]),
-                "last_update": file.info["modify"].strftime(
-                    "%m-%d-%Y %I:%M%p"
-                ),
+                "size": file.info["size"],
+                "last_update": file.info["modify"]
             }
             return description
         return {}
