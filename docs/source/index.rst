@@ -3,18 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PySUS's documentation!
+Welcome to PySUS documentation!
 =================================
 
-PySUS is a library which is a collection of helper codes for people which need to analyze data from SUS (Brazilian Universal
-Health System). Contributions are welcome!
+PySUS is a collection of helper codes to download & analyze data from `DATASUS <https://datasus.saude.gov.br/>`_ (Brazilian Universal Health System). Contributions are welcome!
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   Data Sources <data-sources>
+   Data Sources <databases/data-sources>
    Tutorials <tutorials>
    Loading SINAN data <SINAN.ipynb>
    Loading SIM data <SIM.ipynb>

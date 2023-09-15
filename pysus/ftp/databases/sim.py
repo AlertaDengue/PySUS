@@ -1,5 +1,4 @@
-from itertools import product
-from typing import List, Union
+from typing import List, Union, Optional
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
@@ -16,16 +15,17 @@ class SIM(Database):
         "source": "http://sim.saude.gov.br",
         "description": "",
     }
-    groups = {"DO": "CID10", "DOR": "CID9"}
+    groups = {"CID10": "DO", "CID9":"DOR"}
 
     def describe(self, file: File) -> dict:
         group, _uf, year = self.format(file)
+        _groups = {v:k for k,v in self.groups.items()}
 
         description = {
             "name": str(file.basename),
             "uf": UFs[_uf],
             "year": year,
-            "group": self.groups[group],
+            "group": _groups[group],
             "size": file.info["size"],
             "last_update": file.info["modify"],
         }
@@ -37,48 +37,26 @@ class SIM(Database):
             group, _uf, year = file.name[:-4], file.name[-4:-2], file.name[-2:]
         else:
             group, _uf, year = file.name[:-6], file.name[-6:-4], file.name[-4:]
-
         return group, _uf, zfill_year(year)
 
     def get_files(
         self,
-        groups: Union[list[str], str],
-        ufs: Union[list[str], str],
-        years: Union[list, str, int],
+        group: Union[list[str], str],
+        uf: Optional[Union[list[str], str]] = None,
+        year: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        groups = [g.upper() for g in to_list(groups)]
-        ufs = parse_UFs(ufs)
-        years = to_list(years)
+        files = self.files
 
-        if not all(gr in list(self.groups.values()) for gr in groups):
-            raise ValueError(
-                "Unknown group(s): "
-                f"{set(groups).difference(self.groups.values())}"
-            )
+        groups = [self.groups[g.upper()] for g in to_list(group)]
 
-        targets = []
-        for group in groups:
-            if group == "CID9":
-                cid9_years = [str(y)[-2:].zfill(2) for y in years]
-                targets.extend(
-                    [
-                        f"DOR{uf}{year}"
-                        for uf, year in list(product(ufs, cid9_years))
-                    ]
-                )
-            elif group == "CID10":
-                cid10_years = [zfill_year(y) for y in years]
-                targets.extend(
-                    [
-                        f"DO{uf}{year}"
-                        for uf, year in list(product(ufs, cid10_years))
-                    ]
-                )
+        files = list(filter(lambda f: self.format(f)[0] in groups, files))
 
-        files = []
-        for file in self.files:
-            if file.name in targets:
-                files.append(file)
+        if uf:
+            ufs = parse_UFs(uf)
+            files = list(filter(lambda f: self.format(f)[1] in ufs, files))
+
+        if year:
+            years = [zfill_year(y) for y in to_list(year)]
+            files = list(filter(lambda f: self.format(f)[2] in years, files))
 
         return files
-
