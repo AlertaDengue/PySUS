@@ -438,7 +438,7 @@ class Database:
                 raise ValueError("path must a valid DATASUS directory")
 
         for directory in directories:
-            self.__content__ |= directory.content
+            self.__content__ |= directory.__content__
         return self
 
     def describe(self, file: File) -> dict:

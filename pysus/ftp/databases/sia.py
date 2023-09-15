@@ -51,17 +51,17 @@ class SIA(Database):
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() == ".DBC":
-            group, uf, year, month = self.format(file)
+            group, _uf, year, month = self.format(file)
 
-            description = dict(
-                name=str(file.basename),
-                group=self.groups[group],
-                uf=UFs[uf],
-                month=MONTHS[int(month)],
-                year=zfill_year(year),
-                size=humanize.naturalsize(file.info["size"]),
-                last_update=file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
-            )
+            description = {
+                "name": str(file.basename),
+                "group": self.groups[group],
+                "uf": UFs[_uf],
+                "month": MONTHS[int(month)],
+                "year": zfill_year(year),
+                "size": humanize.naturalsize(file.info["size"]),
+                "last_update": file.info["modify"].strftime("%m-%d-%Y %I:%M%p"),
+            }
 
             return description
         return {}
