@@ -187,7 +187,7 @@ class Directory:
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith("/") else path
 
-        if not path:  # Load root, store on CACHE
+        if not path:  # if root ("/")
             path = "/"
             try:
                 directory = CACHE["/"]
@@ -196,26 +196,9 @@ class Directory:
                 directory.parent = directory
                 directory.name = "/"
                 directory.path = "/"
+                directory.loaded = False
                 directory.__content__ = {}
                 CACHE["/"] = directory
-
-                ftp.connect()
-                ftp.login()
-                ftp.cwd("/")
-
-                def line_file_parser(file_line):
-                    if "<DIR>" not in file_line:
-                        pass
-                    _, _, _, *name = str(file_line).strip().split()
-                    name = "/" + " ".join(name)
-                    child = Directory(name, _is_root_child=True)
-                    CACHE[name] = child  # Store root children on CACHE
-                    directory.__content__[name] = child
-
-                ftp.retrlines("LIST", line_file_parser)
-                directory.loaded = True
-            finally:
-                ftp.close()
             return directory
 
         parent_path, name = path.rsplit("/", maxsplit=1)
@@ -229,7 +212,7 @@ class Directory:
             return directory
 
         try:
-            directory = CACHE[path]
+            directory = CACHE[path]  # Recursive and cached instantiation
         except KeyError:
             try:
                 ftp.connect()
@@ -239,8 +222,9 @@ class Directory:
                 if "cannot find the path" in str(exc):
                     logger.error(f"Not a directory {path}")
                 elif "access is denied" in str(exc).lower():
+                    #  Forbidden access, exists in ftp but returns Forbidden
                     directory = object.__new__(cls)
-                    directory.parent = Directory(parent_path)
+                    directory.parent = Directory(parent_path)  # Recursive
                     directory.name = name
                     directory.loaded = False
                     directory.__content__ = {}
@@ -251,10 +235,10 @@ class Directory:
                 ftp.close()
 
             directory = object.__new__(cls)
-            # TODO: In this step, all the parent directories will be generated,
+            # TODO: In next step, all the parent directories will be generated,
             # but it cwds into every parent, while its certain that they exist
             # in ftp server. The best approach should be to skip the cwds
-            directory.parent = Directory(parent_path)
+            directory.parent = Directory(parent_path)  # Recursive
             directory.name = name
             directory.loaded = False
             directory.__content__ = {}
