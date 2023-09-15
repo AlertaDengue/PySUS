@@ -1,5 +1,4 @@
 from typing import List, Union, Optional
-from itertools import product
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS

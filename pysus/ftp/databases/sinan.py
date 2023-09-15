@@ -1,4 +1,3 @@
-from itertools import product
 from typing import Optional, List, Union
 
 from pysus.ftp import Database, Directory, File
