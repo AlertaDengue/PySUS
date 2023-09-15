@@ -376,17 +376,18 @@ class Database:
     Parameters
         ftp [FTP]: ftplib.FTP object for connecting in DataSUS server.
         name [str]: database name
-        paths [list[str]]: server paths where the files are located
-        files [list[Files]]: list of parsed Files that will be loaded at
-                             database instantiation.
+        paths [list[Directory]]: server paths where the files are located
+        files [list[Files]]: list of parsed Files from Database content
         metadata [dict]: dict containing database's metadata information
 
     Methods
+        load(): Loads the database paths content to its own content
         describe(file): describes a file according to each database's
                         spec. Returns a dict with file information
-        all_files(): runs at instantiation, enters the FTP server and reads
-                     files within the paths, parsing them into File classes
-                     and returning all Files as a list
+        format(file): extracts from file name database related info, such as 
+                      year, month, UF and/or other useful info for the DB
+        get_files(Any): filters files using database related format, depending
+                        on the database's files specs
     """
 
     ftp: FTP
@@ -445,6 +446,7 @@ class Database:
                 raise ValueError("path must a valid DATASUS directory")
 
         for directory in directories:
+            directory.load()
             self.__content__ |= directory.__content__
         return self
 
