@@ -1,6 +1,6 @@
-import pandas as pd
 from pathlib import Path
 from typing import Union
+import pandas as pd
 
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
@@ -30,16 +30,13 @@ def download(
 ) -> list:
     """
     Downloads SINAN data directly from Datasus ftp server.
-    :param disease: Disease according to `agravos`.
+    :param disease: Disease code according to `agravos`.
     :param years: 4 digit integer, can be a list of years.
     :param data_path: The directory where the file will be downloaded to.
     :return: list of downloaded files.
     """
-    downloaded = []
     files = sinan.get_files(dis_codes=diseases, years=years)
-    for file in files:
-        downloaded.append(file.download(local_dir=data_path))
-    return downloaded
+    return sinan.download(files, local_dir=data_path)
 
 
 def metadata_df(disease_code: str) -> pd.DataFrame:

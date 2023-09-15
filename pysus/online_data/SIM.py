@@ -19,23 +19,21 @@ sim = SIM().load()
 
 
 def download(
+    groups: Union[str, list],
     states: Union[str, list],
     years: Union[str, list, int],
-    groups: Union[str, list] = ["CID9", "CID10"],
     data_dir: str = CACHEPATH,
 ):
     """
     Downloads data directly from Datasus ftp server
+    :param groups: either CID9, CID10 or both
     :param states: two-letter state identifier: MG == Minas Gerais
                    can be a list
     :param years: years to download
     :return: a list of downloaded files
     """
-    files = sim.get_files(groups=groups, ufs=states, years=years)
-    downloaded = []
-    for file in files:
-        downloaded.append(file.download(local_dir=data_dir))
-    return downloaded
+    files = sim.get_files(groups, uf=states, year=years)
+    return sim.download(files, local_dir=data_dir)
 
 
 def get_CID10_chapters_table(cache=True):

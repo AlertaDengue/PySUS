@@ -145,7 +145,8 @@ class File:
             logger.debug(output)
         else:
             async with Client.context(
-                host="ftp.datasus.gov.br", parse_list_line_custom=line_file_parser
+                host="ftp.datasus.gov.br",
+                parse_list_line_custom=line_file_parser,
             ) as client:
                 await client.login()
                 await client.download(self.path, output, write_into=True)
@@ -384,7 +385,7 @@ class Database:
         load(): Loads the database paths content to its own content
         describe(file): describes a file according to each database's
                         spec. Returns a dict with file information
-        format(file): extracts from file name database related info, such as 
+        format(file): extracts from file name database related info, such as
                       year, month, UF and/or other useful info for the DB
         get_files(Any): filters files using database related format, depending
                         on the database's files specs

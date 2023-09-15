@@ -1,7 +1,9 @@
 from typing import Union
 
-from pysus.online_data import FTP_Downloader
+from pysus.ftp.databases.cnes import CNES
 from pysus.ftp import CACHEPATH
+
+cnes = CNES().load()
 
 group_dict = {
     'LT': ['Leitos - A partir de Out/2005', 10, 2005],
@@ -48,10 +50,5 @@ def download(
     :param states: 2 letter state code, can be a list of UFs
     :param years: 4 digit integer, can be a list of years
     """
-    return FTP_Downloader('CNES').download(
-        CNES_group=group,
-        UFs=states,
-        years=years,
-        months=months,
-        local_dir=data_dir,
-    )
+    files = cnes.get_files(group, states, years, months)
+    return cnes.download(files, local_dir=data_dir)
