@@ -9,6 +9,9 @@ import humanize
 from aioftp import Client
 from loguru import logger
 
+from pysus.data.local import Data
+
+
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
@@ -84,13 +87,16 @@ class File:
         info["modify"] = self.__info__["modify"].strftime("%Y-%m-%d %I:%M%p")
         return info
 
-    def download(self, local_dir: str = CACHEPATH) -> str:
+    def download(self, local_dir: str = CACHEPATH) -> Data:
         _dir = pathlib.Path(local_dir)
         _dir.mkdir(exist_ok=True, parents=True)
         filepath = _dir / self.basename
 
+        if filepath.with_suffix(".DBF").exists():
+            return Data(str(filepath.with_suffix(".DBF")))
+
         if filepath.exists():
-            return str(filepath)
+            return Data(str(filepath))
 
         try:
             ftp = ftp = FTP("ftp.datasus.gov.br")
@@ -106,10 +112,9 @@ class File:
             ftp.close()
             output.close()
 
-        logger.info(f"{self.basename} downloaded at {local_dir}")
-        return str(filepath)
+        return Data(str(filepath))
 
-    async def async_download(self, local_dir: str = CACHEPATH) -> None:
+    async def async_download(self, local_dir: str = CACHEPATH) -> Data:
         # aioftp.Client.parse_list_line_custom
         def line_file_parser(file_line):
             line = file_line.decode("utf-8")
@@ -142,15 +147,16 @@ class File:
         )
 
         if filepath.exists():
-            logger.debug(output)
-        else:
-            async with Client.context(
-                host="ftp.datasus.gov.br",
-                parse_list_line_custom=line_file_parser,
-            ) as client:
-                await client.login()
-                await client.download(self.path, output, write_into=True)
-                logger.debug(output)
+            return Data(output)
+
+        async with Client.context(
+            host="ftp.datasus.gov.br",
+            parse_list_line_custom=line_file_parser,
+        ) as client:
+            await client.login()
+            await client.download(self.path, output, write_into=True)
+
+        return Data(output)
 
 
 CACHE: Dict = {}

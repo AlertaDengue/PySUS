@@ -17,7 +17,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from dbfread import DBF
-from pysus.utilities.readdbc import dbc2dbf
+from pyreaddbc import dbc2dbf
 
 CACHEPATH = os.getenv(
     'PYSUS_CACHEPATH', os.path.join(str(Path.home()), 'pysus')
