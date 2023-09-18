@@ -1,18 +1,12 @@
-name: env-pysus
+name: pysus
 channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - python >= 3.11
   - cffi
-  - docker-compose
   - gcc
   - make
+  - nbsphinx
   - pip
-  - psycopg2
-  - python 3.9.*
   - poetry >= 1.3.2
-  - pip:
-    - urllib3 ==1.26.15
-    - requests
-    - pandas
-    - sqlalchemy

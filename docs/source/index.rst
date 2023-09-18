@@ -3,32 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PySUS's documentation!
+Welcome to PySUS documentation!
 =================================
 
-PySUS is a library which is a collection of helper codes for people which need to analyze data from SUS (Brazilian Universal
-Health System). Contributions are welcome!
+PySUS is a collection of helper codes to download & analyze data from `DATASUS <https://datasus.saude.gov.br/>`_ (Brazilian Universal Health System). Contributions are welcome!
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   Data Sources <data-sources>
-   Tutorials <tutorials>
-   Loading SINAN data <SINAN.ipynb>
-   Loading SIM data <SIM.ipynb>
-   Loading SIA data <Analyzing SIA.ipynb>
-   LOADING PNI data <PNI.ipynb>
-   Analyzing Dengue data <Dengue.ipynb>
-   Analyzing Chikungunya data <Chikungunya.ipynb>
-   Analyzing Zika data <Zika.ipynb>
-   Downloading COVID data from ESUS <ESUS.ipynb>
-   Downloading Infogripe data <Infogripe.ipynb>
-   Downloading Infodengue data <Infodengue.ipynb>
-   Getting Official Statistics <IBGE_data.ipynb>
-
-
+   Data Sources <databases/data-sources>
+   Tutorials <tutorials/tutorials>
 
 
 Indices and tables

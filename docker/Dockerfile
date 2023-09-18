@@ -14,8 +14,11 @@ ENV PATH "/opt/poetry/bin:$PATH"
 
 RUN apt-get -qq update --yes \
   && apt-get -qq install --yes --no-install-recommends \
-  build-essential firefox\
-  ca-certificates sudo curl \
+  build-essential \
+  firefox \
+  ca-certificates \
+  sudo \
+  curl \
   && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash pysus \
@@ -29,26 +32,17 @@ RUN useradd -ms /bin/bash pysus \
 
 COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
 COPY --chown=pysus:pysus docker/scripts/entrypoint.sh /entrypoint.sh
-COPY --chown=pysus:pysus docker/scripts/poetry_install.sh /tmp/poetry_install.sh
+COPY --chown=pysus:pysus docker/scripts/poetry-install.sh /tmp/poetry-install.sh
 COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
-COPY --chown=pysus:pysus docs/source/*.ipynb /home/pysus/Notebooks/
-
-RUN curl -sSL https://install.python-poetry.org/ | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry config virtualenvs.create false
-
-RUN chmod -R a+rwx /home/pysus/.config/pypoetry/ \
-    && chown -R pysus:pysus /opt/conda/bin/
+COPY --chown=pysus:pysus docs/source/**/*.ipynb /home/pysus/Notebooks/
 
 USER pysus
 
 RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
-  && cd /usr/src \
-  && poetry build \
-  && poetry install \
   && mamba clean -afy
+
+RUN cd /usr/src/ && bash /tmp/poetry-install.sh
 
 WORKDIR /home/pysus/Notebooks
 

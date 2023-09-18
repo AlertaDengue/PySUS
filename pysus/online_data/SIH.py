@@ -7,9 +7,9 @@ license: GPL V3 or Later
 from typing import Union
 
 from pysus.ftp import CACHEPATH
-from pysus.ftp.databases import SIH
+from pysus.ftp.databases.sih import SIH
 
-sih = SIH()
+sih = SIH().load()
 
 
 def download(

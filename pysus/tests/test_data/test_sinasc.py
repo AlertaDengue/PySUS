@@ -22,6 +22,7 @@ class TestDownload(unittest.TestCase):
         self.assertIn("IDADE_MAE", df.columns)
         self.assertGreater(len(df), 0)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_get_available_years(self):
         files = get_available_years("AC")

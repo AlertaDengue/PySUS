@@ -26,7 +26,7 @@ jobs:
         mamba-version: "*"
         environment-file: conda/dev.yaml
         channels: conda-forge,nodefaults
-        activate-environment: env-pysus
+        activate-environment: pysus
         use-mamba: true
         miniforge-variant: Mambaforge
 

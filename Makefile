@@ -36,21 +36,6 @@ SEMANTIC_RELEASE = npx --yes \
           semantic-release
 
 
-#* Poetry
-.PHONY: poetry-download
-poetry-download:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) -
-
-.PHONY: poetry-remove
-poetry-remove:
-	curl -sSL https://install.python-poetry.org | $(PYTHON) - --uninstall
-
-#* Installation
-.PHONY: install
-install:
-	poetry lock -n && poetry export --without-hashes > requirements.txt
-	poetry build && poetry install
-
 .PHONY: pre-commit-install
 pre-commit-install:
 	poetry run pre-commit install
@@ -79,8 +64,9 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 
 .PHONY: test
 test: ## run tests quickly with the default Python
+	cp docs/source/**/*.ipynb pysus/Notebooks
 	poetry run pytest -vv pysus/tests/
-	poetry run pytest --nbmake --nbmake-timeout=800 docs/source/*.ipynb pysus/Notebooks/*.ipynb
+	poetry run pytest --nbmake --nbmake-timeout=800 pysus/Notebooks/*.ipynb
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pysus/tests/ -m pytest
