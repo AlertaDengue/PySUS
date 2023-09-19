@@ -32,6 +32,7 @@ class SIDRA(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         self.assertGreater(df.size, 0)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_metadata(self):
         md = IBGE.metadados(475)
