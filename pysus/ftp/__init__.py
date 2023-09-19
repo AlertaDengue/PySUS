@@ -519,6 +519,8 @@ class Database:
             if isinstance(file, File):
                 dfiles.append(file.download(local_dir=local_dir, _pbar=pbar))
         pbar.close()
+        if len(dfiles) == 1:
+            return dfiles[0]
         return dfiles
 
     async def async_download(
