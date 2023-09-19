@@ -36,6 +36,7 @@ COPY --chown=pysus:pysus docker/scripts/poetry-install.sh /tmp/poetry-install.sh
 COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
 COPY --chown=pysus:pysus docs/source/**/*.ipynb /home/pysus/Notebooks/
+COPY --chown=pysus:pysus docs/source/data /home/pysus/Notebooks/
 
 USER pysus
 
