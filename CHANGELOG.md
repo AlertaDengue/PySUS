@@ -1,6 +1,23 @@
 Release Notes
 ---
 
+## [0.10.0](https://github.com/AlertaDengue/PySUS/compare/0.9.4...0.10.0) (2023-09-19)
+
+
+### Features
+
+* **databases:** create CACHE structure to ftp Directories & add CNES database ([#152](https://github.com/AlertaDengue/PySUS/issues/152)) ([b99dd38](https://github.com/AlertaDengue/PySUS/commit/b99dd38a2bfbf286bc3061af7f9b1f3a1e40627d))
+* **pbar:** include a progress bar to download and parsing data ([8cd691c](https://github.com/AlertaDengue/PySUS/commit/8cd691cc875fb46cb4aadf59e0cfb46670f4dab0))
+* **struc:** database modularization and code improvement ([#137](https://github.com/AlertaDengue/PySUS/issues/137)) ([d7e6d27](https://github.com/AlertaDengue/PySUS/commit/d7e6d271838ed442e137ca788d8ade302299fc27))
+
+
+### Bug Fixes
+
+* **pyreaddbc:** update pyreaddbc to fix dbc parsing bug ([#153](https://github.com/AlertaDengue/PySUS/issues/153)) ([4c8315a](https://github.com/AlertaDengue/PySUS/commit/4c8315abbe7747f1d2f401659095431d6f8be439))
+* **release:** include main branch on workflow_dispatch ([#155](https://github.com/AlertaDengue/PySUS/issues/155)) ([8f9367d](https://github.com/AlertaDengue/PySUS/commit/8f9367dbf1e3d6ade7337bc4d66a79ec29e993a1))
+* **release:** update .releaserc.json ([#156](https://github.com/AlertaDengue/PySUS/issues/156)) ([f9fc7f4](https://github.com/AlertaDengue/PySUS/commit/f9fc7f4de36cc4c8a810e342f362f013bf72cacf))
+* **release:** update branch from master to main on release file ([#154](https://github.com/AlertaDengue/PySUS/issues/154)) ([4600137](https://github.com/AlertaDengue/PySUS/commit/46001375393a7513b1fe816b7df3c55c2941eda0))
+
 ## [0.9.4](https://github.com/AlertaDengue/PySUS/compare/0.9.3...0.9.4) (2023-07-31)
 
 
