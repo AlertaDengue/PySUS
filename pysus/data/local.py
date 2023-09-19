@@ -14,7 +14,7 @@ class ParquetSet:
     __path__: Union[PurePosixPath, PureWindowsPath]
     info: Dict
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, _pbar = None) -> None:
         info = {}
         path = Path(path)
 
@@ -22,10 +22,10 @@ class ParquetSet:
             raise NotImplementedError(f"Unknown file type: {path.suffix}")
 
         if path.suffix.lower() == ".dbc":
-            path = Path(dbc_to_dbf(path))
+            path = Path(dbc_to_dbf(path, _pbar=_pbar))
 
         if path.suffix.lower() == ".dbf":
-            path = Path(dbf_to_parquet(path))
+            path = Path(dbf_to_parquet(path, _pbar=_pbar))
 
         if path.is_dir():
             info["size"] = sum(
@@ -52,7 +52,7 @@ class ParquetSet:
 
 
 def parse_data_content(
-    path: Union[List[str], str]
+    path: Union[List[str], str], _pbar = None
 ) -> Union[ParquetSet, List[ParquetSet]]:
     if isinstance(path, str):
         path = [path]
@@ -67,7 +67,7 @@ def parse_data_content(
             continue
 
         if data_path.suffix.lower() in [".dbc", ".dbf", ".parquet"]:
-            content.append(ParquetSet(str(data_path)))
+            content.append(ParquetSet(str(data_path), _pbar=_pbar))
         else:
             continue
 
@@ -86,6 +86,6 @@ class Data:
     """
 
     def __new__(
-        cls, path: Union[List[str], str]
+        cls, path: Union[List[str], str], _pbar = None
     ) -> Union[ParquetSet, List[ParquetSet]]:
-        return parse_data_content(path)
+        return parse_data_content(path, _pbar=_pbar)

@@ -6,6 +6,7 @@ from ftplib import FTP
 from typing import Any, Dict, List, Optional, Self, Set, Union
 
 import humanize
+from tqdm import tqdm
 from aioftp import Client
 from loguru import logger
 
@@ -87,29 +88,50 @@ class File:
         info["modify"] = self.__info__["modify"].strftime("%Y-%m-%d %I:%M%p")
         return info
 
-    def download(self, local_dir: str = CACHEPATH) -> Data:
+    def download(self, local_dir: str = CACHEPATH, _pbar = None) -> Data:
         _dir = pathlib.Path(local_dir)
         _dir.mkdir(exist_ok=True, parents=True)
         filepath = _dir / self.basename
+        filesize = int(self.__info__["size"])
+
+        if _pbar:
+            _pbar.unit = "B"
+            _pbar.unit_scale = True
+            _pbar.reset(total=filesize)
 
         _parquet = filepath.with_suffix(".parquet")
         if _parquet.exists():
-            return Data(str(_parquet))
+            if _pbar:
+                _pbar.update(filesize - _pbar.n)
+            return Data(str(_parquet), _pbar=_pbar)
 
         _dbf = filepath.with_suffix(".dbf")
         if _dbf.exists():
-            return Data(str(_dbf))
+            if _pbar:
+                _pbar.update(filesize - _pbar.n)
+            return Data(str(_dbf), _pbar=_pbar)
 
         if filepath.exists():
-            return Data(str(filepath))
+            if _pbar:
+                _pbar.update(filesize - _pbar.n)
+            return Data(str(filepath), _pbar=_pbar)
+
+        if _pbar:
+            _pbar.set_description(f"{self.basename}")
 
         try:
             ftp = ftp = FTP("ftp.datasus.gov.br")
             ftp.login()
             output = open(f"{filepath}", "wb")
+
+            def callback(data):
+                output.write(data)
+                if _pbar:
+                    _pbar.update(len(data))
+
             ftp.retrbinary(
                 f"RETR {self.path}",
-                output.write,
+                callback,
             )
         except Exception as exc:
             raise exc
@@ -117,7 +139,9 @@ class File:
             ftp.close()
             output.close()
 
-        return Data(str(filepath))
+        if _pbar:
+            _pbar.update(filesize - _pbar.n)
+        return Data(str(filepath), _pbar=_pbar)
 
     async def async_download(self, local_dir: str = CACHEPATH) -> Data:
         # aioftp.Client.parse_list_line_custom
@@ -490,10 +514,13 @@ class Database:
         """
         Downloads a list of Files.
         """
+        files = to_list(files)
+        pbar = tqdm(total=len(files), dynamic_ncols=True)
         dfiles = []
         for file in files:
             if isinstance(file, File):
-                dfiles.append(file.download(local_dir=local_dir))
+                dfiles.append(file.download(local_dir=local_dir, _pbar=pbar))
+        pbar.close()
         return dfiles
 
     async def async_download(
