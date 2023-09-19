@@ -17,7 +17,14 @@ def dbc_to_dbf(dbc: str) -> str:
 
     dbf = path.with_suffix(".dbf")
 
+    _parquet = path.with_suffix(".parquet")
+    if _parquet.exists():
+        path.unlink(missing_ok=True)
+        dbf.unlink(missing_ok=True)
+        return str(_parquet)
+
     if dbf.exists():
+        path.unlink(missing_ok=True)
         return str(dbf)
 
     dbc2dbf(str(path), str(dbf))
@@ -54,7 +61,7 @@ def dbf_to_parquet(dbf: str) -> str:
 
     parquet.absolute().mkdir()
 
-    approx_final_size = os.path.getsize(path) / 200
+    approx_final_size = os.path.getsize(path) / 200 # TODO: not best approx size
     with tqdm(total=approx_final_size, unit='B', unit_scale=True) as pbar:
         pbar.set_description("DBF to Parquets")
         try:
@@ -71,5 +78,7 @@ def dbf_to_parquet(dbf: str) -> str:
             raise exc
 
         pbar.update(approx_final_size - pbar.n)
+
+    path.unlink()
 
     return str(parquet)

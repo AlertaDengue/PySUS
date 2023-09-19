@@ -92,8 +92,13 @@ class File:
         _dir.mkdir(exist_ok=True, parents=True)
         filepath = _dir / self.basename
 
-        if filepath.with_suffix(".DBF").exists():
-            return Data(str(filepath.with_suffix(".DBF")))
+        _parquet = filepath.with_suffix(".parquet")
+        if _parquet.exists():
+            return Data(str(_parquet))
+
+        _dbf = filepath.with_suffix(".dbf")
+        if _dbf.exists():
+            return Data(str(_dbf))
 
         if filepath.exists():
             return Data(str(filepath))
@@ -145,6 +150,14 @@ class File:
             if local_dir.endswith("/")
             else local_dir + "/" + str(self.basename)
         )
+
+        _parquet = filepath.with_suffix(".parquet")
+        if _parquet.exists():
+            return Data(str(_parquet))
+
+        _dbf = filepath.with_suffix(".dbf")
+        if _dbf.exists():
+            return Data(str(_dbf))
 
         if filepath.exists():
             return Data(output)
