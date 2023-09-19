@@ -6,12 +6,10 @@ from ftplib import FTP
 from typing import Any, Dict, List, Optional, Self, Set, Union
 
 import humanize
-from tqdm import tqdm
 from aioftp import Client
 from loguru import logger
-
 from pysus.data.local import Data
-
+from tqdm import tqdm
 
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
@@ -88,7 +86,7 @@ class File:
         info["modify"] = self.__info__["modify"].strftime("%Y-%m-%d %I:%M%p")
         return info
 
-    def download(self, local_dir: str = CACHEPATH, _pbar = None) -> Data:
+    def download(self, local_dir: str = CACHEPATH, _pbar=None) -> Data:
         _dir = pathlib.Path(local_dir)
         _dir.mkdir(exist_ok=True, parents=True)
         filepath = _dir / self.basename

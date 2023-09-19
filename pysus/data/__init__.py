@@ -1,7 +1,7 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
-from tqdm import tqdm
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -9,7 +9,10 @@ from dbfread import DBF
 from pyreaddbc import dbc2dbf
 
 
-def dbc_to_dbf(dbc: str, _pbar = None) -> str:
+def dbc_to_dbf(dbc: str, _pbar=None) -> str:
+    """
+    Parses DBC files into DBFs
+    """
     path = Path(dbc)
 
     if path.suffix.lower() != ".dbc":
@@ -55,7 +58,23 @@ def stream_dbf(dbf, chunk_size=30000):
         yield data
 
 
-def dbf_to_parquet(dbf: str, _pbar = None) -> str:
+def decode_column(value):
+    """
+    Decodes binary data to str
+    """
+    if isinstance(value, bytes):
+        return value.decode(encoding="iso-8859-1").replace("\x00", "")
+
+    if isinstance(value, str):
+        return str(value).replace("\x00", "")
+
+    return value
+
+
+def dbf_to_parquet(dbf: str, _pbar=None) -> str:
+    """
+    Parses DBF file into parquet to preserve memory
+    """
     path = Path(dbf)
 
     if path.suffix.lower() != ".dbf":
@@ -63,7 +82,9 @@ def dbf_to_parquet(dbf: str, _pbar = None) -> str:
 
     parquet = path.with_suffix(".parquet")
 
-    approx_final_size = os.path.getsize(path) / 200 # TODO: not best approx size
+    approx_final_size = (
+        os.path.getsize(path) / 200
+    )  # TODO: not best approx size
     if _pbar:
         _pbar.unit = "B"
         _pbar.unit_scale = True
@@ -86,7 +107,7 @@ def dbf_to_parquet(dbf: str, _pbar = None) -> str:
                 _pbar.update(chunk_size)
 
             chunk_df = pd.DataFrame(chunk)
-            table = pa.Table.from_pandas(chunk_df)
+            table = pa.Table.from_pandas(chunk_df.applymap(decode_column))
             pq.write_to_dataset(table, root_path=str(parquet))
     except Exception as exc:
         parquet.absolute().unlink()
@@ -98,3 +119,40 @@ def dbf_to_parquet(dbf: str, _pbar = None) -> str:
     path.unlink()
 
     return str(parquet)
+
+
+def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Parse DataFrame values, cleaning blank spaces if needed
+    and converting dtypes into correct types.
+    """
+
+    def map_column_func(column_names: list[str], func):
+        # Maps a function to each value in each column
+        columns = [c for c in df.columns if c in column_names]
+        df[columns] = df[columns].applymap(func)
+
+    def str_to_int(string: str):
+        # If removing spaces, all characters are int,
+        # return int(value). @warning it removes in between
+        # spaces as well
+        if str(string).replace(" ", "").isnumeric():
+            return int(string.replace(" ", ""))
+
+    def str_to_date(string: str):
+        if isinstance(string, str):
+            try:
+                return datetime.strptime(string, "%Y%m%d").date()
+            except Exception:
+                # Ignore errors, bad value
+                pass
+
+    map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
+    map_column_func(["CODMUNRES", "SEXO"], str_to_int)
+
+    df = df.applymap(
+        lambda x: "" if str(x).isspace() else x
+    )  # Remove all space values
+
+    df = df.convert_dtypes()
+    return df
