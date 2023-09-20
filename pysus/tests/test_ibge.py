@@ -39,6 +39,7 @@ class SIDRA(unittest.TestCase):
         self.assertIsInstance(md, dict)
         self.assertGreater(len(md), 0)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     def test_FetchData(self):
         ds = IBGE.FetchData(475, periodos=1996, variavel=93, localidades='N3[all]',

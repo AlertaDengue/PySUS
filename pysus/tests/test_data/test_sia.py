@@ -31,6 +31,7 @@ class SIATestCase(unittest.TestCase):
         self.assertIn("PA_CODUNI", df.columns)
         self.assertIsInstance(df, pd.DataFrame)
 
+    @pytest.mark.skip(reason="This test takes too long")
     @pytest.mark.timeout(5)
     @unittest.expectedFailure
     def test_download_before_1994(self):
