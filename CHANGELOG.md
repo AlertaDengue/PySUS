@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.10.1](https://github.com/AlertaDengue/PySUS/compare/0.10.0...0.10.1) (2023-09-21)
+
+
+### Bug Fixes
+
+* **sia:** handles files with final 'a', 'b' and 'c' ([#162](https://github.com/AlertaDengue/PySUS/issues/162)) ([2d8cfb2](https://github.com/AlertaDengue/PySUS/commit/2d8cfb27aae2a50ac836804ceacb88db6143134e))
+
 ## [0.10.0](https://github.com/AlertaDengue/PySUS/compare/0.9.4...0.10.0) (2023-09-19)
 
 
