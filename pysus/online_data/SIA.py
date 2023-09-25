@@ -55,7 +55,4 @@ def download(
     files = sia.get_files(
         group=groups, uf=states, year=years, month=months
     )
-    downloaded = []
-    for file in files:
-        downloaded.append(file.download(local_dir=data_dir))
-    return downloaded
+    return sia.download(files, local_dir=data_dir)

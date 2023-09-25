@@ -32,7 +32,4 @@ def download(
     files = sih.get_files(
         group=groups, uf=states, month=months, year=years
     )
-    downloaded = []
-    for file in files:
-        downloaded.append(file.download(local_dir=data_dir))
-    return downloaded
+    return sih.download(files, local_dir=data_dir)
