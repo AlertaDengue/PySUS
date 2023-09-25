@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.10.2](https://github.com/AlertaDengue/PySUS/compare/0.10.1...0.10.2) (2023-09-25)
+
+
+### Bug Fixes
+
+* **online_data:** remove plural variables from database calls on online_data ([#163](https://github.com/AlertaDengue/PySUS/issues/163)) ([6ecd960](https://github.com/AlertaDengue/PySUS/commit/6ecd96046799b90329d11298f8aa17f8d86d25c4))
+
 ## [0.10.1](https://github.com/AlertaDengue/PySUS/compare/0.10.0...0.10.1) (2023-09-21)
 
 
