@@ -53,7 +53,7 @@ def download(
     :return: list of downloaded files
     """
     files = sia.get_files(
-        groups=groups, ufs=states, years=years, months=months
+        group=groups, uf=states, year=years, month=months
     )
     downloaded = []
     for file in files:

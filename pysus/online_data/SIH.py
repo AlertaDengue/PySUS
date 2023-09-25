@@ -30,7 +30,7 @@ def download(
     :return: list with the downloaded files
     """
     files = sih.get_files(
-        groups=groups, ufs=states, months=months, years=years
+        group=groups, uf=states, month=months, year=years
     )
     downloaded = []
     for file in files:
