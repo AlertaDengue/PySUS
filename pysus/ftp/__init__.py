@@ -389,6 +389,16 @@ def load_path(path: str) -> Dict[str, Union[Directory, File]]:
     finally:
         ftp.close()
 
+    upper_names = [n.upper() for n in content]
+    to_remove = []
+    for name in content:
+        if ".DBF" in name.upper():
+            if name.upper().replace(".DBF", ".DBC") in upper_names:
+                to_remove.append(name)
+
+    for name in to_remove:
+        del content[name]
+
     return content
 
 

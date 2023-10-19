@@ -1,4 +1,6 @@
 import os
+import struct
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -109,9 +111,12 @@ def dbf_to_parquet(dbf: str, _pbar=None) -> str:
             chunk_df = pd.DataFrame(chunk)
             table = pa.Table.from_pandas(chunk_df.applymap(decode_column))
             pq.write_to_dataset(table, root_path=str(parquet))
-    except Exception as exc:
-        parquet.absolute().unlink()
-        raise exc
+    except struct.error as err:
+        if _pbar:
+            _pbar.close()
+        Path(path).unlink()
+        parquet.rmdir()
+        raise err
 
     if _pbar:
         _pbar.update(approx_final_size - _pbar.n)
@@ -138,14 +143,16 @@ def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
         # spaces as well
         if str(string).replace(" ", "").isnumeric():
             return int(string.replace(" ", ""))
+        return string
 
     def str_to_date(string: str):
         if isinstance(string, str):
             try:
                 return datetime.strptime(string, "%Y%m%d").date()
-            except Exception:
+            except ValueError:
                 # Ignore errors, bad value
-                pass
+                return string
+        return string
 
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
     map_column_func(["CODMUNRES", "SEXO"], str_to_int)
