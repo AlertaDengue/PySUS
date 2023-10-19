@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.10.3](https://github.com/AlertaDengue/PySUS/compare/0.10.2...0.10.3) (2023-10-19)
+
+
+### Bug Fixes
+
+* **FTP:** remove DBF from content if DBC is present ([#168](https://github.com/AlertaDengue/PySUS/issues/168)) ([82da723](https://github.com/AlertaDengue/PySUS/commit/82da723ce35d081899bbd3c90a353beedae6f2a1))
+
 ## [0.10.2](https://github.com/AlertaDengue/PySUS/compare/0.10.1...0.10.2) (2023-09-25)
 
 
