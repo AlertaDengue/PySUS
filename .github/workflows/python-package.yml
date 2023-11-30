@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
     concurrency:
       group: ci-${{ github.ref }}
       cancel-in-progress: true
@@ -35,10 +35,11 @@ jobs:
         curl -sSL https://install.python-poetry.org/ | python -
         export PATH="$HOME/.poetry/bin:$PATH"
         poetry config virtualenvs.create false 
-        poetry build && poetry install
+        poetry build && poetry install --only main
 
     - name: Lint with flake8
       run: |
+        poetry install --only docs
         make check-codestyle
 
     - name: Run jupyterlab with PySUS
