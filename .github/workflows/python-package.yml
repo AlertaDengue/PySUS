@@ -36,7 +36,7 @@ jobs:
           curl -sSL https://install.python-poetry.org/ | python -
           export PATH="$HOME/.poetry/bin:$PATH"
           poetry config virtualenvs.create false
-          make conda-install-main
+          make conda-install-main ENVCREATE=conda-env
 
       - name: Lint with flake8
         run: |

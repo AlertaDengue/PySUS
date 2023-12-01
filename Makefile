@@ -35,6 +35,7 @@ SEMANTIC_RELEASE = npx --yes \
           -p "semantic-release-replace-plugin" \
           semantic-release
 
+ENVCREATE:=
 
 # Create a Conda environment and install dependencies for development.
 .PHONY: conda-env
@@ -42,8 +43,8 @@ conda-env:
 	mamba env create -f conda/dev.yaml --force
 
 # Install main project dependencies using Poetry.
-.PHONY: conda-install-main
-conda-install-main: conda-env
+.PHONY:  conda-install-main
+conda-install-main: ${ENVCREATE}
 	conda run -n pysus poetry install --only main
 
 .PHONY: conda-install-docs
