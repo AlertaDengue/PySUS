@@ -3,7 +3,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - setuptools
   - python>=3.11
   - numpy>=1.26.2
   - cffi
@@ -11,5 +10,3 @@ dependencies:
   - make
   - poetry>=1.3.2
   - pip
-  - pip:
-    - shapely==1.8.5.post1 # Pinning Shapely version to resolve third-party dependency issues

@@ -31,12 +31,12 @@ jobs:
           use-mamba: true
           miniforge-variant: Mambaforge
 
-      - name: Install dependencies
+      - name: Install main dependencies
         run: |
           curl -sSL https://install.python-poetry.org/ | python -
           export PATH="$HOME/.poetry/bin:$PATH"
-          poetry config virtualenvs.create false 
-          poetry build && poetry install --only main
+          poetry config virtualenvs.create false
+          make conda-install-main
 
       - name: Lint with flake8
         run: |
