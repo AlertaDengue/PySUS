@@ -90,7 +90,6 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 test-pysus: ## run tests quickly with the default Python
 	cp docs/source/**/*.ipynb pysus/Notebooks
 	poetry run pytest -vv pysus/tests/
-	poetry run pytest --nbmake --nbmake-timeout=800 pysus/Notebooks/*.ipynb
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pysus/tests/ -m pytest

@@ -49,4 +49,5 @@ jobs:
 
       - name: Test with pytest
         run: |
+          make conda-install-geo
           make test-pysus
