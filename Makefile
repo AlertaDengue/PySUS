@@ -1,6 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON := python
 PYTHONPATH := ${PWD}
+ENVCREATE:=
 
 
 .PHONY: clean clean-test clean-pyc clean-build help
@@ -35,7 +36,6 @@ SEMANTIC_RELEASE = npx --yes \
           -p "semantic-release-replace-plugin" \
           semantic-release
 
-ENVCREATE:=
 
 # Create a Conda environment and install dependencies for development.
 .PHONY: conda-env
@@ -46,6 +46,10 @@ conda-env:
 .PHONY:  conda-install-main
 conda-install-main: ${ENVCREATE}
 	conda run -n pysus poetry install --only main
+
+.PHONY: conda-install-dev
+conda-install-dev:
+	conda run -n pysus poetry install --only dev
 
 .PHONY: conda-install-docs
 conda-install-docs:
@@ -82,8 +86,8 @@ down-jupyter-pysus: ## stop and remove containers for all services
 test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 	$(DOCKER) exec -T jupyter bash /test_notebooks.sh
 
-.PHONY: test
-test: ## run tests quickly with the default Python
+.PHONY: test-pysus
+test-pysus: ## run tests quickly with the default Python
 	cp docs/source/**/*.ipynb pysus/Notebooks
 	poetry run pytest -vv pysus/tests/
 	poetry run pytest --nbmake --nbmake-timeout=800 pysus/Notebooks/*.ipynb

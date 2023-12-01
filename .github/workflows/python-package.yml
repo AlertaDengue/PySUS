@@ -1,46 +1,46 @@
-name: build
+name: maketests
 
 on: [push, pull_request]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         python-version:
-          - "3.9"
-
+          - '3.9'
     concurrency:
-      group: ci-${{ github.ref }}
+      group: 'ci-${{ github.ref }}'
       cancel-in-progress: true
-
     defaults:
       run:
-        shell: bash -l {0}
+        shell: 'bash -l {0}'
 
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: latest
-          mamba-version: "*"
+          mamba-version: '*'
           environment-file: conda/dev.yaml
-          channels: conda-forge,nodefaults
+          channels: 'conda-forge,nodefaults'
           activate-environment: pysus
           use-mamba: true
           miniforge-variant: Mambaforge
 
-      - name: Install main dependencies
+      - name: Install dependencies
         run: |
           curl -sSL https://install.python-poetry.org/ | python -
           export PATH="$HOME/.poetry/bin:$PATH"
-          poetry config virtualenvs.create false
+          poetry config virtualenvs.create false 
+
+      - name: Install main dependencies
+        run: |
           make conda-install-main ENVCREATE=conda-env
 
       - name: Lint with flake8
         run: |
-          poetry install --only docs
+          make conda-install-dev
           make check-codestyle
 
       - name: Run jupyterlab with PySUS
@@ -49,4 +49,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          make test
+          make test-pysus
