@@ -135,6 +135,27 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     df = df.convert_dtypes()
     return df
 
+def list_data_sources() -> str:
+    """
+    List all databases supported by PySUS.
+
+    Returns:
+    - A formatted string listing the supported databases.
+    """
+
+    databases_directory = (
+        Path(__file__).resolve(strict=True).parent / "ftp" / "databases"
+    )
+
+    supported_databases = [
+        file
+        for file in databases_directory.glob("*.py")
+        if file.name != "__init__.py"
+    ]
+
+    return f"""Currently, the supported databases are: {', '.join(
+        file.stem.upper() for file in supported_databases)
+        }"""
 
 class FTP_Inspect:
     """
