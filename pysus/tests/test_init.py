@@ -1,9 +1,10 @@
 import unittest
-import pytest
+from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
-from numpy import dtype
-from pysus.online_data import FTP_Inspect
+import pytest
+from pysus import online_data
 
 
 class TestInitFunctions(unittest.TestCase):
@@ -20,12 +21,39 @@ class TestInitFunctions(unittest.TestCase):
             "CNES",
             "CIHA",
         ]:
-            df = FTP_Inspect(db).last_update_df()
+            df = online_data.FTP_Inspect(db).last_update_df()
             self.assertIsInstance(df, pd.DataFrame)
             self.assertGreater(df.size, 0)
             self.assertIn("folder", df.columns)
             self.assertIsInstance(df["date"][0], pd.Timestamp)
-            self.assertEqual(df.file_size.dtype, dtype("int64"))
+            self.assertEqual(df.file_size.dtype, np.dtype("int64"))
+
+
+class TestListDataSources(unittest.TestCase):
+    @patch("pysus.online_data.Path.exists")
+    def test_list_data_sources_exists(self, mock_exists):
+        dbs = "SIM, SIA, SINAN, SINASC, SIH, CNES"
+        mock_exists.return_value = True
+        expected_output = f"""Currently, the supported databases are: {dbs}"""
+        self.assertEqual(online_data.list_data_sources(), expected_output)
+
+    @patch("pysus.online_data.Path.exists")
+    def test_list_data_sources_not_exists(self, mock_exists):
+        mock_exists.return_value = False
+        expected_databases = [
+            "SINAN",
+            "SIM",
+            "SINASC",
+            "SIH",
+            "SIA",
+            "PNI",
+            "CNES",
+            "CIHA",
+        ]
+        expected_output = f"""No support for the databases was found."
+            "Expected databases for implementation are: {
+                ', '.join(expected_databases)}"""
+        self.assertEqual(online_data.list_data_sources(), expected_output)
 
 
 if __name__ == "__main__":

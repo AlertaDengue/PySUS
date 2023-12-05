@@ -56,7 +56,7 @@ DB_PATHS = {
 
 
 def FTP_datasus():
-    ftp = FTP("192.168.0.1")
+    ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     return ftp
 
@@ -151,9 +151,7 @@ def list_data_sources() -> str:
     """
 
     databases_directory = (
-        Path(__file__).resolve(strict=True).parent.parent
-        / "ftp"
-        / "databasess"
+        Path(__file__).resolve(strict=True).parent.parent / "ftp" / "databases"
     )
 
     if databases_directory.exists():
@@ -162,7 +160,7 @@ def list_data_sources() -> str:
             for file in databases_directory.glob("*.py")
             if file.name != "__init__.py"
         ]
-
+        # breakpoint()
         return f"""Currently, the supported databases are: {
             ', '.join(supported_databases)}"""
     else:
@@ -176,7 +174,8 @@ def list_data_sources() -> str:
             "CNES",
             "CIHA",
         ]
-        return f"""No support for the databases of DATASUS was found."
+        # breakpoint()
+        return f"""No support for the databases was found."
             "Expected databases for implementation are: {
                 ', '.join(expected_databases)}"""
 
@@ -201,7 +200,7 @@ class FTP_Inspect:
 
     database: str
     _ds_paths: list
-    ftp_server: FTP = FTP("192.168.0.1")
+    ftp_server: FTP = FTP("ftp.datasus.gov.br")
     available_dbs: list = list(DB_PATHS.keys())
 
     def __init__(self, database: str) -> None:
@@ -358,7 +357,7 @@ class FTP_Inspect:
         chunks, to preserve memory, that are read using pandas and pyarrow.
         """
         available_dbs = list()
-        ftp = FTP("192.168.0.1")
+        ftp = FTP("ftp.datasus.gov.br")
         ftp.login()
         for path in self._ds_paths:
             try:
@@ -587,7 +586,7 @@ class FTP_Downloader:
         if Path(filepath).exists():
             return str(filepath)
         try:
-            ftp = ftp = FTP("192.168.0.1")
+            ftp = ftp = FTP("ftp.datasus.gov.br")
             ftp.login()
             ftp.cwd(filedir)
             ftp.retrbinary(
