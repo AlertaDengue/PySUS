@@ -1,6 +1,18 @@
 Release Notes
 ---
 
+## [0.11.0](https://github.com/AlertaDengue/PySUS/compare/0.10.3...0.11.0) (2023-12-05)
+
+
+### Features
+
+* Introduce 'data_sources' function to list supported databases ([#177](https://github.com/AlertaDengue/PySUS/issues/177)) ([5d4e3b2](https://github.com/AlertaDengue/PySUS/commit/5d4e3b2964d48e40b1fe48f3d7f80c951c9c654b))
+
+
+### Bug Fixes
+
+* Separate dependencies into groups for Poetry installation ([#175](https://github.com/AlertaDengue/PySUS/issues/175)) ([4e707bf](https://github.com/AlertaDengue/PySUS/commit/4e707bfb6dba22ea67d26e4b811049562eed2930))
+
 ## [0.10.3](https://github.com/AlertaDengue/PySUS/compare/0.10.2...0.10.3) (2023-10-19)
 
 
