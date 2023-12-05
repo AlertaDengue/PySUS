@@ -1,12 +1,8 @@
 import unittest
-import pytest
 
 import pandas as pd
-from pysus.online_data.Infodengue import (
-    download,
-    search_string,
-    normalize,
-)
+import pytest
+from pysus.online_data.Infodengue import download, normalize, search_string
 
 
 class InfoDengueTestCase(unittest.TestCase):
@@ -91,11 +87,11 @@ class InfoDengueTestCase(unittest.TestCase):
     def test_download(self):
         df = download(
             "dengue",
-            202101,
+            202129,
             202152,
             "Rio de Janeiro",
         )
-        df_size = (29, 52)
+        df_size = (29, 24)
 
         self.assertIsInstance(df, pd.DataFrame)
         self.assertGreater(len(df), 0)
