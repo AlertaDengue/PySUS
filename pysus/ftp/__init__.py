@@ -1,9 +1,10 @@
+from __future__ import annotations
 import asyncio
 import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Self, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import humanize
 from aioftp import Client
@@ -219,11 +220,11 @@ class Directory:
 
     name: str
     path: str
-    parent: Self  # Directory?
+    parent: Directory
     loaded: bool = False
     __content__: Dict = {}
 
-    def __new__(cls, path: str, _is_root_child=False) -> Self:
+    def __new__(cls, path: str, _is_root_child=False) -> Directory:
         ftp = FTP("ftp.datasus.gov.br")
         path = f"/{path}" if not str(path).startswith("/") else path
         path = path[:-1] if path.endswith("/") else path
@@ -463,7 +464,7 @@ class Database:
 
     def load(
         self, directories: Optional[Union[Directory, List[Directory]]] = None
-    ) -> Self:
+    ) -> Database:
         """
         Loads specific directories to Database content. Will aggregate the
         files found within Directories into Database.content.
