@@ -160,9 +160,9 @@ def list_data_sources() -> str:
             for file in databases_directory.glob("*.py")
             if file.name != "__init__.py"
         ]
-        # breakpoint()
+
         return f"""Currently, the supported databases are: {
-            ', '.join(supported_databases)}"""
+            ', '.join(sorted(supported_databases))}"""
     else:
         expected_databases = [
             "SINAN",
@@ -174,7 +174,7 @@ def list_data_sources() -> str:
             "CNES",
             "CIHA",
         ]
-        # breakpoint()
+
         return f"""No support for the databases was found."
             "Expected databases for implementation are: {
                 ', '.join(expected_databases)}"""

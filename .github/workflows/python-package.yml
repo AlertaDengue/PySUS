@@ -57,10 +57,6 @@ jobs:
       run: |
         make run-jupyter-pysus
 
-    - name: Test unnittest
-      run: |
-        pytest -vv pysus/tests/test_init.py
-
     - name: Test with pytest
       run: |
         make conda-install-geo

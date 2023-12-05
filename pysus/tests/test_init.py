@@ -32,7 +32,7 @@ class TestInitFunctions(unittest.TestCase):
 class TestListDataSources(unittest.TestCase):
     @patch("pysus.online_data.Path.exists")
     def test_list_data_sources_exists(self, mock_exists):
-        dbs = "SIM, SIA, SINAN, SINASC, SIH, CNES"
+        dbs = "CNES, SIA, SIH, SIM, SINAN, SINASC"
         mock_exists.return_value = True
         expected_output = f"""Currently, the supported databases are: {dbs}"""
         self.assertEqual(online_data.list_data_sources(), expected_output)
