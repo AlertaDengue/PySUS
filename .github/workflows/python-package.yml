@@ -1,25 +1,32 @@
-name: tests
+name: main
 
 on: [push, pull_request]
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        python-version: ["3.9"]
-    concurrency:
-      group: ci-${{ github.ref }}
-      cancel-in-progress: true
-    
+    timeout-minutes: 10
+
     defaults:
       run:
         shell: bash -l {0}
 
+    strategy:
+      matrix:
+        python_version: ["3.10", "3.11"]
+
+    concurrency:
+      group: ci-tests-${{ matrix.python_version }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
-    - uses: actions/checkout@v2
-    
+    - uses: actions/checkout@v3
+
+    - name: Prepare conda environment
+      run: |
+        sed -i s/python\ 3\.11/python\ ${{ matrix.python_version }}/ conda/dev.yaml
+        cat conda/dev.yaml
+
     - uses: conda-incubator/setup-miniconda@v2
       with:
         miniconda-version: "latest"
@@ -30,15 +37,20 @@ jobs:
         use-mamba: true
         miniforge-variant: Mambaforge
 
+
     - name: Install dependencies
       run: |
         curl -sSL https://install.python-poetry.org/ | python -
         export PATH="$HOME/.poetry/bin:$PATH"
-        poetry config virtualenvs.create false 
-        poetry build && poetry install
+        poetry config virtualenvs.create false
+
+    - name: Install main dependencies
+      run: |
+        make conda-install-main ENVCREATE=conda-env
 
     - name: Lint with flake8
       run: |
+        make conda-install-dev
         make check-codestyle
 
     - name: Run jupyterlab with PySUS
@@ -47,4 +59,5 @@ jobs:
 
     - name: Test with pytest
       run: |
-        make test
+        make conda-install-geo
+        make test-pysus

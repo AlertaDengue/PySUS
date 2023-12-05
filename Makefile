@@ -1,6 +1,7 @@
 SHELL := /usr/bin/env bash
 PYTHON := python
 PYTHONPATH := ${PWD}
+ENVCREATE:=
 
 
 .PHONY: clean clean-test clean-pyc clean-build help
@@ -36,11 +37,34 @@ SEMANTIC_RELEASE = npx --yes \
           semantic-release
 
 
+# Create a Conda environment and install dependencies for development.
+.PHONY: conda-env
+conda-env:
+	mamba env create -f conda/dev.yaml --force
+
+# Install main project dependencies using Poetry.
+.PHONY:  conda-install-main
+conda-install-main: ${ENVCREATE}
+	conda run -n pysus poetry install --only main
+
+.PHONY: conda-install-dev
+conda-install-dev:
+	conda run -n pysus poetry install --only dev
+
+.PHONY: conda-install-docs
+conda-install-docs:
+	conda run -n pysus poetry install --only docs
+
+.PHONY: conda-install-geo
+conda-install-geo:
+	conda run -n pysus pip install --no-use-pep517 shapely==1.8.5.post1
+	conda run -n pysus poetry install --only geo
+
+# Linting
 .PHONY: pre-commit-install
 pre-commit-install:
 	poetry run pre-commit install
 
-#* Linting
 .PHONY: check-codestyle
 check-codestyle: ## check style with flake8
 	# stop the build if there are Python syntax errors or undefined names
@@ -62,11 +86,10 @@ down-jupyter-pysus: ## stop and remove containers for all services
 test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 	$(DOCKER) exec -T jupyter bash /test_notebooks.sh
 
-.PHONY: test
-test: ## run tests quickly with the default Python
+.PHONY: test-pysus
+test-pysus: ## run tests quickly with the default Python
 	cp docs/source/**/*.ipynb pysus/Notebooks
 	poetry run pytest -vv pysus/tests/
-	poetry run pytest --nbmake --nbmake-timeout=800 pysus/Notebooks/*.ipynb
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source pysus/tests/ -m pytest

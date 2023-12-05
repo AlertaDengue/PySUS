@@ -1,12 +1,12 @@
 name: pysus
 channels:
   - conda-forge
-  - nodefaults
+  - defaults
 dependencies:
-  - python >= 3.11
+  - python>=3.11
+  - numpy>=1.26.2
   - cffi
   - gcc
   - make
-  - nbsphinx
+  - poetry>=1.3.2
   - pip
-  - poetry >= 1.3.2
