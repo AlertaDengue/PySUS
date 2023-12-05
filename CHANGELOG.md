@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.12.0](https://github.com/AlertaDengue/PySUS/compare/0.11.0...0.12.0) (2023-12-05)
+
+
+### Features
+
+* **deps:** Update Python version constraints to support 3.10 and 3.11 ([#179](https://github.com/AlertaDengue/PySUS/issues/179)) ([ba8b7e5](https://github.com/AlertaDengue/PySUS/commit/ba8b7e50b2dade66e6d0e4b7baaa2962f1217971))
+
 ## [0.11.0](https://github.com/AlertaDengue/PySUS/compare/0.10.3...0.11.0) (2023-12-05)
 
 
