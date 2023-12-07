@@ -108,7 +108,7 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     def map_column_func(column_names: list[str], func):
         # Maps a function to each value in each column
         columns = [c for c in df.columns if c in column_names]
-        df[columns] = df[columns].applymap(func)
+        df[columns] = df[columns].map(func)
 
     def str_to_int(string: str) -> Union[int, float]:
         # If removing spaces, all characters are int,
@@ -128,7 +128,7 @@ def _parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
     map_column_func(["CODMUNRES", "SEXO"], str_to_int)
 
-    df = df.applymap(
+    df = df.map(
         lambda x: "" if str(x).isspace() else x
     )  # Remove all space values
 
@@ -631,7 +631,7 @@ class FTP_Downloader:
         for d in self._stream_DBF(DBF(fpath, encoding="iso-8859-1", raw=True)):
             try:
                 df = pd.DataFrame(d)
-                table = pa.Table.from_pandas(df.applymap(decode_column))
+                table = pa.Table.from_pandas(df.map(decode_column))
                 pq.write_to_dataset(table, root_path=parquet_dir)
 
             except Exception as e:
