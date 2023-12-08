@@ -24,15 +24,15 @@ class SINASC(Database):
         if file.extension.upper() == ".DBC":
             group, _uf, year = self.format(file)
 
-            if _uf == "EX":  # DNEX2021.dbc
-                state = None
-            else:
-                state = UFs[_uf]
+            try:
+                uf = UFs[_uf]
+            except KeyError:
+                uf = _uf
 
             description = {
                 "name": file.basename,
                 "group": self.groups[group],
-                "uf": state,
+                "uf": uf,
                 "year": year,
                 "size": file.info["size"],
                 "last_update": file.info["modify"],

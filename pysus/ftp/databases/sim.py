@@ -15,15 +15,20 @@ class SIM(Database):
         "source": "http://sim.saude.gov.br",
         "description": "",
     }
-    groups = {"CID10": "DO", "CID9":"DOR"}
+    groups = {"CID10": "DO", "CID9": "DOR"}
 
     def describe(self, file: File) -> dict:
         group, _uf, year = self.format(file)
-        _groups = {v:k for k,v in self.groups.items()}
+        _groups = {v: k for k, v in self.groups.items()}
+
+        try:
+            uf = UFs[_uf]
+        except KeyError:
+            uf = _uf
 
         description = {
             "name": str(file.basename),
-            "uf": UFs[_uf],
+            "uf": uf,
             "year": year,
             "group": _groups[group],
             "size": file.info["size"],
