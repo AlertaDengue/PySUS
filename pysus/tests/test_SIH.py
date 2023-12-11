@@ -6,7 +6,7 @@ license: GPL V3 or Later
 """
 from unittest.mock import patch, MagicMock
 import unittest
-from datetime import datetime
+import datetime
 
 from pysus.ftp.databases.sih import SIH
 from pysus.ftp import File
