@@ -1,57 +1,90 @@
 # -*- coding:utf-8 -*-
 u"""
-Created on 23/09/2020
-by gabrielmcf
+Created on 2023/12/11
+by luabida
 license: GPL V3 or Later
 """
-
+from unittest.mock import patch, MagicMock
 import unittest
-import pytest
+from datetime import datetime
 
-from numpy.testing import (
-    assert_equal,
-)
+from pysus.ftp.databases.sim import SIM
+from pysus.ftp import File
 
-from pysus.online_data.SIM import download
-from pysus.preprocessing import SIM, decoders
-from pysus.online_data import parquets_to_dataframe as to_df
- 
 
-class TestDecoder(unittest.TestCase):
-    @pytest.mark.skip(reason="This test takes too long")
-    @pytest.mark.timeout(5)
-    def test_group_and_count(self):
-        df = to_df(download("se", 2010))
-        df = decoders.translate_variables_SIM(df)
-        variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
-        counts = SIM.group_and_count(df, variables)
-        self.assertGreater(counts.COUNTS.sum(), 0)
+class TestSIMDatabase(unittest.TestCase):
 
-    @pytest.mark.skip(reason="This test takes too long")
-    @pytest.mark.timeout(5)
-    def test_redistribute_missing(self):
-        df = to_df(download("se", 2010))
-        df = decoders.translate_variables_SIM(df)
-        variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
-        counts = SIM.group_and_count(df, variables)
-        sum_original = counts["COUNTS"].sum()
-        counts = SIM.redistribute_missing(counts, variables)
-        sum_redistributed = counts["COUNTS"].sum()
+    def test_sim(self):
+        date_format = '%Y-%m-%d %I:%M%p'
 
-        self.assertEqual(sum_original, sum_redistributed)
+        mock_content = {
+            "DOAC1996.dbc": File(
+                path="/dissemin/publicos/SIM/CID10/DORES/DOAC1996.dbc",
+                name="DOAC1996.dbc",
+                info={
+                    'size': 78054.4,
+                    'type': 'DBC file',
+                    'modify': datetime.strptime('2020-01-31 02:48PM', date_format)
+                }
+            ),
+            "DOAC1997.dbc": File(
+                path="/dissemin/publicos/SIM/CID10/DORES/DOAC1997.dbc",
+                name="DOAC1997.dbc",
+                info={
+                    'size': 79084.8,
+                    'type': 'DBC file',
+                    'modify': datetime.strptime('2020-01-31 02:48PM', date_format)
+                }
+            ),
+            "DOAC1998.dbc": File(
+                path="/dissemin/publicos/SIM/CID10/DORES/DOAC1998.dbc",
+                name="DOAC1998.dbc",
+                info={
+                    'size': 79084.8,
+                    'type': 'DBC file',
+                    'modify': datetime.strptime('2020-01-31 02:48PM', date_format)
+                }
+            ),
+        }
 
-    @pytest.mark.skip(reason="This test takes too long")
-    @pytest.mark.timeout(5)
-    def test_redistribute_missing_partial(self):
-        df = to_df(download("se", 2010))
-        df = decoders.translate_variables_SIM(
-            df, age_classes=True, classify_cid10_chapters=True
-        )
-        group_variables = ["CODMUNRES", "SEXO", "IDADE_ANOS", "CID10_CHAPTER"]
-        counts = SIM.group_and_count(df, group_variables)
-        counts["COUNTS_ORIGINAL"] = counts["COUNTS"]
-        sum_original = counts["COUNTS"].sum()
-        counts = SIM.redistribute_missing(counts, group_variables[:3])
-        sum_redistributed = counts["COUNTS"].sum()
+        with patch(
+                'pysus.ftp.databases.sim.SIM',
+                return_value=MagicMock(__content__=mock_content)
+        ) as mock_sim:
+            sim = SIM()
+            sim.__content__ = mock_sim().__content__
 
-        assert_equal(sum_original, round(sum_redistributed))
+            descriptions = [sim.describe(file) for file in sim.files]
+            expected_descriptions = [
+                {'name': 'DOAC1996.dbc',
+                 'uf': 'Acre',
+                 'year': 1996,
+                 'group': 'CID10',
+                 'size': '78.1 kB',
+                 'last_update': '2020-01-31 02:48PM'},
+                {'name': 'DOAC1997.dbc',
+                 'uf': 'Acre',
+                 'year': 1997,
+                 'group': 'CID10',
+                 'size': '79.1 kB',
+                 'last_update': '2020-01-31 02:48PM'},
+                {'name': 'DOAC1998.dbc',
+                 'uf': 'Acre',
+                 'year': 1998,
+                 'group': 'CID10',
+                 'size': '79.1 kB',
+                 'last_update': '2020-01-31 02:48PM'}
+            ]
+
+            self.assertEqual(descriptions, expected_descriptions)
+
+            formats = [sim.format(file) for file in sim.files]
+            expected_formats = [
+                ('DO', 'AC', 1996), ('DO', 'AC', 1997), ('DO', 'AC', 1998)
+            ]
+            self.assertEqual(formats, expected_formats)
+
+            get_files = sim.get_files(
+                group='CID10', uf='AC', year='1996'
+            )
+            self.assertEqual(get_files, [sim.files[0]])
