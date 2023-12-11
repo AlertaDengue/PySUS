@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
 
 class SINASC(Database):
     name = "SINASC"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
         Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informações sobre Nascidos Vivos",
         "source": "http://sinasc.saude.gov.br/",

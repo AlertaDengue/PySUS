@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list
 
 class SINAN(Database):
     name = "SINAN"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SINAN/DADOS/FINAIS"),
         Directory("/dissemin/publicos/SINAN/DADOS/PRELIM"),
-    ]
+    )
     metadata = {
         "long_name": "Doenças e Agravos de Notificação",
         "source": "https://portalsinan.saude.gov.br/",
@@ -127,7 +127,8 @@ class SINAN(Database):
 
             if codes and not all(code in self.diseases for code in codes):
                 raise ValueError(
-                    f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
+                    f"Unknown disease(s): {set(
+                        codes).difference(set(self.diseases))}"
                 )
 
             files = list(filter(lambda f: self.format(f)[0] in codes, files))

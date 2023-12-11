@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
 
 class SIM(Database):
     name = "SIM"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SIM/CID10/DORES"),
         Directory("/dissemin/publicos/SIM/CID9/DORES"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informação sobre Mortalidade",
         "source": "http://sim.saude.gov.br",

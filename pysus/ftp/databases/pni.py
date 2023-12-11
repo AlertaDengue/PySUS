@@ -6,9 +6,9 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
 
 class PNI(Database):
     name = "PNI"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/PNI/DADOS"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informações do Programa Nacional de Imunizações",
         "source": (

@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
 
 class SIA(Database):
     name = "SIA"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
         Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informações Ambulatoriais",
         "source": "http://sia.datasus.gov.br/principal/index.php",
