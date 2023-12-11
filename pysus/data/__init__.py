@@ -109,7 +109,7 @@ def dbf_to_parquet(dbf: str, _pbar=None) -> str:
                 _pbar.update(chunk_size)
 
             chunk_df = pd.DataFrame(chunk)
-            table = pa.Table.from_pandas(chunk_df.applymap(decode_column))
+            table = pa.Table.from_pandas(chunk_df.map(decode_column))
             pq.write_to_dataset(table, root_path=str(parquet))
     except struct.error as err:
         if _pbar:
@@ -135,7 +135,7 @@ def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     def map_column_func(column_names: list[str], func):
         # Maps a function to each value in each column
         columns = [c for c in df.columns if c in column_names]
-        df[columns] = df[columns].applymap(func)
+        df[columns] = df[columns].map(func)
 
     def str_to_int(string: str):
         # If removing spaces, all characters are int,
@@ -157,7 +157,7 @@ def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
     map_column_func(["DT_NOTIFIC", "DT_SIN_PRI"], str_to_date)
     map_column_func(["CODMUNRES", "SEXO"], str_to_int)
 
-    df = df.applymap(
+    df = df.map(
         lambda x: "" if str(x).isspace() else x
     )  # Remove all space values
 

@@ -97,6 +97,7 @@ def get_sidra_table(
         query += f'/h/{headers}'
 
     url = base_url + query
+
     print(f'Requesting data from {url}')
     try:
         with (get_legacy_session() as s, s.get(url) as response):
