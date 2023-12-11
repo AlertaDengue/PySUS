@@ -98,11 +98,6 @@ def get_sidra_table(
 
     url = base_url + query
 
-    #data = requests.get(url)
-    #jsondata = data.json()
-    #df = pd.DataFrame.from_dict(jsondata)
-    #breakpoint()
-
     print(f'Requesting data from {url}')
     try:
         with (get_legacy_session() as s, s.get(url) as response):

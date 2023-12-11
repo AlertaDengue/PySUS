@@ -109,7 +109,6 @@ def dbf_to_parquet(dbf: str, _pbar=None) -> str:
                 _pbar.update(chunk_size)
 
             chunk_df = pd.DataFrame(chunk)
-            #breakpoint()
             table = pa.Table.from_pandas(chunk_df.map(decode_column))
             pq.write_to_dataset(table, root_path=str(parquet))
     except struct.error as err:
