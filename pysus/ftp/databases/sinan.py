@@ -127,8 +127,8 @@ class SINAN(Database):
 
             if codes and not all(code in self.diseases for code in codes):
                 raise ValueError(
-                    f"Unknown disease(s): {set(
-                        codes).difference(set(self.diseases))}"
+                    "Unknown disease(s): "
+                    f"{set(codes).difference(set(self.diseases))}"
                 )
 
             files = list(filter(lambda f: self.format(f)[0] in codes, files))

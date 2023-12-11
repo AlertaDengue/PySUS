@@ -93,7 +93,7 @@ class SIA(Database):
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                "Unknown SIH Group(s): "
+                "Unknown SIA Group(s): "
                 f"{set(groups).difference(list(self.groups))}"
             )
 

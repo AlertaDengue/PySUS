@@ -69,9 +69,13 @@ class CNES(Database):
                     self.__loaded__.add(directory.name)
         return self
 
-    def describe(self, file: File):
+    def describe(self, file: File) -> dict:
         if not isinstance(file, File):
-            return file
+            return {}
+
+        if file.name == "GMufAAmm":
+            # Leftover
+            return {}
 
         if file.extension.upper() in [".DBC", ".DBF"]:
             group, _uf, year, month = self.format(file)
@@ -92,7 +96,7 @@ class CNES(Database):
             }
 
             return description
-        return file
+        return {}
 
     def format(self, file: File) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()

@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Literal
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
@@ -65,7 +65,7 @@ class PNI(Database):
 
     def get_files(
         self,
-        group: Union[List[str], str],
+        group: Union[list, Literal["CNPI", "DPNI"]],
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
@@ -73,7 +73,7 @@ class PNI(Database):
             lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
         ))
 
-        groups = list(self.groups)
+        groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(

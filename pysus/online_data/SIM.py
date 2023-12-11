@@ -18,6 +18,21 @@ from pysus.ftp.databases.sim import SIM
 sim = SIM().load()
 
 
+def get_available_years(
+    group: str,
+    states: Union[str, list] = None,
+    months: Union[str, list, int] = None,
+) -> list:
+    """
+    Get SIH years for group and/or state and/or month and returns a list of years
+    :param group: CID9 or CID10
+    :param states: 2 letter uf code, can be a list. E.g: "SP" or ["SP", "RJ"]
+    :return: list of available years
+    """
+    files = sim.get_files(group, uf=states)
+    return sorted(list(set(sim.describe(f)["year"] for f in files)))
+
+
 def download(
     groups: Union[str, list],
     states: Union[str, list],

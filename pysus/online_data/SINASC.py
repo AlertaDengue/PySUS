@@ -12,6 +12,16 @@ from pysus.ftp.databases.sinasc import SINASC
 sinasc = SINASC().load()
 
 
+def get_available_years(states):
+    """
+    Get SIH years for states
+    :param states: 2 letter UF code, can be a list. E.g: "SP" or ["SP", "RJ"]
+    :return: list of available years
+    """
+    files = sinasc.get_files(["DN", "DNR"], uf=states)
+    return sorted(list(set(sinasc.describe(f)["year"] for f in files)))
+
+
 def download(
     groups: Union[str, list],
     states: Union[str, list],
@@ -28,14 +38,3 @@ def download(
     """
     files = sinasc.get_files(groups, uf=states, year=years)
     return sinasc.download(files, local_dir=data_dir)
-
-
-def get_available_years(state):
-    years = list(set([f.name[-2:] for f in sinasc.files]))
-    files = set(sinasc.get_files(["DN", "DNR"], uf=state, year=years))
-
-    def sort_year(file):
-        _, year = sinasc.format(file)
-        return int(year)
-
-    return sorted(files, key=sort_year)
