@@ -50,7 +50,7 @@ class TestCIHADatabase(unittest.TestCase):
                 'pysus.ftp.databases.ciha.CIHA',
                 return_value=MagicMock(__content__=mock_content)
         ) as mock_ciha:
-            ciha = CIHA().load()
+            ciha = CIHA()
             ciha.__content__ = mock_ciha().__content__
 
             descriptions = [ciha.describe(file) for file in ciha.files]
@@ -89,6 +89,6 @@ class TestCIHADatabase(unittest.TestCase):
             self.assertEqual(formats, expected_formats)
 
             get_files = ciha.get_files(
-                uf='AC', year=2011, month=12
+                uf='AC', year=2011, month=1
             )
             self.assertEqual(get_files, [ciha.files[0]])

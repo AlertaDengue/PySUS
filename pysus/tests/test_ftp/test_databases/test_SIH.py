@@ -15,7 +15,7 @@ from pysus.ftp import File
 
 class TestSIHDatabase(unittest.TestCase):
 
-    def test_sim(self):
+    def test_sih(self):
         mock_content = {
             "CHBR1901.dbc": File(
                 path="/dissemin/publicos/SIHSUS/200801_/Dados/CHBR1901.dbc",
@@ -26,9 +26,9 @@ class TestSIHDatabase(unittest.TestCase):
                     'modify': datetime.datetime(2020, 3, 10, 14, 43)
                 }
             ),
-            "DOAC1997.dbc": File(
+            "CHBR1902.dbc": File(
                 path="/dissemin/publicos/SIHSUS/200801_/Dados/CHBR1902.dbc",
-                name="DOAC1997.dbc",
+                name="CHBR1902.dbc",
                 info={
                     'size': 196287,
                     'type': 'file',

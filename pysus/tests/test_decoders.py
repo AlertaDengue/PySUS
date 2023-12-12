@@ -121,7 +121,7 @@ class TestDecoder(unittest.TestCase):
         )
         self.assertGreater(sum(sample), 0)
 
-    @pytest.mark.timeout(60)
+    @pytest.mark.timeout(120)
     def test_redistribute(self):
         df = download(groups="cid10", states="sp", years=2010).to_dataframe()
         df = decoders.translate_variables_SIM(
