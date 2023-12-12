@@ -50,7 +50,7 @@ class TestCIHADatabase(unittest.TestCase):
                 'pysus.ftp.databases.ciha.CIHA',
                 return_value=MagicMock(__content__=mock_content)
         ) as mock_ciha:
-            ciha = CIHA()
+            ciha = CIHA().load()
             ciha.__content__ = mock_ciha().__content__
 
             descriptions = [ciha.describe(file) for file in ciha.files]

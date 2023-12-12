@@ -35,9 +35,9 @@ class TestPNIDatabase(unittest.TestCase):
                     'modify': datetime.datetime(2019, 5, 23, 16, 39)
                 }
             ),
-            "STAC0510.dbc": File(
+            "CPNIAC02.DBF": File(
                 path="/dissemin/publicos/PNI/DADOS/CPNIAC02.DBF",
-                name="STAC0510.dbc",
+                name="CPNIAC02.DBF",
                 info={
                     'size': 14843,
                     'type': 'file',

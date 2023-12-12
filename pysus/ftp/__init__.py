@@ -16,6 +16,9 @@ CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
 
+__cachepath__ = pathlib.Path(CACHEPATH)
+__cachepath__.mkdir(exist_ok=True)
+
 
 def to_list(ite: Any) -> list:
     """Parse any builtin data type into a list"""
