@@ -47,8 +47,8 @@ class TestCIHADatabase(unittest.TestCase):
         }
 
         with patch(
-                'pysus.ftp.databases.ciha.CIHA',
-                return_value=MagicMock(__content__=mock_content)
+            'pysus.ftp.databases.ciha.CIHA',
+            return_value=MagicMock(__content__=mock_content)
         ) as mock_ciha:
             ciha = CIHA()
             ciha.__content__ = mock_ciha().__content__
@@ -63,19 +63,19 @@ class TestCIHADatabase(unittest.TestCase):
                  'size': '7.8 kB',
                  'last_update': '2023-10-06 10:17AM'},
                 {'name': 'CIHAAC1102.dbc',
-                    'group': 'Comunicação de Internação Hospitalar e Ambulatorial',
-                    'uf': 'Acre',
-                    'month': 'Fevereiro',
-                    'year': 2011,
-                    'size': '10.0 kB',
-                    'last_update': '2023-10-06 10:17AM'},
+                 'group': 'Comunicação de Internação Hospitalar e Ambulatorial',
+                 'uf': 'Acre',
+                 'month': 'Fevereiro',
+                 'year': 2011,
+                 'size': '10.0 kB',
+                 'last_update': '2023-10-06 10:17AM'},
                 {'name': 'CIHAAC1103.dbc',
-                    'group': 'Comunicação de Internação Hospitalar e Ambulatorial',
-                    'uf': 'Acre',
-                    'month': 'Março',
-                    'year': 2011,
-                    'size': '8.3 kB',
-                    'last_update': '2023-10-06 10:17AM'}
+                 'group': 'Comunicação de Internação Hospitalar e Ambulatorial',
+                 'uf': 'Acre',
+                 'month': 'Março',
+                 'year': 2011,
+                 'size': '8.3 kB',
+                 'last_update': '2023-10-06 10:17AM'}
             ]
 
             self.assertEqual(descriptions, expected_descriptions)
