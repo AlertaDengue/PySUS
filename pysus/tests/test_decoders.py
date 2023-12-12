@@ -71,7 +71,7 @@ class TestDecoder(unittest.TestCase):
     def test_verifica_geocodigo(self):
         self.assertTrue(decoders.is_valid_geocode(3304557))
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(60)
     def test_translate_variables(self):
         df = download(groups="cid10", states="sp", years=2010).to_dataframe()
         df = decoders.translate_variables_SIM(df)
@@ -81,7 +81,7 @@ class TestDecoder(unittest.TestCase):
         assert raca_array <= set(
             ["Branca", "Preta", "Amarela", "nan", "Parda", "Indígena", "NA"])
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(60)
     def test_get_cid_chapter(self):
         code_index = decoders.get_CID10_code_index(get_CID10_chapters_table())
         test_causes = pd.DataFrame(
@@ -109,7 +109,7 @@ class TestDecoder(unittest.TestCase):
         assert_array_equal(
             results, [1, 1, 2, -1, 3, 7, 7, 8, -1, 20, 20, -1, 22])
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(60)
     def test_group_and_count(self):
         df = download(groups="cid10", states="se", years=2010).to_dataframe()
         df = decoders.translate_variables_SIM(df)
@@ -121,7 +121,7 @@ class TestDecoder(unittest.TestCase):
         )
         self.assertGreater(sum(sample), 0)
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(60)
     def test_redistribute(self):
         df = download(groups="cid10", states="sp", years=2010).to_dataframe()
         df = decoders.translate_variables_SIM(

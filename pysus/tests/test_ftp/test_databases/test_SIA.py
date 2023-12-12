@@ -47,8 +47,8 @@ class TestSIADatabase(unittest.TestCase):
         }
 
         with patch(
-                'pysus.ftp.databases.sia.SIA',
-                return_value=MagicMock(__content__=mock_content)
+            'pysus.ftp.databases.sia.SIA',
+            return_value=MagicMock(__content__=mock_content)
         ) as mock_sia:
             sia = SIA()
             sia.__content__ = mock_sia().__content__
@@ -63,19 +63,19 @@ class TestSIADatabase(unittest.TestCase):
                  'size': '3.0 kB',
                  'last_update': '2019-03-12 12:03PM'},
                 {'name': 'ABMG1112.dbc',
-                    'group': 'APAC de Cirurgia Bariátrica',
-                    'uf': 'Minas Gerais',
-                    'month': 'Dezembro',
-                    'year': 2011,
-                    'size': '3.2 kB',
-                    'last_update': '2019-03-12 12:03PM'},
+                 'group': 'APAC de Cirurgia Bariátrica',
+                 'uf': 'Minas Gerais',
+                 'month': 'Dezembro',
+                 'year': 2011,
+                 'size': '3.2 kB',
+                 'last_update': '2019-03-12 12:03PM'},
                 {'name': 'ABOAC1502.dbc',
-                    'group': 'APAC de Acompanhamento Pós Cirurgia Bariátrica',
-                    'uf': 'Acre',
-                    'month': 'Fevereiro',
-                    'year': 2015,
-                    'size': '3.1 kB',
-                    'last_update': '2016-09-12 08:45AM'}
+                 'group': 'APAC de Acompanhamento Pós Cirurgia Bariátrica',
+                 'uf': 'Acre',
+                 'month': 'Fevereiro',
+                 'year': 2015,
+                 'size': '3.1 kB',
+                 'last_update': '2016-09-12 08:45AM'}
             ]
 
             self.assertEqual(descriptions, expected_descriptions)
