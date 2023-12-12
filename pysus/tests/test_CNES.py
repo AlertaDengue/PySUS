@@ -4,9 +4,10 @@ Created on 2023/12/12
 by luabida
 license: GPL V3 or Later
 """
-from unittest.mock import patch, MagicMock
 import unittest
 import datetime
+
+from unittest.mock import patch, MagicMock
 
 from pysus.ftp.databases.cnes import CNES
 from pysus.ftp import File

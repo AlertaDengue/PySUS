@@ -5,7 +5,7 @@ import pandas as pd
 
 from pysus.online_data.PNI import *
 from pysus.online_data import parquets_to_dataframe
- 
+
 
 class PNITestCase(unittest.TestCase):
     @pytest.mark.timeout(5)

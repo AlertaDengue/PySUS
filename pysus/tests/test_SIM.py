@@ -4,9 +4,10 @@ Created on 2023/12/11
 by luabida
 license: GPL V3 or Later
 """
-from unittest.mock import patch, MagicMock
 import unittest
 from datetime import datetime
+
+from unittest.mock import patch, MagicMock
 
 from pysus.ftp.databases.sim import SIM
 from pysus.ftp import File
