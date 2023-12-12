@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        python_version: ["3.10", "3.11"]
+        python_version: ["3.11"]
 
     concurrency:
       group: ci-tests-${{ matrix.python_version }}-${{ github.ref }}
