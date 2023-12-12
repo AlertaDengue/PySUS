@@ -64,7 +64,12 @@ class File:
             if path.endswith("/")
             else path + "/" + self.basename
         )
-        self.parent_path = self.path.replace(self.basename, "")
+        ppath = self.path.replace(self.basename, "")
+        self.parent_path = (
+            ppath[:-1]
+            if ppath.endswith("/")
+            else ppath
+        )
         self.__info__ = info
 
     def __str__(self) -> str:

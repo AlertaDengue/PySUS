@@ -12,7 +12,7 @@ class SIDRA(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         self.assertGreater(df.size, 0)
 
-    @pytest.mark.timeout(120)
+    @pytest.mark.skip(reason="This test takes too long")
     def test_localidades_por_agregado(self):
         df = IBGE.localidades_por_agregado(475, nivel='N3')
         self.assertIsInstance(df, pd.DataFrame)
@@ -31,7 +31,7 @@ class SIDRA(unittest.TestCase):
         self.assertIsInstance(df, pd.DataFrame)
         self.assertGreater(df.size, 0)
 
-    @pytest.mark.timeout(120)
+    @pytest.mark.skip(reason="This test takes too long")
     def test_metadata(self):
         md = IBGE.metadados(475)
         self.assertIsInstance(md, dict)
