@@ -3,8 +3,11 @@ Download data from the national immunization program
 """
 from typing import Union, Literal
 
+from loguru import logger
+
 from pysus.ftp.databases.pni import PNI
 from pysus.ftp import CACHEPATH
+from pysus.ftp.utils import parse_UFs
 
 
 pni = PNI().load()
@@ -17,8 +20,17 @@ def get_available_years(group, states):
     :param state: UF code, can be a list. E.g: "SP" or ["SP", "RJ"]
     :return: list of available years
     """
-    files = pni.get_files(group=group, uf=states)
-    return sorted(list(set(pni.describe(f)["year"] for f in files)))
+    ufs = parse_UFs(states)
+
+    years = dict()
+    for uf in ufs:
+        files = pni.get_files(group, uf=uf)
+        years[uf] = set(sorted([pni.describe(f)["year"] for f in files]))
+
+    if len(set([len(v) for v in years.values()])) > 1:
+        logger.warning(f"Distinct years were found for UFs: {years}")
+
+    return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(

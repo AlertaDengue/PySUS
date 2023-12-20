@@ -6,20 +6,35 @@ license: GPL V3 or Later
 """
 from typing import Union
 
+from loguru import logger
+
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinasc import SINASC
+from pysus.ftp.utils import parse_UFs
 
 sinasc = SINASC().load()
 
 
-def get_available_years(states):
+def get_available_years(group: str, states: Union[str, list[str]]) -> list:
     """
-    Get SIH years for states
+    Get SINASC years for states
+    :param group:
+        "DN": "Declarações de Nascidos Vivos",
+        "DNR": "Dados dos Nascidos Vivos por UF de residência",
     :param states: 2 letter UF code, can be a list. E.g: "SP" or ["SP", "RJ"]
     :return: list of available years
     """
-    files = sinasc.get_files(["DN", "DNR"], uf=states)
-    return sorted(list(set(sinasc.describe(f)["year"] for f in files)))
+    ufs = parse_UFs(states)
+
+    years = dict()
+    for uf in ufs:
+        files = sinasc.get_files(group, uf=uf)
+        years[uf] = set(sorted([sinasc.describe(f)["year"] for f in files]))
+
+    if len(set([len(v) for v in years.values()])) > 1:
+        logger.warning(f"Distinct years were found for UFs: {years}")
+
+    return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(

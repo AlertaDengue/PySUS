@@ -29,8 +29,8 @@ class PNI(Database):
         ),
     }
     groups = {
-        "CPNI": "Centro de Parto Normal Intra-Hospitalar",
-        "DPNI": "Departamento de Imunização e Doenças Imunopreveníveis",
+        "CPNI": "Cobertura Vacinal",  # TODO: may be incorrect
+        "DPNI": "Doses Aplicadas",  # TODO: may be incorrect
     }
 
     def describe(self, file: File) -> dict:

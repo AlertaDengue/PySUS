@@ -9,8 +9,11 @@ license: GPL V3 or Later
 from pprint import pprint
 from typing import Dict, Tuple, Union
 
+from loguru import logger
+
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sia import SIA
+from pysus.ftp.utils import parse_UFs
 
 sia = SIA().load()
 
@@ -35,10 +38,9 @@ group_dict: Dict[str, Tuple[str, int, int]] = {
 def get_available_years(
     group: str,
     states: Union[str, list] = None,
-    months: Union[str, list, int] = None,
 ):
     """
-    Get SIA years for group and/or state and/or month and returns a list of years
+    Get SIA years for group and/or state and returns a list of years
     :param group:
         PA: Produção Ambulatorial (7, 1994)
         BI: Boletim de Produção Ambulatorial individualizado (1, 2008)
@@ -53,11 +55,19 @@ def get_available_years(
         AMP: APAC de Acompanhamento Multiprofissional (1, 2008)
         SAD: RAAS de Atenção Domiciliar (1, 2008)
         PS: RAAS Psicossocial (1, 2008)
-    :param months: 1 to 12, can be a list of years
     :param states: 2 letter state code, can be a list of UFs
     """
-    files = sia.get_files(group, uf=states, month=months)
-    return sorted(list(set(sia.describe(f)["year"] for f in files)))
+    ufs = parse_UFs(states)
+
+    years = dict()
+    for uf in ufs:
+        files = sia.get_files(group, uf=uf)
+        years[uf] = set(sorted([sia.describe(f)["year"] for f in files]))
+
+    if len(set([len(v) for v in years.values()])) > 1:
+        logger.warning(f"Distinct years were found for UFs: {years}")
+
+    return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def show_datatypes():

@@ -1,7 +1,10 @@
 from typing import Union
 
+from loguru import logger
+
 from pysus.ftp.databases.cnes import CNES
 from pysus.ftp import CACHEPATH
+from pysus.ftp.utils import parse_UFs
 
 
 cnes = CNES().load()
@@ -27,10 +30,9 @@ group_dict = {
 def get_available_years(
     group: str,
     states: Union[str, list] = None,
-    months: Union[str, list, int] = None,
 ):
     """
-    Get CNES years for group and/or state and/or month and returns a
+    Get CNES years for group and/or state and returns a
     list of years
     :param group:
         LT – Leitos - A partir de Out/2005
@@ -46,12 +48,21 @@ def get_available_years(
         EE - Estabelecimento de Ensino - A partir de Mar/2007
         EF - Estabelecimento Filantrópico - A partir de Mar/2007
         GM - Gestão e Metas - A partir de Jun/2007
-    :param months: 1 to 12, can be a list of years
     :param states: 2 letter state code, can be a list of UFs
     """
     cnes.load(group)
-    files = cnes.get_files(group, uf=states, month=months)
-    return sorted(list(set(cnes.describe(f)["year"] for f in files)))
+
+    ufs = parse_UFs(states)
+
+    years = dict()
+    for uf in ufs:
+        files = cnes.get_files(group, uf=uf)
+        years[uf] = sorted([cnes.describe(f)["year"] for f in files])
+
+    if len(set([len(v) for v in years.values()])) > 1:
+        logger.warning(f"Distinct years were found for UFs: {years}")
+
+    return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(

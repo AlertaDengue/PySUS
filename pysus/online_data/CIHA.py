@@ -8,25 +8,34 @@ license: GPL V3 or Later
 """
 from typing import Union
 
+from loguru import logger
+
 from pysus.ftp.databases.ciha import CIHA
 from pysus.ftp import CACHEPATH
+from pysus.ftp.utils import parse_UFs
 
 ciha = CIHA().load()
 
 
 def get_available_years(
     states: Union[list, str] = None,
-    months: Union[str, int, list] = None
 ) -> dict[str:set[int]]:
     """
-    Fetch available years for the `states` and/or `months`.
+    Fetch available years for the `states`.
     :param states: UF code. E.g: "SP" or ["SP", "RJ"]
-    :param months: month or months, 2 digits. E.g.: 1 or [1, 2]
     :return: list of years in integers
     """
+    ufs = parse_UFs(states)
 
-    files = ciha.get_files(uf=states, month=months)
-    return sorted(list(set([ciha.describe(f)["year"] for f in files])))
+    years = dict()
+    for uf in ufs:
+        files = ciha.get_files(uf=uf)
+        years[uf] = set(sorted([ciha.describe(f)["year"] for f in files]))
+
+    if len(set([len(v) for v in years.values()])) > 1:
+        logger.warning(f"Distinct years were found for UFs: {years}")
+
+    return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(

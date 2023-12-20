@@ -129,7 +129,7 @@ class File:
             _pbar.set_description(f"{self.basename}")
 
         try:
-            ftp = ftp = FTP("ftp.datasus.gov.br")
+            ftp = FTP("ftp.datasus.gov.br")
             ftp.login()
             output = open(f"{filepath}", "wb")
 
