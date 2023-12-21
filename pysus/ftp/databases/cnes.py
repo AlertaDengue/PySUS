@@ -56,7 +56,8 @@ class CNES(Database):
                 group in self.groups for group in [gr.upper() for gr in groups]
             ):
                 raise ValueError(
-                    f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
+                    "Unknown CNES group(s): "
+                    f"{set(groups).difference(self.groups)}"
                 )
 
             for group in groups:
@@ -68,17 +69,26 @@ class CNES(Database):
                     self.__loaded__.add(directory.name)
         return self
 
-    def describe(self, file: File):
+    def describe(self, file: File) -> dict:
         if not isinstance(file, File):
-            return file
+            return {}
+
+        if file.name == "GMufAAmm":
+            # Leftover
+            return {}
 
         if file.extension.upper() in [".DBC", ".DBF"]:
             group, _uf, year, month = self.format(file)
 
+            try:
+                uf = UFs[_uf]
+            except KeyError:
+                uf = _uf
+
             description = {
                 "name": str(file.basename),
                 "group": self.groups[group],
-                "uf": UFs[_uf],
+                "uf": uf,
                 "month": MONTHS[int(month)],
                 "year": zfill_year(year),
                 "size": file.info["size"],
@@ -86,7 +96,7 @@ class CNES(Database):
             }
 
             return description
-        return file
+        return {}
 
     def format(self, file: File) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()

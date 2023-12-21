@@ -119,7 +119,9 @@ def is_valid_geocode(geocodigo):
 def get_valid_geocodes():
     tab_mun = get_municipios()
     df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
-    return df["MUNCODDV"].append(df["MUNCOD"]).astype("int64").values
+    return pd.concat(
+        [df["MUNCODDV"], df["MUNCOD"]], ignore_index=True
+    ).astype("int64").values
 
 
 def calculate_digit(geocode):
@@ -270,7 +272,9 @@ def get_CID10_code_index(datasus_chapters):
             number_range_start = int(chapter_range[0][1:3])
             number_range_finish = int(chapter_range[1][1:3])
             for code in range(number_range_start, number_range_finish + 1):
-                code_index[f"{start_letter}{str(code).zfill(2)}"] = ch_array_index + 1
+                code_index[
+                    f"{start_letter}{str(code).zfill(2)}"
+                ] = ch_array_index + 1
         else:
             string_range_start = chapter_range[0][0]
             string_range_end = chapter_range[1][0]
@@ -283,7 +287,8 @@ def get_CID10_code_index(datasus_chapters):
                 if let_array_index == 0:
                     number_range_start = int(chapter_range[0][1:3])
                     number_range_end = 99
-                elif let_array_index == len(full_string_range) - 1:  # Last array letter
+                # Last array letter
+                elif let_array_index == len(full_string_range) - 1:
                     number_range_start = 0
                     number_range_end = int(chapter_range[1][1:3])
                 else:  # Middle letters

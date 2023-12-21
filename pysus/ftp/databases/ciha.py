@@ -4,41 +4,37 @@ from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
 
 
-class SIH(Database):
-    name = "SIH"
-    paths = (
-        Directory("/dissemin/publicos/SIHSUS/199201_200712/Dados"),
-        Directory("/dissemin/publicos/SIHSUS/200801_/Dados"),
-    )
+class CIHA(Database):
+    name = "CIHA"
+    paths = (Directory("/dissemin/publicos/CIHA/201101_/Dados"))
     metadata = {
-        "long_name": "Sistema de Informações Hospitalares",
-        "source": (
-            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",
-            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",
-        ),
+        "long_name": "Comunicação de Internação Hospitalar e Ambulatorial",
+        "source": "http://ciha.datasus.gov.br/CIHA/index.php",
         "description": (
-            "A finalidade do AIH (Sistema SIHSUS) é a de transcrever todos os "
-            "atendimentos que provenientes de internações hospitalares que "
-            "foram financiadas pelo SUS, e após o processamento, gerarem "
-            "relatórios para os gestores que lhes possibilitem fazer os pagamentos "
-            "dos estabelecimentos de saúde. Além disso, o nível Federal recebe "
-            "mensalmente uma base de dados de todas as internações autorizadas "
-            "(aprovadas ou não para pagamento) para que possam ser repassados às "
-            "Secretarias de Saúde os valores de Produção de Média e Alta complexidade "
-            "além dos valores de CNRAC, FAEC e de Hospitais Universitários – em suas "
-            "variadas formas de contrato de gestão."
+            "A CIHA foi criada para ampliar o processo de planejamento, programação, "
+            "controle, avaliação e regulação da assistência à saúde permitindo um "
+            "conhecimento mais abrangente e profundo dos perfis nosológico e "
+            "epidemiológico da população brasileira, da capacidade instalada e do "
+            "potencial de produção de serviços do conjunto de estabelecimentos de saúde "
+            "do País. O sistema permite o acompanhamento das ações e serviços de saúde "
+            "custeados por: planos privados de assistência à saúde; planos públicos; "
+            "pagamento particular por pessoa física; pagamento particular por pessoa "
+            "jurídica; programas e projetos federais (PRONON, PRONAS, PROADI); recursos "
+            "próprios das secretarias municipais e estaduais de saúde; DPVAT; gratuidade "
+            "e, a partir da publicação da Portaria GM/MS nº 2.905/2022, consórcios públicos. "
+            "As informações registradas na CIHA servem como base para o processo de "
+            "Certificação de Entidades Beneficentes de Assistência Social em Saúde (CEBAS) "
+            "e para monitoramento dos programas PRONAS e PRONON."
         ),
     }
     groups = {
-        "RD": "AIH Reduzida",
-        "RJ": "AIH Rejeitada",
-        "ER": "AIH Rejeitada com erro",
-        "SP": "Serviços Profissionais",
-        "CH": "Cadastro Hospitalar",
-        "CM": "",  # TODO
+        "CIHA": "Comunicação de Internação Hospitalar e Ambulatorial",
     }
 
-    def describe(self, file: File) -> dict:
+    def describe(self, file: File):
+        if not isinstance(file, File):
+            return file
+
         if file.extension.upper() in [".DBC", ".DBF"]:
             group, _uf, year, month = self.format(file)
 
@@ -48,7 +44,7 @@ class SIH(Database):
                 uf = _uf
 
             description = {
-                "name": file.basename,
+                "name": str(file.basename),
                 "group": self.groups[group],
                 "uf": uf,
                 "month": MONTHS[int(month)],
@@ -58,19 +54,19 @@ class SIH(Database):
             }
 
             return description
-        return {}
+        return file
 
     def format(self, file: File) -> tuple:
-        group, _uf = file.name[:2].upper(), file.name[2:4].upper()
+        group, _uf = file.name[:4].upper(), file.name[4:6].upper()
         year, month = file.name[-4:-2], file.name[-2:]
         return group, _uf, zfill_year(year), month
 
     def get_files(
         self,
-        group: Union[List[str], str],
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
+        group: Union[List[str], str] = "CIHA",
     ) -> List[File]:
         files = list(filter(
             lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
@@ -80,7 +76,7 @@ class SIH(Database):
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIH Group(s): "
+                "Unknown CIHA Group(s): "
                 f"{set(groups).difference(list(self.groups))}"
             )
 

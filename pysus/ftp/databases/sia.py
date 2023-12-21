@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
 
 class SIA(Database):
     name = "SIA"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
         Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informações Ambulatoriais",
         "source": "http://sia.datasus.gov.br/principal/index.php",
@@ -41,8 +41,8 @@ class SIA(Database):
         "IMPBO": "",  # TODO
         "PA": "Produção Ambulatorial",
         "PAM": "",  # TODO
-        "PAR": "", # TODO
-        "PAS": "", # TODO
+        "PAR": "",  # TODO
+        "PAS": "",  # TODO
         "PS": "RAAS Psicossocial",
         "SAD": "RAAS de Atenção Domiciliar",
     }
@@ -51,10 +51,15 @@ class SIA(Database):
         if file.extension.upper() == ".DBC":
             group, _uf, year, month = self.format(file)
 
+            try:
+                uf = UFs[_uf]
+            except KeyError:
+                uf = _uf
+
             description = {
                 "name": str(file.basename),
                 "group": self.groups[group],
-                "uf": UFs[_uf],
+                "uf": uf,
                 "month": MONTHS[int(month)],
                 "year": zfill_year(year),
                 "size": file.info["size"],
@@ -88,7 +93,8 @@ class SIA(Database):
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+                "Unknown SIA Group(s): "
+                f"{set(groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))

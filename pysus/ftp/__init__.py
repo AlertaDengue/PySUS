@@ -4,7 +4,7 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, Self
 
 import humanize
 from aioftp import Client
@@ -15,6 +15,9 @@ from tqdm import tqdm
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
+
+__cachepath__ = pathlib.Path(CACHEPATH)
+__cachepath__.mkdir(exist_ok=True)
 
 
 def to_list(ite: Any) -> list:
@@ -48,6 +51,7 @@ class File:
     extension: str
     basename: str
     path: str
+    # parent: Directory # TODO: This causes too much overhead
     __info__: Set[Union[int, str, datetime]]
 
     def __init__(self, path: str, name: str, info: dict) -> None:
@@ -59,6 +63,12 @@ class File:
             path + self.basename
             if path.endswith("/")
             else path + "/" + self.basename
+        )
+        ppath = self.path.replace(self.basename, "")
+        self.parent_path = (
+            ppath[:-1]
+            if ppath.endswith("/")
+            else ppath
         )
         self.__info__ = info
 
@@ -119,7 +129,7 @@ class File:
             _pbar.set_description(f"{self.basename}")
 
         try:
-            ftp = ftp = FTP("ftp.datasus.gov.br")
+            ftp = FTP("ftp.datasus.gov.br")
             ftp.login()
             output = open(f"{filepath}", "wb")
 
@@ -327,7 +337,7 @@ class Directory:
 
     def load(self):
         """
-        The content of a Directory must be explicity loaded
+        The content of a Directory must be explicitly loaded
         """
         self.__content__ |= load_path(self.path)
         self.loaded = True
@@ -339,6 +349,27 @@ class Directory:
         """
         self.loaded = False
         return self.load()
+
+    def is_parent(self, other: Union[Self, File]) -> bool:
+        """
+        Checks if Directory or File is inside (or at any subdir) of self.  
+        """
+        if self.path == "/":
+            return True
+
+        target = other
+        while target.path != "/":
+
+            if self.path == target.path:
+                return True
+
+            if isinstance(other, File):
+                # TODO: Implement parent logic on File (too much overhead)
+                target = Directory(other.parent_path)
+            else:
+                target = target.parent
+
+        return False
 
 
 CACHE["/"] = Directory("/")
@@ -444,7 +475,7 @@ class Database:
     def content(self) -> List[Union[Directory, File]]:
         """
         Lists Database content. The `paths` will be loaded if this property is
-        called or if explicty using `load()`. To add specific Directory inside
+        called or if explicitly using `load()`. To add specific Directory inside
         content, `load()` the directory and call `content` again.
         """
         if not self.__content__:

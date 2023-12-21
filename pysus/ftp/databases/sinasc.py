@@ -6,10 +6,10 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
 
 class SINASC(Database):
     name = "SINASC"
-    paths = [
+    paths = (
         Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
         Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
-    ]
+    )
     metadata = {
         "long_name": "Sistema de Informações sobre Nascidos Vivos",
         "source": "http://sinasc.saude.gov.br/",
@@ -24,15 +24,15 @@ class SINASC(Database):
         if file.extension.upper() == ".DBC":
             group, _uf, year = self.format(file)
 
-            if _uf == "EX":  # DNEX2021.dbc
-                state = None
-            else:
-                state = UFs[_uf]
+            try:
+                uf = UFs[_uf]
+            except KeyError:
+                uf = _uf
 
             description = {
                 "name": file.basename,
                 "group": self.groups[group],
-                "uf": state,
+                "uf": uf,
                 "year": year,
                 "size": file.info["size"],
                 "last_update": file.info["modify"],
