@@ -1,6 +1,18 @@
 Release Notes
 ---
 
+## [0.13.0](https://github.com/AlertaDengue/PySUS/compare/0.12.0...0.13.0) (2023-12-21)
+
+
+### Features
+
+* **PNI:** include PNI Database ([#181](https://github.com/AlertaDengue/PySUS/issues/181)) ([67fca92](https://github.com/AlertaDengue/PySUS/commit/67fca920d744f82dc760bf6217746290d15d9c96))
+
+
+### Bug Fixes
+
+* Replace applymap with map for pd.DataFrame ([#180](https://github.com/AlertaDengue/PySUS/issues/180)) ([357b7ca](https://github.com/AlertaDengue/PySUS/commit/357b7ca5498dd7030bcf31c42179ef6a197b8f38))
+
 ## [0.12.0](https://github.com/AlertaDengue/PySUS/compare/0.11.0...0.12.0) (2023-12-05)
 
 
