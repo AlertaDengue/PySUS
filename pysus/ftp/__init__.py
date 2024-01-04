@@ -4,7 +4,8 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Set, Union, Self
+from typing import Any, Dict, List, Optional, Set, Union
+from typing_extensions import Self
 
 import humanize
 from aioftp import Client
