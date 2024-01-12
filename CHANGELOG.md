@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.13.1](https://github.com/AlertaDengue/PySUS/compare/0.13.0...0.13.1) (2024-01-12)
+
+
+### Bug Fixes
+
+* **release:** update node version on release.yaml ([#186](https://github.com/AlertaDengue/PySUS/issues/186)) ([0313b79](https://github.com/AlertaDengue/PySUS/commit/0313b796cb5b04e60a7adcca40d6a5d92af95444))
+
 ## [0.13.0](https://github.com/AlertaDengue/PySUS/compare/0.12.0...0.13.0) (2023-12-21)
 
 
