@@ -51,4 +51,4 @@ RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
 
 WORKDIR /home/pysus/Notebooks
 
-ENTRYPOINT ["bash", "/activate.sh"]
+ENTRYPOINT ["bash", "/activate.sh", "jupyter", "notebook", "--port=8888", "--ip=0.0.0.0"]
