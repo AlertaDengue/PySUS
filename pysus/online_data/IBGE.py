@@ -6,6 +6,8 @@ import urllib3
 import requests
 import pandas as pd
 
+from pysus.ftp.database.ibge import IBGEDATASUS
+
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
 from urllib.error import HTTPError
@@ -288,3 +290,16 @@ def get_legacy_session():
     session = requests.session()
     session.mount('https://', CustomHttpAdapter(ctx))
     return session
+
+def get_population(year, source='POPTCU'):
+    """
+    Get population data from IBGE as shared by DATASUS
+    :param year: year of the data
+    :param source: 'POPTCU'|'POP'|'censo'|'projpop'
+    :return: DataFrame with population data
+    """
+    ibgedatasus = IBGEDATASUS().load()
+    files = [f for f in ibgedatasus.get_files(year=year) if f.path.endswith(source)]
+    return files
+
+

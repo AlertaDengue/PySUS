@@ -39,6 +39,7 @@ flake8 = "^5.0.4"
 isort = "^5.10.1"
 pre-commit = "^2.20.0"
 pytest-timeout = "^2.1.0"
+nbsphinx = "^0.9.3"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.1.1"
