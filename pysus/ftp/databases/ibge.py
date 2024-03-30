@@ -9,7 +9,8 @@ class IBGEDATASUS(Database):
         Directory("/dissemin/publicos/IBGE/POP"),
         Directory("/dissemin/publicos/IBGE/censo"),
         Directory("/dissemin/publicos/IBGE/POPTCU"),
-        Directory("/dissemin/publicos/IBGE/projpop")
+        Directory("/dissemin/publicos/IBGE/projpop"),
+        Directory("/dissemin/publicos/IBGE/Auxiliar")
     )
     metadata = {
         "long_name": "Populaçao Residente, Censos, Contagens "
