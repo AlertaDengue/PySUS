@@ -6,7 +6,7 @@ import urllib3
 import requests
 import pandas as pd
 
-from pysus.ftp.database.ibge import IBGEDATASUS
+from pysus.ftp.databases.ibge_datasus import IBGEDATASUS
 
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
@@ -16,16 +16,16 @@ APIBASE = 'https://servicodados.ibge.gov.br/api/v3/'
 
 
 def get_sidra_table(
-    table_id,
-    territorial_level,
-    geocode='all',
-    period=None,
-    variables=None,
-    classification=None,
-    categories=None,
-    format=None,
-    decimals=None,
-    headers=None,
+        table_id,
+        territorial_level,
+        geocode='all',
+        period=None,
+        variables=None,
+        classification=None,
+        categories=None,
+        format=None,
+        decimals=None,
+        headers=None,
 ):
     """
     Wrapper for the SIDRA API. More information here: http://apisidra.ibge.gov.br/home/ajuda
@@ -232,11 +232,11 @@ class FetchData:
     """
 
     def __init__(
-        self, agregado: int, periodos: str, variavel: str = 'allxp', **kwargs
+            self, agregado: int, periodos: str, variavel: str = 'allxp', **kwargs
     ):
         self.url = (
-            APIBASE
-            + f'agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?'
+                APIBASE
+                + f'agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?'
         )
         self.url += '&'.join([f'{k}={v}' for k, v in kwargs.items()])
         self.JSON = None
@@ -291,6 +291,7 @@ def get_legacy_session():
     session.mount('https://', CustomHttpAdapter(ctx))
     return session
 
+
 def get_population(year, source='POPTCU'):
     """
     Get population data from IBGE as shared by DATASUS
@@ -299,7 +300,5 @@ def get_population(year, source='POPTCU'):
     :return: DataFrame with population data
     """
     ibgedatasus = IBGEDATASUS().load()
-    files = [f for f in ibgedatasus.get_files(year=year) if f.path.endswith(source)]
+    files = [f for f in ibgedatasus.get_files(year=year) if f.path.split('/')[-2] == source]
     return files
-
-
