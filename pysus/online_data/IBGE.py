@@ -2,6 +2,7 @@
 Helper functions to download official statistics from IBGE SIDRA
 """
 
+import ssl  # Builtin
 import urllib3
 import requests
 import pandas as pd
@@ -235,8 +236,8 @@ class FetchData:
             self, agregado: int, periodos: str, variavel: str = 'allxp', **kwargs
     ):
         self.url = (
-                APIBASE
-                + f'agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?'
+            APIBASE
+            + f'agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?'
         )
         self.url += '&'.join([f'{k}={v}' for k, v in kwargs.items()])
         self.JSON = None
@@ -264,8 +265,6 @@ HTTPSConnectionPool(host='servicodados.ibge.gov.br', port=443):
 
 SOLUTION: https://github.com/scrapy/scrapy/issues/5491#issuecomment-1241862323
 """
-
-import ssl  # Builtin
 
 
 class CustomHttpAdapter(requests.adapters.HTTPAdapter):
@@ -300,5 +299,7 @@ def get_population(year, source='POPTCU'):
     :return: DataFrame with population data
     """
     ibgedatasus = IBGEDATASUS().load()
-    files = [f for f in ibgedatasus.get_files(year=year) if f.path.split('/')[-2] == source]
+    files = [
+        f for f in ibgedatasus.get_files(year=year) if f.path.split('/')[-2] == source
+    ]
     return files

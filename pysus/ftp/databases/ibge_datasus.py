@@ -53,7 +53,8 @@ class IBGEDATASUS(Database):
             self,
             year: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
-        files = [f for f in self.files if f.extension.upper() in [".ZIP", ".DBF"] and self.describe(f)["year"] == year]
+        files = [f for f in self.files if f.extension.upper(
+        ) in [".ZIP", ".DBF"] and self.describe(f)["year"] == year]
         # files = list(filter(
         #     lambda f: f.extension.upper() in [".ZIP"], self.files
         # ))
@@ -62,6 +63,7 @@ class IBGEDATASUS(Database):
             years = (
                 [zfill_year(str(y)[-4:]) for y in to_list(year)]
             )
-            files = list(filter(lambda f: zfill_year(self.format(f)) in years, files))
+            files = list(filter(lambda f: zfill_year(
+                self.format(f)) in years, files))
 
         return files
