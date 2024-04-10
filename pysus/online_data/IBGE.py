@@ -1,6 +1,7 @@
 """
 Helper functions to download official statistics from IBGE SIDRA
 """
+from typing import Literal
 
 import ssl  # Builtin
 import urllib3
@@ -291,7 +292,10 @@ def get_legacy_session():
     return session
 
 
-def get_population(year, source='POPTCU'):
+def get_population(
+    year,
+    source: Literal["POP", "censo", "POPTCU", "projpop"] = "POPTCU",
+):
     """
     Get population data from IBGE as shared by DATASUS
     :param year: year of the data
@@ -299,7 +303,5 @@ def get_population(year, source='POPTCU'):
     :return: DataFrame with population data
     """
     ibgedatasus = IBGEDATASUS().load()
-    files = [
-        f for f in ibgedatasus.get_files(year=year) if f.path.split('/')[-2] == source
-    ]
-    return files
+    files = ibgedatasus.get_files(year=year, source=source)
+    raise NotImplemented("TODO")

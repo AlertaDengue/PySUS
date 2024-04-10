@@ -1,4 +1,5 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Literal
+from loguru import logger
 
 from pysus.ftp import Database, Directory, File
 from pysus.ftp.utils import zfill_year, to_list
@@ -46,24 +47,47 @@ class IBGEDATASUS(Database):
             return description
         return {}
 
-    def format(self, file: File) -> str:
-        return file.name[-2:]
+    def format(self, file: File) -> tuple:
+        return file.name[-2:],
 
     def get_files(
-            self,
-            year: Optional[Union[str, int, list]] = None,
+        self,
+        source: Literal["POP", "censo", "POPTCU", "projpop"] = "POPTCU",
+        year: Optional[Union[str, int, list]] = None,
+        *args, **kwargs
     ) -> List[File]:
-        files = [f for f in self.files if f.extension.upper(
-        ) in [".ZIP", ".DBF"] and self.describe(f)["year"] == year]
-        # files = list(filter(
-        #     lambda f: f.extension.upper() in [".ZIP"], self.files
-        # ))
+        source_dir = None
 
-        if year or str(year) in ["0", "00"]:
-            years = (
-                [zfill_year(str(y)[-4:]) for y in to_list(year)]
-            )
-            files = list(filter(lambda f: zfill_year(
-                self.format(f)) in years, files))
+        for dir in self.paths:
+            if (
+                source in ["POP", "censo", "POPTCU", "projpop"]
+                and source in dir.path
+            ):
+                source_dir = dir
+
+        if not source_dir:
+            raise ValueError(f"Unkown source {source}")
+
+        files = source_dir.content
+
+        if source in ["POPTCU", "censo", "POP"]:
+            if year:
+                if isinstance(year, (str, int)):
+                    files = [
+                        f for f in files if
+                        self.describe(f)["year"] == zfill_year(year)
+                    ]
+                elif isinstance(year, list):
+                    files = [
+                        f for f in files
+                        if str(self.describe(f)["year"])
+                        in [str(zfill_year(y)) for y in year]
+                    ]
+        else:
+            if year:
+                logger.warning(
+                    f"{source} files are not arranged in years, "
+                    "returning all files for source"
+                )
 
         return files
