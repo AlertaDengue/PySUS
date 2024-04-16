@@ -6,7 +6,7 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
 
 class CNES(Database):
     name = "CNES"
-    paths = Directory("/dissemin/publicos/CNES/200508_/Dados")
+    paths = (Directory("/dissemin/publicos/CNES/200508_/Dados"),)
     metadata = {
         "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
         "source": "https://cnes.datasus.gov.br/",
@@ -46,8 +46,8 @@ class CNES(Database):
         found within FTP Directories into self.content
         """
         if not self.__content__:
-            self.paths.load()
-            self.__content__ |= self.paths.__content__
+            self.paths[0].load()
+            self.__content__ |= self.paths[0].__content__
 
         if groups:
             groups = to_list(groups)

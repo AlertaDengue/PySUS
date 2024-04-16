@@ -4,7 +4,7 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union, Tuple
 from typing_extensions import Self
 
 import humanize
@@ -53,7 +53,7 @@ class File:
     basename: str
     path: str
     # parent: Directory # TODO: This causes too much overhead
-    __info__: Set[Union[int, str, datetime]]
+    __info__: dict
 
     def __init__(self, path: str, name: str, info: dict) -> None:
         name, extension = os.path.splitext(name)
@@ -461,7 +461,7 @@ class Database:
 
     ftp: FTP
     name: str
-    paths: List[Directory]
+    paths: Tuple[Directory, ...]
     metadata: dict
     __content__: Dict[str, Union[Directory, File]]
 

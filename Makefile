@@ -36,42 +36,6 @@ SEMANTIC_RELEASE = npx --yes \
           -p "semantic-release-replace-plugin" \
           semantic-release
 
-
-# Create a Conda environment and install dependencies for development.
-.PHONY: conda-env
-conda-env:
-	mamba env create -f conda/dev.yaml --force
-
-# Install main project dependencies using Poetry.
-.PHONY:  conda-install-main
-conda-install-main: ${ENVCREATE}
-	conda run -n pysus poetry install --only main
-
-.PHONY: conda-install-dev
-conda-install-dev:
-	conda run -n pysus poetry install --only dev
-
-.PHONY: conda-install-docs
-conda-install-docs:
-	conda run -n pysus poetry install --only docs
-
-.PHONY: conda-install-geo
-conda-install-geo:
-	conda run -n pysus pip install --no-use-pep517 shapely==1.8.5.post1
-	conda run -n pysus poetry install --only geo
-
-# Linting
-.PHONY: pre-commit-install
-pre-commit-install:
-	poetry run pre-commit install
-
-.PHONY: check-codestyle
-check-codestyle: ## check style with flake8
-	# stop the build if there are Python syntax errors or undefined names
-	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-	# exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
 #* Docker basic
 .PHONY: run-jupyter-pysus
 run-jupyter-pysus: ## build and deploy all containers
@@ -90,44 +54,6 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 test-pysus: ## run tests quickly with the default Python
 	cp docs/source/**/*.ipynb pysus/Notebooks
 	poetry run pytest -vv pysus/tests/
-
-coverage: ## check code coverage quickly with the default Python
-	coverage run --source pysus/tests/ -m pytest
-	coverage report -m
-	coverage html
-	$(BROWSER) htmlcov/index.html
-
-# Cleaning
-.PHONY: clean
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
-
-.PHONY: clean-build
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.cache' -exec rm -fr {} +
-	find . -name '*.jupyter' -exec rm -fr {} +
-	find . -name '*.local' -exec rm -fr {} +
-	find . -name '*.mozilla' -exec rm -fr {} +
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
-	find . -name '*.ipynb_checkpoints' -exec rm -rf {} +
-
-.PHONY: clean-pyc
-clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
-
-.PHONY: clean-test
-clean-test: ## remove test and coverage artifacts
-	rm -fr .tox/
-	rm -f .coverage
-	rm -fr htmlcov/
-	rm -fr .pytest_cache
-
 
 # RELEASE
 # =======

@@ -81,6 +81,8 @@ def parse_data_content(
 
         if data_path.suffix.lower() in [".dbc", ".dbf", ".parquet"]:
             content.append(ParquetSet(str(data_path), _pbar=_pbar))
+        elif data_path.suffix.lower() == ".zip":
+            content.append(str(data_path))
         else:
             continue
 

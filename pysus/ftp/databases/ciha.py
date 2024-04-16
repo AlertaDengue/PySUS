@@ -6,7 +6,7 @@ from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
 
 class CIHA(Database):
     name = "CIHA"
-    paths = (Directory("/dissemin/publicos/CIHA/201101_/Dados"))
+    paths = (Directory("/dissemin/publicos/CIHA/201101_/Dados"),)
     metadata = {
         "long_name": "Comunicação de Internação Hospitalar e Ambulatorial",
         "source": "http://ciha.datasus.gov.br/CIHA/index.php",
