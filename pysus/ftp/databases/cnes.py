@@ -46,8 +46,8 @@ class CNES(Database):
         found within FTP Directories into self.content
         """
         if not self.__content__:
-            self.paths.load()
-            self.__content__ |= self.paths.__content__
+            self.paths[0].load()
+            self.__content__ |= self.paths[0].__content__
 
         if groups:
             groups = to_list(groups)
