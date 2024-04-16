@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [0.14.0](https://github.com/AlertaDengue/PySUS/compare/0.13.1...0.14.0) (2024-04-16)
+
+
+### Features
+
+* **IBGE:** continue work of AlertaDengue [#192](https://github.com/AlertaDengue/PySUS/issues/192) ([#193](https://github.com/AlertaDengue/PySUS/issues/193)) ([b3540d7](https://github.com/AlertaDengue/PySUS/commit/b3540d71b528b2eb2c57f3521c1032a341d8a8ef))
+
 ## [0.13.1](https://github.com/AlertaDengue/PySUS/compare/0.13.0...0.13.1) (2024-01-12)
 
 
