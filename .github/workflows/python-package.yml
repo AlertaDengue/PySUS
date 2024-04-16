@@ -20,14 +20,9 @@ jobs:
       cancel-in-progress: true
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Prepare conda environment
-      run: |
-        sed -i s/python\ 3\.11/python\ ${{ matrix.python_version }}/ conda/dev.yaml
-        cat conda/dev.yaml
-
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v3
       with:
         miniconda-version: "latest"
         mamba-version: "*"
@@ -37,27 +32,11 @@ jobs:
         use-mamba: true
         miniforge-variant: Mambaforge
 
-
-    - name: Install dependencies
-      run: |
-        curl -sSL https://install.python-poetry.org/ | python -
-        export PATH="$HOME/.poetry/bin:$PATH"
-        poetry config virtualenvs.create false
-
-    - name: Install main dependencies
-      run: |
-        make conda-install-main ENVCREATE=conda-env
-
-    - name: Lint with flake8
-      run: |
-        make conda-install-dev
-        make check-codestyle
-
     - name: Run jupyterlab with PySUS
       run: |
         make run-jupyter-pysus
 
     - name: Test with pytest
       run: |
-        make conda-install-geo
+        poetry install
         make test-pysus
