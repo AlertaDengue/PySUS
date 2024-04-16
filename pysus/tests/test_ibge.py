@@ -46,12 +46,12 @@ class SIDRA(unittest.TestCase):
 
     @pytest.mark.timeout(120)
     def test_get_population(self):
-        l = IBGE.get_population(2021)
-        self.assertEqual(l[0].name, 'POPTBR21')
-        self.assertGreater(len(l), 0)
-        l = IBGE.get_population(2012, source='projpop')
-        self.assertEqual(l[0].name, 'projbr12')
-        self.assertGreater(len(l), 0)
+        l = IBGE.get_population(year=2021, source="POP")
+        self.assertEqual(type(l), pd.DataFrame)
+        self.assertEqual(len(l), 5570)
+        l = IBGE.get_population(year=2012, source='projpop')
+        self.assertEqual(type(l), pd.DataFrame)
+        self.assertEqual(len(l), 182)
 
 
 if __name__ == '__main__':

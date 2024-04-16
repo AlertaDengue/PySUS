@@ -56,38 +56,29 @@ class IBGEDATASUS(Database):
         year: Optional[Union[str, int, list]] = None,
         *args, **kwargs
     ) -> List[File]:
+        sources = ["POP", "censo", "POPTCU", "projpop"]
         source_dir = None
 
         for dir in self.paths:
-            if (
-                source in ["POP", "censo", "POPTCU", "projpop"]
-                and source in dir.path
-            ):
+            if source in sources and source in dir.path:
                 source_dir = dir
 
         if not source_dir:
-            raise ValueError(f"Unkown source {source}")
+            raise ValueError(f"Unkown source {source}. Options: {sources}")
 
         files = source_dir.content
 
-        if source in ["POPTCU", "censo", "POP"]:
-            if year:
-                if isinstance(year, (str, int)):
-                    files = [
-                        f for f in files if
-                        self.describe(f)["year"] == zfill_year(year)
-                    ]
-                elif isinstance(year, list):
-                    files = [
-                        f for f in files
-                        if str(self.describe(f)["year"])
-                        in [str(zfill_year(y)) for y in year]
-                    ]
-        else:
-            if year:
-                logger.warning(
-                    f"{source} files are not arranged in years, "
-                    "returning all files for source"
-                )
+        if year:
+            if isinstance(year, (str, int)):
+                files = [
+                    f for f in files if
+                    self.describe(f)["year"] == zfill_year(year)
+                ]
+            elif isinstance(year, list):
+                files = [
+                    f for f in files
+                    if str(self.describe(f)["year"])
+                    in [str(zfill_year(y)) for y in year]
+                ]
 
         return files

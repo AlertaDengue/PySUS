@@ -1,13 +1,17 @@
 """
 Helper functions to download official statistics from IBGE SIDRA
 """
-from typing import Literal
+from typing import Literal, Optional
+from pathlib import Path
+from zipfile import ZipFile
+from tempfile import TemporaryDirectory
 
 import ssl  # Builtin
 import urllib3
 import requests
 import pandas as pd
 
+from pysus.data.local import ParquetSet
 from pysus.ftp.databases.ibge_datasus import IBGEDATASUS
 
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
@@ -15,6 +19,8 @@ from pysus.ftp.databases.ibge_datasus import IBGEDATASUS
 from urllib.error import HTTPError
 
 APIBASE = 'https://servicodados.ibge.gov.br/api/v3/'
+
+ibge = IBGEDATASUS().load()
 
 
 def get_sidra_table(
@@ -268,7 +274,7 @@ SOLUTION: https://github.com/scrapy/scrapy/issues/5491#issuecomment-1241862323
 """
 
 
-class CustomHttpAdapter(requests.adapters.HTTPAdapter):
+class CustomHttpAdapter(requests.sessions.HTTPAdapter):
     # "Transport adapter" that allows us to use custom ssl_context.
 
     def __init__(self, ssl_context=None, **kwargs):
@@ -293,15 +299,67 @@ def get_legacy_session():
 
 
 def get_population(
-    year,
+    year: int,
     source: Literal["POP", "censo", "POPTCU", "projpop"] = "POPTCU",
-):
+    censo_data: Literal["ALF", "ESCA", "ESCB", "IDOSO", "RENDA"] = "ALF"
+) -> pd.DataFrame:
     """
     Get population data from IBGE as shared by DATASUS
     :param year: year of the data
-    :param source: 'POPTCU'|'POP'|'censo'|'projpop'
+    :param source: 
+         "POP" - 1992-presente: Estimativas populacionais estratificadas por 
+                 idade e sexo.
+         "censo" - 1991, 2000 e 2010: Censos Demográficos
+         "POPTCU" - 1992-presente: Estimativas populacionais enviadas para o TCU,
+                    estratificadas por idade e sexo pelo MS/SGEP/Datasus.
+         "projpop": Estimativas preliminares para os anos intercensitários dos 
+                    totais populacionais, estratificadas por idade e sexo pelo 
+                    MS/SGEP/Datasus.
+    :param censo_data: 
+        "ALF": Censo Demográfico
+        "ESCA": Censo Escolar da Educação Básica
+        "ESCB": Censo Escolar da Educação Superior
+        "IDOSO": População de pessoas com 65 anos ou mais
+        "RENDA": População de pessoas de acordo com a renda familiar
     :return: DataFrame with population data
     """
-    ibgedatasus = IBGEDATASUS().load()
-    files = ibgedatasus.get_files(year=year, source=source)
-    raise NotImplemented("TODO")
+
+    files = ibge.get_files(year=int(year), source=source)
+
+    if files == []:
+        return pd.DataFrame()
+
+    if source == "censo":
+        opts = ["ALF", "ESCA", "ESCB", "IDOSO", "RENDA"]
+        if not censo_data or censo_data not in opts:
+            raise ValueError(
+                f"Incorrect `censo_data` parameter. Options: {opts}"
+            )
+        file = [f for f in files if censo_data in f.name][0].download()
+    else:
+        file = files[0].download()
+
+    if isinstance(file, ParquetSet):
+        return file.to_dataframe()
+
+    file = Path(str(file))
+
+    if file.suffix.lower() == ".zip":
+        return _unzip_to_dataframe(str(file))
+    else:
+        raise NotImplementedError(f"Unkown file type '{file.suffix}'")
+
+
+def _unzip_to_dataframe(file: str) -> pd.DataFrame:
+    zip_file = ZipFile(file)  # pyright: ignore
+    with TemporaryDirectory() as tempdir:
+        for file in zip_file.namelist():
+            if file.lower().endswith(".csv"):
+                return pd.read_csv(zip_file.extract(file, tempdir))
+
+            if file.lower().endswith((".dbf", ".dbc")):
+                return ParquetSet(
+                    zip_file.extract(file, tempdir)
+                ).to_dataframe()
+
+        raise ValueError(f"No data found in {zip_file}")
