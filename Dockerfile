@@ -47,4 +47,4 @@ RUN cd /usr/src/ && bash /tmp/poetry-install.sh
 
 WORKDIR /home/pysus/Notebooks
 
-ENTRYPOINT ["bash", "/activate.sh"]
+ENTRYPOINT ["bash", "/activate.sh", "jupyter", "notebook", "--port=8888", "--ip=0.0.0.0"]
