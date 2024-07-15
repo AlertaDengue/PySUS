@@ -72,10 +72,13 @@ class SIA(Database):
     def format(self, file: File) -> tuple:
         if file.extension.upper() in [".DBC", ".DBF"]:
             digits = ''.join([d for d in file.name if d.isdigit()])
+            if "_" in file.name:
+                name, _ = file.name.split("_")
+                digits = ''.join([d for d in name if d.isdigit()])
             chars, _ = file.name.split(digits)
             year, month = digits[:2], digits[2:]
-            group, _uf = chars[:-2].upper(), chars[-2:].upper()
-            return group, _uf, zfill_year(year), month
+            group, uf = chars[:-2].upper(), chars[-2:].upper()
+            return group, uf, zfill_year(year), month
         return ()
 
     def get_files(
