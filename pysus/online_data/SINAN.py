@@ -54,7 +54,6 @@ def metadata_df(disease_code: str) -> pd.DataFrame:
             header=0,
             sep=",",
             quotechar='"',
-            error_bad_lines=False,
         )
 
         return df.iloc[:, 1:]

@@ -2,6 +2,13 @@ import json
 from pathlib import Path
 from typing import Union
 
+with open(
+    f"{Path(__file__).parent}/municipios.json", 'r', encoding='utf-8-sig'
+) as muns:
+    MUNICIPALITIES = json.loads(muns.read())
+
+MUN_BY_GEOCODE = {mun["geocodigo"]: mun["municipio"] for mun in MUNICIPALITIES}
+
 
 UFs = {
     "BR": "Brasil",
@@ -57,12 +64,4 @@ def get_city_name_by_geocode(geocode: Union[str, int]):
     :return: City name
     """
 
-    with open(f"{Path(__file__).parent}/municipios.json") as muns:
-        _mun_decoded = muns.read().encode().decode("utf-8-sig")
-        municipalities = json.loads(_mun_decoded)
-
-    mun_by_geocode = {
-        mun["geocodigo"]: mun["municipio"] for mun in municipalities
-    }
-
-    return mun_by_geocode[int(geocode)]
+    return MUN_BY_GEOCODE[int(geocode)]
