@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [0.14.1](https://github.com/AlertaDengue/PySUS/compare/0.14.0...0.14.1) (2024-07-16)
+
+### Bug Fixes
+
+* **SIA:** handle file_N.dbf files on SIA database ([#200](https://github.com/AlertaDengue/PySUS/issues/200)) ([997b419](https://github.com/AlertaDengue/PySUS/commit/997b41939bc80ce371fb433fb03b9eed18e358ea))
+
 ## [0.14.0](https://github.com/AlertaDengue/PySUS/compare/0.13.1...0.14.0) (2024-04-16)
 
 
