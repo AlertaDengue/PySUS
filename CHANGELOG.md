@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [0.14.3](https://github.com/AlertaDengue/PySUS/compare/0.14.2...0.14.3) (2024-07-31)
+
+### Bug Fixes
+
+* **release:** bump version on PyPI to 0.14.3 ([#204](https://github.com/AlertaDengue/PySUS/issues/204)) ([7122019](https://github.com/AlertaDengue/PySUS/commit/7122019a5278976bb659768360e141ba405b2c5d))
+
 ## [0.14.2](https://github.com/AlertaDengue/PySUS/compare/0.14.1...0.14.2) (2024-07-31)
 
 ### Bug Fixes
