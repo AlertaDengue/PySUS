@@ -140,7 +140,7 @@ datetime.date(2016, 4, 1)
 Downloading and reading SINASC data:
 
 ```python
-In[1]: from pysus.online_data.sinasc import download
+In[1]: from pysus.online_data.SINASC import download
 In[2]: df = download('SE', 2015)
 In[3]: df.head()
 Out[3]: 
