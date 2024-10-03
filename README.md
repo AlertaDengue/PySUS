@@ -53,7 +53,7 @@ If you use windows, or for some other reason is not able to install PySUS on you
 First, clone the Pysus repository:
 
 ```bash
-git clone https://github.com/fccoelho/PySUS.git
+git clone https://github.com/AlertaDengue/PySUS.git
 ``` 
 then from within the PySUS directory build the container
 
