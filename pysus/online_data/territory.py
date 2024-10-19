@@ -9,8 +9,14 @@ from pysus.ftp.databases.territory import Territory
 ter = Territory().load()
 
 def list_tables()-> Dict:
-    ter.files
-    return ter.get_files()
+    files = ter.get_files()
+    tabelas = [f for f in files if 'territor' in f.name]
+    return tabelas
+
+def list_maps():
+    files = ter.get_files()
+    mapas = [f for f in files if 'mapas' in f.name]
+    return mapas
 
 def download(fname: Union[str,list], data_path: str = CACHEPATH):
     files = ter.get_files()
