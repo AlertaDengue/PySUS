@@ -15,6 +15,7 @@ Currently, the following databases can be downloaded:
     SIM - Sistema de Informação sobre Mortalidade <SIM.ipynb>
     SIA - Sistema de Informações Ambulatoriais <SIA.ipynb>
     SIH - Sistema de Informações Hospitalares <SIH.ipynb>
+    territory - Tables and maps about the brazilian territory <territory.ipynb>
 
 
 About SINAN
