@@ -90,29 +90,42 @@ class File:
     """
     FTP File representation with improved type safety.
 
-    This class provides methods for interacting with files on the DataSUS FTP server. It includes functionality for downloading files synchronously and asynchronously, as well as retrieving file information in a human-readable format.
+    This class provides methods for interacting with files on the DataSUS FTP
+    server. It includes functionality for downloading files synchronously and
+    asynchronously, as well as retrieving file information in a human-readable
+    format.
 
     Attributes:
         name (str): The name of the file without the extension.
         extension (str): The file extension.
         basename (str): The full name of the file including the extension.
         path (str): The full path to the file on the FTP server.
-        parent_path (str): The directory path where the file is located on the FTP server.
-        __info (FileInfo): Metadata about the file, including size, type, and modification date.
+        parent_path (str): The directory path where the file is located on the
+            FTP server.
+        __info (FileInfo): Metadata about the file, including size, type, and
+            modification date.
 
     Methods:
         info() -> Dict[str, str]:
-            Returns a dictionary with human-readable file information, including size, type, and modification date.
+            Returns a dictionary with human-readable file information,
+            including size, type, and modification date.
 
-        download(local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None) -> Data:
-            Downloads the file to the specified local directory. If a progress bar (_pbar) is provided, it updates the progress bar during the download.
+        download(
+            local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
+        ) -> Data:
+            Downloads the file to the specified local directory. If a progress
+            bar (_pbar) is provided, it updates the progress bar during the
+            download.
 
         async_download(local_dir: str = CACHEPATH) -> Data:
             Asynchronously downloads the file to the specified local directory.
 
         _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
-            Static method to parse a line from the FTP LIST command and extract file information.
+            Static method to parse a line from the FTP LIST command and
+            extract file information.
     """
+
+    """FTP File representation with improved type safety"""
 
     def __init__(self, path: str, name: str, info: FileInfo) -> None:
         self.name, self.extension = os.path.splitext(name)
@@ -181,7 +194,9 @@ class File:
         return Data(str(filepath), _pbar=_pbar)  # type: ignore
 
     async def async_download(self, local_dir: str = CACHEPATH) -> Data:
-        """Asynchronously downloads the file to the specified local directory"""
+        """
+        Asynchronously downloads the file to the specified local directory
+        """
         target_dir = pathlib.Path(local_dir)
         target_dir.mkdir(exist_ok=True, parents=True)
         filepath = target_dir / self.basename
@@ -202,7 +217,9 @@ class File:
 
     @staticmethod
     def _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
-        """Static method to parse a line from the FTP LIST command and extract file information"""
+        """Static method to parse a line from the FTP LIST command and extract
+        file information
+        """
         line = file_line.decode("utf-8")
         if "<DIR>" in line:
             date, time, _, *name = line.strip().split()
@@ -235,22 +252,34 @@ class Directory:
     """
     Directory class with caching and lazy loading.
 
-    The Directory class represents a directory in a file system and includes mechanisms for caching instances and lazy loading of directory content. When a Directory instance is created, it normalizes the provided path and caches the instance. The content of the directory is not loaded immediately; instead, it is loaded when the `content` property or the `load` method is accessed or called.
+    The Directory class represents a directory in a file system and includes
+    mechanisms for caching instances and lazy loading of directory content.
+    When a Directory instance is created, it normalizes the provided path
+    and caches the instance. The content of the directory is not loaded
+    immediately; instead, it is loaded when the `content` property or the
+    `load` method is accessed or called.
 
     Attributes:
         path (str): The normalized path of the directory.
         name (str): The name of the directory.
         parent (Directory): The parent directory instance.
         loaded (bool): Indicates whether the directory content has been loaded.
-        __content__ (Dict[str, Union[File, Directory]]): A dictionary containing the directory's content, with names as keys and File or Directory instances as values.
+        __content__ (Dict[str, Union[File, Directory]]): A dictionary
+            containing the directory's content, with names as keys and File or
+            Directory instances as values.
 
     Methods:
         _normalize_path(path: str) -> str: Normalizes the given path.
-        _get_root_directory() -> Directory: Returns the root directory instance, creating it if necessary.
-        _init_root_child(name: str) -> None: Initializes a root child directory.
-        _init_regular(parent_path: str, name: str) -> None: Initializes a regular directory.
-        content() -> List[Union[Directory, File]]: Returns the content of the directory, loading it if necessary.
-        load() -> Self: Loads the content of the directory and marks it as loaded.
+        _get_root_directory() -> Directory: Returns the root directory
+            instance, creating it if necessary.
+        _init_root_child(name: str) -> None: Initializes a root child
+            directory.
+        _init_regular(parent_path: str, name: str) -> None: Initializes a
+            regular directory.
+        content() -> List[Union[Directory, File]]: Returns the content of the
+            directory, loading it if necessary.
+        load() -> Self: Loads the content of the directory and marks it as
+            loaded.
     """
 
     name: str
@@ -344,9 +373,6 @@ class Directory:
         """
         self.loaded = False
         return self.load()
-
-    def __str__(self) -> str:
-        return self.path
 
     def __repr__(self) -> str:
         return self.path
