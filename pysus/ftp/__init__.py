@@ -22,7 +22,6 @@ from typing import (
 import humanize
 from aioftp import Client
 from loguru import logger
-from pysus.data.local import Data
 from tqdm import tqdm
 from typing_extensions import Self
 
@@ -372,8 +371,11 @@ class Directory:
         self.loaded = False
         return self.load()
 
-    def __str__(self) -> str:
-        return self.path
+    def _init_root_child(self, name: str) -> None:
+        self.parent = DIRECTORY_CACHE["/"]
+        self.name = name
+        self.loaded = False
+        self.__content__ = {}
 
     def __repr__(self) -> str:
         return self.path
@@ -481,9 +483,7 @@ class Database:
         inside content, `load()` the directory and call `content` again.
         """
         if not self.__content__:
-            logger.info(
-                "content is not loaded, use `load()` to load default paths"
-            )
+            logger.info("content is not loaded, use `load()` to load default paths")
             return []
         return sorted(list(self.__content__.values()), key=str)
 
@@ -548,9 +548,7 @@ class Database:
         """
         ...
 
-    def download(
-        self, files: List[File], local_dir: str = CACHEPATH
-    ) -> List[str]:
+    def download(self, files: List[File], local_dir: str = CACHEPATH) -> List[str]:
         """
         Downloads a list of Files.
         """
@@ -565,9 +563,7 @@ class Database:
             return dfiles[0]
         return dfiles
 
-    async def async_download(
-        self, files: List[File], local_dir: str = CACHEPATH
-    ):
+    async def async_download(self, files: List[File], local_dir: str = CACHEPATH):
         """
         Asynchronously downloads a list of files
         """
