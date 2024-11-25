@@ -2,19 +2,18 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
-
-from pysus.ftp import File, Directory, Database, CACHE
 from pysus.data.local import ParquetSet
+from pysus.ftp import CACHE, Database, Directory, File
 from pysus.ftp.databases import (
     ciha,
     cnes,
-    pni,
     ibge_datasus,
-    sinan,
-    sih,
-    sinasc,
+    pni,
     sia,
+    sih,
     sim,
+    sinan,
+    sinasc,
 )
 
 
@@ -79,7 +78,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "CIHA")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'month', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "month", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 4)
 
@@ -89,7 +88,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "CNES")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'month', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "month", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 4)
 
@@ -99,7 +98,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "PNI")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 3)
 
@@ -109,7 +108,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "IBGE-DataSUS")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'last_update', 'name', 'size', 'year'}
+            {"last_update", "name", "size", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 1)
 
@@ -119,7 +118,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "SINAN")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'disease', 'last_update', 'name', 'size', 'year'}
+            {"disease", "last_update", "name", "size", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 2)
 
@@ -129,7 +128,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "SIH")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'month', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "month", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 4)
 
@@ -139,7 +138,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "SINASC")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 3)
 
@@ -149,7 +148,7 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "SIA")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'month', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "month", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 4)
 
@@ -159,6 +158,6 @@ class TestDatabases(unittest.TestCase):
         self.assertTrue(database.name == "SIM")
         self.assertSetEqual(
             set(database.describe(database.files[0])),
-            {'group', 'last_update', 'name', 'size', 'uf', 'year'}
+            {"group", "last_update", "name", "size", "uf", "year"},
         )
         self.assertEqual(len(database.format(database.files[0])), 3)

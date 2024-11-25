@@ -35,6 +35,7 @@ jobs:
     - name: Run jupyterlab with PySUS
       run: |
         make run-jupyter-pysus
+        # make test-jupyter-pysus  ## takes too long
 
     - name: Linting & Tests
       run: |
