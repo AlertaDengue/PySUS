@@ -22,7 +22,7 @@ export PRINT_HELP_PYSCRIPT
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-DOCKER = docker-compose -p pysus -f docker/docker-compose.yaml
+DOCKER = docker compose -p pysus -f docker/docker-compose.yaml
 SERVICE :=
 SEMANTIC_RELEASE = npx --yes \
           -p semantic-release \
