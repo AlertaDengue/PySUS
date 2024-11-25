@@ -328,79 +328,58 @@ class Directory:
         self.loaded = True
         return self
 
+    def __str__(self) -> str:
+        return self.path
+
+    def __repr__(self) -> str:
+        return self.path
+
+    def __hash__(self):
+        return hash(self.path)
+
+    def __eq__(self, other):
+        if isinstance(other, Directory):
+            return self.path == other.path
+        return False
+
 
 def load_directory_content(path: str) -> FileContent:
-    """Improved directory content loading with better error handling"""
+    """Directory content loading"""
     content: FileContent = {}
 
     try:
         ftp = FTPSingleton.get_instance()
         ftp.cwd(path)
+        path = path.removesuffix("/")
 
-        def parse_line(line: str) -> tuple[str, str, str, str]:
-            """Parse FTP LIST command output into (date, time, size, name)"""
+        def line_parser(line: str):
+            if "<DIR>" in line:
+                date, time, _, name = line.strip().split(maxsplit=3)
+                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+                info = {"size": 0, "type": "dir", "modify": modify}
+                xpath = f"{path}/{name}"
+                content[name] = Directory(xpath)
+            else:
+                date, time, size, name = line.strip().split(maxsplit=3)
+                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+                info: FileInfo = {"size": size, "type": "file", "modify": modify}
+                content[name] = File(path, name, info)
 
-            line = " ".join(line.strip().split())
-
-            try:
-                parts = line.split(None, 8)  # Max split 9 parts
-
-                # Unix format with 9 parts
-                if len(parts) == 9 and parts[0].startswith(("-", "d", "l")):
-                    perms, _, user, group, size, month, day, year_or_time, name = parts
-
-                    # Parse date/time
-                    if ":" in year_or_time:  # Contains time
-                        time = year_or_time
-                        year = str(datetime.now().year)
-                    else:  # Contains year
-                        year = year_or_time
-                        time = "00:00"
-
-                    # Format date consistently
-                    try:
-                        month_num = datetime.strptime(month, "%b").month
-                        date = f"{year}-{month_num:02d}-{int(day):02d}"
-                    except ValueError:
-                        date = month  # Keep original if parsing fails
-
-                    return date, time, size, name
-
-                # Windows format with 4 parts
-                parts = line.split(None, 3)
-                if len(parts) == 4:
-                    date, time, size, name = parts
-                    return date, time, size, name
-
-                # Try fallback to simple space splitting
-                if len(parts) >= 4:
-                    # Use last 4 parts
-                    date = parts[-4]
-                    time = parts[-3]
-                    size = parts[-2]
-                    name = parts[-1]
-                    return date, time, size, name
-
-                raise ValueError(f"Could not parse line format: {line}")
-
-            except Exception as e:
-                raise ValueError(f"Error parsing line '{line}': {str(e)}")
-
-        ftp.retrlines("LIST", parse_line)
-
-        # Filter out DBF files that have DBC counterparts
-        upper_names = {n.upper() for n in content}
-        content = {
-            name: file
-            for name, file in content.items()
-            if not (
-                name.upper().endswith(".DBF")
-                and name.upper().replace(".DBF", ".DBC") in upper_names
-            )
-        }
-
+        ftp.retrlines("LIST", line_parser)
+    except Exception as exc:
+        raise exc
     finally:
         FTPSingleton.close()
+
+    to_remove = [
+        name
+        for name in content
+        if name.upper().endswith(".DBF")
+        and name.upper().replace(".DBF", ".DBC") in content
+    ]
+
+    for name in to_remove:
+        del content[name]
 
     return content
 
