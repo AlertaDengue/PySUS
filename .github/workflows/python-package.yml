@@ -36,7 +36,8 @@ jobs:
       run: |
         make run-jupyter-pysus
 
-    - name: Test with pytest
+    - name: Linting & Tests
       run: |
         poetry install
+        pre-commit run --all-files
         make test-pysus
