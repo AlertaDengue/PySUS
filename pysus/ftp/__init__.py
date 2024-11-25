@@ -401,17 +401,13 @@ def load_directory_content(path: str) -> FileContent:
         def line_parser(line: str):
             if "<DIR>" in line:
                 date, time, _, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(
-                    f"{date} {time}", "%m-%d-%y %I:%M%p"
-                )
+                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
                 info = {"size": 0, "type": "dir", "modify": modify}
                 xpath = f"{path}/{name}"
                 content[name] = Directory(xpath)
             else:
                 date, time, size, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(
-                    f"{date} {time}", "%m-%d-%y %I:%M%p"
-                )
+                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
                 info: FileInfo = {
                     "size": size,
                     "type": "file",
