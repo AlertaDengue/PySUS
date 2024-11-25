@@ -9,9 +9,8 @@ license: GPL V3 or Later
 from typing import Union
 
 from loguru import logger
-
-from pysus.ftp.databases.ciha import CIHA
 from pysus.ftp import CACHEPATH
+from pysus.ftp.databases.ciha import CIHA
 from pysus.ftp.utils import parse_UFs
 
 ciha = CIHA().load()
@@ -19,7 +18,7 @@ ciha = CIHA().load()
 
 def get_available_years(
     states: Union[list, str] = None,
-) -> dict[str:set[int]]:
+) -> dict[str : set[int]]:
     """
     Fetch available years for the `states`.
     :param states: UF code. E.g: "SP" or ["SP", "RJ"]

@@ -7,15 +7,16 @@ license: GPL V3 or Later
 """
 
 __docformat__ = "restructuredtext en"
-import pandas as pd
 # from geobr import read_municipality
 import warnings
+
+import pandas as pd
 
 warnings.warn(
     "The 'geodata' module  is deprecated and will be removed in a future release. "
     "Please use 'new_module' instead.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 

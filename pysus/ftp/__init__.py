@@ -1,17 +1,18 @@
 from __future__ import annotations
+
 import asyncio
 import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Set, Union, Tuple
-from typing_extensions import Self
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import humanize
 from aioftp import Client
 from loguru import logger
 from pysus.data.local import Data
 from tqdm import tqdm
+from typing_extensions import Self
 
 CACHEPATH = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
@@ -66,11 +67,7 @@ class File:
             else path + "/" + self.basename
         )
         ppath = self.path.replace(self.basename, "")
-        self.parent_path = (
-            ppath[:-1]
-            if ppath.endswith("/")
-            else ppath
-        )
+        self.parent_path = ppath[:-1] if ppath.endswith("/") else ppath
         self.__info__ = info
 
     def __str__(self) -> str:
@@ -353,7 +350,7 @@ class Directory:
 
     def is_parent(self, other: Union[Self, File]) -> bool:
         """
-        Checks if Directory or File is inside (or at any subdir) of self.  
+        Checks if Directory or File is inside (or at any subdir) of self.
         """
         if self.path == "/":
             return True

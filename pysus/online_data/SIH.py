@@ -7,7 +7,6 @@ license: GPL V3 or Later
 from typing import Union
 
 from loguru import logger
-
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sih import SIH
 from pysus.ftp.utils import parse_UFs
@@ -61,7 +60,5 @@ def download(
     :param data_dir: Directory where parquets will be downloaded.
     :return: list with the downloaded files as ParquetData objects
     """
-    files = sih.get_files(
-        group=groups, uf=states, month=months, year=years
-    )
+    files = sih.get_files(group=groups, uf=states, month=months, year=years)
     return sih.download(files, local_dir=data_dir)

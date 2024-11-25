@@ -7,14 +7,13 @@ license: GPL V3 or Later
 import os
 from ftplib import FTP, error_perm
 from typing import Union
+
 import pandas as pd
 from dbfread import DBF
 from loguru import logger
-
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sim import SIM
 from pysus.ftp.utils import parse_UFs
-
 
 sim = SIM().load()
 

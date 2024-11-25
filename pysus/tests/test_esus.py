@@ -1,6 +1,6 @@
 import unittest
-import pytest
 
+import pytest
 from pysus.online_data.ESUS import download
 
 

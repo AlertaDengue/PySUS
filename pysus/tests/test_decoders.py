@@ -1,17 +1,16 @@
 # -*- coding:utf-8 -*-
-u"""
+"""
 Created on 19/07/16
 by fccoelho
 license: GPL V3 or Later
 """
 
 import unittest
-import pytest
 
 import numpy as np
 import pandas as pd
+import pytest
 from numpy.testing import *
-
 from pysus.online_data.SIM import download, get_CID10_chapters_table
 from pysus.preprocessing import decoders
 from pysus.preprocessing.SIM import (
@@ -79,7 +78,8 @@ class TestDecoder(unittest.TestCase):
         assert sex_array <= set(["Masculino", "Feminino", "NA"])
         raca_array = set(df["RACACOR"].unique().tolist())
         assert raca_array <= set(
-            ["Branca", "Preta", "Amarela", "nan", "Parda", "Indígena", "NA"])
+            ["Branca", "Preta", "Amarela", "nan", "Parda", "Indígena", "NA"]
+        )
 
     @pytest.mark.timeout(60)
     def test_get_cid_chapter(self):
@@ -107,7 +107,8 @@ class TestDecoder(unittest.TestCase):
             lambda x: get_CID10_code(code_index, x)
         )
         assert_array_equal(
-            results, [1, 1, 2, -1, 3, 7, 7, 8, -1, 20, 20, -1, 22])
+            results, [1, 1, 2, -1, 3, 7, 7, 8, -1, 20, 20, -1, 22]
+        )
 
     @pytest.mark.timeout(60)
     def test_group_and_count(self):
@@ -116,8 +117,9 @@ class TestDecoder(unittest.TestCase):
         variables = ["CODMUNRES", "SEXO", "IDADE_ANOS"]
         counts = group_and_count(df, variables)
         sample = (
-            counts[counts["COUNTS"] != 0]["COUNTS"].sample(
-                20, random_state=0).tolist()
+            counts[counts["COUNTS"] != 0]["COUNTS"]
+            .sample(20, random_state=0)
+            .tolist()
         )
         self.assertGreater(sum(sample), 0)
 
@@ -137,19 +139,22 @@ class TestDecoder(unittest.TestCase):
         assert_almost_equal(sum_original, sum_redistributed, 10)
 
         sample = (
-            counts[counts["COUNTS"] != 0]["COUNTS"].sample(
-                20, random_state=0).tolist()
+            counts[counts["COUNTS"] != 0]["COUNTS"]
+            .sample(20, random_state=0)
+            .tolist()
         )
         assert len(sample) == 20
 
         counts = redistribute_cid_chapter(
-            counts, ["CODMUNRES", "SEXO", "IDADE_ANOS"])
+            counts, ["CODMUNRES", "SEXO", "IDADE_ANOS"]
+        )
         sum_redistributed = counts["COUNTS"].sum()
 
         assert_almost_equal(sum_original, sum_redistributed, 10)
 
         sample = (
-            counts[counts["COUNTS"] != 0]["COUNTS"].sample(
-                20, random_state=0).tolist()
+            counts[counts["COUNTS"] != 0]["COUNTS"]
+            .sample(20, random_state=0)
+            .tolist()
         )
         assert len(sample) == 20

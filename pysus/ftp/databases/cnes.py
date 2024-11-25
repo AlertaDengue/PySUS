@@ -1,7 +1,7 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class CNES(Database):
@@ -42,7 +42,7 @@ class CNES(Database):
         groups: Union[str, List[str]] = None,
     ):
         """
-        Loads CNES Groups into content. Will convert the files and directories 
+        Loads CNES Groups into content. Will convert the files and directories
         found within FTP Directories into self.content
         """
         if not self.__content__:

@@ -1,7 +1,7 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class CIHA(Database):
@@ -68,9 +68,11 @@ class CIHA(Database):
         month: Optional[Union[list, str, int]] = None,
         group: Union[List[str], str] = "CIHA",
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 

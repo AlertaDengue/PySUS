@@ -1,6 +1,6 @@
+import logging
 import os
 import struct
-import logging
 from datetime import datetime
 from pathlib import Path
 

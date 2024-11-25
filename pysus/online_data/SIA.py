@@ -10,7 +10,6 @@ from pprint import pprint
 from typing import Dict, Tuple, Union
 
 from loguru import logger
-
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sia import SIA
 from pysus.ftp.utils import parse_UFs
@@ -90,7 +89,5 @@ def download(
     :param group: SIA groups. For all groups, refer to `sia.groups`
     :return: list of downloaded ParquetData
     """
-    files = sia.get_files(
-        group=groups, uf=states, year=years, month=months
-    )
+    files = sia.get_files(group=groups, uf=states, year=years, month=months)
     return sia.download(files, local_dir=data_dir)

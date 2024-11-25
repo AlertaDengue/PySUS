@@ -1,7 +1,7 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class SIA(Database):
@@ -71,10 +71,10 @@ class SIA(Database):
 
     def format(self, file: File) -> tuple:
         if file.extension.upper() in [".DBC", ".DBF"]:
-            digits = ''.join([d for d in file.name if d.isdigit()])
+            digits = "".join([d for d in file.name if d.isdigit()])
             if "_" in file.name:
                 name, _ = file.name.split("_")
-                digits = ''.join([d for d in name if d.isdigit()])
+                digits = "".join([d for d in name if d.isdigit()])
             chars, _ = file.name.split(digits)
             year, month = digits[:2], digits[2:]
             group, uf = chars[:-2].upper(), chars[-2:].upper()
@@ -88,9 +88,11 @@ class SIA(Database):
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 

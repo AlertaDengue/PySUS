@@ -1,14 +1,12 @@
 """
 Download data from the national immunization program
 """
-from typing import Union, Literal
+from typing import Literal, Union
 
 from loguru import logger
-
-from pysus.ftp.databases.pni import PNI
 from pysus.ftp import CACHEPATH
+from pysus.ftp.databases.pni import PNI
 from pysus.ftp.utils import parse_UFs
-
 
 pni = PNI().load()
 

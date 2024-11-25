@@ -104,4 +104,3 @@ msgstr ":ref:`modindex`"
 #: ../../source/index.rst:39
 msgid ":ref:`search`"
 msgstr ":ref:`search`"
-

@@ -1,11 +1,10 @@
 import unittest
-import pytest
 
+import pytest
 from pysus.utilities.brasil import get_city_name_by_geocode
 
 
 class TestGetMunNameByGeocode(unittest.TestCase):
-
     @pytest.mark.timeout(5)
     def test_get_mun_name_by_geocode(self):
         rio = get_city_name_by_geocode(3304557)

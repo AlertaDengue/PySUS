@@ -49,7 +49,9 @@ def get_geocodes(geoc):
     """
     url = (
         "http://cidades.ibge.gov.br/services/jSonpMuns.php?"
-        "busca=330&featureClass=P&style=full&maxRows=5&name_startsWith={}".format(geoc)
+        "busca=330&featureClass=P&style=full&maxRows=5&name_startsWith={}".format(
+            geoc
+        )
     )
     resp = requests.get(url)
     for d in resp.json()["municipios"]:
@@ -70,7 +72,9 @@ def _address_generator(df, default=""):
             line["cidade"] = default
         yield line[
             "NU_NOTIFIC"
-        ], "{NM_LOGRADO}, {NU_NUMERO}, {NM_BAIRRO}, {cidade}, Brasil".format(**line)
+        ], "{NM_LOGRADO}, {NU_NUMERO}, {NM_BAIRRO}, {cidade}, Brasil".format(
+            **line
+        )
 
 
 def geocode(sinan_df, outfile, default_city):
@@ -109,7 +113,9 @@ def geocode(sinan_df, outfile, default_city):
                 location = geocoder.google(ad)
             try:
                 of.write(
-                    "{},{},{}\n".format(nu, location.latlng[0], location.latlng[1])
+                    "{},{},{}\n".format(
+                        nu, location.latlng[0], location.latlng[1]
+                    )
                 )
                 print("Successfully geolocated {}".format(ad))
             except IndexError:

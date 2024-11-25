@@ -65,4 +65,3 @@ msgid ""
 "Suponhamos agora que desejamos visualizar em um mapa os casos que "
 "ocorreram, por exemplo entre janeiro e março de 2015"
 msgstr ""
-

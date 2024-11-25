@@ -7,7 +7,6 @@ license: GPL V3 or Later
 from typing import Union
 
 from loguru import logger
-
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinasc import SINASC
 from pysus.ftp.utils import parse_UFs

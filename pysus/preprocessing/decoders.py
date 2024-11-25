@@ -13,11 +13,7 @@ from string import ascii_uppercase
 
 import numpy as np
 import pandas as pd
-
-from pysus.online_data.SIM import (
-    get_CID10_chapters_table,
-    get_municipios,
-)
+from pysus.online_data.SIM import get_CID10_chapters_table, get_municipios
 
 
 @np.vectorize
@@ -119,9 +115,11 @@ def is_valid_geocode(geocodigo):
 def get_valid_geocodes():
     tab_mun = get_municipios()
     df = tab_mun[(tab_mun["SITUACAO"] != "IGNOR")]
-    return pd.concat(
-        [df["MUNCODDV"], df["MUNCOD"]], ignore_index=True
-    ).astype("int64").values
+    return (
+        pd.concat([df["MUNCODDV"], df["MUNCOD"]], ignore_index=True)
+        .astype("int64")
+        .values
+    )
 
 
 def calculate_digit(geocode):
@@ -154,14 +152,14 @@ def columns_as_category(series, nan_string=None):
 
 
 def translate_variables_SIM(
-        dataframe: pd.DataFrame,
-        age_unit: str = "Y",
-        age_classes=None,
-        classify_args: dict = {},
-        classify_cid10_chapters=False,
-        geocode_dv=True,
-        nan_marker=None,
-        category_columns=True,
+    dataframe: pd.DataFrame,
+    age_unit: str = "Y",
+    age_classes=None,
+    classify_args: dict = {},
+    classify_cid10_chapters=False,
+    geocode_dv=True,
+    nan_marker=None,
+    category_columns=True,
 ):
     variables_names = dataframe.columns.tolist()
     df = dataframe
@@ -180,7 +178,7 @@ def translate_variables_SIM(
 
     # SEXO
     if "SEXO" in variables_names:
-        df['SEXO'] = df.SEXO.replace(
+        df["SEXO"] = df.SEXO.replace(
             {0: None, 9: None, 1: "Masculino", 2: "Feminino"}
         )
         df["SEXO"] = df["SEXO"].astype("category")
@@ -204,20 +202,24 @@ def translate_variables_SIM(
 
     # RACACOR
     if "RACACOR" in variables_names:
-        df["RACACOR"] = df["RACACOR"].str.strip().replace(
-            {
-                "0": None,
-                "1": "Branca",
-                "2": "Preta",
-                "3": "Amarela",
-                "4": "Parda",
-                "5": "Indígena",
-                "6": None,
-                "7": None,
-                "8": None,
-                "9": None,
-                "": None,
-            },
+        df["RACACOR"] = (
+            df["RACACOR"]
+            .str.strip()
+            .replace(
+                {
+                    "0": None,
+                    "1": "Branca",
+                    "2": "Preta",
+                    "3": "Amarela",
+                    "4": "Parda",
+                    "5": "Indígena",
+                    "6": None,
+                    "7": None,
+                    "8": None,
+                    "9": None,
+                    "": None,
+                },
+            )
         )
         df["RACACOR"] = df["RACACOR"].astype("category")
         df["RACACOR"] = df["RACACOR"].cat.add_categories(["NA"])
@@ -233,7 +235,13 @@ def translate_variables_SIM(
 
 
 def classify_age(
-    serie, start=0, end=90, freq=None, open_end=True, closed="left", interval=None
+    serie,
+    start=0,
+    end=90,
+    freq=None,
+    open_end=True,
+    closed="left",
+    interval=None,
 ):
     """
     Classifica idade segundo parâmetros ou IntervalIndex
@@ -272,9 +280,9 @@ def get_CID10_code_index(datasus_chapters):
             number_range_start = int(chapter_range[0][1:3])
             number_range_finish = int(chapter_range[1][1:3])
             for code in range(number_range_start, number_range_finish + 1):
-                code_index[
-                    f"{start_letter}{str(code).zfill(2)}"
-                ] = ch_array_index + 1
+                code_index[f"{start_letter}{str(code).zfill(2)}"] = (
+                    ch_array_index + 1
+                )
         else:
             string_range_start = chapter_range[0][0]
             string_range_end = chapter_range[1][0]
@@ -294,7 +302,9 @@ def get_CID10_code_index(datasus_chapters):
                 else:  # Middle letters
                     number_range_start = 0
                     number_range_end = 99
-                for code_number in range(number_range_start, number_range_end + 1):
+                for code_number in range(
+                    number_range_start, number_range_end + 1
+                ):
                     code_index[f"{letter}{str(code_number).zfill(2)}"] = (
                         ch_array_index + 1
                     )

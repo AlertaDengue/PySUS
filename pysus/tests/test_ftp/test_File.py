@@ -1,28 +1,26 @@
 # -*- coding:utf-8 -*-
-u"""
+"""
 Created on 2023/12/12
 by luabida
 license: GPL V3 or Later
 """
-import unittest
 import datetime
+import unittest
 from pathlib import Path
 
 import pandas as pd
-
-from pysus.ftp import File, CACHEPATH
 from pysus.data.local import ParquetSet
+from pysus.ftp import CACHEPATH, File
 
 
 class TestFile(unittest.TestCase):
-
     def setUp(self):
         path = "/dissemin/publicos/SIM/CID10/DORES/"
         name = "DOAC1996.dbc"
         info = {
             "size": 76107,
             "type": "file",
-            "modify": datetime.datetime(2020, 1, 31, 14, 48)
+            "modify": datetime.datetime(2020, 1, 31, 14, 48),
         }
 
         self.file = File(path, name, info)
@@ -40,9 +38,9 @@ class TestFile(unittest.TestCase):
         self.assertEqual(file.basename, "DOAC1996.dbc")
 
         expected_info = {
-            'size': '76.1 kB',
-            'type': 'DBC file',
-            'modify': '2020-01-31 02:48PM'
+            "size": "76.1 kB",
+            "type": "DBC file",
+            "modify": "2020-01-31 02:48PM",
         }
         self.assertEqual(file.info, expected_info)
 

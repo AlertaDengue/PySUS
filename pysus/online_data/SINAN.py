@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import Union
-import pandas as pd
 
+import pandas as pd
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
-
 
 sinan = SINAN().load()
 

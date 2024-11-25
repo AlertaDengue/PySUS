@@ -1,7 +1,7 @@
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list
+from pysus.ftp.utils import to_list, zfill_year
 
 
 class SINAN(Database):
@@ -94,7 +94,7 @@ class SINAN(Database):
                 "disease": self.diseases[dis_code],
                 "year": zfill_year(year),
                 "size": file.info["size"],
-                "last_update": file.info["modify"]
+                "last_update": file.info["modify"],
             }
             return description
         return {}
@@ -118,9 +118,11 @@ class SINAN(Database):
         dis_code: Optional[Union[str, list]] = None,
         year: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         if dis_code:
             codes = [c.upper() for c in to_list(dis_code)]
@@ -134,9 +136,7 @@ class SINAN(Database):
             files = list(filter(lambda f: self.format(f)[0] in codes, files))
 
         if year or str(year) in ["0", "00"]:
-            years = (
-                [zfill_year(str(y)[-2:]) for y in to_list(year)]
-            )
+            years = [zfill_year(str(y)[-2:]) for y in to_list(year)]
             files = list(filter(lambda f: self.format(f)[1] in years, files))
 
         return files
