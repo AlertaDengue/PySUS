@@ -5,7 +5,7 @@ Tutorials
 PySUS includes some Jupyter notebooks in its distribution package to serve as tutorials.
 
 
-Preprocessing DATASUS data 
+Preprocessing DATASUS data
 --------------------------
 #. :doc:`Preprocessing SINAN`
 #. :doc:`Preprocessing SIM`

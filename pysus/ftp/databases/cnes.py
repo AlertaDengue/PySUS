@@ -11,13 +11,14 @@ class CNES(Database):
         "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
         "source": "https://cnes.datasus.gov.br/",
         "description": (
-            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o sistema "
-            "de informação oficial de cadastramento de informações de todos os "
-            "estabelecimentos de saúde no país, independentemente de sua natureza "
-            "jurídica ou de integrarem o Sistema Único de Saúde (SUS). Trata-se do "
-            "cadastro oficial do Ministério da Saúde (MS) no tocante à realidade da "
-            "capacidade instalada e mão-de-obra assistencial de saúde no Brasil em "
-            "estabelecimentos de saúde públicos ou privados, com convênio SUS ou não."
+            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
+            "sistema de informação oficial de cadastramento de informações "
+            "de todos os estabelecimentos de saúde no país, independentemente "
+            "de sua natureza jurídica ou de integrarem o Sistema Único de "
+            "Saúde (SUS). Trata-se do cadastro oficial do Ministério da "
+            "Saúde (MS) no tocante à realidade da capacidade instalada e "
+            "mão-de-obra assistencial de saúde no Brasil em estabelecimentos "
+            "de saúde públicos ou privados, com convênio SUS ou não."
         ),
     }
     groups = {

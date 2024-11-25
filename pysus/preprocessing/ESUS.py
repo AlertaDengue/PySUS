@@ -5,7 +5,8 @@ from pysus.online_data.ESUS import download
 
 def cases_by_age_and_sex(UF, start="2020-03-01", end="2020-08-31"):
     """
-    Fetches ESUS covid line list and aggregates by age and sex returning these counts between start and end dates.
+    Fetches ESUS covid line list and aggregates by age and sex returning these
+    counts between start and end dates.
     :param UF: State code
     :param start: Start date
     :param end: end date
@@ -25,7 +26,8 @@ def cases_by_age_and_sex(UF, start="2020-03-01", end="2020-08-31"):
         inplace=True,
     )
     print(
-        f"Removed {old_size - len(df)} rows with missing dates of symptoms, notification or testing"
+        f"Removed {old_size - len(df)} rows with missing dates of symptoms,"
+        " notification or testing"
     )
 
     # Desconsiderando os resultados negativos ou inconclusivos
@@ -42,7 +44,8 @@ def cases_by_age_and_sex(UF, start="2020-03-01", end="2020-08-31"):
     df.set_index("datesint", inplace=True)
     df.sort_index(inplace=True, ascending=True)
 
-    # vamos limitar a data inicial e a data final considerando apenas a primeira onda
+    # vamos limitar a data inicial e a data final considerando apenas a
+    # primeira onda
 
     df = df.loc[start:end]
 

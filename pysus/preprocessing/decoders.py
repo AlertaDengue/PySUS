@@ -19,9 +19,10 @@ from pysus.online_data.SIM import get_CID10_chapters_table, get_municipios
 @np.vectorize
 def decodifica_idade_SINAN(idade, unidade: str = "Y"):
     """
-    Em tabelas do SINAN frequentemente a idade é representada como um inteiro que precisa ser parseado
-    para retornar a idade em uma unidade cronológica padrão.
-    :param unidade: unidade da idade: 'Y': anos, 'M' meses, 'D': dias, 'H': horas
+    Em tabelas do SINAN frequentemente a idade é representada como um inteiro
+    que precisa ser parseado para retornar a idade em uma unidade cronológica
+    padrão.
+    :param unidade: unidade da idade: 'Y' anos, 'M' meses, 'D' dias, 'H' horas
     :param idade: inteiro ou sequencia de inteiros codificados.
     :return:
     """
@@ -61,7 +62,9 @@ def decodifica_idade_SIM(idade, unidade="D"):
     """
     Em tabelas do SIM a idade encontra-se codificada
     :param idade: valor original da tabela do SIM
-    :param unidade: Unidade de saida desejada: 'Y': anos, 'M' meses, 'D': dias, 'H': horas, 'm': minutos. Valor default: 'D'
+    :param unidade: Unidade de saida desejada:
+        'Y' anos, 'M' meses, 'D' dias, 'H' horas, 'm' minutos.
+        Valor default: 'D'
     :return:
     """
     fator = {"Y": 365.0, "M": 30.0, "D": 1.0, "H": 1 / 24.0, "m": 1 / 1440.0}
@@ -249,9 +252,13 @@ def classify_age(
     :param start: início do primeiro grupo
     :param end: fim do último grupo
     :param freq: tamanho dos grupos. Por padrão considera cada valor um grupo.
-    :param open_end: cria uma classe no final da lista de intervalos que contém todos acima daquele último valor. Default True
-    :param closed: onde os intervalos devem ser fechados. Possíveis valores: {'left', 'right', 'both', 'neither'}. Default 'left'
-    :param interval: IntervalIndex do pandas. Caso seja passado todos os outros parâmetros de intervalo são desconsiderados. Defaul None
+    :param open_end: cria uma classe no final da lista de intervalos que contém
+        todos acima daquele último valor. Default True
+    :param closed: onde os intervalos devem ser fechados.
+        Possíveis valores: {'left', 'right', 'both', 'neither'}.
+        Default 'left'
+    :param interval: IntervalIndex do pandas. Caso seja passado todos os outros
+        parâmetros de intervalo são desconsiderados. Defaul None
     :return:
     """
     if interval:

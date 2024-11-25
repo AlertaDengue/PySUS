@@ -14,16 +14,18 @@ class SIA(Database):
         "long_name": "Sistema de Informações Ambulatoriais",
         "source": "http://sia.datasus.gov.br/principal/index.php",
         "description": (
-            "O Sistema de Informação Ambulatorial (SIA) foi instituído pela Portaria "
-            "GM/MS n.º 896 de 29 de junho de 1990. Originalmente, o SIA foi concebido "
-            "a partir do projeto SICAPS (Sistema de Informação e Controle Ambulatorial "
-            "da Previdência Social), em que os conceitos, os objetivos e as diretrizes "
-            "criados para o desenvolvimento do SICAPS foram extremamente importantes e "
-            "amplamente utilizados para o desenvolvimento do SIA, tais como: (i) o "
-            "acompanhamento das programações físicas e orçamentárias; (ii) o "
-            "acompanhamento das ações de saúde produzidas; (iii) a agilização do "
-            "pagamento e controle orçamentário e financeiro; e (iv) a formação de "
-            "banco de dados para contribuir com a construção do SUS."
+            "O Sistema de Informação Ambulatorial (SIA) foi instituído pela "
+            "Portaria GM/MS n.º 896 de 29 de junho de 1990. Originalmente, o "
+            "SIA foi concebido a partir do projeto SICAPS (Sistema de "
+            "Informação e Controle Ambulatorial da Previdência Social), em "
+            "que os conceitos, os objetivos e as diretrizes criados para o "
+            "desenvolvimento do SICAPS foram extremamente importantes e "
+            "amplamente utilizados para o desenvolvimento do SIA, tais"
+            " como: (i) o acompanhamento das programações físicas e "
+            "orçamentárias; (ii) o acompanhamento das ações de saúde "
+            "produzidas; (iii) a agilização do pagamento e controle "
+            "orçamentário e financeiro; e (iv) a formação de banco de dados "
+            "para contribuir com a construção do SUS."
         ),
     }
     groups = {

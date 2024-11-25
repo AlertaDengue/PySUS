@@ -49,10 +49,8 @@ def get_geocodes(geoc):
     """
     url = (
         "http://cidades.ibge.gov.br/services/jSonpMuns.php?"
-        "busca=330&featureClass=P&style=full&maxRows=5&name_startsWith={}".format(
-            geoc
-        )
-    )
+        "busca=330&featureClass=P&style=full&maxRows=5&name_startsWith={}"
+    ).format(geoc)
     resp = requests.get(url)
     for d in resp.json()["municipios"]:
         if int(geoc) == int(d["c"]):
@@ -80,7 +78,8 @@ def _address_generator(df, default=""):
 def geocode(sinan_df, outfile, default_city):
     """
     Geocode cases based on addresses included.
-    :param default_city: default city to use in case of bad Geocode found in file. It can be "city, state"
+    :param default_city: default city to use in case of bad Geocode found in
+        file. It can be "city, state"
     :param sinan_df: Dataframe generated from sinan DBF
     :param outfile: File on Which
     """
@@ -104,9 +103,10 @@ def geocode(sinan_df, outfile, default_city):
                 raise NameError("Google could not find {}".format(ad))
             if location.latlng == []:
                 print(
-                    "Search for {} returned {} as coordinates, trying reduced address:".format(
-                        ad, location.latlng
-                    )
+                    (
+                        "Search for {} returned {} as coordinates, trying "
+                        "reduced address:"
+                    ).format(ad, location.latlng)
                 )
                 ad = ",".join(ad.split(",")[2:])
                 print(ad)
@@ -120,8 +120,8 @@ def geocode(sinan_df, outfile, default_city):
                 print("Successfully geolocated {}".format(ad))
             except IndexError:
                 print(
-                    "Search for {} returned {} as coordinates, skipping".format(
-                        ad, location.latlng
-                    )
+                    (
+                        "Search for {} returned {} as coordinates, " "skipping"
+                    ).format(ad, location.latlng)
                 )
                 of.write("{},nan,nan\n".format(nu))

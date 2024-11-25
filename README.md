@@ -55,7 +55,7 @@ First, clone the Pysus repository:
 
 ```bash
 git clone https://github.com/fccoelho/PySUS.git
-``` 
+```
 then from within the PySUS directory build the container
 
 ```bash
@@ -72,7 +72,7 @@ Point your browser to [http://127.0.0.1:8888](http://127.0.0.1:8888) and have fu
 Once you are done, you can stop the container with a simple `ctrl-c` from the terminal you started it or use the following command:
 ```bash
 # to find the container ID
-docker ps 
+docker ps
 docker stop <CONTAINER ID>
 ```
 ### Mounting your working directory in the container
@@ -105,7 +105,7 @@ setx PYSUS_CACHEPATH "C:\Users\Me\desired\path\.pysus"
 In Docker, just add an extra parameter `-e PYSUS_CACHEPATH="/home/me/desired/path/.pysus"` when starting the container:
 
 ```bash
-docker run -p 8888:8888 -e PYSUS_CACHEPATH="/home/me/desired/path/.pysus" pysus:latest 
+docker run -p 8888:8888 -e PYSUS_CACHEPATH="/home/me/desired/path/.pysus" pysus:latest
 ```
 
 ## Examples
@@ -164,7 +164,7 @@ Downloading and reading SINASC data:
 In[1]: from pysus.online_data.sinasc import download
 In[2]: df = download('SE', 2015)
 In[3]: df.head()
-Out[3]: 
+Out[3]:
    NUMERODN        CODINST ORIGEM    ...     TPROBSON PARIDADE KOTELCHUCK
 0  19533794  MSE2805100001      1    ...           11        1          9
 1  52927108  MSE2802700001      1    ...           11        1          9
@@ -180,7 +180,7 @@ Dowloading and reading SIM data:
 In[1]: from pysus.online_data.SIM import download
 In[2]: df = download('ba', 2007)
 In[3]: df.head()
-Out[3]: 
+Out[3]:
    NUMERODO TIPOBITO   DTOBITO  ...   UFINFORM        CODINST CB_PRE
 0  01499664        2  30072007  ...         29  RBA2914800001   C229
 1  09798190        2  04072007  ...         29  RBA2914800001    R98
@@ -196,7 +196,7 @@ Dowloading and reading CIHA data:
 In[1]: from pysus.online_data.CIHA import download
 In[2]: df = download('mg', 2009, 7)
 In[3]: df.head()
-Out[3]: 
+Out[3]:
   ANO_CMPT MES_CMPT ESPEC        CGC_HOSP  ...  CAR_INT HOMONIMO     CNES FONTE
 0     2009       07        16505851000126  ...                    2126796     1
 1     2009       07        16505851000126  ...                    2126796     2
@@ -212,7 +212,7 @@ Dowloading and reading SIA data:
 In[1]: from pysus.online_data.SIA import download
 In[2]: bi, ps = download('AC', 2020, 3, group=["BI", "PS"])
 In[3]: bi.head()
-Out[3]: 
+Out[3]:
     CODUNI  GESTAO CONDIC   UFMUN TPUPS  ... VL_APROV UFDIF MNDIF ETNIA NAT_JUR
 0  2000733  120000     EP  120040    07  ...     24.2     0     0          1023
 1  2001063  120000     EP  120040    36  ...      7.3     0     0          1023
