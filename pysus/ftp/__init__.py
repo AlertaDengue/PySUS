@@ -61,7 +61,9 @@ class FileInfo(TypedDict):
 
 @runtime_checkable
 class Downloadable(Protocol):
-    async def download(self, local_dir: str) -> Data: ...
+    async def download(self, local_dir: str) -> Data:
+        """Protocol for downloadable objects"""
+        ...
 
 
 class FTPSingleton:
@@ -71,6 +73,7 @@ class FTPSingleton:
 
     @classmethod
     def get_instance(cls) -> FTP:
+        """Get or create the singleton FTP instance"""
         if cls._instance is None or not cls._instance.sock:
             cls._instance = FTP("ftp.datasus.gov.br")
             cls._instance.login()
@@ -78,6 +81,7 @@ class FTPSingleton:
 
     @classmethod
     def close(cls) -> None:
+        """Close the singleton FTP instance"""
         if cls._instance and cls._instance.sock:
             cls._instance.close()
             cls._instance = None
@@ -111,8 +115,6 @@ class File:
             Static method to parse a line from the FTP LIST command and extract file information.
     """
 
-    """FTP File representation with improved type safety"""
-
     def __init__(self, path: str, name: str, info: FileInfo) -> None:
         self.name, self.extension = os.path.splitext(name)
         self.basename: str = f"{self.name}{self.extension}"
@@ -126,6 +128,7 @@ class File:
 
     @property
     def info(self) -> Dict[str, str]:
+        """Returns a dictionary with human-readable file information"""
         return {
             "size": humanize.naturalsize(self.__info["size"]),
             "type": f"{self.extension[1:].upper()} file",
@@ -135,6 +138,7 @@ class File:
     def download(
         self, local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
     ) -> Data:
+        """Downloads the file to the specified local directory"""
         target_dir = pathlib.Path(local_dir)
         target_dir.mkdir(exist_ok=True, parents=True)
 
@@ -178,6 +182,7 @@ class File:
         return Data(str(filepath), _pbar=_pbar)  # type: ignore
 
     async def async_download(self, local_dir: str = CACHEPATH) -> Data:
+        """Asynchronously downloads the file to the specified local directory"""
         target_dir = pathlib.Path(local_dir)
         target_dir.mkdir(exist_ok=True, parents=True)
         filepath = target_dir / self.basename
@@ -198,7 +203,7 @@ class File:
 
     @staticmethod
     def _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
-        # Implementation moved to static method for better organization
+        """Static method to parse a line from the FTP LIST command and extract file information"""
         line = file_line.decode("utf-8")
         if "<DIR>" in line:
             date, time, _, *name = line.strip().split()
@@ -290,11 +295,13 @@ class Directory:
 
     @staticmethod
     def _normalize_path(path: str) -> str:
+        """Normalizes the given path"""
         path = f"/{path}" if not path.startswith("/") else path
-        return path[:-1] if path.endswith("/") else path
+        return path.removesuffix("/")
 
     @classmethod
     def _get_root_directory(cls) -> Directory:
+        """Returns the root directory instance, creating it if necessary"""
         if "/" not in DIRECTORY_CACHE:
             root = super().__new__(cls)
             root.parent = root
@@ -306,12 +313,14 @@ class Directory:
         return DIRECTORY_CACHE["/"]
 
     def _init_root_child(self, name: str) -> None:
+        """Initializes a root child directory"""
         self.parent = DIRECTORY_CACHE["/"]
         self.name = name
         self.loaded = False
         self.__content__ = {}
 
     def _init_regular(self, parent_path: str, name: str) -> None:
+        """Initializes a regular directory"""
         self.parent = Directory(parent_path)
         self.name = name
         self.loaded = False
@@ -319,11 +328,13 @@ class Directory:
 
     @property
     def content(self) -> List[Union[Directory, File]]:
+        """Returns the content of the directory, loading it if necessary"""
         if not self.loaded:
             self.load()
         return list(self.__content__.values())
 
     def load(self) -> Self:
+        """Loads the content of the directory and marks it as loaded"""
         self.__content__ |= load_directory_content(self.path)
         self.loaded = True
         return self
