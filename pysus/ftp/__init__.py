@@ -25,6 +25,8 @@ from loguru import logger
 from tqdm import tqdm
 from typing_extensions import Self
 
+from pysus.data.local import Data
+
 # Type aliases
 PathLike = Union[str, pathlib.Path]
 FileContent = Dict[str, Union["Directory", "File"]]
