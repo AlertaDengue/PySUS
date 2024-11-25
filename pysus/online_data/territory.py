@@ -1,11 +1,6 @@
-from pathlib import Path
-from typing import Dict, List, Union
+from typing import List, Union
 
-import pandas as pd
 from pysus.ftp import CACHEPATH, Directory, File
-from pysus.ftp.databases.territory import Territory
-
-ter = Territory().load()
 
 
 def list_tables() -> List[File]:
@@ -26,8 +21,6 @@ def download(fname: Union[str, list], data_path: str = CACHEPATH):
         + Directory("/territorio/mapas").content
     )
     for file in files:
-        if fname in [
-            str(file),
-            file.name,
-        ]:  # handles suffixed and no suffixed `fname`s
+        if fname in [str(file), file.name]:
+            # handles suffixed and no suffixed `fname`s
             return file.download()

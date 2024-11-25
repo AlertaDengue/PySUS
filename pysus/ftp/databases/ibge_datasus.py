@@ -1,8 +1,7 @@
 from typing import List, Literal, Optional, Union
 
-from loguru import logger
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import to_list, zfill_year
+from pysus.ftp.utils import zfill_year
 
 
 class IBGEDATASUS(Database):
@@ -12,7 +11,7 @@ class IBGEDATASUS(Database):
         Directory("/dissemin/publicos/IBGE/censo"),
         Directory("/dissemin/publicos/IBGE/POPTCU"),
         Directory("/dissemin/publicos/IBGE/projpop"),
-        # Directory("/dissemin/publicos/IBGE/Auxiliar") # this has a different file name pattern
+        # Directory("/dissemin/publicos/IBGE/Auxiliar") # this has a different file name pattern  # noqa
     )
     metadata = {
         "long_name": "Populaçao Residente, Censos, Contagens "

@@ -34,10 +34,12 @@ def group_and_count(
     dataframe, group_columns, count_column="COUNTS", decimal_counts=False
 ):
     """
-    Agrupa e conta as variáveis passadas como parâmetro no dataframe. Cria uma nova
-    coluna de contagem, com o tipo Decimal para possibilitar redistribuição pro rata posterior e maior precisão.
+    Agrupa e conta as variáveis passadas como parâmetro no dataframe. Cria uma
+    nova coluna de contagem, com o tipo Decimal para possibilitar
+    redistribuição pro rata posterior e maior precisão.
     :param dataframe: dataframe pandas
-    :param group_columns: lista de string contendo o nome das colunas a serem agrupadas no dataframe.
+    :param group_columns: lista de string contendo o nome das colunas a serem
+        agrupadas no dataframe.
     :param count_columns: nome da coluna de counts a ser criada.
     :return:
     """
@@ -57,11 +59,13 @@ def redistribute_missing(
     counts, filter_columns, count_column="COUNTS", nan_string="nan"
 ):
     """
-    Realiza redistribuição pro rata das contagens do SIM com algum dado faltante.
-    O dataframe deve conter uma coluna float64 chamada CONTAGEM e as demais colunas devem ser
-    do tipo category, tendo os dados faltantes em uma categoria definida pelo parâmetro nan_string.
+    Realiza redistribuição pro rata das contagens do SIM com algum dado
+    faltante. O dataframe deve conter uma coluna float64 chamada CONTAGEM e as
+    demais colunas devem ser do tipo category, tendo os dados faltantes em uma
+    categoria definida pelo parâmetro nan_string.
     :param counts: dataframe pandas contendo coluna com soma chamada CONTAGEM
-    :param filter_columns: variáveis a serem consideradas para filtro de redistribuição pro rata
+    :param filter_columns: variáveis a serem consideradas para filtro de
+        redistribuição pro rata
     :param count_columns: nome da coluna de counts.
     :param nan_string: string usada na categoria de dado faltante
     :return:
@@ -72,7 +76,7 @@ def redistribute_missing(
         condition_dict = {var: nan_string, count_column: 0.0}
         counts = counts[~logical_and_from_dict(counts, condition_dict)]
 
-    ### Dataframes de dados faltantes
+    # Dataframes de dados faltantes
 
     variables_dict = [{x: nan_string} for x in filter_columns]
 
@@ -119,10 +123,12 @@ def redistribute_cid_chapter(
     count_columns="COUNTS",
 ):
     """
-    Realiza redistribuição pro rata das contagens do SIM de um capítulo do CID10 passado.
-    Por padrão o capítulo XVIII, de causas mal definidas, é redistribuído.
+    Realiza redistribuição pro rata das contagens do SIM de um capítulo do
+    CID10 passado. Por padrão o capítulo XVIII, de causas mal definidas,
+    é redistribuído.
     :param counts: dataframe pandas contendo coluna com contagem
-    :param filter_columns: variáveis a serem consideradas para filtro na redistribuição pro rata
+    :param filter_columns: variáveis a serem consideradas para filtro na
+        redistribuição pro rata
     :param chapter: capítulo do CID10 a ser redistribuído
     :param chapter_column: nome da coluna de capítulo
     :param count_columns: nome da coluna de counts
@@ -140,10 +146,13 @@ def redistribute_rows_pro_rata(
     counts, filter_columns, redistribute_list, count_columns="COUNTS"
 ):
     """
-    Redistribui as contagens do dataframe conforme as colunas de filtro passadas.
+    Redistribui as contagens do dataframe conforme as colunas de filtro
+    passadas.
     :param counts: dataframe pandas contendo coluna de contagem
-    :param filter_columns: variáveis a serem consideradas para filtro na redistribuição pro rata
-    :param redistribute_list: dataframe contendo as linhas que serão redistribuídas
+    :param filter_columns: variáveis a serem consideradas para filtro na
+        redistribuição pro rata
+    :param redistribute_list: dataframe contendo as linhas que serão
+        redistribuídas
     :param count_columns: nome da coluna de counts
     :return:
     """

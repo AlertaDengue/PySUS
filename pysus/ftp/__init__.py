@@ -5,7 +5,7 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import humanize
 from aioftp import Client
@@ -473,8 +473,8 @@ class Database:
     def content(self) -> List[Union[Directory, File]]:
         """
         Lists Database content. The `paths` will be loaded if this property is
-        called or if explicitly using `load()`. To add specific Directory inside
-        content, `load()` the directory and call `content` again.
+        called or if explicitly using `load()`. To add specific Directory
+        inside content, `load()` the directory and call `content` again.
         """
         if not self.__content__:
             logger.info(
