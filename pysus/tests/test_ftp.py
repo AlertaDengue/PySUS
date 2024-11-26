@@ -2,12 +2,9 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
+
 from pysus.data.local import ParquetSet
-<<<<<<< HEAD
 from pysus.ftp import DIRECTORY_CACHE, Database, Directory, File
-=======
-from pysus.ftp import CACHE, Database, Directory, File
->>>>>>> 0a98978 (chore(CI): fix CI workflows (#214))
 from pysus.ftp.databases import (
     ciha,
     cnes,
@@ -44,9 +41,7 @@ def _test_database(testcase: unittest.TestCase, database: Database):
     )
     testcase.assertTrue(isinstance(downloaded_file, ParquetSet))
     testcase.assertTrue(Path(downloaded_file.path).exists())
-    testcase.assertTrue(
-        isinstance(downloaded_file.to_dataframe(), pd.DataFrame)
-    )
+    testcase.assertTrue(isinstance(downloaded_file.to_dataframe(), pd.DataFrame))
     testcase.assertTrue(not downloaded_file.to_dataframe().empty)
 
 
@@ -68,11 +63,8 @@ class TestDirectoryAndFile(unittest.TestCase):
         self.assertTrue(self.root.parent == self.root)  # outermost parent
 
     def test_directory_cache(self):
-<<<<<<< HEAD
         self.assertTrue(DIRECTORY_CACHE["/"] == self.root)
-=======
-        self.assertTrue(CACHE["/"] == self.root)
->>>>>>> 0a98978 (chore(CI): fix CI workflows (#214))
+        self.assertTrue(DIRECTORY_CACHE["/"] == self.root)
 
     def test_sinan_file(self):
         file = Directory("/dissemin/publicos/SINAN/DADOS/FINAIS").content[0]
