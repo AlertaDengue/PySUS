@@ -126,8 +126,6 @@ class File:
             extract file information.
     """
 
-    """FTP File representation with improved type safety"""
-
     def __init__(self, path: str, name: str, info: FileInfo) -> None:
         self.name, self.extension = os.path.splitext(name)
         self.basename: str = f"{self.name}{self.extension}"
