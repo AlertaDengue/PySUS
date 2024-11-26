@@ -374,6 +374,9 @@ class Directory:
         self.loaded = False
         return self.load()
 
+    def __str__(self) -> str:
+        return self.path
+
     def __repr__(self) -> str:
         return self.path
 
