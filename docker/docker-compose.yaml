@@ -1,5 +1,5 @@
 version: '3.3'
-services: 
+services:
   jupyter:
     build:
       context: ".."

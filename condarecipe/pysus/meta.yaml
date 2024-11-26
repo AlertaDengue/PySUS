@@ -47,10 +47,10 @@ about:
   home: "https://github.com/fccoelho/PySUS"
   license: gpl-v3
   license_family: GPL3
-  license_file: 
+  license_file:
   summary: "Tools for dealing with Brazil's Public health data"
-  doc_url: 
-  dev_url: 
+  doc_url:
+  dev_url:
 
 extra:
   recipe-maintainers:

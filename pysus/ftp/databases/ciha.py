@@ -1,7 +1,7 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class CIHA(Database):
@@ -11,20 +11,23 @@ class CIHA(Database):
         "long_name": "Comunicação de Internação Hospitalar e Ambulatorial",
         "source": "http://ciha.datasus.gov.br/CIHA/index.php",
         "description": (
-            "A CIHA foi criada para ampliar o processo de planejamento, programação, "
-            "controle, avaliação e regulação da assistência à saúde permitindo um "
-            "conhecimento mais abrangente e profundo dos perfis nosológico e "
-            "epidemiológico da população brasileira, da capacidade instalada e do "
-            "potencial de produção de serviços do conjunto de estabelecimentos de saúde "
-            "do País. O sistema permite o acompanhamento das ações e serviços de saúde "
-            "custeados por: planos privados de assistência à saúde; planos públicos; "
-            "pagamento particular por pessoa física; pagamento particular por pessoa "
-            "jurídica; programas e projetos federais (PRONON, PRONAS, PROADI); recursos "
-            "próprios das secretarias municipais e estaduais de saúde; DPVAT; gratuidade "
-            "e, a partir da publicação da Portaria GM/MS nº 2.905/2022, consórcios públicos. "
-            "As informações registradas na CIHA servem como base para o processo de "
-            "Certificação de Entidades Beneficentes de Assistência Social em Saúde (CEBAS) "
-            "e para monitoramento dos programas PRONAS e PRONON."
+            "A CIHA foi criada para ampliar o processo de planejamento, "
+            "programação, controle, avaliação e regulação da assistência à "
+            "saúde permitindo um conhecimento mais abrangente e profundo dos "
+            "perfis nosológico e epidemiológico da população brasileira, da "
+            "capacidade instalada e do potencial de produção de serviços do "
+            "conjunto de estabelecimentos de saúde do País. O sistema permite "
+            "o acompanhamento das ações e serviços de saúde custeados "
+            "por: planos privados de assistência à saúde; planos públicos; "
+            "pagamento particular por pessoa física; pagamento particular por "
+            "pessoa jurídica; programas e projetos federais (PRONON, PRONAS, "
+            "PROADI); recursos próprios das secretarias municipais e estaduais"
+            " de saúde; DPVAT; gratuidade e, a partir da publicação da "
+            "Portaria GM/MS nº 2.905/2022, consórcios públicos. As "
+            "informações registradas na CIHA servem como base para o processo "
+            "de Certificação de Entidades Beneficentes de Assistência Social "
+            "em Saúde (CEBAS) e para monitoramento dos programas PRONAS e "
+            "PRONON"
         ),
     }
     groups = {
@@ -68,9 +71,11 @@ class CIHA(Database):
         month: Optional[Union[list, str, int]] = None,
         group: Union[List[str], str] = "CIHA",
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 

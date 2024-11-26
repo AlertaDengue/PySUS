@@ -94,4 +94,3 @@ msgstr "zika_rio_do_antônio_se01_04.csv"
 #: ../../source/Infodengue.ipynb:670
 msgid "zika_rio_do_pires_se01_04.csv"
 msgstr "zika_rio_do_pires_se01_04.csv"
-

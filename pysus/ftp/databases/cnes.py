@@ -1,7 +1,7 @@
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class CNES(Database):
@@ -11,13 +11,14 @@ class CNES(Database):
         "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
         "source": "https://cnes.datasus.gov.br/",
         "description": (
-            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o sistema "
-            "de informação oficial de cadastramento de informações de todos os "
-            "estabelecimentos de saúde no país, independentemente de sua natureza "
-            "jurídica ou de integrarem o Sistema Único de Saúde (SUS). Trata-se do "
-            "cadastro oficial do Ministério da Saúde (MS) no tocante à realidade da "
-            "capacidade instalada e mão-de-obra assistencial de saúde no Brasil em "
-            "estabelecimentos de saúde públicos ou privados, com convênio SUS ou não."
+            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
+            "sistema de informação oficial de cadastramento de informações "
+            "de todos os estabelecimentos de saúde no país, independentemente "
+            "de sua natureza jurídica ou de integrarem o Sistema Único de "
+            "Saúde (SUS). Trata-se do cadastro oficial do Ministério da "
+            "Saúde (MS) no tocante à realidade da capacidade instalada e "
+            "mão-de-obra assistencial de saúde no Brasil em estabelecimentos "
+            "de saúde públicos ou privados, com convênio SUS ou não."
         ),
     }
     groups = {
@@ -42,7 +43,7 @@ class CNES(Database):
         groups: Union[str, List[str]] = None,
     ):
         """
-        Loads CNES Groups into content. Will convert the files and directories 
+        Loads CNES Groups into content. Will convert the files and directories
         found within FTP Directories into self.content
         """
         if not self.__content__:

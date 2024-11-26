@@ -30,6 +30,10 @@ RUN useradd -ms /bin/bash pysus \
   && chmod -R a+rwx /opt/conda /tmp \
   && sudo chown -R pysus:pysus /usr/src
 
+USER pysus
+
+RUN mkdir -p /home/pysus/Notebooks/
+
 COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
 COPY --chown=pysus:pysus docker/scripts/entrypoint.sh /entrypoint.sh
 COPY --chown=pysus:pysus docker/scripts/poetry-install.sh /tmp/poetry-install.sh
@@ -37,8 +41,6 @@ COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY --chown=pysus:pysus pysus /usr/src/pysus
 COPY --chown=pysus:pysus docs/source/**/*.ipynb /home/pysus/Notebooks/
 COPY --chown=pysus:pysus docs/source/data /home/pysus/Notebooks/
-
-USER pysus
 
 RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
   && mamba clean -afy

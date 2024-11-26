@@ -7,14 +7,13 @@ license: GPL V3 or Later
 import os
 from ftplib import FTP, error_perm
 from typing import Union
+
 import pandas as pd
 from dbfread import DBF
 from loguru import logger
-
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sim import SIM
 from pysus.ftp.utils import parse_UFs
-
 
 sim = SIM().load()
 
@@ -228,7 +227,7 @@ def get_municipios(cache=True):
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
 
-    except:
+    except Exception:
         raise Exception("Could not download {}".format(fname))
 
     dbf = DBF(fname, encoding="iso-8859-1")
@@ -273,7 +272,7 @@ def get_ocupations(cache=True):
     try:
         ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
 
-    except:
+    except Exception:
         raise Exception("Could not download {}".format(fname))
 
     dbf = DBF(fname, encoding="iso-8859-1")

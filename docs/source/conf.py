@@ -75,7 +75,7 @@ release = "0.1.13"
 language = 'en'
 
 locale_dirs = ['locale']
-gettext_compact = False 
+gettext_compact = False
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -154,7 +154,7 @@ html_theme = "sphinx_rtd_theme"
 # html_logo = None
 
 # The name of an image file (relative to this directory) to use as a favicon of
-# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
+# the docs. This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
 # html_favicon = None
@@ -265,7 +265,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "PySUS.tex", "PySUS Documentation", "Flavio Codeco Coelho", "manual"),
+    (
+        master_doc,
+        "PySUS.tex",
+        "PySUS Documentation",
+        "Flavio Codeco Coelho",
+        "manual"
+    ),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -1,7 +1,6 @@
 # type: ignore[attr-defined]
 """PySUS Python package"""
 
-from . import preprocessing, utilities
 from importlib import metadata as importlib_metadata
 
 

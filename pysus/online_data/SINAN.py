@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import Union
-import pandas as pd
 
+import pandas as pd
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
-
 
 sinan = SINAN().load()
 
@@ -17,8 +16,10 @@ def list_diseases() -> dict:
 def get_available_years(disease_code: str) -> list:
     """
     Fetch available years for data related to specific disease
-    :param disease_code: Disease code. See `SINAN.list_diseases` for valid codes
-    :return: A list of DBC files from a specific disease found in the FTP Server.
+    :param disease_code:
+        Disease code. See `SINAN.list_diseases` for valid codes
+    :return:
+        A list of DBC files from a specific disease found in the FTP Server.
     """
     files = sinan.get_files(dis_code=disease_code)
     return sorted(list(set(sinan.describe(f)["year"] for f in files)))
