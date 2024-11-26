@@ -22,10 +22,9 @@ from typing import (
 import humanize
 from aioftp import Client
 from loguru import logger
+from pysus.data.local import Data
 from tqdm import tqdm
 from typing_extensions import Self
-
-from pysus.data.local import Data
 
 # Type aliases
 PathLike = Union[str, pathlib.Path]
@@ -339,6 +338,13 @@ class Directory:
         self.loaded = True
         return self
 
+    def reload(self):
+        """
+        Reloads the content of the Directory
+        """
+        self.loaded = False
+        return self.load()
+
     def __str__(self) -> str:
         return self.path
 
@@ -366,14 +372,22 @@ def load_directory_content(path: str) -> FileContent:
         def line_parser(line: str):
             if "<DIR>" in line:
                 date, time, _, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+                modify = datetime.strptime(
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
+                )
                 info = {"size": 0, "type": "dir", "modify": modify}
                 xpath = f"{path}/{name}"
                 content[name] = Directory(xpath)
             else:
                 date, time, size, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
-                info: FileInfo = {"size": size, "type": "file", "modify": modify}
+                modify = datetime.strptime(
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
+                )
+                info: FileInfo = {
+                    "size": size,
+                    "type": "file",
+                    "modify": modify,
+                }
                 content[name] = File(path, name, info)
 
         ftp.retrlines("LIST", line_parser)
@@ -440,7 +454,9 @@ class Database:
         inside content, `load()` the directory and call `content` again.
         """
         if not self.__content__:
-            logger.info("content is not loaded, use `load()` to load default paths")
+            logger.info(
+                "content is not loaded, use `load()` to load default paths"
+            )
             return []
         return sorted(list(self.__content__.values()), key=str)
 
@@ -505,7 +521,9 @@ class Database:
         """
         ...
 
-    def download(self, files: List[File], local_dir: str = CACHEPATH) -> List[str]:
+    def download(
+        self, files: List[File], local_dir: str = CACHEPATH
+    ) -> List[str]:
         """
         Downloads a list of Files.
         """
@@ -520,7 +538,9 @@ class Database:
             return dfiles[0]
         return dfiles
 
-    async def async_download(self, files: List[File], local_dir: str = CACHEPATH):
+    async def async_download(
+        self, files: List[File], local_dir: str = CACHEPATH
+    ):
         """
         Asynchronously downloads a list of files
         """
