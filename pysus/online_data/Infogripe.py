@@ -18,6 +18,6 @@ def list_datasets():
 
 
 def download(dataset_name):
-    url = BASEURL + DATASETS[dataset_name]
+    url = BASEURL + DATASETS[dataset_name] + "?inline=false"
     df = pd.read_csv(url, delimiter=";", decimal=",")
     return df

@@ -26,8 +26,8 @@ def cases_by_age_and_sex(UF, start="2020-03-01", end="2020-08-31"):
         inplace=True,
     )
     print(
-        f"Removed {old_size - len(df)} rows with missing dates of symptoms,"
-        " notification or testing"
+        f"Removed {old_size - len(df)} rows with missing dates of symptoms, "
+        "notification or testing"
     )
 
     # Desconsiderando os resultados negativos ou inconclusivos
@@ -52,7 +52,9 @@ def cases_by_age_and_sex(UF, start="2020-03-01", end="2020-08-31"):
     ini = np.arange(0, 81, 5)
     fin = np.arange(5, 86, 5)
     fin[-1] = 120
-    faixa_etaria = {f"[{i},{f})": (i, f) for i, f in zip(ini, fin)}
+    faixa_etaria = {
+        f"[{i},{f})": (i, f) for i, f in zip(ini, fin)  # noqa: E231
+    }
 
     labels = list(faixa_etaria.keys())
     df["faixa_etaria"] = [
