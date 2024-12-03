@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [0.15.0](https://github.com/AlertaDengue/PySUS/compare/0.14.3...0.15.0) (2024-12-03)
+
+### Features
+
+* **package:** bump version to 0.15.0 ([#216](https://github.com/AlertaDengue/PySUS/issues/216)) ([8ed64be](https://github.com/AlertaDengue/PySUS/commit/8ed64be381531306152edf0aa7c57711fff4b293))
+
 ## [0.14.3](https://github.com/AlertaDengue/PySUS/compare/0.14.2...0.14.3) (2024-07-31)
 
 ### Bug Fixes
