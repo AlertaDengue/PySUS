@@ -1,3 +1,5 @@
+__all__ = ["SIH"]
+
 from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
