@@ -1,6 +1,7 @@
 """
 Helper functions to download official statistics from IBGE SIDRA
 """
+
 import ssl  # Builtin
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -142,7 +143,7 @@ def get_sidra_table(
 
     print(f"Requesting data from {url}")
     try:
-        with (get_legacy_session() as s, s.get(url) as response):
+        with get_legacy_session() as s, s.get(url) as response:
             df = pd.DataFrame(response.json())
     except HTTPError:
         response = requests.get(url)
@@ -163,7 +164,7 @@ def list_agregados(**kwargs):
     url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
     print(f"Fetching Data groupings from {url}")
     try:
-        with (get_legacy_session() as s, s.get(url) as response):
+        with get_legacy_session() as s, s.get(url) as response:
             table = pd.DataFrame(response.json())
     except requests.exceptions.SSLError as e:
         print(f"Failed fetching aggregates: {e}")
@@ -183,7 +184,7 @@ def localidades_por_agregado(agregado: int, nivel: str):
     """
     url = APIBASE + f"agregados/{agregado}/localidades/{nivel}"
     try:
-        with (get_legacy_session() as s, s.get(url) as response):
+        with get_legacy_session() as s, s.get(url) as response:
             table = pd.DataFrame(response.json())
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
@@ -199,7 +200,7 @@ def metadados(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/metadados"
     try:
-        with (get_legacy_session() as s, s.get(url) as response):
+        with get_legacy_session() as s, s.get(url) as response:
             data = response.json()
     except Exception as e:
         print(f"Could not download from {url}\n{e}")
@@ -215,7 +216,7 @@ def lista_periodos(agregado: int):
     """
     url = APIBASE + f"agregados/{agregado}/periodos"
     try:
-        with (get_legacy_session() as s, s.get(url) as response):
+        with get_legacy_session() as s, s.get(url) as response:
             table = pd.DataFrame(response.json())
     except Exception:
         return None
@@ -309,10 +310,10 @@ class FetchData:
     def _fetch_JSON(self):
         try:
             print(f"Fetching {self.url}")
-            with (get_legacy_session() as s, s.get(self.url) as response):
+            with get_legacy_session() as s, s.get(self.url) as response:
                 self.JSON = response.json()
         except Exception as e:
-            print(f"Couldn't download data:\n{e}")
+            print("Couldn't download data:", e, sep="\n")
 
     def to_dataframe(self):
         return pd.DataFrame(self.JSON)
@@ -389,7 +390,7 @@ def get_population(
         opts = ["ALF", "ESCA", "ESCB", "IDOSO", "RENDA"]
         if not censo_data or censo_data not in opts:
             raise ValueError(
-                f"Incorrect `censo_data` parameter. Options: {opts}"
+                f"Incorrect 'censo_data' parameter. Options: {opts}"
             )
         file = [f for f in files if censo_data in f.name][0].download()
     else:

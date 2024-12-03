@@ -5,7 +5,19 @@ import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Final,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    TypedDict,
+    TypeVar,
+    Union,
+    runtime_checkable,
+)
 
 import humanize
 from aioftp import Client
@@ -14,61 +26,210 @@ from pysus.data.local import Data
 from tqdm import tqdm
 from typing_extensions import Self
 
-CACHEPATH = os.getenv(
+# Type aliases
+PathLike = Union[str, pathlib.Path]
+FileContent = Dict[str, Union["Directory", "File"]]
+T = TypeVar("T")
+
+# Constants
+CACHEPATH: Final[str] = os.getenv(
     "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
 )
-
-__cachepath__ = pathlib.Path(CACHEPATH)
+__cachepath__: Final[pathlib.Path] = pathlib.Path(CACHEPATH)
 __cachepath__.mkdir(exist_ok=True)
 
 
-def to_list(ite: Any) -> list:
+def to_list(item: Union[T, List[T], Tuple[T, ...], None]) -> List[T]:
     """Parse any builtin data type into a list"""
-    return (
-        [ite] if type(ite) in [str, float, int, Directory, File] else list(ite)
-    )
+    if item is None:
+        return []
+    return [item] if not isinstance(item, (list, tuple)) else list(item)
+
+
+# Cache storage
+DIRECTORY_CACHE: Dict[str, "Directory"] = {}
+
+
+class FileInfo(TypedDict):
+    """File information dictionary type"""
+
+    size: Union[int, str]
+    type: str
+    modify: datetime
+
+
+@runtime_checkable
+class Downloadable(Protocol):
+    async def download(self, local_dir: str) -> Data:
+        """Protocol for downloadable objects"""
+        ...
+
+
+class FTPSingleton:
+    """Singleton FTP client manager"""
+
+    _instance: Optional[FTP] = None
+
+    @classmethod
+    def get_instance(cls) -> FTP:
+        """Get or create the singleton FTP instance"""
+        if cls._instance is None or not cls._instance.sock:
+            cls._instance = FTP("ftp.datasus.gov.br")
+            cls._instance.login()
+        return cls._instance
+
+    @classmethod
+    def close(cls) -> None:
+        """Close the singleton FTP instance"""
+        if cls._instance and cls._instance.sock:
+            cls._instance.close()
+            cls._instance = None
 
 
 class File:
     """
-    FTP File class. This class will contain methods for interacting with
-    files inside DataSUS FTP server. The databases will be responsible for
-    parsing the files found for each db into File classes, enabling the
-    databases' files to share state and its reusability.
+    FTP File representation with improved type safety.
 
-    Parameters
-        path [str]: entire directory path where the file is located
-                              inside the FTP server
-        name [str]: basename of the file
-        info [dict]: a dict containing the keys [size, type, modify], which
-                     are present in every FTP server. In PySUS, this info
-                     is extract using `line_file_parser` with FTP LIST.
+    This class provides methods for interacting with files on the DataSUS FTP
+    server. It includes functionality for downloading files synchronously and
+    asynchronously, as well as retrieving file information in a human-readable
+    format.
 
-    Methods
-        download(local_dir): extract the file to local_dir
-        async_download(local_dir): async extract the file to local_dir
+    Attributes:
+        name (str): The name of the file without the extension.
+        extension (str): The file extension.
+        basename (str): The full name of the file including the extension.
+        path (str): The full path to the file on the FTP server.
+        parent_path (str): The directory path where the file is located on the
+            FTP server.
+        __info (FileInfo): Metadata about the file, including size, type, and
+            modification date.
+
+    Methods:
+        info() -> Dict[str, str]:
+            Returns a dictionary with human-readable file information,
+            including size, type, and modification date.
+
+        download(
+            local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
+        ) -> Data:
+            Downloads the file to the specified local directory. If a progress
+            bar (_pbar) is provided, it updates the progress bar during the
+            download.
+
+        async_download(local_dir: str = CACHEPATH) -> Data:
+            Asynchronously downloads the file to the specified local directory.
+
+        _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
+            Static method to parse a line from the FTP LIST command and
+            extract file information.
     """
 
-    name: str
-    extension: str
-    basename: str
-    path: str
-    # parent: Directory # TODO: This causes too much overhead
-    __info__: dict
-
-    def __init__(self, path: str, name: str, info: dict) -> None:
-        name, extension = os.path.splitext(name)
-        self.name = name
-        self.extension = extension
-        self.basename = self.name + self.extension
-        self.path = (
-            path + self.basename
-            if path.endswith("/")
-            else path + "/" + self.basename
+    def __init__(self, path: str, name: str, info: FileInfo) -> None:
+        self.name, self.extension = os.path.splitext(name)
+        self.basename: str = f"{self.name}{self.extension}"
+        self.path: str = (
+            f"{path}/{self.basename}"
+            if not path.endswith("/")
+            else f"{path}{self.basename}"
         )
-        ppath = self.path.replace(self.basename, "")
-        self.parent_path = ppath[:-1] if ppath.endswith("/") else ppath
-        self.__info__ = info
+        self.parent_path: str = os.path.dirname(self.path)
+        self.__info: FileInfo = info
+
+    @property
+    def info(self) -> Dict[str, str]:
+        """Returns a dictionary with human-readable file information"""
+        return {
+            "size": humanize.naturalsize(self.__info["size"]),
+            "type": f"{self.extension[1:].upper()} file",
+            "modify": self.__info["modify"].strftime("%Y-%m-%d %I:%M%p"),
+        }
+
+    def download(
+        self, local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
+    ) -> Data:
+        """Downloads the file to the specified local directory"""
+        target_dir = pathlib.Path(local_dir)
+        target_dir.mkdir(exist_ok=True, parents=True)
+
+        filepath = target_dir / self.basename
+        filesize = int(self.__info["size"])
+
+        # Check for existing files
+        for ext in (".parquet", ".dbf", ""):
+            existing = filepath.with_suffix(ext)
+            if existing.exists():
+                if _pbar:
+                    _pbar.update(filesize - _pbar.n)
+                return Data(str(existing), _pbar=_pbar)  # type: ignore
+
+        if _pbar:
+            _pbar.unit = "B"
+            _pbar.unit_scale = True
+            _pbar.reset(total=filesize)
+            _pbar.set_description(self.basename)
+
+        try:
+            ftp = FTPSingleton.get_instance()
+            with open(filepath, "wb") as output:
+
+                def callback(data: bytes) -> None:
+                    output.write(data)
+                    if _pbar:
+                        _pbar.update(len(data))
+
+                ftp.retrbinary(f"RETR {self.path}", callback)
+
+        except Exception as exc:
+            if filepath.exists():
+                filepath.unlink()
+            raise exc
+        finally:
+            FTPSingleton.close()
+
+        if _pbar:
+            _pbar.update(filesize - _pbar.n)
+        return Data(str(filepath), _pbar=_pbar)  # type: ignore
+
+    async def async_download(self, local_dir: str = CACHEPATH) -> Data:
+        """
+        Asynchronously downloads the file to the specified local directory
+        """
+        target_dir = pathlib.Path(local_dir)
+        target_dir.mkdir(exist_ok=True, parents=True)
+        filepath = target_dir / self.basename
+
+        # Check existing files
+        for ext in (".parquet", ".dbf", ""):
+            existing = filepath.with_suffix(ext)
+            if existing.exists():
+                return Data(str(existing))  # type: ignore
+
+        async with Client.context(
+            host="ftp.datasus.gov.br", parse_list_line_custom=self._line_parser
+        ) as client:
+            await client.login()
+            await client.download(self.path, str(filepath), write_into=True)
+
+        return Data(str(filepath))  # type: ignore
+
+    @staticmethod
+    def _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
+        """Static method to parse a line from the FTP LIST command and extract
+        file information
+        """
+        line = file_line.decode("utf-8")
+        if "<DIR>" in line:
+            date, time, _, *name = line.strip().split()
+            info = {"size": 0, "type": "dir"}
+            name = " ".join(name)
+        else:
+            date, time, size, name = line.strip().split()
+            info = {"size": size, "type": "file"}
+
+        modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+        info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
+        return name, info
 
     def __str__(self) -> str:
         return str(self.basename)
@@ -84,223 +245,132 @@ class File:
             return self.path == other.path
         return False
 
-    @property
-    def info(self):
-        """
-        Parse File info to human format
-        """
-        info = {}
-        info["size"] = humanize.naturalsize(self.__info__["size"])
-        info["type"] = self.extension[1:].upper() + " file"
-        info["modify"] = self.__info__["modify"].strftime("%Y-%m-%d %I:%M%p")
-        return info
-
-    def download(self, local_dir: str = CACHEPATH, _pbar=None) -> Data:
-        _dir = pathlib.Path(local_dir)
-        _dir.mkdir(exist_ok=True, parents=True)
-        filepath = _dir / self.basename
-        filesize = int(self.__info__["size"])
-
-        if _pbar:
-            _pbar.unit = "B"
-            _pbar.unit_scale = True
-            _pbar.reset(total=filesize)
-
-        _parquet = filepath.with_suffix(".parquet")
-        if _parquet.exists():
-            if _pbar:
-                _pbar.update(filesize - _pbar.n)
-            return Data(str(_parquet), _pbar=_pbar)
-
-        _dbf = filepath.with_suffix(".dbf")
-        if _dbf.exists():
-            if _pbar:
-                _pbar.update(filesize - _pbar.n)
-            return Data(str(_dbf), _pbar=_pbar)
-
-        if filepath.exists():
-            if _pbar:
-                _pbar.update(filesize - _pbar.n)
-            return Data(str(filepath), _pbar=_pbar)
-
-        if _pbar:
-            _pbar.set_description(f"{self.basename}")
-
-        try:
-            ftp = FTP("ftp.datasus.gov.br")
-            ftp.login()
-            output = open(f"{filepath}", "wb")
-
-            def callback(data):
-                output.write(data)
-                if _pbar:
-                    _pbar.update(len(data))
-
-            ftp.retrbinary(
-                f"RETR {self.path}",
-                callback,
-            )
-        except Exception as exc:
-            raise exc
-        finally:
-            ftp.close()
-            output.close()
-
-        if _pbar:
-            _pbar.update(filesize - _pbar.n)
-        return Data(str(filepath), _pbar=_pbar)
-
-    async def async_download(self, local_dir: str = CACHEPATH) -> Data:
-        # aioftp.Client.parse_list_line_custom
-        def line_file_parser(file_line):
-            line = file_line.decode("utf-8")
-            info = {}
-            if "<DIR>" in line:
-                date, time, _, *name = str(line).strip().split()
-                info["size"] = 0
-                info["type"] = "dir"
-                name = " ".join(name)
-            else:
-                date, time, size, name = str(line).strip().split()
-                info["size"] = size
-                info["type"] = "file"
-
-            modify = datetime.strptime(
-                " ".join([date, time]), "%m-%d-%y %I:%M%p"
-            )
-            info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
-
-            return name, info
-
-        _dir = pathlib.Path(local_dir)
-        _dir.mkdir(exist_ok=True, parents=True)
-        filepath = _dir / self.basename
-
-        output = (
-            local_dir + str(self.basename)
-            if local_dir.endswith("/")
-            else local_dir + "/" + str(self.basename)
-        )
-
-        _parquet = filepath.with_suffix(".parquet")
-        if _parquet.exists():
-            return Data(str(_parquet))
-
-        _dbf = filepath.with_suffix(".dbf")
-        if _dbf.exists():
-            return Data(str(_dbf))
-
-        if filepath.exists():
-            return Data(output)
-
-        async with Client.context(
-            host="ftp.datasus.gov.br",
-            parse_list_line_custom=line_file_parser,
-        ) as client:
-            await client.login()
-            await client.download(self.path, output, write_into=True)
-
-        return Data(output)
-
-
-CACHE: Dict = {}
-
 
 class Directory:
     """
-    FTP Directory class. The Directory does not load its content when called.
-    Instead, it will cache all the parents Directories until root "/". To load
-    the content, the attr content or the method load() should be called. When
-    firstly instantiated, it will CWD into the path provided and store self and
-    all parents in cache
+    Directory class with caching and lazy loading.
 
-    Parameters
-        path [str]: entire directory path where the directory is located
-                    inside the FTP server
-    Attrs
-        name [str]: Directory name
-        path [str]: Directory path
-        parent [Directory]: parent Directory
-        loaded [bool]: True if content is loaded
-        content [dict[str:[File, Directory]]]: A dictionary with name and File
-            or Directory inside the Directory (e.g: "name": Directory("name"))
+    The Directory class represents a directory in a file system and includes
+    mechanisms for caching instances and lazy loading of directory content.
+    When a Directory instance is created, it normalizes the provided path
+    and caches the instance. The content of the directory is not loaded
+    immediately; instead, it is loaded when the `content` property or the
+    `load` method is accessed or called.
+
+    Attributes:
+        path (str): The normalized path of the directory.
+        name (str): The name of the directory.
+        parent (Directory): The parent directory instance.
+        loaded (bool): Indicates whether the directory content has been loaded.
+        __content__ (Dict[str, Union[File, Directory]]): A dictionary
+            containing the directory's content, with names as keys and File or
+            Directory instances as values.
+
+    Methods:
+        _normalize_path(path: str) -> str: Normalizes the given path.
+        _get_root_directory() -> Directory: Returns the root directory
+            instance, creating it if necessary.
+        _init_root_child(name: str) -> None: Initializes a root child
+            directory.
+        _init_regular(parent_path: str, name: str) -> None: Initializes a
+            regular directory.
+        content() -> List[Union[Directory, File]]: Returns the content of the
+            directory, loading it if necessary.
+        load() -> Self: Loads the content of the directory and marks it as
+            loaded.
     """
 
     name: str
     path: str
-    parent: Directory
-    loaded: bool = False
-    __content__: Dict = {}
+    parent: "Directory"
+    loaded: bool
+    __content__: Dict[str, Union[File, "Directory"]]
 
-    def __new__(cls, path: str, _is_root_child=False) -> Directory:
-        ftp = FTP("ftp.datasus.gov.br")
-        path = f"/{path}" if not str(path).startswith("/") else path
-        path = path[:-1] if path.endswith("/") else path
+    def __new__(cls, path: str, _is_root_child: bool = False) -> "Directory":
+        normalized_path = os.path.normpath(path)
 
-        if not path:  # if root ("/")
-            path = "/"
-            try:
-                directory = CACHE["/"]
-            except KeyError:
-                directory = object.__new__(cls)
-                directory.parent = directory
-                directory.name = "/"
-                directory.path = "/"
-                directory.loaded = False
-                directory.__content__ = {}
-                CACHE["/"] = directory
-            return directory
+        # Handle root directory case
+        if normalized_path == "/":
+            return cls._get_root_directory()
 
-        parent_path, name = path.rsplit("/", maxsplit=1)
+        # Return cached instance if exists
+        if normalized_path in DIRECTORY_CACHE:
+            return DIRECTORY_CACHE[normalized_path]
+
+        # Use os.path.split for reliable path splitting
+        parent_path, name = os.path.split(normalized_path)
+
+        # Handle empty parent path
+        if not parent_path:
+            parent_path = "/"
+        # Handle parent paths that don't start with /
+        elif not parent_path.startswith("/"):
+            parent_path = "/" + parent_path
+
+        # Create new instance
+        instance = super().__new__(cls)
+        instance.path = normalized_path
 
         if _is_root_child:
-            # WARNING: This parameter is for internal meanings, do not use
-            directory = object.__new__(cls)
-            directory.parent = CACHE["/"]
-            directory.name = name
-            CACHE[path] = directory
-            return directory
+            instance._init_root_child(name)
+        else:
+            instance._init_regular(parent_path, name)
 
-        try:
-            directory = CACHE[path]  # Recursive and cached instantiation
-        except KeyError:
-            try:
-                ftp.connect()
-                ftp.login()
-                ftp.cwd(path)  # Checks if parent dir exists on DATASUS
-            except Exception as exc:
-                if "cannot find the path" in str(exc):
-                    logger.error(f"Not a directory {path}")
-                elif "access is denied" in str(exc).lower():
-                    #  Forbidden access, exists in ftp but returns Forbidden
-                    directory = object.__new__(cls)
-                    directory.parent = Directory(parent_path)  # Recursive
-                    directory.name = name
-                    directory.loaded = False
-                    directory.__content__ = {}
-                    CACHE[path] = directory
-                    return directory
-                raise exc
-            finally:
-                ftp.close()
+        DIRECTORY_CACHE[normalized_path] = instance
+        return instance
 
-            directory = object.__new__(cls)
-            # TODO: In next step, all the parent directories will be generated,
-            # but it cwds into every parent, while its certain that they exist
-            # in ftp server. The best approach should be to skip the cwds
-            directory.parent = Directory(parent_path)  # Recursive
-            directory.name = name
-            directory.loaded = False
-            directory.__content__ = {}
-            CACHE[path] = directory
-        return directory
+    @staticmethod
+    def _normalize_path(path: str) -> str:
+        """Normalizes the given path"""
+        path = f"/{path}" if not path.startswith("/") else path
+        return path.removesuffix("/")
 
-    def __init__(self, path: str, _is_root_child=False) -> None:
-        path = f"/{path}" if not str(path).startswith("/") else path
-        path = path[:-1] if path.endswith("/") else path
-        if not path:
-            path = "/"
-        self.path = path
+    @classmethod
+    def _get_root_directory(cls) -> Directory:
+        """Returns the root directory instance, creating it if necessary"""
+        if "/" not in DIRECTORY_CACHE:
+            root = super().__new__(cls)
+            root.parent = root
+            root.name = "/"
+            root.path = "/"
+            root.loaded = False
+            root.__content__ = {}
+            DIRECTORY_CACHE["/"] = root
+        return DIRECTORY_CACHE["/"]
+
+    def _init_root_child(self, name: str) -> None:
+        """Initializes a root child directory"""
+        self.parent = DIRECTORY_CACHE["/"]
+        self.name = name
+        self.loaded = False
+        self.__content__ = {}
+
+    def _init_regular(self, parent_path: str, name: str) -> None:
+        """Initializes a regular directory"""
+        self.parent = Directory(parent_path)
+        self.name = name
+        self.loaded = False
+        self.__content__ = {}
+
+    @property
+    def content(self) -> List[Union[Directory, File]]:
+        """Returns the content of the directory, loading it if necessary"""
+        if not self.loaded:
+            self.load()
+        return list(self.__content__.values())
+
+    def load(self) -> Self:
+        """Loads the content of the directory and marks it as loaded"""
+        self.__content__ |= load_directory_content(self.path)
+        self.loaded = True
+        return self
+
+    def reload(self):
+        """
+        Reloads the content of the Directory
+        """
+        self.loaded = False
+        return self.load()
 
     def __str__(self) -> str:
         return self.path
@@ -316,115 +386,49 @@ class Directory:
             return self.path == other.path
         return False
 
-    def __truediv__(self, path: str):
-        if isinstance(path, str):
-            path = f"/{path}" if not path.startswith("/") else path
-            path = path[:-1] if path.endswith("/") else path
-            return Directory(self.path + path)
-        raise ValueError("Unsupported division")
 
-    @property
-    def content(self):
-        """
-        Returns a list of Files and Directories in the Directory, will load
-        if needed
-        """
-        if not self.loaded:
-            self.load()
-        return list(self.__content__.values())
-
-    def load(self):
-        """
-        The content of a Directory must be explicitly loaded
-        """
-        self.__content__ |= load_path(self.path)
-        self.loaded = True
-        return self
-
-    def reload(self):
-        """
-        Reloads the content of the Directory
-        """
-        self.loaded = False
-        return self.load()
-
-    def is_parent(self, other: Union[Self, File]) -> bool:
-        """
-        Checks if Directory or File is inside (or at any subdir) of self.
-        """
-        if self.path == "/":
-            return True
-
-        target = other
-        while target.path != "/":
-
-            if self.path == target.path:
-                return True
-
-            if isinstance(other, File):
-                # TODO: Implement parent logic on File (too much overhead)
-                target = Directory(other.parent_path)
-            else:
-                target = target.parent
-
-        return False
-
-
-CACHE["/"] = Directory("/")
-
-
-def load_path(path: str) -> Dict[str, Union[Directory, File]]:
-    """
-    This method is responsible for listing all the FTP directory's.
-    Converts the items found within a valid DATASUS path into `File`s or
-    Directories, returning its content.
-    """
-    path = str(path)
-    content = {}
-    ftp = FTP("ftp.datasus.gov.br")
+def load_directory_content(path: str) -> FileContent:
+    """Directory content loading"""
+    content: FileContent = {}
 
     try:
-        ftp.connect()
-        ftp.login()
+        ftp = FTPSingleton.get_instance()
         ftp.cwd(path)
+        path = path.removesuffix("/")
 
-        def line_file_parser(file_line):
-            info = {}
-            if "<DIR>" in file_line:
-                date, time, _, *name = str(file_line).strip().split()
-                info["size"] = 0
-                info["type"] = "dir"
-                name = " ".join(name)
+        def line_parser(line: str):
+            if "<DIR>" in line:
+                date, time, _, name = line.strip().split(maxsplit=3)
                 modify = datetime.strptime(
-                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
                 )
-                info["modify"] = modify
-                xpath = (
-                    path + name if path.endswith("/") else path + "/" + name
-                )
+                info = {"size": 0, "type": "dir", "modify": modify}
+                xpath = f"{path}/{name}"
                 content[name] = Directory(xpath)
             else:
-                date, time, size, name = str(file_line).strip().split()
-                info["size"] = size
-                info["type"] = "file"
+                date, time, size, name = line.strip().split(maxsplit=3)
                 modify = datetime.strptime(
-                    " ".join([date, time]), "%m-%d-%y %I:%M%p"
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
                 )
-                info["modify"] = modify
+                info: FileInfo = {
+                    "size": size,
+                    "type": "file",
+                    "modify": modify,
+                }
                 content[name] = File(path, name, info)
 
-        ftp.retrlines("LIST", line_file_parser)
+        ftp.retrlines("LIST", line_parser)
     except Exception as exc:
         raise exc
     finally:
-        ftp.close()
+        FTPSingleton.close()
 
-    upper_names = [n.upper() for n in content]
-    to_remove = []
-    for name in content:
-        if ".DBF" in name.upper():
-            if name.upper().replace(".DBF", ".DBC") in upper_names:
-                to_remove.append(name)
+    to_remove = [
+        name
+        for name in content
+        if name.upper().endswith(".DBF")
+        and name.upper().replace(".DBF", ".DBC") in content
+    ]
 
     for name in to_remove:
         del content[name]
@@ -489,31 +493,29 @@ class Database:
         Lists Files inside content. To load a specific Directory inside
         content, just `load()` this directory and list files again.
         """
-        return list(filter(lambda f: isinstance(f, File), self.content))
+        return [f for f in self.content if isinstance(f, File)]
 
     def load(
-        self, directories: Optional[Union[Directory, List[Directory]]] = None
+        self,
+        directories: Optional[
+            Union[Directory, List[Directory], Tuple[Directory, ...]]
+        ] = None,
     ) -> Database:
         """
         Loads specific directories to Database content. Will aggregate the
         files found within Directories into Database.content.
         """
         if not directories:
-            directories = self.paths
+            directories = list(self.paths)
 
-        directories = to_list(directories)
+        directories_list = to_list(directories)
 
-        for i, path in enumerate(directories):
-            if isinstance(path, str):
-                path = Directory(path)
-                directories[i] = path
+        for directory in directories_list:
+            if not isinstance(directory, Directory):
+                raise ValueError("Invalid directory provided.")
 
-            if not isinstance(path, Directory):
-                raise ValueError("path must a valid DATASUS directory")
-
-        for directory in directories:
             directory.load()
-            self.__content__ |= directory.__content__
+            self.__content__.update(directory.__content__)
         return self
 
     def describe(self, file: File) -> dict:

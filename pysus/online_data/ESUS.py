@@ -21,7 +21,7 @@ def download(uf, cache=True, checkmemory=True):
     today = date.today()
     dt = today.strftime("_%d_%m_%Y")
     base = f"desc-esus-notifica-estado-{uf}"  # desc-notificacoes-esusve-
-    url = f"https://{user}:{pwd}@elasticsearch-saps.saude.gov.br"
+    url = f"https://{user}:{pwd}@elasticsearch-saps.saude.gov.br"  # noqa: E231
     out = f"ESUS_{uf}_{dt}.parquet"
 
     cachefile = os.path.join(CACHEPATH, out)
@@ -36,7 +36,7 @@ def download(uf, cache=True, checkmemory=True):
         fname = fetch(base, uf, url)
         size = os.stat(fname).st_size
         if size > 50e6 and checkmemory:
-            print(f"Downloaded data is to large:{size / 1e6} MB compressed.")
+            print(f"Downloaded data is to large: {size / 1e6} MB compressed.")
             print(
                 "Only loading the first 1000 rows. If your computer has enough"
                 + " memory, set 'checkmemory' to False"
