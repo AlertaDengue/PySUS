@@ -1,3 +1,5 @@
+__all__ = ["PNI"]
+
 from typing import List, Literal, Optional, Union
 
 from pysus.ftp import Database, Directory, File
