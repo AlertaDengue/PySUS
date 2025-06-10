@@ -64,7 +64,7 @@ class SIDRA(unittest.TestCase):
         self.assertEqual(len(l1), 5570)
         l2 = IBGE.get_population(year=2012, source="projpop")
         self.assertEqual(type(l2), pd.DataFrame)
-        self.assertEqual(len(l2), 182)
+        self.assertEqual(len(l2), 4914)
 
 
 if __name__ == "__main__":

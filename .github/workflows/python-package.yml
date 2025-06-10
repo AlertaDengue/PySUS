@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        python_version: ["3.10", "3.11"]
+        python_version: ["3.10", "3.11", "3.12", "3.13"]
 
     concurrency:
       group: ci-tests-${{ matrix.python_version }}-${{ github.ref }}
@@ -24,13 +24,12 @@ jobs:
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
-        miniconda-version: "latest"
-        mamba-version: "*"
+        miniforge-version: latest
         environment-file: conda/dev.yaml
         channels: conda-forge,nodefaults
         activate-environment: pysus
-        use-mamba: true
-        miniforge-variant: Mambaforge
+        auto-update-conda: true
+        conda-solver: libmamba
 
     - name: Run jupyterlab with PySUS
       run: |
