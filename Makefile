@@ -52,7 +52,7 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 
 .PHONY: test-pysus
 test-pysus: ## run tests quickly with the default Python
-	poetry run pytest -vv pysus/tests/
+	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15
 
 # RELEASE
 # =======

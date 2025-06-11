@@ -107,8 +107,6 @@ def elasticsearch_fetch(uri, auth, json_body={}):
             print(resp)
         total += len(resp["hits"]["hits"])
         print(f"Downloaded {total} records\r", end="")
-        # print(resp)
-        # print(uri)
         yield [h["_source"] for h in resp["hits"]["hits"]]
         if "_scroll_id" in resp:
             scroll_id = resp["_scroll_id"]

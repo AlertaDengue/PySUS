@@ -33,10 +33,8 @@ def _test_database(testcase: unittest.TestCase, database: Database):
         set(["description", "long_name", "source"]) == set(database.metadata)
     )
 
-    downloaded_file = (
-        database.download(database.files[0])
-        if database.files[0].extension != ".zip"
-        else database.download(database.files[-1])
+    downloaded_file = database.download(
+        [f for f in database.files if ".zip" not in f.basename][0]
     )
     testcase.assertTrue(isinstance(downloaded_file, ParquetSet))
     testcase.assertTrue(Path(downloaded_file.path).exists())

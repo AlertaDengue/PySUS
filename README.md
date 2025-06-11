@@ -138,26 +138,6 @@ datetime.date(2016, 4, 1)
 
 ```
 
-**Reading `.dbc` file:**
-
-```python
->>> from pysus.utilities.readdbc import read_dbc
-
->>> df = read_dbc(filename, encoding='iso-8859-1')
->>> df.info()
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 1239 entries, 0 to 1238
-Data columns (total 58 columns):
-AP_MVM        1239 non-null object
-AP_CONDIC     1239 non-null object
-AP_GESTAO     1239 non-null object
-AP_CODUNI     1239 non-null object
-AP_AUTORIZ    1239 non-null object
-AP_CMP        1239 non-null object
-AP_PRIPAL     1239 non-null object
-AP_VL_AP      1239 non-null float64
-...
-```
 Downloading and reading SINASC data:
 
 ```python
