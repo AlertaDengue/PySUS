@@ -1,6 +1,16 @@
 Release Notes
 ---
 
+## [1.0.0](https://github.com/AlertaDengue/PySUS/compare/0.15.0...1.0.0) (2025-06-11)
+
+### ⚠ BREAKING CHANGES
+
+* **package:** release for py3.13 (#223)
+
+### Features
+
+* **package:** release for py3.13 ([#223](https://github.com/AlertaDengue/PySUS/issues/223)) ([c6008f4](https://github.com/AlertaDengue/PySUS/commit/c6008f41b55bc65e98b45adcbb6e8f304732928e))
+
 ## [0.15.0](https://github.com/AlertaDengue/PySUS/compare/0.14.3...0.15.0) (2024-12-03)
 
 ### Features
