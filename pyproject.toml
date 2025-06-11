@@ -11,7 +11,7 @@ packages = [{include='pysus'}]
 python = ">=3.10,<3.14"
 python-dateutil = "2.8.2"
 dbfread = "2.0.7"
-fastparquet = ">=2023.10.1"
+fastparquet = ">=2023.10.1,<=2024.11.0"
 numpy = ">1,<3"
 pyarrow = ">=11.0.0"
 pycparser = "2.21"

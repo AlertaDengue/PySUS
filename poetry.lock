@@ -4223,4 +4223,4 @@ preprocessing = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "f02a10f1b34dbd6adbf8202b531987b7777ebbbddd28ddad8caf9afbc9685b9b"
+content-hash = "366b0eac64aa0a754cb64d4b487807570e290a57ca811bad2295b3efa5e593a0"
