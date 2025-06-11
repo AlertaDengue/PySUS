@@ -33,14 +33,12 @@ jobs:
 
     - name: Run jupyterlab with PySUS
       run: |
-        # make run-jupyter-pysus
+        make run-jupyter-pysus
         # make test-jupyter-pysus  ## takes too long
 
     - name: Linting & Tests
       run: |
+        export CI=1
         poetry install
         pre-commit run --all-files
-        # make test-pysus
-
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+        make test-pysus
