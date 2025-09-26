@@ -74,4 +74,3 @@ msgstr ""
 #: ../../source/Zika.ipynb:544
 msgid "Usando Kepler.gl para visualização"
 msgstr ""
-

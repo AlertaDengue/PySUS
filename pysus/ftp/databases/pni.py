@@ -1,31 +1,34 @@
-from typing import List, Union, Optional, Literal
+__all__ = ["PNI"]
+
+from typing import List, Literal, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs
+from pysus.ftp.utils import UFs, parse_UFs, to_list, zfill_year
 
 
 class PNI(Database):
     name = "PNI"
-    paths = (
-        Directory("/dissemin/publicos/PNI/DADOS"),
-    )
+    paths = (Directory("/dissemin/publicos/PNI/DADOS"),)
     metadata = {
-        "long_name": "Sistema de Informações do Programa Nacional de Imunizações",
+        "long_name": (
+            "Sistema de Informações do Programa Nacional de Imunizações"
+        ),
         "source": (
-            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",
-            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",
+            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",  # noqa
+            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",  # noqa
         ),
         "description": (
-            "O SI-PNI é um sistema desenvolvido para possibilitar aos gestores "
-            "envolvidos no Programa Nacional de Imunização, a avaliação dinâmica "
-            "do risco quanto à ocorrência de surtos ou epidemias, a partir do "
-            "registro dos imunobiológicos aplicados e do quantitativo populacional "
-            "vacinado, agregados por faixa etária, período de tempo e área geográfica. "
-            "Possibilita também o controle do estoque de imunobiológicos necessário "
-            "aos administradores que têm a incumbência de programar sua aquisição e "
-            "distribuição. Controla as indicações de aplicação de vacinas de "
-            "imunobiológicos especiais e seus eventos adversos, dentro dos Centros "
-            "de Referências em imunobiológicos especiais."
+            "O SI-PNI é um sistema desenvolvido para possibilitar aos "
+            "gestores envolvidos no Programa Nacional de Imunização, a "
+            "avaliação dinâmica do risco quanto à ocorrência de surtos ou "
+            "epidemias, a partir do registro dos imunobiológicos aplicados e "
+            "do quantitativo populacional vacinado, agregados por faixa "
+            "etária, período de tempo e área geográfica. Possibilita também "
+            "o controle do estoque de imunobiológicos necessário aos "
+            "administradores que têm a incumbência de programar sua aquisição "
+            "e distribuição. Controla as indicações de aplicação de "
+            "vacinas de imunobiológicos especiais e seus eventos adversos, "
+            "dentro dos Centros de Referências em imunobiológicos especiais."
         ),
     }
     groups = {
@@ -69,9 +72,11 @@ class PNI(Database):
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 

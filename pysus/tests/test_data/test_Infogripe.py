@@ -1,7 +1,7 @@
 import unittest
-import pytest
 
-from pysus.online_data.Infogripe import download, DATASETS
+import pytest
+from pysus.online_data.Infogripe import DATASETS, download
 
 
 class InfoGripeTestCase(unittest.TestCase):
@@ -13,5 +13,5 @@ class InfoGripeTestCase(unittest.TestCase):
             self.assertGreater(len(df), 0)  # add assertion here
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

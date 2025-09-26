@@ -22,4 +22,3 @@ msgstr ""
 #: ../../source/Chikungunya.ipynb:9
 msgid "Analyzing Chikungunya data"
 msgstr "Analyzando dados de Chikungunya"
-

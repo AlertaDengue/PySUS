@@ -1,7 +1,9 @@
-from typing import List, Union, Optional
+__all__ = ["SIH"]
+
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class SIH(Database):
@@ -13,20 +15,21 @@ class SIH(Database):
     metadata = {
         "long_name": "Sistema de Informações Hospitalares",
         "source": (
-            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",
-            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",
+            "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",  # noqa
+            "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",  # noqa
         ),
         "description": (
             "A finalidade do AIH (Sistema SIHSUS) é a de transcrever todos os "
             "atendimentos que provenientes de internações hospitalares que "
             "foram financiadas pelo SUS, e após o processamento, gerarem "
-            "relatórios para os gestores que lhes possibilitem fazer os pagamentos "
-            "dos estabelecimentos de saúde. Além disso, o nível Federal recebe "
-            "mensalmente uma base de dados de todas as internações autorizadas "
-            "(aprovadas ou não para pagamento) para que possam ser repassados às "
-            "Secretarias de Saúde os valores de Produção de Média e Alta complexidade "
-            "além dos valores de CNRAC, FAEC e de Hospitais Universitários – em suas "
-            "variadas formas de contrato de gestão."
+            "relatórios para os gestores que lhes possibilitem fazer os "
+            "pagamentos dos estabelecimentos de saúde. Além disso, o nível "
+            "Federal recebe mensalmente uma base de dados de todas as "
+            "internações autorizadas (aprovadas ou não para pagamento) para "
+            "que possam ser repassados às Secretarias de Saúde os valores de "
+            "Produção de Média e Alta complexidade além dos valores de CNRAC, "
+            "FAEC e de Hospitais Universitários – em suas variadas formas de "
+            "contrato de gestão."
         ),
     }
     groups = {
@@ -72,9 +75,11 @@ class SIH(Database):
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 

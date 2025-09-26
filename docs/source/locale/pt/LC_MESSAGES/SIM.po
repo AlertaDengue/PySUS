@@ -34,4 +34,3 @@ msgstr ""
 #: ../../source/SIM.ipynb:822
 msgid "Humanizing some of the encoded variables."
 msgstr "Humanizando algumas das variáveis codificadas."
-

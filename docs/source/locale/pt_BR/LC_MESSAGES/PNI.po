@@ -34,4 +34,3 @@ msgstr ""
 #: ../../source/PNI.ipynb:151
 msgid "Then we can fetch data from a particular year:"
 msgstr "Em seguida, podemos extrair os dados de um ano específico:"
-

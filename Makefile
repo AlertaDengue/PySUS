@@ -22,7 +22,7 @@ export PRINT_HELP_PYSCRIPT
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-DOCKER = docker-compose -p pysus -f docker/docker-compose.yaml
+DOCKER = docker compose -p pysus -f docker/docker-compose.yaml
 SERVICE :=
 SEMANTIC_RELEASE = npx --yes \
           -p semantic-release \
@@ -48,12 +48,11 @@ down-jupyter-pysus: ## stop and remove containers for all services
 #* Tests
 .PHONY: test-jupyter-pysus
 test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
-	$(DOCKER) exec -T jupyter bash /test_notebooks.sh
+	$(DOCKER) exec -T jupyter pytest -vv --nbmake
 
 .PHONY: test-pysus
 test-pysus: ## run tests quickly with the default Python
-	cp docs/source/**/*.ipynb pysus/Notebooks
-	poetry run pytest -vv pysus/tests/
+	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15
 
 # RELEASE
 # =======

@@ -1,8 +1,9 @@
-from typing import Optional, List, Union, Literal
-from loguru import logger
+__all__ = ["IBGEDATASUS"]
+
+from typing import List, Literal, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list
+from pysus.ftp.utils import zfill_year
 
 
 class IBGEDATASUS(Database):
@@ -12,11 +13,11 @@ class IBGEDATASUS(Database):
         Directory("/dissemin/publicos/IBGE/censo"),
         Directory("/dissemin/publicos/IBGE/POPTCU"),
         Directory("/dissemin/publicos/IBGE/projpop"),
-        # Directory("/dissemin/publicos/IBGE/Auxiliar") # this has a different file name pattern
+        # Directory("/dissemin/publicos/IBGE/Auxiliar") # this has a different file name pattern  # noqa
     )
     metadata = {
         "long_name": "Populaçao Residente, Censos, Contagens "
-                     "Populacionais e Projeçoes Intercensitarias",
+        "Populacionais e Projeçoes Intercensitarias",
         "source": "ftp://ftp.datasus.gov.br/dissemin/publicos/IBGE",
         "description": (
             "São aqui apresentados informações sobre a população residente, "
@@ -28,12 +29,12 @@ class IBGEDATASUS(Database):
 
     def describe(self, file: File) -> dict:
         if file.extension.upper() in [".ZIP"]:
-            year = file.name.split('.')[0][-2:]
+            year = file.name.split(".")[0][-2:]
             description = {
                 "name": str(file.basename),
                 "year": zfill_year(year),
                 "size": file.info["size"],
-                "last_update": file.info["modify"]
+                "last_update": file.info["modify"],
             }
             return description
         elif file.extension.upper() == ".DBF":
@@ -42,19 +43,20 @@ class IBGEDATASUS(Database):
                 "name": str(file.basename),
                 "year": zfill_year(year),
                 "size": file.info["size"],
-                "last_update": file.info["modify"]
+                "last_update": file.info["modify"],
             }
             return description
         return {}
 
     def format(self, file: File) -> tuple:
-        return file.name[-2:],
+        return (file.name[-2:],)
 
     def get_files(
         self,
         source: Literal["POP", "censo", "POPTCU", "projpop"] = "POPTCU",
         year: Optional[Union[str, int, list]] = None,
-        *args, **kwargs
+        *args,
+        **kwargs,
     ) -> List[File]:
         sources = ["POP", "censo", "POPTCU", "projpop"]
         source_dir = None
@@ -71,12 +73,14 @@ class IBGEDATASUS(Database):
         if year:
             if isinstance(year, (str, int)):
                 files = [
-                    f for f in files if
-                    self.describe(f)["year"] == zfill_year(year)
+                    f
+                    for f in files
+                    if self.describe(f)["year"] == zfill_year(year)
                 ]
             elif isinstance(year, list):
                 files = [
-                    f for f in files
+                    f
+                    for f in files
                     if str(self.describe(f)["year"])
                     in [str(zfill_year(y)) for y in year]
                 ]

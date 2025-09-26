@@ -20,13 +20,12 @@ jobs:
 
     - uses: conda-incubator/setup-miniconda@v3
       with:
-        miniconda-version: "latest"
-        mamba-version: "*"
+        miniforge-version: latest
         environment-file: conda/dev.yaml
         channels: conda-forge,nodefaults
         activate-environment: pysus
-        use-mamba: true
-        miniforge-variant: Mambaforge
+        auto-update-conda: true
+        conda-solver: libmamba
 
     - uses: actions/setup-node@v3
       with:

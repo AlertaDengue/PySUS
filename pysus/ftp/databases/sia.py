@@ -1,7 +1,9 @@
-from typing import List, Union, Optional
+__all__ = ["SIA"]
+
+from typing import List, Optional, Union
 
 from pysus.ftp import Database, Directory, File
-from pysus.ftp.utils import zfill_year, to_list, parse_UFs, UFs, MONTHS
+from pysus.ftp.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class SIA(Database):
@@ -14,16 +16,18 @@ class SIA(Database):
         "long_name": "Sistema de Informações Ambulatoriais",
         "source": "http://sia.datasus.gov.br/principal/index.php",
         "description": (
-            "O Sistema de Informação Ambulatorial (SIA) foi instituído pela Portaria "
-            "GM/MS n.º 896 de 29 de junho de 1990. Originalmente, o SIA foi concebido "
-            "a partir do projeto SICAPS (Sistema de Informação e Controle Ambulatorial "
-            "da Previdência Social), em que os conceitos, os objetivos e as diretrizes "
-            "criados para o desenvolvimento do SICAPS foram extremamente importantes e "
-            "amplamente utilizados para o desenvolvimento do SIA, tais como: (i) o "
-            "acompanhamento das programações físicas e orçamentárias; (ii) o "
-            "acompanhamento das ações de saúde produzidas; (iii) a agilização do "
-            "pagamento e controle orçamentário e financeiro; e (iv) a formação de "
-            "banco de dados para contribuir com a construção do SUS."
+            "O Sistema de Informação Ambulatorial (SIA) foi instituído pela "
+            "Portaria GM/MS n.º 896 de 29 de junho de 1990. Originalmente, o "
+            "SIA foi concebido a partir do projeto SICAPS (Sistema de "
+            "Informação e Controle Ambulatorial da Previdência Social), em "
+            "que os conceitos, os objetivos e as diretrizes criados para o "
+            "desenvolvimento do SICAPS foram extremamente importantes e "
+            "amplamente utilizados para o desenvolvimento do SIA, tais"
+            " como: (i) o acompanhamento das programações físicas e "
+            "orçamentárias; (ii) o acompanhamento das ações de saúde "
+            "produzidas; (iii) a agilização do pagamento e controle "
+            "orçamentário e financeiro; e (iv) a formação de banco de dados "
+            "para contribuir com a construção do SUS."
         ),
     }
     groups = {
@@ -71,10 +75,10 @@ class SIA(Database):
 
     def format(self, file: File) -> tuple:
         if file.extension.upper() in [".DBC", ".DBF"]:
-            digits = ''.join([d for d in file.name if d.isdigit()])
+            digits = "".join([d for d in file.name if d.isdigit()])
             if "_" in file.name:
                 name, _ = file.name.split("_")
-                digits = ''.join([d for d in name if d.isdigit()])
+                digits = "".join([d for d in name if d.isdigit()])
             chars, _ = file.name.split(digits)
             year, month = digits[:2], digits[2:]
             group, uf = chars[:-2].upper(), chars[-2:].upper()
@@ -88,9 +92,11 @@ class SIA(Database):
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
-        files = list(filter(
-            lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
-        ))
+        files = list(
+            filter(
+                lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files
+            )
+        )
 
         groups = [gr.upper() for gr in to_list(group)]
 
