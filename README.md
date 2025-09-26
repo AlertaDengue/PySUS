@@ -6,7 +6,7 @@
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
 
-If you use PySUS for a publication,  please use the bibtex below to cite it:
+If you use PySUS for a publication, please use the bibtex below to cite it:
 ```bibtex
 @software{flavio_codeco_coelho_2021_4883502,
   author       = {Flávio Codeço Coelho and
@@ -25,7 +25,6 @@ If you use PySUS for a publication,  please use the bibtex below to cite it:
 ```
 
 ## Features
-
 
 - Decode encoded patient age to any time unit (years, months, etc)
 - Convert `.dbc` files to DBF databases or read them into pandas dataframes. DBC files are basically DBFs compressed by a proprietary algorithm.
@@ -54,8 +53,9 @@ If you use windows, or for some other reason is not able to install PySUS on you
 First, clone the Pysus repository:
 
 ```bash
-git clone https://github.com/fccoelho/PySUS.git
-```
+git clone https://github.com/AlertaDengue/PySUS.git
+``` 
+
 then from within the PySUS directory build the container
 
 ```bash
@@ -141,7 +141,7 @@ datetime.date(2016, 4, 1)
 Downloading and reading SINASC data:
 
 ```python
-In[1]: from pysus.online_data.sinasc import download
+In[1]: from pysus.online_data.SINASC import download
 In[2]: df = download('SE', 2015)
 In[3]: df.head()
 Out[3]:
