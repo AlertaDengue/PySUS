@@ -47,6 +47,50 @@ Then you can proceed to
 
 `sudo pip install PySUS`
 
+## Development and Testing
+
+### Running Tests with Coverage Report
+
+To run the test suite with coverage analysis using Docker (recommended for consistent environment):
+
+1. **Start the Docker container:**
+   ```bash
+   make run-jupyter-pysus
+   ```
+
+2. **Run tests with coverage:**
+   ```bash
+   make test-coverage-docker
+   ```
+
+3. **View the coverage report:**
+   - Copy the report from container to host:
+     ```bash
+     docker cp pysus-jupyter:/home/pysus/htmlcov ./htmlcov
+     ```
+   - Open the HTML report in your browser:
+     ```bash
+     firefox htmlcov/index.html
+     ```
+
+   The report shows:
+   - Overall coverage percentage
+   - Coverage breakdown by file
+   - Lines not covered by tests (highlighted in red)
+   - Detailed statistics for each module
+
+### Alternative: Run Tests Locally
+
+If you have Poetry installed locally:
+
+```bash
+# Install dependencies
+poetry install --with dev
+
+# Run tests with coverage
+make test-coverage
+```
+
 ## Running from a Docker container
 If you use windows, or for some other reason is not able to install PySUS on you OS, you can run it from a docker container.
 

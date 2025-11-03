@@ -12,5 +12,6 @@ services:
       - CI=${CI:-0}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ..:/home/pysus
     entrypoint: ["/entrypoint.sh"]
     command: ["/usr/bin/firefox"]
