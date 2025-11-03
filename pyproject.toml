@@ -39,6 +39,7 @@ pre-commit = "^2.20.0"
 pytest-timeout = "^2.1.0"
 nbsphinx = "^0.9.3"
 pytest-retry = "1.7.0"
+pytest-cov = "^4.1.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.1.1"
@@ -84,3 +85,15 @@ exclude = ["*.git", "docs/"]
 
 [tool.poetry.extras]
 preprocessing = ["geobr", "geocoder"]
+
+[tool.coverage.run]
+source = ["pysus"]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

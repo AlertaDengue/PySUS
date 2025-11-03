@@ -54,6 +54,10 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 test-pysus: ## run tests quickly with the default Python
 	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15
 
+.PHONY: test-coverage-docker
+test-coverage-docker: ## run tests with coverage report inside Docker
+	$(DOCKER) exec -T jupyter bash -c "cd /home/pysus && poetry run pytest -vv pysus/tests/ --cov=pysus --cov-report=html --cov-report=term"
+
 # RELEASE
 # =======
 
