@@ -108,6 +108,27 @@ In Docker, just add an extra parameter `-e PYSUS_CACHEPATH="/home/me/desired/pat
 docker run -p 8888:8888 -e PYSUS_CACHEPATH="/home/me/desired/path/.pysus" pysus:latest
 ```
 
+## Discovering Available Databases
+
+Use `AVAILABLE_DATABASES` to programmatically discover all database classes:
+
+```python
+>>> from pysus import AVAILABLE_DATABASES
+>>> for db_class in AVAILABLE_DATABASES:
+...     db = db_class()
+...     print(f"{db.name}: {db.metadata['long_name']}")
+...
+CIHA: Comunicação de Internação Hospitalar e Ambulatorial
+CNES: Cadastro Nacional de Estabelecimentos de Saúde
+IBGE-DataSUS: Populaçao Residente, Censos, Contagens Populacionais e Projeçoes Intercensitarias
+PNI: Sistema de Informações do Programa Nacional de Imunizações
+SIA: Sistema de Informações Ambulatoriais
+SIH: Sistema de Informações Hospitalares
+SIM: Sistema de Informação sobre Mortalidade
+SINAN: Doenças e Agravos de Notificação
+SINASC: Sistema de Informações sobre Nascidos Vivos
+```
+
 ## Examples
 
 Reading SINAN files:
