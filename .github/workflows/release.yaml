@@ -18,18 +18,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: actions/setup-node@v4
       with:
-        miniforge-version: latest
-        environment-file: conda/dev.yaml
-        channels: conda-forge,nodefaults
-        activate-environment: pysus
-        auto-update-conda: true
-        conda-solver: libmamba
-
-    - uses: actions/setup-node@v3
-      with:
-        node-version: 20.11.0
+        node-version: 22
 
     - name: Test release
       if: ${{ github.event_name != 'workflow_dispatch' }}
