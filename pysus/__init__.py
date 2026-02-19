@@ -4,6 +4,7 @@
 from importlib import metadata as importlib_metadata
 
 from pysus.ftp.databases import *  # noqa
+from pysus.ftp.databases import AVAILABLE_DATABASES
 
 
 def get_version() -> str:
@@ -15,3 +16,9 @@ def get_version() -> str:
 
 version: str = get_version()
 __version__: str = version
+
+__all__ = [
+    "AVAILABLE_DATABASES",
+    "version",
+    "__version__",
+]
