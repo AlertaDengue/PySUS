@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [1.0.1](https://github.com/AlertaDengue/PySUS/compare/1.0.0...1.0.1) (2026-02-19)
+
+### Bug Fixes
+
+* **release:** reinclude poetry install w/o full conda install on release.yaml ([#238](https://github.com/AlertaDengue/PySUS/issues/238)) ([d173ff6](https://github.com/AlertaDengue/PySUS/commit/d173ff6a2412b096d7501603d4d69b3b4a9e4bb8))
+* **release:** update node dep on release.yaml ([#236](https://github.com/AlertaDengue/PySUS/issues/236)) ([caefbeb](https://github.com/AlertaDengue/PySUS/commit/caefbeb369fb9d13c37f30757c96abf47623a16d))
+
 ## [1.0.0](https://github.com/AlertaDengue/PySUS/compare/0.15.0...1.0.0) (2025-06-11)
 
 ### ⚠ BREAKING CHANGES
