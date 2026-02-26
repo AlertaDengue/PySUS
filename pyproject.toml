@@ -27,7 +27,8 @@ urwid = "^2.1.2"
 bigtree = "^0.12.2"
 aioftp = "^0.21.4"
 humanize = "^4.8.0"
-typing-extensions = "^4.9.0"
+typing-extensions = ">=4.10.0"
+pydantic = "^2.12.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"
@@ -38,6 +39,7 @@ pre-commit = "^2.20.0"
 pytest-timeout = "^2.1.0"
 nbsphinx = "^0.9.3"
 pytest-retry = "1.7.0"
+datamodel-code-generator = {extras = ["http"], version = "^0.54.0"}
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.1.1"
