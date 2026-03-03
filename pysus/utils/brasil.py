@@ -11,8 +11,6 @@ import json
 from pathlib import Path
 from typing import Union
 
-from pysus.utils import to_list
-
 with open(
     f"{Path(__file__).parent}/municipios.json", "r", encoding="utf-8-sig"
 ) as muns:
@@ -84,7 +82,12 @@ def parse_UFs(UF: Union[list[str], str]) -> list:
     Also checks if there is an incorrect UF in the list.
     E.g: ['SC', 'mt', 'ba'] -> ['SC', 'MT', 'BA']
     """
-    ufs = [uf.upper() for uf in to_list(UF)]
-    if not all(uf in list(UFs) for uf in ufs):
-        raise ValueError(f"Unknown UF(s): {set(ufs).difference(list(UFs))}")
+    ufs = [uf.upper() for uf in ([UF] if isinstance(UF, str) else UF)]
+
+    valid_ufs = set(UFs)
+    invalid = set(ufs).difference(valid_ufs)
+
+    if invalid:
+        raise ValueError(f"Unknown UF(s): {invalid}")
+
     return ufs
