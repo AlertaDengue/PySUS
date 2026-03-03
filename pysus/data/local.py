@@ -8,10 +8,6 @@ from pysus.data import dbc_to_dbf, dbf_to_parquet, parse_dftypes
 
 
 class ParquetSet:
-    """
-    A local parquet directory or file
-    """
-
     __path__: Union[PurePosixPath, PureWindowsPath]
     info: Dict
 
@@ -41,6 +37,9 @@ class ParquetSet:
     def __str__(self):
         return str(self.__path__)
 
+    def __fspath__(self):
+        return str(self)
+
     def __repr__(self):
         return str(self.__path__)
 
@@ -57,9 +56,8 @@ class ParquetSet:
         parquets into a single dataframe
         """
         parquets = list(map(str, self.__path__.glob("*.parquet")))
-        chunks_list = [
-            pd.read_parquet(str(f), engine="fastparquet") for f in parquets
-        ]
+        chunks_list = [pd.read_parquet(
+            str(f), engine="fastparquet") for f in parquets]
         _df = pd.concat(chunks_list, ignore_index=True)
         return parse_dftypes(_df)
 

@@ -3,8 +3,7 @@
 
 from importlib import metadata as importlib_metadata
 
-from pysus.ftp.databases import *  # noqa
-from pysus.ftp.databases import AVAILABLE_DATABASES
+from pysus.api.ftp.databases import *  # noqa
 
 
 def get_version() -> str:
