@@ -5,7 +5,33 @@ from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.cnes import CNES
 from pysus.ftp.utils import parse_UFs
 
-cnes = CNES().load()
+
+class _LazyCNES:
+    """Lazy wrapper for CNES database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the CNES database is loaded."""
+        if self._instance is None:
+            self._instance = CNES().load()
+        return self._instance
+
+    def load(self, *args, **kwargs):
+        return self._ensure_loaded().load(*args, **kwargs)
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+cnes = _LazyCNES()
 
 
 group_dict = {

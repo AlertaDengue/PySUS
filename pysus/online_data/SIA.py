@@ -14,7 +14,30 @@ from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sia import SIA
 from pysus.ftp.utils import parse_UFs
 
-sia = SIA().load()
+
+class _LazySIA:
+    """Lazy wrapper for SIA database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the SIA database is loaded."""
+        if self._instance is None:
+            self._instance = SIA().load()
+        return self._instance
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+sia = _LazySIA()
 
 
 group_dict: Dict[str, Tuple[str, int, int]] = {

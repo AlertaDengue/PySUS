@@ -20,7 +20,30 @@ from pysus.ftp.databases.ibge_datasus import IBGEDATASUS
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
-ibge = IBGEDATASUS().load()
+
+class _LazyIBGEDATASUS:
+    """Lazy wrapper for IBGEDATASUS database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the IBGEDATASUS database is loaded."""
+        if self._instance is None:
+            self._instance = IBGEDATASUS().load()
+        return self._instance
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+ibge = _LazyIBGEDATASUS()
 
 
 def get_sidra_table(

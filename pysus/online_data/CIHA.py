@@ -13,7 +13,30 @@ from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.ciha import CIHA
 from pysus.ftp.utils import parse_UFs
 
-ciha = CIHA().load()
+
+class _LazyCIHA:
+    """Lazy wrapper for CIHA database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the CIHA database is loaded."""
+        if self._instance is None:
+            self._instance = CIHA().load()
+        return self._instance
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+ciha = _LazyCIHA()
 
 
 def get_available_years(

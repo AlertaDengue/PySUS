@@ -15,7 +15,30 @@ from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sim import SIM
 from pysus.ftp.utils import parse_UFs
 
-sim = SIM().load()
+
+class _LazySIM:
+    """Lazy wrapper for SIM database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the SIM database is loaded."""
+        if self._instance is None:
+            self._instance = SIM().load()
+        return self._instance
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+sim = _LazySIM()
 
 
 def get_available_years(

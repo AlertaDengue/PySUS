@@ -5,7 +5,34 @@ import pandas as pd
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
 
-sinan = SINAN().load()
+
+class _LazySINAN:
+    """Lazy wrapper for SINAN database to defer FTP connection until needed."""
+
+    def __init__(self):
+        self._instance = None
+
+    def _ensure_loaded(self):
+        """Ensure the SINAN database is loaded."""
+        if self._instance is None:
+            self._instance = SINAN().load()
+        return self._instance
+
+    @property
+    def diseases(self):
+        return self._ensure_loaded().diseases
+
+    def get_files(self, *args, **kwargs):
+        return self._ensure_loaded().get_files(*args, **kwargs)
+
+    def describe(self, *args, **kwargs):
+        return self._ensure_loaded().describe(*args, **kwargs)
+
+    def download(self, *args, **kwargs):
+        return self._ensure_loaded().download(*args, **kwargs)
+
+
+sinan = _LazySINAN()
 
 
 def list_diseases() -> dict:
