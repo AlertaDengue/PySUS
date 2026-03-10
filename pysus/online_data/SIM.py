@@ -14,8 +14,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sim import SIM
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-sim = SIM().load()
+sim = _LazyDatabase(SIM)
 
 
 def get_available_years(

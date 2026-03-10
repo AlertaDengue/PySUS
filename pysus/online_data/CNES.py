@@ -4,8 +4,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.cnes import CNES
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-cnes = CNES().load()
+cnes = _LazyDatabase(CNES)
 
 
 group_dict = {

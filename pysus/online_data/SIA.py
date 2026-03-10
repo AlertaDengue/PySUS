@@ -13,8 +13,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sia import SIA
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-sia = SIA().load()
+sia = _LazyDatabase(SIA)
 
 
 group_dict: Dict[str, Tuple[str, int, int]] = {

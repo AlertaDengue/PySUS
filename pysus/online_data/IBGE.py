@@ -14,13 +14,14 @@ import requests
 import urllib3
 from pysus.data.local import ParquetSet
 from pysus.ftp.databases.ibge_datasus import IBGEDATASUS
+from pysus.online_data._lazy import _LazyDatabase
 
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
 
 APIBASE = "https://servicodados.ibge.gov.br/api/v3/"
 
-ibge = IBGEDATASUS().load()
+ibge = _LazyDatabase(IBGEDATASUS)
 
 
 def get_sidra_table(

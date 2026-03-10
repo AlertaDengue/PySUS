@@ -10,8 +10,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinasc import SINASC
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-sinasc = SINASC().load()
+sinasc = _LazyDatabase(SINASC)
 
 
 def get_available_years(group: str, states: Union[str, list[str]]) -> list:

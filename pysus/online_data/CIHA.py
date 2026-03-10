@@ -12,8 +12,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.ciha import CIHA
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-ciha = CIHA().load()
+ciha = _LazyDatabase(CIHA)
 
 
 def get_available_years(

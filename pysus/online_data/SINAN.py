@@ -4,8 +4,9 @@ from typing import Union
 import pandas as pd
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
+from pysus.online_data._lazy import _LazyDatabase
 
-sinan = SINAN().load()
+sinan = _LazyDatabase(SINAN)
 
 
 def list_diseases() -> dict:

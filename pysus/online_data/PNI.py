@@ -7,8 +7,9 @@ from loguru import logger
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.pni import PNI
 from pysus.ftp.utils import parse_UFs
+from pysus.online_data._lazy import _LazyDatabase
 
-pni = PNI().load()
+pni = _LazyDatabase(PNI)
 
 
 def get_available_years(group, states):
