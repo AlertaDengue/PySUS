@@ -32,7 +32,6 @@ requirements:
     - pyarrow
     - python
     - requests
-    - elasticsearch
 
 test:
   imports:
