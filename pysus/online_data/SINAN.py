@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 from typing import Union
 
@@ -5,12 +6,15 @@ import pandas as pd
 from pysus.ftp import CACHEPATH
 from pysus.ftp.databases.sinan import SINAN
 
-sinan = SINAN().load()
+
+@lru_cache(maxsize=1)
+def _get_sinan() -> SINAN:
+    return SINAN().load()
 
 
 def list_diseases() -> dict:
     """List available diseases on SINAN"""
-    return sinan.diseases
+    return _get_sinan().diseases
 
 
 def get_available_years(disease_code: str) -> list:
@@ -21,6 +25,7 @@ def get_available_years(disease_code: str) -> list:
     :return:
         A list of DBC files from a specific disease found in the FTP Server.
     """
+    sinan = _get_sinan()
     files = sinan.get_files(dis_code=disease_code)
     return sorted(list(set(sinan.describe(f)["year"] for f in files)))
 
@@ -37,6 +42,7 @@ def download(
     :param data_path: The directory where the file will be downloaded to.
     :return: list of downloaded files.
     """
+    sinan = _get_sinan()
     files = sinan.get_files(dis_code=diseases, year=years)
     return sinan.download(files, local_dir=data_path)
 
