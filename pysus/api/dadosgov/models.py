@@ -1,6 +1,10 @@
-from pydantic import BaseModel, Field, BeforeValidator
+import requests
+from pathlib import Path
 from datetime import datetime as dt
-from typing import Optional, List, Any, Annotated
+from typing import Optional, List, Any, Annotated, Union
+from pydantic import BaseModel, Field, BeforeValidator
+
+from pysus import CACHEPATH
 
 
 def to_datetime(value: Any) -> Optional[dt]:
@@ -30,6 +34,9 @@ class Tag(BaseModel):
     name: str
     display_name: Optional[str] = None
 
+    def __str__(self):
+        return self.name
+
 
 class Resource(BaseModel):
     id: str
@@ -38,13 +45,36 @@ class Resource(BaseModel):
     url: str = Field(alias="link")
     format: str = Field(alias="formato")
     size: int = Field(alias="tamanho")
-    cataloging_date: DateTime = Field(None, alias="dataCatalogacao")
-    last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
+    cataloging_date: Optional[str] = Field(None, alias="dataCatalogacao")
+    last_modified: Optional[str] = Field(
+        None,
+        alias="dataUltimaAtualizacaoArquivo",
+    )
     download_count: Optional[int] = Field(None, alias="quantidadeDownloads")
     file_name: Optional[str] = Field(None, alias="nomeArquivo")
     resource_type: Optional[str] = Field(None, alias="tipo")
     order_number: Optional[int] = Field(None, alias="numOrdem")
     dataset_id: Optional[str] = Field(None, alias="idConjuntoDados")
+
+    def __str__(self):
+        return self.file_name
+
+    def download(self, target_dir: Union[str, Path] = CACHEPATH) -> Path:
+        target_path = Path(target_dir)
+        target_path.mkdir(parents=True, exist_ok=True)
+
+        output_file = target_path / (
+            self.file_name or f"{self.id}.{self.format.lower()}"
+        )
+
+        response = requests.get(self.url, stream=True)
+        response.raise_for_status()
+
+        with open(output_file, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        return output_file
 
 
 class DatasetDetail(BaseModel):
@@ -63,13 +93,17 @@ class DatasetDetail(BaseModel):
     is_open_data: Bool = Field(alias="dadosAbertos")
     is_discontinued: Bool = Field(alias="descontinuado")
     is_private: Bool = Field(False, alias="privado")
-    metadata_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoMetadados")
+    metadata_updated: DateTime = Field(
+        None, alias="dataUltimaAtualizacaoMetadados")
     file_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
     cataloging_date: DateTime = Field(None, alias="dataCatalogacao")
     visibility: str = Field(alias="visibilidade")
     status: Optional[str] = Field(None, alias="atualizado")
     seal: Optional[str] = Field(None, alias="selo")
     source: Optional[str] = Field(None, alias="origemCadastro")
+
+    def __str__(self):
+        return self.id
 
 
 class DatasetSummary(BaseModel):
@@ -81,3 +115,6 @@ class DatasetSummary(BaseModel):
     cataloging_date: DateTime = Field(None, alias="catalogacao")
     metadata_modified: DateTime = Field(None, alias="ultimaAlteracaoMetadados")
     last_update: DateTime = Field(None, alias="ultimaAtualizacaoDados")
+
+    def __str__(self):
+        return self.name

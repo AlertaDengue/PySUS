@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["File", "Directory", "Database", "CACHEPATH"]
+__all__ = ["File", "Directory", "Database"]
 
 import asyncio
 import os
@@ -23,19 +23,18 @@ from typing import (
 import humanize
 from aioftp import Client
 from loguru import logger
-from pysus.data.local import Data
-from pysus.utils import to_list
 from tqdm import tqdm
 from typing_extensions import Self
+
+from pysus import CACHEPATH
+from pysus.data.local import Data
+from pysus.utils import to_list
 
 # Type aliases
 PathLike = Union[str, pathlib.Path]
 FileContent = Dict[str, Union["Directory", "File"]]
 
 # Constants
-CACHEPATH: Final[str] = os.getenv(
-    "PYSUS_CACHEPATH", os.path.join(str(pathlib.Path.home()), "pysus")
-)
 __cachepath__: Final[pathlib.Path] = pathlib.Path(CACHEPATH)
 __cachepath__.mkdir(exist_ok=True)
 
