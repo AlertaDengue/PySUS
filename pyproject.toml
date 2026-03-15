@@ -30,6 +30,8 @@ humanize = "^4.8.0"
 typing-extensions = ">=4.10.0"
 pydantic = "^2.12.5"
 duckdb = "^1.4.4"
+duckdb-engine = "^0.17.0"
+sqlalchemy = "^2.0.48"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"
