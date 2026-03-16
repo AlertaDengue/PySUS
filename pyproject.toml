@@ -2,10 +2,17 @@
 name = "pysus"
 version = "1.0.1"  # changed by semantic-release
 description = "Tools for dealing with Brazil's Public health data"
-authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>"]
+authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>", "Luã Bida Vacaro <luabidaa@gmail.com>"]
 license = "GPL"
 
-packages = [{include='pysus'}]
+packages = [{ include = "pysus"}]
+
+exclude = [
+  "pysus/tests",
+  "pysus/tests/**",
+  "pysus/management",
+  "pysus/management/**"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"

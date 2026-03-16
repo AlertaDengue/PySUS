@@ -133,7 +133,7 @@ class File:
     def info(self) -> Dict[str, str]:
         """Returns a dictionary with human-readable file information"""
         return {
-            "size": humanize.naturalsize(self.__info["size"]),
+            "size": self.__info["size"],
             "type": f"{self.extension[1:].upper()} file",
             "modify": self.__info["modify"].strftime("%Y-%m-%d %I:%M%p"),
         }

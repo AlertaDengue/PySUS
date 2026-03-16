@@ -116,7 +116,6 @@ class File(Catalog):
     __tablename__ = "files"
 
     id = Column(Integer, primary_key=True)
-
     group_id = Column(
         Integer,
         ForeignKey("pysus.dataset_groups.id"),
@@ -126,7 +125,6 @@ class File(Catalog):
     path = Column(String, nullable=False, unique=True)
     size = Column(Integer, nullable=False)
     rows = Column(Integer, nullable=False)
-
     modified = Column(Date, nullable=False)
 
     group = relationship(

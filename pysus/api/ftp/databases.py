@@ -14,6 +14,7 @@ from typing import List, Optional, Union, Literal
 
 from pysus.api.ftp import Database, Directory, File
 from pysus.utils import UFs, parse_UFs, to_list, zfill_year, MONTHS
+from .models import FileDescription
 
 
 class CIHA(Database):
@@ -46,30 +47,22 @@ class CIHA(Database):
         "CIHA": "Comunicação de Internação Hospitalar e Ambulatorial",
     }
 
-    def describe(self, file: File):
-        if not isinstance(file, File):
-            return file
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+            return None
 
-        if file.extension.upper() in [".DBC", ".DBF"]:
-            group, _uf, year, month = self.format(file)
+        group, _uf, year, month = self.format(file)
+        uf = UFs.get(_uf, _uf)
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
-
-            description = {
-                "name": str(file.basename),
-                "group": self.groups[group],
-                "uf": uf,
-                "month": MONTHS[int(month)],
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return file
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups[group],
+            uf=uf,
+            month=MONTHS[int(month)],
+            year=zfill_year(year),
+            size=file.info["size"],
+            last_update=file.info["modify"],
+        )
 
     def format(self, file: File) -> tuple:
         group, _uf = file.name[:4].upper(), file.name[4:6].upper()
@@ -84,14 +77,16 @@ class CIHA(Database):
         group: Union[List[str], str] = "CIHA",
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown CIHA Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown CIHA Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -162,7 +157,8 @@ class CNES(Database):
 
             if not all(group in self.groups for group in [gr.upper() for gr in groups]):
                 raise ValueError(
-                    f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
+                    f"Unknown CNES group(s): {set(
+                        groups).difference(self.groups)}"
                 )
 
             for group in groups:
@@ -174,34 +170,24 @@ class CNES(Database):
                     self.__loaded__.add(directory.name)
         return self
 
-    def describe(self, file: File) -> dict:
-        if not isinstance(file, File):
-            return {}
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.name == "GMufAAmm":
+            return None
 
-        if file.name == "GMufAAmm":
-            # Leftover
-            return {}
+        if file.extension.upper() not in [".DBC", ".DBF"]:
+            return None
 
-        if file.extension.upper() in [".DBC", ".DBF"]:
-            group, _uf, year, month = self.format(file)
+        group, _uf, year, month = self.format(file)
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
-
-            description = {
-                "name": str(file.basename),
-                "group": self.groups[group],
-                "uf": uf,
-                "month": MONTHS[int(month)],
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return {}
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups.get(group, group),
+            uf=UFs.get(_uf, _uf),
+            month=MONTHS.get(int(month), month),
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()
@@ -260,26 +246,23 @@ class IBGEDATASUS(Database):
         ),
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() in [".ZIP"]:
+    def describe(self, file: File) -> Optional[FileDescription]:
+        ext = file.extension.upper()
+
+        if ext == ".ZIP":
             year = file.name.split(".")[0][-2:]
-            description = {
-                "name": str(file.basename),
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-            return description
-        elif file.extension.upper() == ".DBF":
+        elif ext == ".DBF":
             year = file.name[-2:]
-            description = {
-                "name": str(file.basename),
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-            return description
-        return {}
+        else:
+            return None
+
+        return FileDescription(
+            name=str(file.basename),
+            group="Population",
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         return (file.name[-2:],)
@@ -323,7 +306,7 @@ class PNI(Database):
     name = "PNI"
     paths = (Directory("/dissemin/publicos/PNI/DADOS"),)
     metadata = {
-        "long_name": ("Sistema de Informações do Programa Nacional de Imunizações"),
+        "long_name": ("Sistema de Informações do Programa Nacional de Imunizações"),  # noqa
         "source": (
             "https://datasus.saude.gov.br/acesso-a-informacao/morbidade-hospitalar-do-sus-sih-sus/",  # noqa
             "https://datasus.saude.gov.br/acesso-a-informacao/producao-hospitalar-sih-sus/",  # noqa
@@ -347,26 +330,20 @@ class PNI(Database):
         "DPNI": "Doses Aplicadas",  # TODO: may be incorrect
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() in [".DBC", ".DBF"]:
-            group, _uf, year = self.format(file)
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+            return None
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
+        group, _uf, year = self.format(file)
 
-            description = {
-                "name": file.basename,
-                "group": self.groups[group],
-                "uf": uf,
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return {}
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups.get(group, group),
+            uf=UFs.get(_uf, _uf),
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         if len(file.name) != 8:
@@ -383,14 +360,16 @@ class PNI(Database):
         year: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown PNI Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown PNI Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -451,27 +430,21 @@ class SIA(Database):
         "SAD": "RAAS de Atenção Domiciliar",
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() == ".DBC":
-            group, _uf, year, month = self.format(file)
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if file.extension.upper() != ".DBC":
+            return None
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
+        group_code, _uf, year, month = self.format(file)
 
-            description = {
-                "name": str(file.basename),
-                "group": self.groups[group],
-                "uf": uf,
-                "month": MONTHS[int(month)],
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return {}
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups.get(group_code, group_code),
+            uf=UFs.get(_uf, _uf),
+            month=MONTHS.get(int(month), str(month)),
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         if file.extension.upper() in [".DBC", ".DBF"]:
@@ -493,14 +466,16 @@ class SIA(Database):
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIA Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown SIA Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -555,27 +530,21 @@ class SIH(Database):
         "CM": "",  # TODO
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() in [".DBC", ".DBF"]:
-            group, _uf, year, month = self.format(file)
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+            return None
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
+        group_code, _uf, year, month = self.format(file)
 
-            description = {
-                "name": file.basename,
-                "group": self.groups[group],
-                "uf": uf,
-                "month": MONTHS[int(month)],
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return {}
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups.get(group_code, group_code),
+            uf=UFs.get(_uf, _uf),
+            month=MONTHS.get(int(month), str(month)),
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()
@@ -590,14 +559,16 @@ class SIH(Database):
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown SIH Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -630,25 +601,18 @@ class SIM(Database):
     }
     groups = {"CID10": "DO", "CID9": "DOR"}
 
-    def describe(self, file: File) -> dict:
+    def describe(self, file: File) -> Optional[FileDescription]:
         group, _uf, year = self.format(file)
-        _groups = {v: k for k, v in self.groups.items()}
+        groups = {v: k for k, v in self.groups.items()}
 
-        try:
-            uf = UFs[_uf]
-        except KeyError:
-            uf = _uf
-
-        description = {
-            "name": str(file.basename),
-            "uf": uf,
-            "year": year,
-            "group": _groups[group],
-            "size": file.info["size"],
-            "last_update": file.info["modify"],
-        }
-
-        return description
+        return FileDescription(
+            name=str(file.basename),
+            uf=UFs.get(_uf, _uf),
+            year=year,
+            group=groups.get(group, group),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         if "CID9" in str(file.path):
@@ -762,19 +726,20 @@ class SINAN(Database):
         "ZIKA": "Zika Vírus",
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() == ".DBC":
-            dis_code, year = self.format(file)
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.extension.upper() != ".DBC":
+            return None
 
-            description = {
-                "name": str(file.basename),
-                "disease": self.diseases[dis_code],
-                "year": zfill_year(year),
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-            return description
-        return {}
+        dis_code, year = self.format(file)
+
+        return FileDescription(
+            name=str(file.basename),
+            disease=self.diseases.get(dis_code, "Unknown"),
+            group=dis_code,
+            year=zfill_year(year),
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         year = file.name[-2:]
@@ -796,7 +761,8 @@ class SINAN(Database):
         year: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         if dis_code:
@@ -804,7 +770,8 @@ class SINAN(Database):
 
             if codes and not all(code in self.diseases for code in codes):
                 raise ValueError(
-                    f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
+                    f"Unknown disease(s): {set(
+                        codes).difference(set(self.diseases))}"
                 )
 
             files = list(filter(lambda f: self.format(f)[0] in codes, files))
@@ -832,26 +799,20 @@ class SINASC(Database):
         "DNR": "Dados dos Nascidos Vivos por UF de residência",
     }
 
-    def describe(self, file: File) -> dict:
-        if file.extension.upper() == ".DBC":
-            group, _uf, year = self.format(file)
+    def describe(self, file: File) -> Optional[FileDescription]:
+        if not isinstance(file, File) or file.extension.upper() != ".DBC":
+            return None
 
-            try:
-                uf = UFs[_uf]
-            except KeyError:
-                uf = _uf
+        group_code, _uf, year = self.format(file)
 
-            description = {
-                "name": file.basename,
-                "group": self.groups[group],
-                "uf": uf,
-                "year": year,
-                "size": file.info["size"],
-                "last_update": file.info["modify"],
-            }
-
-            return description
-        return {}
+        return FileDescription(
+            name=str(file.basename),
+            group=self.groups.get(group_code, group_code),
+            uf=UFs.get(_uf, _uf),
+            year=year,
+            size=file.info.get("size", 0),
+            last_update=file.info.get("modify"),
+        )
 
     def format(self, file: File) -> tuple:
         if file.name == "DNEX2021":
