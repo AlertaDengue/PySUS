@@ -2,7 +2,7 @@ import requests
 from typing import List, Optional
 from pydantic import TypeAdapter
 from pysus.api.dadosgov.models import (
-    DatasetDetail,
+    Dataset,
     DatasetSummary,
 )
 from pysus import __version__
@@ -48,6 +48,6 @@ class DadosGov:
         adapter = TypeAdapter(List[DatasetSummary])
         return adapter.validate_python(data)
 
-    def get_dataset(self, id: str) -> DatasetDetail:
+    def get_dataset(self, id: str) -> Dataset:
         data = self._get(f"/publico/conjuntos-dados/{id}")
-        return DatasetDetail.model_validate(data)
+        return Dataset.model_validate(data)

@@ -12,9 +12,9 @@ __all__ = [
 
 from typing import List, Optional, Union, Literal
 
-from pysus.api.ftp import Database, Directory, File
+from pysus.api.ftp.models import Database, Directory, File
 from pysus.utils import UFs, parse_UFs, to_list, zfill_year, MONTHS
-from .models import FileDescription
+from pysus.api.models import FileDescription
 
 
 class CIHA(Database):
@@ -77,16 +77,14 @@ class CIHA(Database):
         group: Union[List[str], str] = "CIHA",
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper()
-                   in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown CIHA Group(s): {set(
-                    groups).difference(list(self.groups))}"
+                f"Unknown CIHA Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -157,8 +155,7 @@ class CNES(Database):
 
             if not all(group in self.groups for group in [gr.upper() for gr in groups]):
                 raise ValueError(
-                    f"Unknown CNES group(s): {set(
-                        groups).difference(self.groups)}"
+                    f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
                 )
 
             for group in groups:
@@ -360,16 +357,14 @@ class PNI(Database):
         year: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper()
-                   in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown PNI Group(s): {set(
-                    groups).difference(list(self.groups))}"
+                f"Unknown PNI Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -466,16 +461,14 @@ class SIA(Database):
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper()
-                   in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIA Group(s): {set(
-                    groups).difference(list(self.groups))}"
+                f"Unknown SIA Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -559,16 +552,14 @@ class SIH(Database):
         month: Optional[Union[list, str, int]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper()
-                   in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIH Group(s): {set(
-                    groups).difference(list(self.groups))}"
+                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -761,8 +752,7 @@ class SINAN(Database):
         year: Optional[Union[str, int, list]] = None,
     ) -> List[File]:
         files = list(
-            filter(lambda f: f.extension.upper()
-                   in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
         )
 
         if dis_code:
@@ -770,8 +760,7 @@ class SINAN(Database):
 
             if codes and not all(code in self.diseases for code in codes):
                 raise ValueError(
-                    f"Unknown disease(s): {set(
-                        codes).difference(set(self.diseases))}"
+                    f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
                 )
 
             files = list(filter(lambda f: self.format(f)[0] in codes, files))

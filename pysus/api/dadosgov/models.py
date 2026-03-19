@@ -1,10 +1,15 @@
+import zipfile
 import requests
+import urllib3
 from pathlib import Path
 from datetime import datetime as dt
 from typing import Optional, List, Any, Annotated, Union
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator, field_validator
 
 from pysus import CACHEPATH
+from pysus.api.models import FileDescription
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def to_datetime(value: Any) -> Optional[dt]:
@@ -41,12 +46,12 @@ class Tag(BaseModel):
 class Resource(BaseModel):
     id: str
     title: str = Field(alias="titulo")
-    description: str = Field(alias="descricao")
+    description: Optional[str] = Field(None, alias="descricao")
     url: str = Field(alias="link")
     format: str = Field(alias="formato")
-    size: int = Field(alias="tamanho")
+    api_size: int = Field(alias="tamanho")
     cataloging_date: Optional[str] = Field(None, alias="dataCatalogacao")
-    last_modified: Optional[str] = Field(
+    last_modified: Optional[str | dt] = Field(
         None,
         alias="dataUltimaAtualizacaoArquivo",
     )
@@ -59,30 +64,78 @@ class Resource(BaseModel):
     def __str__(self):
         return self.file_name
 
+    @field_validator("last_modified", mode="before")
+    @classmethod
+    def parse_date(cls, v: Optional[str]) -> Optional[dt]:
+        if not v or isinstance(v, dt):
+            return v
+        try:
+            return dt.strptime(v, "%d/%m/%Y")
+        except ValueError:
+            return None
+
+    @property
+    def basename(self) -> str:
+        name = self.url.split("/")[-1]
+        return name.rstrip(".zip").replace("_csv", ".csv")
+
+    @property
+    def size(self) -> int:
+        try:
+            response = requests.head(
+                self.url,
+                verify=False,
+                allow_redirects=True,
+                timeout=5,
+            )
+            return int(response.headers.get("Content-Length", 0))
+        except (requests.RequestException, ValueError):
+            return self.api_size
+
     def download(self, target_dir: Union[str, Path] = CACHEPATH) -> Path:
         target_path = Path(target_dir)
         target_path.mkdir(parents=True, exist_ok=True)
+
+        tmp_file = target_path / f"{self.id}.download"
+
+        response = requests.get(self.url, stream=True, verify=False)
+        response.raise_for_status()
+
+        with open(tmp_file, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+        if zipfile.is_zipfile(tmp_file):
+            with zipfile.ZipFile(tmp_file) as z:
+                members = z.namelist()
+
+                if len(members) == 1:
+                    name = members[0]
+                    output_file = target_path / name
+                    z.extract(name, target_path)
+                else:
+                    z.extractall(target_path)
+                    output_file = target_path
+
+            tmp_file.unlink()
+            return output_file
 
         output_file = target_path / (
             self.file_name or f"{self.id}.{self.format.lower()}"
         )
 
-        response = requests.get(self.url, stream=True)
-        response.raise_for_status()
-
-        with open(output_file, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+        tmp_file.rename(output_file)
 
         return output_file
 
 
-class DatasetDetail(BaseModel):
+class Dataset(BaseModel):
     id: str
     title: str = Field(alias="titulo")
     slug: str = Field(alias="nome")
     organization: str = Field(alias="organizacao")
-    description: str = Field(alias="descricao")
+    description: Optional[str] = Field(None, alias="descricao")
     license: Optional[str] = Field(None, alias="licenca")
     maintainer: Optional[str] = Field(None, alias="responsavel")
     maintainer_email: Optional[str] = Field(None, alias="emailResponsavel")
@@ -93,8 +146,7 @@ class DatasetDetail(BaseModel):
     is_open_data: Bool = Field(alias="dadosAbertos")
     is_discontinued: Bool = Field(alias="descontinuado")
     is_private: Bool = Field(False, alias="privado")
-    metadata_updated: DateTime = Field(
-        None, alias="dataUltimaAtualizacaoMetadados")
+    metadata_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoMetadados")
     file_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
     cataloging_date: DateTime = Field(None, alias="dataCatalogacao")
     visibility: str = Field(alias="visibilidade")
@@ -104,6 +156,18 @@ class DatasetDetail(BaseModel):
 
     def __str__(self):
         return self.id
+
+    def describe(self, resource: Resource) -> FileDescription:
+        return FileDescription(
+            name=resource.basename,
+            group=self.slug,
+            year=int,
+            size=resource.size,
+            last_update=resource.last_modified or self.file_updated or dt.now(),
+            uf=None,
+            month=None,
+            disease=self.title,
+        )
 
 
 class DatasetSummary(BaseModel):
