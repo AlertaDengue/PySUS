@@ -146,7 +146,8 @@ class Dataset(BaseModel):
     is_open_data: Bool = Field(alias="dadosAbertos")
     is_discontinued: Bool = Field(alias="descontinuado")
     is_private: Bool = Field(False, alias="privado")
-    metadata_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoMetadados")
+    metadata_updated: DateTime = Field(
+        None, alias="dataUltimaAtualizacaoMetadados")
     file_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
     cataloging_date: DateTime = Field(None, alias="dataCatalogacao")
     visibility: str = Field(alias="visibilidade")

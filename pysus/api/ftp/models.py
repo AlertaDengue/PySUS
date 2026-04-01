@@ -23,7 +23,8 @@ from tqdm import tqdm
 from typing_extensions import Self
 
 from pysus import CACHEPATH
-from pysus.data.local import Data
+from pysus.api.models import BaseFormatter, BaseRemoteFile, FileDescription
+from pysus.data.local import ParquetSet
 from pysus.utils import to_list
 from .client import FTPSingleton
 
@@ -40,156 +41,93 @@ class FileInfo(TypedDict):
     modify: datetime
 
 
-class File:
-    """
-    FTP File representation with improved type safety.
+class File(BaseRemoteFile):
+    def __init__(
+        self,
+        path: str,
+        name: str,
+        info: Dict[str, Any],
+        **kwargs,
+    ) -> None:
+        name_no_ext, ext = os.path.splitext(name)
+        path = f"{path}/{name}" if not path.endswith("/") else f"{path}{name}"
 
-    This class provides methods for interacting with files on the DataSUS FTP
-    server. It includes functionality for downloading files synchronously and
-    asynchronously, as well as retrieving file information in a human-readable
-    format.
-
-    Attributes:
-        name (str): The name of the file without the extension.
-        extension (str): The file extension.
-        basename (str): The full name of the file including the extension.
-        path (str): The full path to the file on the FTP server.
-        parent_path (str): The directory path where the file is located on the
-            FTP server.
-        __info (FileInfo): Metadata about the file, including size, type, and
-            modification date.
-
-    Methods:
-        info() -> Dict[str, str]:
-            Returns a dictionary with human-readable file information,
-            including size, type, and modification date.
-
-        download(
-            local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
-        ) -> Data:
-            Downloads the file to the specified local directory. If a progress
-            bar (_pbar) is provided, it updates the progress bar during the
-            download.
-
-        async_download(local_dir: str = CACHEPATH) -> Data:
-            Asynchronously downloads the file to the specified local directory.
-
-        _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
-            Static method to parse a line from the FTP LIST command and
-            extract file information.
-    """
-
-    def __init__(self, path: str, name: str, info: FileInfo) -> None:
-        self.name, self.extension = os.path.splitext(name)
-        self.basename: str = f"{self.name}{self.extension}"
-        self.path: str = (
-            f"{path}/{self.basename}"
-            if not path.endswith("/")
-            else f"{path}{self.basename}"
+        super().__init__(
+            basename=name,
+            path=path,
+            extension=ext,
+            parent_path=path,
+            **kwargs,
         )
-        self.parent_path: str = os.path.dirname(self.path)
-        self.__info: FileInfo = info
+        self._info = info
 
     @property
     def info(self) -> Dict[str, str]:
-        """Returns a dictionary with human-readable file information"""
+        modify = self._info.get("modify")
+
         return {
-            "size": self.__info["size"],
+            "size": str(self._info.get("size", 0)),
             "type": f"{self.extension[1:].upper()}",
-            "modify": self.__info["modify"].strftime("%Y-%m-%d %I:%M%p"),
+            "modify": (
+                modify.strftime("%Y-%m-%d %I:%M%p")
+                if isinstance(modify, datetime)
+                else str(modify)
+            ),
         }
 
-    def download(
-        self, local_dir: str = CACHEPATH, _pbar: Optional[tqdm] = None
-    ) -> Data:
-        """Downloads the file to the specified local directory"""
-        target_dir = pathlib.Path(local_dir)
-        target_dir.mkdir(exist_ok=True, parents=True)
+    def describe(
+        self,
+        formatter: Optional[BaseFormatter] = None,
+    ) -> FileDescription:
+        if formatter:
+            data = formatter.parse_filename(self.basename)
+        else:
+            data = {}
 
-        filepath = target_dir / self.basename
-        filesize = int(self.__info["size"])
+        return FileDescription(
+            name=self.basename,
+            group=data.get("group", "unknown"),
+            year=data.get("year", 0),
+            size=int(self._info.get("size", 0)),
+            last_update=self._info.get("modify", datetime.now()),
+            uf=data.get("uf"),
+            month=data.get("month"),
+        )
 
-        # Check for existing files
+    async def _download(self, destination: pathlib.Path) -> ParquetSet:
         for ext in (".parquet", ".dbf", ""):
-            existing = filepath.with_suffix(ext)
+            existing = destination.with_suffix(ext)
             if existing.exists():
-                if _pbar:
-                    _pbar.update(filesize - _pbar.n)
-                return Data(str(existing), _pbar=_pbar)  # type: ignore
-
-        if _pbar:
-            _pbar.unit = "B"
-            _pbar.unit_scale = True
-            _pbar.reset(total=filesize)
-            _pbar.set_description(self.basename)
-
-        try:
-            ftp = FTPSingleton.get_instance()
-            with open(filepath, "wb") as output:
-
-                def callback(data: bytes) -> None:
-                    output.write(data)
-                    if _pbar:
-                        _pbar.update(len(data))
-
-                ftp.retrbinary(f"RETR {self.path}", callback)
-
-        except Exception as exc:
-            if filepath.exists():
-                filepath.unlink()
-            raise exc
-        finally:
-            FTPSingleton.close()
-
-        if _pbar:
-            _pbar.update(filesize - _pbar.n)
-        return Data(str(filepath), _pbar=_pbar)  # type: ignore
-
-    async def async_download(self, local_dir: str = CACHEPATH) -> Data:
-        """
-        Asynchronously downloads the file to the specified local directory
-        """
-        target_dir = pathlib.Path(local_dir)
-        target_dir.mkdir(exist_ok=True, parents=True)
-        filepath = target_dir / self.basename
-
-        # Check existing files
-        for ext in (".parquet", ".dbf", ""):
-            existing = filepath.with_suffix(ext)
-            if existing.exists():
-                return Data(str(existing))  # type: ignore
+                return ParquetSet(str(existing))
 
         async with Client.context(
             host="ftp.datasus.gov.br", parse_list_line_custom=self._line_parser
         ) as client:
             await client.login()
-            await client.download(self.path, str(filepath), write_into=True)
+            await client.download(self.path, str(destination), write_into=True)
 
-        return Data(str(filepath))  # type: ignore
+        return ParquetSet(str(destination))
 
     @staticmethod
     def _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
-        """Static method to parse a line from the FTP LIST command and extract
-        file information
-        """
         line = file_line.decode("utf-8")
         if "<DIR>" in line:
-            date, time, _, *name = line.strip().split()
+            date, time, _, *name_parts = line.strip().split()
             info = {"size": 0, "type": "dir"}
-            name = " ".join(name)
+            name = " ".join(name_parts)
         else:
             date, time, size, name = line.strip().split()
             info = {"size": size, "type": "file"}
 
         modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
-        info["modify"] = modify.strftime("%m/%d/%Y %I:%M%p")
+        info["modify"] = modify
         return name, info
 
     def __str__(self) -> str:
-        return str(self.basename)
+        return self.basename
 
     def __repr__(self) -> str:
-        return str(self.basename)
+        return self.basename
 
     def __hash__(self):
         return hash(self.path)
@@ -431,7 +369,8 @@ class Database:
         inside content, `load()` the directory and call `content` again.
         """
         if not self.__content__:
-            logger.info("content is not loaded, use `load()` to load default paths")
+            logger.info(
+                "content is not loaded, use `load()` to load default paths")
             return []
         return sorted(list(self.__content__.values()), key=str)
 

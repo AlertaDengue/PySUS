@@ -1,56 +1,79 @@
-import requests
+import asyncio
 from pathlib import Path
+from typing import Optional
 
 import duckdb
+import httpx
+from pydantic import PrivateAttr
 
 from pysus import CACHEPATH
+from pysus.api.models import BaseRemoteClient
 
 
-class DuckLake:
-    def __init__(self):
-        self.endpoint = "nbg1.your-objectstorage.com"
-        self.remote_url = f"https://{self.endpoint}/pysus/public/catalog.db"
-        self.cache_dir = Path(CACHEPATH) / "ducklake"
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.catalog_local = self.cache_dir / "catalog.db"
-        self._ensure_catalog()
-        self.con = self._connect()
+class DuckLake(BaseRemoteClient):
+    endpoint: str = "nbg1.your-objectstorage.com"
+    region: str = "nbg1"
 
-    def _remote_size(self):
-        r = requests.head(self.remote_url)
-        r.raise_for_status()
-        return int(r.headers.get("content-length", 0))
+    _cache_dir: Path = PrivateAttr()
+    _catalog_local: Path = PrivateAttr()
+    _con: Optional[duckdb.DuckDBPyConnection] = PrivateAttr(default=None)
 
-    def _local_size(self):
-        if not self.catalog_local.exists():
-            return None
-        return self.catalog_local.stat().st_size
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._cache_dir = Path(CACHEPATH) / "ducklake"
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._catalog_local = self._cache_dir / "catalog.db"
 
-    def _download_catalog(self):
-        r = requests.get(self.remote_url, stream=True)
-        r.raise_for_status()
-        with open(self.catalog_local, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1024 * 1024):
-                f.write(chunk)
+    @property
+    def catalog_url(self) -> str:
+        return f"https://{self.endpoint}/pysus/public/catalog.db"
 
-    def _ensure_catalog(self):
-        if self._remote_size() != self._local_size():
-            self._download_catalog()
+    async def _download_catalog(self, client: httpx.AsyncClient):
+        async with client.stream("GET", self.catalog_url) as r:
+            r.raise_for_status()
+            with open(self._catalog_local, "wb") as f:
+                async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
+                    f.write(chunk)
 
     def _connect(self):
-        con = duckdb.connect()
-        con.execute(
-            f"""
+        self._con = duckdb.connect(config={"allow_unsigned_extensions": "true"})
+        self._con.execute(f"""
             SET s3_endpoint='{self.endpoint}';
-            SET s3_region='nbg1';
+            SET s3_region='{self.region}';
             SET s3_url_style='path';
             SET s3_use_ssl=true;
-            """
-        )
-        con.execute(
-            f"""
-            ATTACH 'ducklake:{self.catalog_local}' AS pysus;
+            ATTACH '{self._catalog_local}' AS pysus (READ_ONLY);
             USE pysus;
-            """
-        )
-        return con
+        """)
+
+    def load(self):
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import nest_asyncio
+
+                nest_asyncio.apply()
+            loop.run_until_complete(self.load_catalog())
+        except RuntimeError:
+            asyncio.run(self.load_catalog())
+
+    async def load_catalog(self):
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            local_size = (
+                self._catalog_local.stat().st_size
+                if self._catalog_local.exists()
+                else -1
+            )
+            r = await client.head(self.catalog_url)
+            r.raise_for_status()
+            remote_size = int(r.headers.get("content-length", 0))
+            if remote_size != local_size:
+                await self._download_catalog(client)
+
+        if self._con is None:
+            self._connect()
+
+    def query(self, sql: str):
+        if self._con is None:
+            self._connect()
+        return self._con.execute(sql).df()

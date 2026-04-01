@@ -1,6 +1,7 @@
 import requests
 from typing import List, Optional
 from pydantic import TypeAdapter
+from pysus.api.models import BaseRemoteClient
 from pysus.api.dadosgov.models import (
     Dataset,
     DatasetSummary,
@@ -8,7 +9,7 @@ from pysus.api.dadosgov.models import (
 from pysus import __version__
 
 
-class DadosGov:
+class DadosGov(BaseRemoteClient):
     def __init__(self, token: str):
         self.base_url = "https://dados.gov.br/dados/api"
         self.session = requests.Session()
