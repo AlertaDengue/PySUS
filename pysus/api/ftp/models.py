@@ -9,17 +9,13 @@ from datetime import datetime
 from ftplib import FTP
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
-from typing_extensions import Self
 from aioftp import Client
 from loguru import logger
-from tqdm import tqdm
-
 from pysus import CACHEPATH
-from pysus.api.models import (
-    BaseRemoteFile,
-    BaseRemoteDataset,
-)
+from pysus.api.models import BaseRemoteDataset, BaseRemoteFile
 from pysus.utils import to_list
+from tqdm import tqdm
+from typing_extensions import Self
 
 from .client import FTPSingleton
 
@@ -274,13 +270,17 @@ def load_directory_content(path: str) -> FileContent:
         def line_parser(line: str):
             if "<DIR>" in line:
                 date, time, _, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+                modify = datetime.strptime(
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
+                )
                 info = {"size": 0, "type": "dir", "modify": modify}
                 xpath = f"{path}/{name}"
                 content[name] = Directory(xpath)
             else:
                 date, time, size, name = line.strip().split(maxsplit=3)
-                modify = datetime.strptime(f"{date} {time}", "%m-%d-%y %I:%M%p")
+                modify = datetime.strptime(
+                    f"{date} {time}", "%m-%d-%y %I:%M%p"
+                )
                 info: FileInfo = {
                     "size": size,
                     "type": "file",
@@ -353,7 +353,8 @@ class Database(BaseRemoteDataset):
         """
         if not self.__content__:
             logger.info(
-                "content is not loaded, use `load()` to load default paths")
+                "content is not loaded, use `load()` to load default paths"
+            )
             return []
         return sorted(list(self.__content__.values()), key=str)
 
@@ -418,7 +419,9 @@ class Database(BaseRemoteDataset):
         """
         ...
 
-    def download(self, files: List[FTPFile], local_dir: str = CACHEPATH) -> List[str]:
+    def download(
+        self, files: List[FTPFile], local_dir: str = CACHEPATH
+    ) -> List[str]:
         """
         Downloads a list of Files.
         """
@@ -433,7 +436,9 @@ class Database(BaseRemoteDataset):
             return dfiles[0]
         return dfiles
 
-    async def async_download(self, files: List[FTPFile], local_dir: str = CACHEPATH):
+    async def async_download(
+        self, files: List[FTPFile], local_dir: str = CACHEPATH
+    ):
         """
         Asynchronously downloads a list of files
         """

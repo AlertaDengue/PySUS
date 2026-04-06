@@ -1,15 +1,12 @@
-import zipfile
 import pathlib
-import httpx
-import anyio
+import zipfile
 from datetime import datetime as dt
 from typing import Annotated, Any, List, Optional
 
-from pydantic import BaseModel, BeforeValidator, Field, ConfigDict
-from pysus.api.models import (
-    BaseRemoteFile,
-    BaseRemoteDataset,
-)
+import anyio
+import httpx
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
+from pysus.api.models import BaseRemoteDataset, BaseRemoteFile
 
 
 def to_datetime(value: Any) -> Optional[dt]:
@@ -112,7 +109,9 @@ class Dataset(BaseRemoteDataset):
             group=self.slug,
             year=0,
             size=resource.api_size,
-            last_update=resource.last_modified or self.file_updated or dt.now(),
+            last_update=resource.last_modified
+            or self.file_updated
+            or dt.now(),
             uf=None,
             month=None,
             disease=self.title,

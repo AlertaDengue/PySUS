@@ -9,9 +9,9 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Table,
 )
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Table
 
 Base = declarative_base()
 

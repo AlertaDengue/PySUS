@@ -8,25 +8,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional, Type, Union
 
-from pydantic import Field
 import anyio
 import chardet
 import fastparquet
 import magic
 import pandas as pd
 import pyarrow.parquet as pq
-
+from pydantic import Field
 from pysus import CACHEPATH
-from pysus.api.models import (
-    BaseCompressedFile,
-    BaseLocalFile,
-    BaseTabularFile,
-)
+from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
+
 from .types import FileType
 
 try:
-    from pyreaddbc import read_dbc, dbc2dbf
     from dbfread import DBF as DBFReader
+    from pyreaddbc import dbc2dbf, read_dbc
 
     FTP_IMPORT = True
 except ImportError:

@@ -29,8 +29,9 @@ def _test_database(testcase: unittest.TestCase, database: Database):
     )
     testcase.assertTrue(isinstance(downloaded_file, ParquetSet))
     testcase.assertTrue(Path(downloaded_file.path).exists())
-    testcase.assertTrue(isinstance(
-        downloaded_file.to_dataframe(), pd.DataFrame))
+    testcase.assertTrue(
+        isinstance(downloaded_file.to_dataframe(), pd.DataFrame)
+    )
     testcase.assertTrue(not downloaded_file.to_dataframe().empty)
 
 

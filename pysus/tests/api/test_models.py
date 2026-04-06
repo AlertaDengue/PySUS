@@ -1,10 +1,11 @@
-import pytest
-import pandas as pd
-from pathlib import Path
 from datetime import datetime
-from typing import List, AsyncGenerator, Optional
+from pathlib import Path
+from typing import AsyncGenerator, List, Optional
 
-from .models import BaseLocalFile, BaseTabularFile, BaseRemoteFile
+import pandas as pd
+import pytest
+
+from .models import BaseLocalFile, BaseRemoteFile, BaseTabularFile
 
 
 class MockLocalFile(BaseLocalFile):
@@ -34,7 +35,9 @@ class MockTabularFile(BaseTabularFile):
     async def load(self) -> pd.DataFrame:
         return pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
 
-    async def stream(self, chunk_size: int = 10) -> AsyncGenerator[pd.DataFrame, None]:
+    async def stream(
+        self, chunk_size: int = 10
+    ) -> AsyncGenerator[pd.DataFrame, None]:
         yield await self.load()
 
 
@@ -67,7 +70,9 @@ async def test_base_local_file_metadata(temp_file):
 @pytest.mark.asyncio
 async def test_get_hash(temp_file):
     file_model = MockLocalFile(path=temp_file)
-    expected_hash = "7737c35593c6609f3e49339e162093f1d326922da19f2a2491136b69a68c072e"
+    expected_hash = (
+        "7737c35593c6609f3e49339e162093f1d326922da19f2a2491136b69a68c072e"
+    )
 
     generated_hash = await file_model.get_hash()
     assert generated_hash == expected_hash

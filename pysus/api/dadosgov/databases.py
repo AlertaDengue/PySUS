@@ -19,15 +19,18 @@ class CNES(Dataset):
         "9455b341-b06e-408e-8e10-54b32b3d74ec",
     )
 
-    def describe(self, file: Resource): ...
+    def describe(self, file: Resource):
+        ...
 
-    def format(self, file: Resource) -> tuple: ...
+    def format(self, file: Resource) -> tuple:
+        ...
 
     def get_files(
         self,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[Resource]: ...
+    ) -> List[Resource]:
+        ...
 
 
 class PNI(Dataset):
@@ -42,24 +45,29 @@ class PNI(Dataset):
         "9a25b796-80e3-444a-a4e7-405f5596d8ab",
     )
 
-    def describe(self, file: Resource): ...
+    def describe(self, file: Resource):
+        ...
 
-    def format(self, file: Resource) -> tuple: ...
+    def format(self, file: Resource) -> tuple:
+        ...
 
     def get_files(
         self,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[Resource]: ...
+    ) -> List[Resource]:
+        ...
 
 
 class SIA(Dataset):
     name = "SIA"
     ids = ("9a335cb7-2b4f-4fce-8947-e8441b4a90af",)
 
-    def describe(self, file: Resource): ...
+    def describe(self, file: Resource):
+        ...
 
-    def format(self, file: Resource) -> tuple: ...
+    def format(self, file: Resource) -> tuple:
+        ...
 
     def get_files(
         self,
@@ -67,7 +75,8 @@ class SIA(Dataset):
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[Resource]: ...
+    ) -> List[Resource]:
+        ...
 
 
 class SINAN(Dataset):
@@ -79,12 +88,15 @@ class SINAN(Dataset):
         "740ce8f4-7a5d-4351-aad4-7623f2490ada",
     )
 
-    def describe(self, file: Resource): ...
+    def describe(self, file: Resource):
+        ...
 
-    def format(self, file: Resource) -> tuple: ...
+    def format(self, file: Resource) -> tuple:
+        ...
 
     def get_files(
         self,
         dis_code: Optional[Union[str, list]] = None,
         year: Optional[Union[str, int, list]] = None,
-    ) -> List[Resource]: ...
+    ) -> List[Resource]:
+        ...

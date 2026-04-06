@@ -1,18 +1,18 @@
 import hashlib
-from typing import List, Optional, Union
 from datetime import datetime
 from pathlib import Path
+from typing import List, Optional, Union
 
 import anyio
 from pydantic import Field
-
 from pysus.api.models import (
     BaseRemoteClient,
-    BaseRemoteGroup,
-    BaseRemoteFile,
     BaseRemoteDataset,
+    BaseRemoteFile,
+    BaseRemoteGroup,
 )
-from .catalog import File, Dataset, DatasetGroup
+
+from .catalog import Dataset, DatasetGroup, File
 
 
 class CatalogFile(BaseRemoteFile):
@@ -86,7 +86,9 @@ class CatalogGroup(BaseRemoteGroup):
     @property
     def description(self) -> str:
         return (
-            self.record.group_metadata.description if self.record.group_metadata else ""
+            self.record.group_metadata.description
+            if self.record.group_metadata
+            else ""
         )
 
     async def files(self, **kwargs) -> List[CatalogFile]:
@@ -118,7 +120,9 @@ class CatalogDataset(BaseRemoteDataset):
         )
 
     async def groups(self) -> List[CatalogGroup]:
-        return [CatalogGroup(record=g, dataset=self) for g in self.record.groups]
+        return [
+            CatalogGroup(record=g, dataset=self) for g in self.record.groups
+        ]
 
     async def files(self, **kwargs) -> List[CatalogFile]:
         return [CatalogFile(record=f, parent=self) for f in self.record.files]

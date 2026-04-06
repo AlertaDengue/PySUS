@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from pysus.api.extensions import (
     CSV,
-    DBF,
     DBC,
+    DBF,
+    FTP_IMPORT,
     JSON,
     PDF,
     Directory,
@@ -20,7 +20,6 @@ from pysus.api.extensions import (
     Parquet,
     Tar,
     Zip,
-    FTP_IMPORT,
 )
 
 

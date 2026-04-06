@@ -1,18 +1,17 @@
+import asyncio
+import hashlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncGenerator, List, Optional, Union
-import asyncio
-import hashlib
 
-from pydantic import BaseModel, ConfigDict, Field
-from tqdm.asyncio import tqdm
-import pyarrow.parquet as pq
-import pyarrow as pa
-import pandas as pd
 import anyio
-
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+from pydantic import BaseModel, ConfigDict, Field
 from pysus import CACHEPATH
+from tqdm.asyncio import tqdm
 
 
 class BaseFile(BaseModel, ABC):
@@ -265,10 +264,7 @@ class BaseRemoteDataset(BaseModel, ABC):
 
     async def children(
         self,
-    ) -> Union[
-        List["BaseRemoteGroup"],
-        List["BaseRemoteFile"],
-    ]:
+    ) -> Union[List["BaseRemoteGroup"], List["BaseRemoteFile"],]:
         groups = await self.groups()
         if groups:
             return groups
