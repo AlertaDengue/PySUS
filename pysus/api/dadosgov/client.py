@@ -1,12 +1,10 @@
-import requests
 from typing import List, Optional
+
+import requests
 from pydantic import TypeAdapter
-from pysus.api.models import BaseRemoteClient
-from pysus.api.dadosgov.models import (
-    Dataset,
-    DatasetSummary,
-)
 from pysus import __version__
+from pysus.api.dadosgov.models import Dataset, DatasetSummary
+from pysus.api.models import BaseRemoteClient
 
 
 class DadosGov(BaseRemoteClient):

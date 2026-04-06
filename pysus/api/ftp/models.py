@@ -1,36 +1,30 @@
 from __future__ import annotations
 
-__all__ = ["File", "Directory", "Database"]
+__all__ = ["FTPFile", "Directory", "Database"]
 
 import asyncio
 import os
 import pathlib
 from datetime import datetime
 from ftplib import FTP
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    TypedDict,
-)
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
 
+from typing_extensions import Self
 from aioftp import Client
 from loguru import logger
 from tqdm import tqdm
-from typing_extensions import Self
 
 from pysus import CACHEPATH
-from pysus.api.models import BaseFormatter, BaseRemoteFile, FileDescription
-from pysus.data.local import ParquetSet
+from pysus.api.models import (
+    BaseRemoteFile,
+    BaseRemoteDataset,
+)
 from pysus.utils import to_list
+
 from .client import FTPSingleton
 
-
 DIRECTORY_CACHE: Dict[str, "Directory"] = {}
-FileContent = Dict[str, Union["Directory", "File"]]
+FileContent = Dict[str, Union["Directory", "FTPFile"]]
 
 
 class FileInfo(TypedDict):
@@ -41,7 +35,7 @@ class FileInfo(TypedDict):
     modify: datetime
 
 
-class File(BaseRemoteFile):
+class FTPFile(BaseRemoteFile):
     def __init__(
         self,
         path: str,
@@ -77,13 +71,7 @@ class File(BaseRemoteFile):
 
     def describe(
         self,
-        formatter: Optional[BaseFormatter] = None,
-    ) -> FileDescription:
-        if formatter:
-            data = formatter.parse_filename(self.basename)
-        else:
-            data = {}
-
+    ):
         return FileDescription(
             name=self.basename,
             group=data.get("group", "unknown"),
@@ -94,19 +82,14 @@ class File(BaseRemoteFile):
             month=data.get("month"),
         )
 
-    async def _download(self, destination: pathlib.Path) -> ParquetSet:
-        for ext in (".parquet", ".dbf", ""):
-            existing = destination.with_suffix(ext)
-            if existing.exists():
-                return ParquetSet(str(existing))
-
+    async def _download(self, output: pathlib.Path) -> pathlib.Path:
         async with Client.context(
             host="ftp.datasus.gov.br", parse_list_line_custom=self._line_parser
         ) as client:
             await client.login()
-            await client.download(self.path, str(destination), write_into=True)
+            await client.download(self.path, str(output), write_into=True)
 
-        return ParquetSet(str(destination))
+        return output
 
     @staticmethod
     def _line_parser(file_line: bytes) -> Tuple[str, Dict[str, Any]]:
@@ -133,7 +116,7 @@ class File(BaseRemoteFile):
         return hash(self.path)
 
     def __eq__(self, other):
-        if isinstance(other, File):
+        if isinstance(other, FTPFile):
             return self.path == other.path
         return False
 
@@ -176,7 +159,7 @@ class Directory:
     path: str
     parent: "Directory"
     loaded: bool
-    __content__: Dict[str, Union[File, "Directory"]]
+    __content__: Dict[str, Union[FTPFile, "Directory"]]
 
     def __new__(cls, path: str, _is_root_child: bool = False) -> "Directory":
         normalized_path = os.path.normpath(path)
@@ -245,7 +228,7 @@ class Directory:
         self.__content__ = {}
 
     @property
-    def content(self) -> List[Union[Directory, File]]:
+    def content(self) -> List[Union[Directory, FTPFile]]:
         """Returns the content of the directory, loading it if necessary"""
         if not self.loaded:
             self.load()
@@ -303,7 +286,7 @@ def load_directory_content(path: str) -> FileContent:
                     "type": "file",
                     "modify": modify,
                 }
-                content[name] = File(path, name, info)
+                content[name] = FTPFile(path, name, info)
 
         ftp.retrlines("LIST", line_parser)
     except Exception as exc:
@@ -324,7 +307,7 @@ def load_directory_content(path: str) -> FileContent:
     return content
 
 
-class Database:
+class Database(BaseRemoteDataset):
     """
     Base class for PySUS databases. Contains common functions
     for accessing DataSUS FTP server. With this class, it is
@@ -352,7 +335,7 @@ class Database:
     name: str
     paths: Tuple[Directory, ...]
     metadata: dict
-    __content__: Dict[str, Union[Directory, File]]
+    __content__: Dict[str, Union[Directory, FTPFile]]
 
     def __init__(self) -> None:
         self.ftp = FTP("ftp.datasus.gov.br")
@@ -362,7 +345,7 @@ class Database:
         return f"{self.name} - {self.metadata['long_name']}"
 
     @property
-    def content(self) -> List[Union[Directory, File]]:
+    def content(self) -> List[Union[Directory, FTPFile]]:
         """
         Lists Database content. The `paths` will be loaded if this property is
         called or if explicitly using `load()`. To add specific Directory
@@ -375,12 +358,12 @@ class Database:
         return sorted(list(self.__content__.values()), key=str)
 
     @property
-    def files(self) -> List[File]:
+    def files(self) -> List[FTPFile]:
         """
         Lists Files inside content. To load a specific Directory inside
         content, just `load()` this directory and list files again.
         """
-        return [f for f in self.content if isinstance(f, File)]
+        return [f for f in self.content if isinstance(f, FTPFile)]
 
     def load(
         self,
@@ -405,7 +388,7 @@ class Database:
             self.__content__.update(directory.__content__)
         return self
 
-    def describe(self, file: File) -> dict:
+    def describe(self, file: FTPFile) -> dict:
         """
         Receives a `File` and returns a dict with its information,
         according to the database's specifications. This method is
@@ -416,7 +399,7 @@ class Database:
         """
         ...
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         """
         Formats a File based on the database specifications,
         extracting its name's parameters given a pattern.
@@ -426,7 +409,7 @@ class Database:
         """
         ...
 
-    def get_files(self, *args, **kwargs) -> list[File]:
+    def get_files(self, *args, **kwargs) -> list[FTPFile]:
         """
         Filters the list of `File`s according to each database file
         pattern, as UFs, Groups, Years, Months, etc. This method will
@@ -435,7 +418,7 @@ class Database:
         """
         ...
 
-    def download(self, files: List[File], local_dir: str = CACHEPATH) -> List[str]:
+    def download(self, files: List[FTPFile], local_dir: str = CACHEPATH) -> List[str]:
         """
         Downloads a list of Files.
         """
@@ -443,20 +426,20 @@ class Database:
         pbar = tqdm(total=len(files), dynamic_ncols=True)
         dfiles = []
         for file in files:
-            if isinstance(file, File):
+            if isinstance(file, FTPFile):
                 dfiles.append(file.download(local_dir=local_dir, _pbar=pbar))
         pbar.close()
         if len(dfiles) == 1:
             return dfiles[0]
         return dfiles
 
-    async def async_download(self, files: List[File], local_dir: str = CACHEPATH):
+    async def async_download(self, files: List[FTPFile], local_dir: str = CACHEPATH):
         """
         Asynchronously downloads a list of files
         """
 
         async def download_file(file):
-            if isinstance(file, File):
+            if isinstance(file, FTPFile):
                 await file.async_download(local_dir=local_dir)
 
         tasks = [download_file(file) for file in files]

@@ -1,8 +1,7 @@
 import datetime
-from typing import Union, TypeVar, List, Tuple
+from typing import List, Tuple, TypeVar, Union
 
 from .brasil import *  # noqa
-
 
 T = TypeVar("T")
 

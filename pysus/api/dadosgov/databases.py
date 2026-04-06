@@ -7,9 +7,9 @@ __all__ = [
 
 from typing import List, Optional, Union
 
+from pysus.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
+
 from .models import Dataset, Resource
-from pysus.utils import UFs, parse_UFs, to_list, zfill_year, MONTHS
-from pysus.api.models import FileDescription
 
 
 class CNES(Dataset):
@@ -19,7 +19,7 @@ class CNES(Dataset):
         "9455b341-b06e-408e-8e10-54b32b3d74ec",
     )
 
-    def describe(self, file: Resource) -> Optional[FileDescription]: ...
+    def describe(self, file: Resource): ...
 
     def format(self, file: Resource) -> tuple: ...
 
@@ -42,7 +42,7 @@ class PNI(Dataset):
         "9a25b796-80e3-444a-a4e7-405f5596d8ab",
     )
 
-    def describe(self, file: Resource) -> Optional[FileDescription]: ...
+    def describe(self, file: Resource): ...
 
     def format(self, file: Resource) -> tuple: ...
 
@@ -57,7 +57,7 @@ class SIA(Dataset):
     name = "SIA"
     ids = ("9a335cb7-2b4f-4fce-8947-e8441b4a90af",)
 
-    def describe(self, file: Resource) -> Optional[FileDescription]: ...
+    def describe(self, file: Resource): ...
 
     def format(self, file: Resource) -> tuple: ...
 
@@ -79,7 +79,7 @@ class SINAN(Dataset):
         "740ce8f4-7a5d-4351-aad4-7623f2490ada",
     )
 
-    def describe(self, file: Resource) -> Optional[FileDescription]: ...
+    def describe(self, file: Resource): ...
 
     def format(self, file: Resource) -> tuple: ...
 

@@ -77,8 +77,10 @@ class TestAvailableDatabases(unittest.TestCase):
                         self.assertIsInstance(
                             value,
                             str,
-                            f"{db_class.__name__}.metadata['{
-                                field}'] is not a string",
+                            (
+                                f"{db_class.__name__}.metadata['{field}'] is"
+                                " not a string",
+                            ),
                         )
 
     def test_expected_databases_present(self):
@@ -113,7 +115,9 @@ class TestAvailableDatabases(unittest.TestCase):
                     db_instance = db_class()
                     self.assertIsInstance(db_instance, Database)
                 except Exception as e:
-                    self.fail(f"Failed to instantiate {db_class.__name__}: {e}")
+                    self.fail(
+                        f"Failed to instantiate {db_class.__name__}: {e}"
+                    )
 
     def test_list_order_is_consistent(self):
         """Document that the list order is alphabetical by class name"""

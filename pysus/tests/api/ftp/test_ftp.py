@@ -2,14 +2,14 @@ import unittest
 from pathlib import Path
 
 import pandas as pd
-from pysus.data.local import ParquetSet
-from pysus.api.ftp import Database, Directory, File
-from pysus.api.ftp.models import DIRECTORY_CACHE
+from pysus.api.ftp import Database, Directory, FTPFile
 from pysus.api.ftp.databases import *
+from pysus.api.ftp.models import DIRECTORY_CACHE
+from pysus.data.local import ParquetSet
 
 
-def _test_file(testcase: unittest.TestCase, file: File):
-    testcase.assertTrue(isinstance(file, File))
+def _test_file(testcase: unittest.TestCase, file: FTPFile):
+    testcase.assertTrue(isinstance(file, FTPFile))
     testcase.assertTrue(set(["size", "type", "modify"]) == set(file.info))
     testcase.assertTrue(bool(file.basename))
     testcase.assertTrue(bool(file.name))

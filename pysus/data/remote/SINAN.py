@@ -42,8 +42,10 @@ def download(
 
 def metadata_df(disease_code: str) -> pd.DataFrame:
     metadata_file = (
-        Path(__file__).parent.parent / "metadata" /
-        "SINAN" / f"{disease_code}.tar.gz"
+        Path(__file__).parent.parent
+        / "metadata"
+        / "SINAN"
+        / f"{disease_code}.tar.gz"
     )
     if metadata_file.exists():
         df = pd.read_csv(

@@ -31,6 +31,10 @@ pydantic = "^2.12.5"
 duckdb = "^1.4.4"
 duckdb-engine = "^0.17.0"
 sqlalchemy = "^2.0.48"
+textual = {extras = ["syntax"], version = "^8.2.1"}
+python-magic = "^0.4.27"
+chardet = "^7.4.0.post2"
+anyio = "^4.13.0"
 
 dbfread = { version = "2.0.7", optional = true }
 pyreaddbc = { version = ">=1.1.0", optional = true }
@@ -39,15 +43,8 @@ bigtree = { version = "^0.12.2", optional = true }
 aioftp = { version = "^0.21.4", optional = true }
 humanize = { version = "^4.8.0", optional = true }
 
-textual = {extras = ["syntax"], version = "^8.2.1", optional = true }
-python-magic = "^0.4.27"
-chardet = "^7.4.0.post2"
-anyio = "^4.13.0"
-
 [tool.poetry.extras]
 ftp = ["dbfread", "pyreaddbc", "pycparser", "bigtree", "aioftp", "humanize"]
-tui = ["textual"]
-all = ["dbfread", "pyreaddbc", "pycparser", "bigtree", "aioftp", "humanize", "textual"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"

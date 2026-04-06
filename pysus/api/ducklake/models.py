@@ -1,165 +1,124 @@
-import enum
+import hashlib
+from typing import List, Optional, Union
+from datetime import datetime
+from pathlib import Path
 
-from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    ForeignKey,
-    Date,
-    Boolean,
-    Index,
-    Enum,
+import anyio
+from pydantic import Field
+
+from pysus.api.models import (
+    BaseRemoteClient,
+    BaseRemoteGroup,
+    BaseRemoteFile,
+    BaseRemoteDataset,
 )
-
-Base = declarative_base()
-
-
-class Catalog(Base):
-    __abstract__ = True
-    __table_args__ = {"schema": "pysus"}
+from .catalog import File, Dataset, DatasetGroup
 
 
-class Dataset(Catalog):
-    __tablename__ = "datasets"
+class CatalogFile(BaseRemoteFile):
+    record: File = Field(exclude=True)
+    parent: Union["CatalogDataset", "CatalogGroup"] = Field(exclude=True)
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False, unique=True, index=True)
-    metadata_id = Column(
-        Integer,
-        ForeignKey("pysus.dataset_metadata.id"),
-        index=True,
-    )
+    type: str = "remote"
 
-    dataset_metadata = relationship(
-        "DatasetMetadata",
-        back_populates="datasets",
-    )
+    @property
+    def path(self) -> Path:
+        return Path(self.record.path)
 
-    groups = relationship(
-        "DatasetGroup",
-        back_populates="dataset",
-        cascade="all, delete-orphan",
-    )
+    @property
+    def basename(self) -> str:
+        return self.path.name
 
-    columns = relationship(
-        "ColumnDefinition",
-        back_populates="dataset",
-        cascade="all, delete-orphan",
-    )
+    @property
+    def extension(self) -> str:
+        return self.path.suffix
 
+    @property
+    def size(self) -> int:
+        return self.record.size
 
-class ColumnDefinition(Catalog):
-    __tablename__ = "dataset_columns"
+    @property
+    def modify(self) -> datetime:
+        return self.record.modified
 
-    id = Column(Integer, primary_key=True)
-    dataset_id = Column(
-        Integer,
-        ForeignKey("pysus.datasets.id"),
-        nullable=False,
-        index=True,
-    )
-    name = Column(String, nullable=False)
-    type = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    nullable = Column(Boolean, nullable=False, default=True)
-    position = Column(Integer, nullable=False, index=True)
+    @property
+    def rows(self) -> int:
+        return self.record.rows
 
-    dataset = relationship("Dataset", back_populates="columns")
+    @property
+    def sha256(self) -> Optional[str]:
+        return self.record.sha256
 
-    __table_args__ = (
-        Index("ix_columns_dataset_name", "dataset_id", "name"),
-        {"schema": "pysus"},
-    )
+    async def _download(self, output: Path) -> Path:
+        return await self.client._download_file(self, output)
 
+    async def verify(self, path: Path) -> bool:
+        if not self.sha256:
+            return True
 
-class DatasetGroup(Catalog):
-    __tablename__ = "dataset_groups"
+        def _calculate():
+            sha256_hash = hashlib.sha256()
+            with open(path, "rb") as f:
+                for byte_block in iter(lambda: f.read(8192), b""):
+                    sha256_hash.update(byte_block)
+            return sha256_hash.hexdigest()
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    dataset_id = Column(
-        Integer,
-        ForeignKey("pysus.datasets.id"),
-        nullable=False,
-        index=True,
-    )
-    metadata_id = Column(
-        Integer,
-        ForeignKey("pysus.dataset_group_metadata.id"),
-        index=True,
-    )
-
-    dataset = relationship(
-        "Dataset",
-        back_populates="groups",
-    )
-
-    group_metadata = relationship(
-        "DatasetGroupMetadata",
-        back_populates="groups",
-    )
-
-    files = relationship(
-        "File",
-        back_populates="group",
-        cascade="all, delete-orphan",
-    )
-
-    __table_args__ = (
-        Index("ix_groups_dataset_name", "dataset_id", "name"),
-        {"schema": "pysus"},
-    )
+        actual_hash = await anyio.to_thread.run_sync(_calculate)
+        return actual_hash == self.sha256
 
 
-class File(Catalog):
-    __tablename__ = "files"
+class CatalogGroup(BaseRemoteGroup):
+    record: DatasetGroup = Field(exclude=True)
+    dataset: "CatalogDataset" = Field(exclude=True)
 
-    id = Column(Integer, primary_key=True)
-    group_id = Column(
-        Integer,
-        ForeignKey("pysus.dataset_groups.id"),
-        nullable=False,
-        index=True,
-    )
-    path = Column(String, nullable=False, unique=True)
-    size = Column(Integer, nullable=False)
-    rows = Column(Integer, nullable=False)
-    modified = Column(Date, nullable=False)
+    @property
+    def name(self) -> str:
+        return self.record.name
 
-    group = relationship(
-        "DatasetGroup",
-        back_populates="files",
-    )
+    @property
+    def long_name(self) -> str:
+        return (
+            self.record.group_metadata.long_name
+            if self.record.group_metadata
+            else self.name
+        )
 
+    @property
+    def description(self) -> str:
+        return (
+            self.record.group_metadata.description if self.record.group_metadata else ""
+        )
 
-class DatasetMetadata(Catalog):
-    class Origin(enum.Enum):
-        FTP = "ftp"
-        API = "api"
-
-    __tablename__ = "dataset_metadata"
-
-    id = Column(Integer, primary_key=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    source = Column(String, nullable=True)
-    origin = Column(Enum(Origin), nullable=False)
-
-    datasets = relationship(
-        "Dataset",
-        back_populates="dataset_metadata",
-    )
+    async def files(self, **kwargs) -> List[CatalogFile]:
+        return [CatalogFile(record=f, parent=self) for f in self.record.files]
 
 
-class DatasetGroupMetadata(Catalog):
-    __tablename__ = "dataset_group_metadata"
+class CatalogDataset(BaseRemoteDataset):
+    record: Dataset = Field(exclude=True)
+    client: BaseRemoteClient = Field(exclude=True)
 
-    id = Column(Integer, primary_key=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
+    @property
+    def name(self) -> str:
+        return self.record.name
 
-    groups = relationship(
-        "DatasetGroup",
-        back_populates="group_metadata",
-    )
+    @property
+    def long_name(self) -> str:
+        return (
+            self.record.dataset_metadata.long_name
+            if self.record.dataset_metadata
+            else self.name
+        )
+
+    @property
+    def description(self) -> str:
+        return (
+            self.record.dataset_metadata.description
+            if self.record.dataset_metadata
+            else ""
+        )
+
+    async def groups(self) -> List[CatalogGroup]:
+        return [CatalogGroup(record=g, dataset=self) for g in self.record.groups]
+
+    async def files(self, **kwargs) -> List[CatalogFile]:
+        return [CatalogFile(record=f, parent=self) for f in self.record.files]

@@ -68,14 +68,17 @@ def get_CID10_chapters_table(cache=True):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+    )
     ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS")
+        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+    )
 
     fname = "CIDCAP10.DBF"
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
 
     if os.path.exists(cachefile):
         logger.info(f"Local parquet file found at {cachefile}")
@@ -111,14 +114,17 @@ def get_CID10_table(cache=True):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+    )
     ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS")
+        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+    )
 
     fname = "CID10.DBF"
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
 
     if os.path.exists(cachefile):
         logger.info(f"Local parquet file found at {cachefile}")
@@ -154,14 +160,17 @@ def get_CID9_table(cache=True):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+    )
     ftp.cwd("/dissemin/publicos/SIM/CID9/TABELAS")
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID9/TABELAS")
+        "Changing FTP work dir to: /dissemin/publicos/SIM/CID9/TABELAS"
+    )
 
     fname = "CID9.DBF"
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
 
     if os.path.exists(cachefile):
         logger.info(f"Local parquet file found at {cachefile}")
@@ -197,14 +206,17 @@ def get_municipios(cache=True):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+    )
     ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS")
+        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+    )
 
     fname = "CADMUN.DBF"
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
 
     if os.path.exists(cachefile):
         logger.info(f"Local parquet file found at {cachefile}")
@@ -240,13 +252,16 @@ def get_ocupations(cache=True):
     ftp = FTP("ftp.datasus.gov.br")
     ftp.login()
     logger.debug(
-        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}")
+        f"Stablishing connection with ftp.datasus.gov.br.\n{ftp.welcome}"
+    )
     ftp.cwd("/dissemin/publicos/SIM/CID10/TABELAS")
     logger.debug(
-        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS")
+        "Changing FTP work dir to: /dissemin/publicos/SIM/CID10/TABELAS"
+    )
     fname = "TABOCUP.DBF"
     cachefile = os.path.join(
-        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet")
+        CACHEPATH, "SIM_" + fname.split(".")[0] + "_.parquet"
+    )
 
     if os.path.exists(cachefile):
         logger.info(f"Local parquet file found at {cachefile}")

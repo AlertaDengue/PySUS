@@ -2,16 +2,9 @@ from __future__ import annotations
 
 import pathlib
 from ftplib import FTP
-from typing import (
-    Final,
-    Optional,
-    Protocol,
-    runtime_checkable,
-)
-
+from typing import Final, Optional, Protocol, runtime_checkable
 
 from pysus import CACHEPATH
-from pysus.data.local import Data
 
 __cachepath__: Final[pathlib.Path] = pathlib.Path(CACHEPATH)
 __cachepath__.mkdir(exist_ok=True)
@@ -19,7 +12,7 @@ __cachepath__.mkdir(exist_ok=True)
 
 @runtime_checkable
 class Downloadable(Protocol):
-    async def download(self, local_dir: str) -> Data:
+    async def download(self, local_dir: str):
         """Protocol for downloadable objects"""
         ...
 

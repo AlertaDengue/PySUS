@@ -18,7 +18,7 @@ ciha = CIHA().load()
 
 def get_available_years(
     states: Union[list, str] = None,
-) -> dict[str: set[int]]:
+) -> dict[str : set[int]]:
     """
     Fetch available years for the `states`.
     :param states: UF code. E.g: "SP" or ["SP", "RJ"]

@@ -1,49 +1,100 @@
-from typing import Optional, Union, List, Any, Generator, AsyncGenerator
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-import dateparser
+from typing import Any, AsyncGenerator, List, Optional, Union
+import asyncio
+import hashlib
 
-from pydantic import BaseModel, ConfigDict, field_validator
-import pyarrow as pa
-import pyarrow.parquet as pq
-import anyio
-import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field
 from tqdm.asyncio import tqdm
+import pyarrow.parquet as pq
+import pyarrow as pa
+import pandas as pd
+import anyio
 
-from pysus.data.local import ParquetSet
 from pysus import CACHEPATH
 
 
-class FileDescription(BaseModel):
-    model_config = ConfigDict(coerce_numbers_to_str=True)
-    name: str
-    group: str
-    year: int
-    size: int
-    last_update: datetime
-    uf: Optional[str] = None
-    month: Optional[str] = None
-    disease: Optional[str] = None
+class BaseFile(BaseModel, ABC):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        validate_assignment=True,
+    )
 
-    @field_validator("last_update", mode="before")
-    @classmethod
-    def parse_modify_date(cls, v: Any) -> datetime:
-        if isinstance(v, datetime):
-            return v
-        parsed = dateparser.parse(str(v))
-        return parsed if parsed else datetime.now()
+    type: str
 
+    def __str__(self) -> str:
+        return self.path.name
 
-class BaseFormatter(BaseModel, ABC):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    def __repr__(self):
+        return self.path.name
 
+    @property
     @abstractmethod
-    def parse(self, filename: str) -> dict:
+    def extension(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def size(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def modify(self) -> datetime:
         pass
 
 
-class BaseTabularFile(ABC):
+class BaseLocalFile(BaseFile, ABC):
+    path: Path
+
+    async def get_hash(
+        self, algorithm: str = "sha256", chunk_size: int = 1024 * 1024
+    ) -> str:
+        def _compute_hash():
+            hash_obj = hashlib.new(algorithm)
+            with open(self.path, "rb") as f:
+                while chunk := f.read(chunk_size):
+                    hash_obj.update(chunk)
+            return hash_obj.hexdigest()
+
+        return await anyio.to_thread.run_sync(_compute_hash)
+
+    @abstractmethod
+    async def load(self) -> Any:
+        pass
+
+    @abstractmethod
+    async def stream(
+        self,
+        chunk_size: Optional[int] = None,
+    ) -> AsyncGenerator[Any, None]:
+        pass
+
+    @property
+    def extension(self) -> str:
+        return self.path.suffix
+
+    @property
+    def size(self) -> int:
+        return self.path.stat().st_size
+
+    @property
+    def modify(self) -> datetime:
+        return datetime.fromtimestamp(self.path.stat().st_mtime)
+
+
+class BaseTabularFile(BaseLocalFile, ABC):
+    @property
+    @abstractmethod
+    def columns(self) -> List[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def rows(self) -> int:
+        pass
+
     @abstractmethod
     async def load(self) -> pd.DataFrame:
         pass
@@ -103,115 +154,146 @@ class BaseTabularFile(ABC):
         return await ExtensionFactory.instantiate(output_path)
 
 
-class BaseFile(BaseModel, ABC):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    basename: str
-    path: Path
-    extension: str
-
-    def __str__(self) -> str:
-        return self.basename
-
-    def __repr__(self):
-        return self.basename
-
-
-class BaseLocalFile(BaseFile, ABC):
-    path: Path
-
+class BaseCompressedFile(BaseLocalFile, ABC):
     @abstractmethod
-    def load(self) -> Any:
+    async def list_members(self) -> List[str]:
         pass
 
     @abstractmethod
-    def stream(
+    async def open_member(self, member_name: str) -> Any:
+        pass
+
+    @abstractmethod
+    async def extract(
+        self, target_dir: Optional[Path] = CACHEPATH
+    ) -> List[BaseLocalFile]:
+        pass
+
+    async def stream(
         self,
         chunk_size: Optional[int] = None,
-    ) -> Generator[Any, None, None]:
-        pass
+    ) -> AsyncGenerator[Any, None]:
+        members = await self.list_members()
+        for member in members:
+            yield await self.open_member(member)
+            await asyncio.sleep(0)
 
 
 class BaseRemoteFile(BaseFile, ABC):
-    path: str
+    parent: Union["BaseRemoteDataset", "BaseRemoteGroup"] = Field(exclude=True)
+
+    @property
+    def client(self) -> "BaseRemoteClient":
+        if hasattr(self.parent, "client"):
+            return self.parent.client
+        return self.parent.dataset.client
 
     @abstractmethod
-    def describe(
-        self, formatter: Optional["BaseFormatter"] = None
-    ) -> "FileDescription":
-        pass
-
-    @abstractmethod
-    async def _download(self, destination: Path) -> BaseLocalFile:
+    async def _download(self, output: Path) -> Path:
         pass
 
     async def download(self, output: Union[str, Path]) -> BaseLocalFile:
+        from pysus.api.extensions import ExtensionFactory
+
         output_path = Path(output).expanduser().resolve()
 
         if output_path.is_dir():
+            output_path.mkdir(parents=True, exist_ok=True)
             dest = output_path / self.basename
         else:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             dest = output_path
 
-        return await self._download(destination=dest)
+        local_path = await self._download(output=dest)
+
+        return await ExtensionFactory.instantiate(local_path)
 
 
-class BaseCompressedFile(BaseLocalFile, ABC):
+class BaseRemoteGroup(BaseModel, ABC):
+    dataset: "BaseRemoteDataset" = Field(exclude=True)
+
+    @property
     @abstractmethod
-    def list_members(self) -> List[str]:
+    def name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def long_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
         pass
 
     @abstractmethod
-    def open_member(self, member_name: str) -> Any:
+    async def files(self, **kwargs) -> List["BaseRemoteFile"]:
         pass
 
-    @abstractmethod
-    def extract(self, target_dir: Optional[Path] = CACHEPATH) -> List[Path]:
-        pass
-
-    def stream(
-        self,
-        chunk_size: Optional[int] = None,
-    ) -> Generator[Any, None, None]:
-        pass
+    def __str__(self):
+        return self.name
 
 
 class BaseRemoteDataset(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    formatter: Optional[BaseFormatter] = None
 
+    client: "BaseRemoteClient" = Field(exclude=True)
+
+    @property
     @abstractmethod
-    async def get_files(self, **kwargs) -> List[BaseRemoteFile]:
+    def name(self) -> str:
         pass
 
-    async def download(
+    @property
+    @abstractmethod
+    def long_name(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
+    @abstractmethod
+    async def groups(self) -> List["BaseRemoteGroup"]:
+        pass
+
+    @abstractmethod
+    async def files(self, **kwargs) -> List["BaseRemoteFile"]:
+        pass
+
+    async def children(
         self,
-        files: Union[List[BaseRemoteFile], BaseRemoteFile],
-        output: Union[str, Path] = CACHEPATH,
-    ) -> List[ParquetSet]:
-        output = Path(output).expanduser().resolve()
-        file_list = [files] if not isinstance(files, list) else files
-
-        tasks = []
-        for i, f in enumerate(file_list):
-            if not output.is_dir() and len(file_list) > 1:
-                name = output.parent / f"{output.stem}_{i}{output.suffix}"
-                tasks.append(f.download(output=name))
-            else:
-                tasks.append(f.download(output=output))
-
-        res = await tqdm.gather(*tasks, desc="Downloading")
-        return [res] if not isinstance(res, list) else res
+    ) -> Union[
+        List["BaseRemoteGroup"],
+        List["BaseRemoteFile"],
+    ]:
+        groups = await self.groups()
+        if groups:
+            return groups
+        return await self.files()
 
 
 class BaseRemoteClient(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @abstractmethod
-    async def connect(self):
+    async def connect(self) -> None:
         pass
 
     @abstractmethod
-    async def close(self):
+    async def close(self) -> None:
+        pass
+
+    @abstractmethod
+    async def login(self, **kwargs) -> None:
+        pass
+
+    @abstractmethod
+    async def datasets(self, **kwargs) -> List[BaseRemoteDataset]:
+        pass
+
+    @abstractmethod
+    async def _download_file(self, file: BaseRemoteFile, output: Path) -> Path:
         pass

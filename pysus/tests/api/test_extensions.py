@@ -1,130 +1,250 @@
-import pytest
-import pandas as pd
-import json
 import gzip
+import json
 import tarfile
 import zipfile
+from pathlib import Path
+
+import pandas as pd
+import pytest
+
 from pysus.api.extensions import (
-    ExtensionFactory,
     CSV,
-    Parquet,
+    DBF,
+    DBC,
     JSON,
-    Directory,
-    File,
-    Zip,
-    GZip,
-    Tar,
     PDF,
+    Directory,
+    ExtensionFactory,
+    File,
+    GZip,
+    Parquet,
+    Tar,
+    Zip,
+    FTP_IMPORT,
 )
 
 
+# -------------------------
+# Fixtures & helpers
+# -------------------------
 @pytest.fixture
-def tmp_dir(tmp_path):
+def tmp_dir(tmp_path: Path):
     return tmp_path
 
 
+async def collect_async(gen):
+    out = []
+    async for item in gen:
+        out.append(item)
+    return out
+
+
+# -------------------------
+# Directory
+# -------------------------
 @pytest.mark.asyncio
-async def test_directory_instantiation(tmp_dir):
-    subdir = tmp_dir / "test_subdir"
+async def test_directory_load_and_stream(tmp_dir):
+    subdir = tmp_dir / "dir"
     subdir.mkdir()
-    (subdir / "file.txt").write_text("hello")
+
+    (subdir / "a.txt").write_text("a")
+    (subdir / "b.csv").write_text("x\n1")
 
     obj = await ExtensionFactory.instantiate(subdir)
     assert isinstance(obj, Directory)
-    assert obj.basename == "test_subdir"
+    assert obj.basename == "dir"
 
-    content = await obj.load()
-    assert len(content) == 1
-    assert content[0].basename == "file.txt"
+    loaded = await obj.load()
+    assert {f.basename for f in loaded} == {"a.txt", "b.csv"}
+
+    streamed = await collect_async(obj.stream())
+    assert len(streamed) == 2
+    assert all(hasattr(f, "load") for f in streamed)
 
 
 @pytest.mark.asyncio
-async def test_csv_functionality(tmp_dir):
-    csv_path = tmp_dir / "data.csv"
-    df_orig = pd.DataFrame({"a": ["1", "2"], "b": ["3", "4"]})
-    df_orig.to_csv(csv_path, index=False)
+async def test_directory_empty(tmp_dir):
+    subdir = tmp_dir / "empty"
+    subdir.mkdir()
 
-    obj = await ExtensionFactory.instantiate(csv_path)
+    obj = await ExtensionFactory.instantiate(subdir)
+    loaded = await obj.load()
+    assert loaded == []
+
+
+# -------------------------
+# CSV
+# -------------------------
+@pytest.mark.asyncio
+async def test_csv_load_and_stream(tmp_dir):
+    path = tmp_dir / "data.csv"
+    df = pd.DataFrame({"a": ["1", "2"], "b": ["3", "4"]})
+    df.to_csv(path, index=False)
+
+    obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, CSV)
 
-    df_loaded = await obj.load()
-    assert df_loaded.shape == (2, 2)
+    loaded = await obj.load()
+    pd.testing.assert_frame_equal(
+        loaded.astype(str),
+        df.astype(str),
+    )
 
-    chunks = []
-    async for chunk in obj.stream(chunk_size=1):
-        chunks.append(chunk)
+    chunks = await collect_async(obj.stream(chunk_size=1))
     assert len(chunks) == 2
+    assert all(isinstance(c, pd.DataFrame) for c in chunks)
 
 
 @pytest.mark.asyncio
-async def test_parquet_conversion(tmp_dir):
-    csv_path = tmp_dir / "source.csv"
-    pd.DataFrame({"col": [1, 2, 3]}).to_csv(csv_path, index=False)
+async def test_csv_sep_and_encoding_fallback(tmp_dir):
+    path = tmp_dir / "data.csv"
+    path.write_text("a;b\n1;2\n")
+
+    obj = await ExtensionFactory.instantiate(path)
+    df = await obj.load()
+
+    assert list(df.columns) == ["a", "b"]
+    assert df.iloc[0]["a"] == 1
+
+
+# -------------------------
+# Parquet
+# -------------------------
+@pytest.mark.asyncio
+async def test_parquet_parse_and_stream(tmp_dir):
+    csv_path = tmp_dir / "data.csv"
+
+    df = pd.DataFrame(
+        {
+            "DT_NOTIFIC": ["20230101"],
+            "CODMUNRES": [" 123 "],
+            "OTHER": ["   "],
+        }
+    )
+    df.to_csv(csv_path, index=False)
 
     csv_obj = await ExtensionFactory.instantiate(csv_path)
-    parquet_obj = await csv_obj.to_parquet()
+    pq_obj = await csv_obj.to_parquet()
 
-    assert isinstance(parquet_obj, Parquet)
-    assert parquet_obj.path.suffix == ".parquet"
-    assert parquet_obj.path.exists()
+    assert isinstance(pq_obj, Parquet)
 
-    df = await parquet_obj.load()
-    assert len(df) == 3
+    parsed = await pq_obj.load(parse=True)
+    assert str(parsed["DT_NOTIFIC"].iloc[0]) == "2023-01-01"
+    assert parsed["CODMUNRES"].iloc[0] == 123
+    assert parsed["OTHER"].iloc[0] == ""
+
+    chunks = await collect_async(pq_obj.stream())
+    assert len(chunks) >= 1
 
 
+# -------------------------
+# DBF
+# -------------------------
 @pytest.mark.asyncio
-async def test_json_functionality(tmp_dir):
-    json_path = tmp_dir / "data.json"
-    data = [{"id": 1, "val": "a"}, {"id": 2, "val": "b"}]
-    json_path.write_text(json.dumps(data))
+async def test_dbf_decode_and_failure(tmp_dir):
+    pytest.importorskip("dbfread")
 
-    obj = await ExtensionFactory.instantiate(json_path)
+    path = tmp_dir / "test.dbf"
+    path.write_bytes(b"invalid")
+
+    obj = await ExtensionFactory.instantiate(path)
+    assert isinstance(obj, DBF)
+
+    assert obj.decode_column(b"COL\x00") == "COL"
+    assert obj.decode_column("COL\x00") == "COL"
+
+    with pytest.raises(Exception):
+        await obj.load()
+
+
+# -------------------------
+# DBC
+# -------------------------
+@pytest.mark.asyncio
+async def test_dbc_import_behavior(tmp_dir):
+    path = tmp_dir / "file.dbc"
+    path.write_bytes(b"dummy")
+
+    obj = await ExtensionFactory.instantiate(path)
+    assert isinstance(obj, DBC)
+
+    if not FTP_IMPORT:
+        with pytest.raises(ImportError):
+            await obj.load()
+        with pytest.raises(ImportError):
+            await obj.to_parquet()
+    else:
+        with pytest.raises(Exception):
+            await obj.to_parquet(tmp_dir / "out.parquet")
+
+
+# -------------------------
+# JSON
+# -------------------------
+@pytest.mark.asyncio
+async def test_json_load_and_stream(tmp_dir):
+    path = tmp_dir / "data.json"
+    data = [{"a": 1}, {"a": 2}]
+    path.write_text(json.dumps(data))
+
+    obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, JSON)
 
     df = await obj.load()
-    assert df.iloc[0]["val"] == "a"
+    assert df.shape == (2, 1)
+
+    streamed = await collect_async(obj.stream())
+    assert len(streamed) == 1
+    assert streamed[0].equals(df)
 
 
+# -------------------------
+# PDF
+# -------------------------
 @pytest.mark.asyncio
-async def test_pdf_functionality(tmp_dir):
-    pdf_path = tmp_dir / "test.pdf"
-    content = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj"
-    pdf_path.write_bytes(content)
+async def test_pdf_load_and_stream(tmp_dir):
+    path = tmp_dir / "file.pdf"
+    content = b"%PDF-1.4\n..."
+    path.write_bytes(content)
 
-    obj = await ExtensionFactory.instantiate(pdf_path)
+    obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, PDF)
 
-    loaded_content = await obj.load()
-    assert loaded_content.startswith(b"%PDF-")
+    assert await obj.load() == content
 
-    chunks = []
-    async for chunk in obj.stream(chunk_size=10):
-        chunks.append(chunk)
-    assert len(chunks) > 0
+    chunks = await collect_async(obj.stream(chunk_size=4))
     assert b"".join(chunks) == content
 
 
+# -------------------------
+# Generic File
+# -------------------------
 @pytest.mark.asyncio
-async def test_generic_file(tmp_dir):
-    file_path = tmp_dir / "random.bin"
-    content = b"some binary data"
-    file_path.write_bytes(content)
+async def test_file_load_and_stream(tmp_dir):
+    path = tmp_dir / "file.bin"
+    content = b"abc123"
+    path.write_bytes(content)
 
-    obj = await ExtensionFactory.instantiate(file_path)
+    obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, File)
 
-    loaded = await obj.load()
-    assert loaded == content
+    assert await obj.load() == content
+
+    chunks = await collect_async(obj.stream(chunk_size=2))
+    assert b"".join(chunks) == content
 
 
+# -------------------------
+# ZIP
+# -------------------------
 @pytest.mark.asyncio
-async def test_zip_extraction(tmp_dir):
-    zip_path = tmp_dir / "test.zip"
-    inner_file = tmp_dir / "inner.csv"
-    pd.DataFrame({"x": [1]}).to_csv(inner_file, index=False)
+async def test_zip_full_flow(tmp_dir):
+    zip_path = tmp_dir / "file.zip"
+    inner = tmp_dir / "inner.csv"
+    pd.DataFrame({"x": [1]}).to_csv(inner, index=False)
 
     with zipfile.ZipFile(zip_path, "w") as z:
-        z.write(inner_file, arcname="inner.csv")
+        z.write(inner, arcname="inner.csv")
 
     obj = await ExtensionFactory.instantiate(zip_path)
     assert isinstance(obj, Zip)
@@ -132,39 +252,55 @@ async def test_zip_extraction(tmp_dir):
     members = await obj.list_members()
     assert "inner.csv" in members
 
-    extracted = await obj.extract(target_dir=tmp_dir / "extracted")
-    assert len(extracted) >= 1
+    content = await obj.open_member("inner.csv")
+    assert b"x" in content
+
+    extracted = await obj.extract(tmp_dir / "out")
     assert any(isinstance(f, CSV) for f in extracted)
 
 
+# -------------------------
+# GZIP
+# -------------------------
 @pytest.mark.asyncio
-async def test_gzip_functionality(tmp_dir):
-    gz_path = tmp_dir / "data.csv.gz"
-    content = b"header,val\n1,2"
-    with gzip.open(gz_path, "wb") as f:
-        f.write(content)
+async def test_gzip_full_flow(tmp_dir):
+    path = tmp_dir / "data.csv.gz"
+    raw = b"a,b\n1,2"
 
-    obj = await ExtensionFactory.instantiate(gz_path)
+    with gzip.open(path, "wb") as f:
+        f.write(raw)
+
+    obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, GZip)
 
-    data = await obj.load()
-    assert data == content
+    assert await obj.load() == raw
+    assert await obj.list_members() == ["data.csv"]
+
+    extracted = await obj.extract(tmp_dir / "out")
+    assert len(extracted) == 1
+    assert isinstance(extracted[0], CSV)
 
 
+# -------------------------
+# TAR
+# -------------------------
 @pytest.mark.asyncio
-async def test_tar_functionality(tmp_dir):
-    tar_path = tmp_dir / "test.tar"
-    content_path = tmp_dir / "file.txt"
-    content_path.write_text("tar content")
+async def test_tar_full_flow(tmp_dir):
+    tar_path = tmp_dir / "file.tar"
+    f = tmp_dir / "a.txt"
+    f.write_text("hello")
 
-    with tarfile.open(tar_path, "w") as tar:
-        tar.add(content_path, arcname="file.txt")
+    with tarfile.open(tar_path, "w") as t:
+        t.add(f, arcname="a.txt")
 
     obj = await ExtensionFactory.instantiate(tar_path)
     assert isinstance(obj, Tar)
 
     members = await obj.list_members()
-    assert "file.txt" in members
+    assert "a.txt" in members
 
-    member_data = await obj.open_member("file.txt")
-    assert member_data == b"tar content"
+    content = await obj.open_member("a.txt")
+    assert content == b"hello"
+
+    extracted = await obj.extract(tmp_dir / "out")
+    assert any(isinstance(x, File) for x in extracted)

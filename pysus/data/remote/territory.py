@@ -1,15 +1,15 @@
 from typing import List, Union
 
-from pysus.api.ftp import CACHEPATH, Directory, File
+from pysus.api.ftp import CACHEPATH, Directory, FTPFile
 
 
-def list_tables() -> List[File]:
+def list_tables() -> List[FTPFile]:
     d = Directory("/territorio/tabelas")
     tabelas = [f for f in d.content if "territor" in f.name]
     return tabelas
 
 
-def list_maps() -> List[File]:
+def list_maps() -> List[FTPFile]:
     d = Directory("/territorio/mapas")
     mapas = [f for f in d.content if "mapas" in f.name]
     return mapas

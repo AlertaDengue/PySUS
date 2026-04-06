@@ -2,16 +2,15 @@
 
 import os
 import pathlib
-from typing import Final
 from importlib import metadata as importlib_metadata
-
+from typing import Final
 
 CACHEPATH: Final[str] = os.getenv(
     "PYSUS_CACHEPATH",
     os.path.join(str(pathlib.Path.home()), "pysus"),
 )
 
-from pysus.api.ftp.databases import *  # noqa
+# from pysus.api.ftp.databases import *  # noqa
 
 
 def get_version() -> str:

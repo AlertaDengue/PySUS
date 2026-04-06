@@ -10,16 +10,17 @@ __all__ = [
     "SINASC",
 ]
 
-from typing import List, Optional, Union, Literal
+from typing import List, Literal, Optional, Union
 
-from pysus.api.ftp.models import Database, Directory, File
-from pysus.utils import UFs, parse_UFs, to_list, zfill_year, MONTHS
-from pysus.api.models import FileDescription
+from pysus.api.ftp.models import Database, Directory, FTPFile
+from pysus.utils import MONTHS, UFs, parse_UFs, to_list, zfill_year
 
 
 class CIHA(Database):
-    name = "CIHA"
-    paths = (Directory("/dissemin/publicos/CIHA/201101_/Dados"),)
+    name: str = "CIHA"
+    paths: List[Directory] = [
+        Directory("/dissemin/publicos/CIHA/201101_/Dados"),
+    ]
     metadata = {
         "long_name": "Comunicação de Internação Hospitalar e Ambulatorial",
         "source": "http://ciha.datasus.gov.br/CIHA/index.php",
@@ -47,8 +48,11 @@ class CIHA(Database):
         "CIHA": "Comunicação de Internação Hospitalar e Ambulatorial",
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.extension.upper() not in [
+            ".DBC",
+            ".DBF",
+        ]:
             return None
 
         group, _uf, year, month = self.format(file)
@@ -64,7 +68,7 @@ class CIHA(Database):
             last_update=file.info["modify"],
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         group, _uf = file.name[:4].upper(), file.name[4:6].upper()
         year, month = file.name[-4:-2], file.name[-2:]
         return group, _uf, zfill_year(year), month
@@ -75,16 +79,18 @@ class CIHA(Database):
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
         group: Union[List[str], str] = "CIHA",
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown CIHA Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown CIHA Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -105,8 +111,10 @@ class CIHA(Database):
 
 
 class CNES(Database):
-    name = "CNES"
-    paths = (Directory("/dissemin/publicos/CNES/200508_/Dados"),)
+    name: str = "CNES"
+    paths: List[Directory] = [
+        Directory("/dissemin/publicos/CNES/200508_/Dados"),
+    ]
     metadata = {
         "long_name": "Cadastro Nacional de Estabelecimentos de Saúde",
         "source": "https://cnes.datasus.gov.br/",
@@ -155,7 +163,8 @@ class CNES(Database):
 
             if not all(group in self.groups for group in [gr.upper() for gr in groups]):
                 raise ValueError(
-                    f"Unknown CNES group(s): {set(groups).difference(self.groups)}"
+                    f"Unknown CNES group(s): {set(
+                        groups).difference(self.groups)}"
                 )
 
             for group in groups:
@@ -167,8 +176,8 @@ class CNES(Database):
                     self.__loaded__.add(directory.name)
         return self
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.name == "GMufAAmm":
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.name == "GMufAAmm":
             return None
 
         if file.extension.upper() not in [".DBC", ".DBF"]:
@@ -186,7 +195,7 @@ class CNES(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
         return group, _uf, zfill_year(year), month
@@ -197,7 +206,7 @@ class CNES(Database):
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         if not group:
             raise ValueError("At least one CNES group is required")
 
@@ -223,14 +232,14 @@ class CNES(Database):
 
 
 class IBGEDATASUS(Database):
-    name = "IBGE-DataSUS"
-    paths = (
+    name: str = "IBGE-DataSUS"
+    paths: List[Directory] = [
         Directory("/dissemin/publicos/IBGE/POP"),
         Directory("/dissemin/publicos/IBGE/censo"),
         Directory("/dissemin/publicos/IBGE/POPTCU"),
         Directory("/dissemin/publicos/IBGE/projpop"),
         # Directory("/dissemin/publicos/IBGE/Auxiliar") # this has a different file name pattern  # noqa
-    )
+    ]
     metadata = {
         "long_name": "Populaçao Residente, Censos, Contagens "
         "Populacionais e Projeçoes Intercensitarias",
@@ -243,7 +252,7 @@ class IBGEDATASUS(Database):
         ),
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
+    def describe(self, file: FTPFile):
         ext = file.extension.upper()
 
         if ext == ".ZIP":
@@ -261,7 +270,7 @@ class IBGEDATASUS(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         return (file.name[-2:],)
 
     def get_files(
@@ -270,7 +279,7 @@ class IBGEDATASUS(Database):
         year: Optional[Union[str, int, list]] = None,
         *args,
         **kwargs,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         sources = ["POP", "censo", "POPTCU", "projpop"]
         source_dir = None
 
@@ -300,7 +309,7 @@ class IBGEDATASUS(Database):
 
 
 class PNI(Database):
-    name = "PNI"
+    name: str = "PNI"
     paths = (Directory("/dissemin/publicos/PNI/DADOS"),)
     metadata = {
         "long_name": ("Sistema de Informações do Programa Nacional de Imunizações"),  # noqa
@@ -327,8 +336,11 @@ class PNI(Database):
         "DPNI": "Doses Aplicadas",  # TODO: may be incorrect
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.extension.upper() not in [
+            ".DBC",
+            ".DBF",
+        ]:
             return None
 
         group, _uf, year = self.format(file)
@@ -342,7 +354,7 @@ class PNI(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         if len(file.name) != 8:
             raise ValueError(f"Can't format {file.name}")
 
@@ -355,16 +367,18 @@ class PNI(Database):
         group: Union[list, Literal["CNPI", "DPNI"]],
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown PNI Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown PNI Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -381,7 +395,7 @@ class PNI(Database):
 
 
 class SIA(Database):
-    name = "SIA"
+    name: str = "SIA"
     paths = (
         Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
         Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
@@ -425,7 +439,7 @@ class SIA(Database):
         "SAD": "RAAS de Atenção Domiciliar",
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
+    def describe(self, file: FTPFile):
         if file.extension.upper() != ".DBC":
             return None
 
@@ -441,7 +455,7 @@ class SIA(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         if file.extension.upper() in [".DBC", ".DBF"]:
             digits = "".join([d for d in file.name if d.isdigit()])
             if "_" in file.name:
@@ -459,16 +473,18 @@ class SIA(Database):
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIA Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown SIA Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -489,7 +505,7 @@ class SIA(Database):
 
 
 class SIH(Database):
-    name = "SIH"
+    name: str = "SIH"
     paths = (
         Directory("/dissemin/publicos/SIHSUS/199201_200712/Dados"),
         Directory("/dissemin/publicos/SIHSUS/200801_/Dados"),
@@ -523,8 +539,11 @@ class SIH(Database):
         "CM": "",  # TODO
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.extension.upper() not in [".DBC", ".DBF"]:
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.extension.upper() not in [
+            ".DBC",
+            ".DBF",
+        ]:
             return None
 
         group_code, _uf, year, month = self.format(file)
@@ -539,7 +558,7 @@ class SIH(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         group, _uf = file.name[:2].upper(), file.name[2:4].upper()
         year, month = file.name[-4:-2], file.name[-2:]
         return group, _uf, zfill_year(year), month
@@ -550,16 +569,18 @@ class SIH(Database):
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
         month: Optional[Union[list, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         groups = [gr.upper() for gr in to_list(group)]
 
         if not all(gr in list(self.groups) for gr in groups):
             raise ValueError(
-                f"Unknown SIH Group(s): {set(groups).difference(list(self.groups))}"
+                f"Unknown SIH Group(s): {set(
+                    groups).difference(list(self.groups))}"
             )
 
         files = list(filter(lambda f: self.format(f)[0] in groups, files))
@@ -580,7 +601,7 @@ class SIH(Database):
 
 
 class SIM(Database):
-    name = "SIM"
+    name: str = "SIM"
     paths = (
         Directory("/dissemin/publicos/SIM/CID10/DORES"),
         Directory("/dissemin/publicos/SIM/CID9/DORES"),
@@ -592,7 +613,7 @@ class SIM(Database):
     }
     groups = {"CID10": "DO", "CID9": "DOR"}
 
-    def describe(self, file: File) -> Optional[FileDescription]:
+    def describe(self, file: FTPFile):
         group, _uf, year = self.format(file)
         groups = {v: k for k, v in self.groups.items()}
 
@@ -605,7 +626,7 @@ class SIM(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         if "CID9" in str(file.path):
             group, _uf, year = file.name[:-4], file.name[-4:-2], file.name[-2:]
         else:
@@ -617,7 +638,7 @@ class SIM(Database):
         group: Union[list[str], str],
         uf: Optional[Union[list[str], str]] = None,
         year: Optional[Union[list, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = self.files
 
         groups = [self.groups[g.upper()] for g in to_list(group)]
@@ -636,7 +657,7 @@ class SIM(Database):
 
 
 class SINAN(Database):
-    name = "SINAN"
+    name: str = "SINAN"
     paths = (
         Directory("/dissemin/publicos/SINAN/DADOS/FINAIS"),
         Directory("/dissemin/publicos/SINAN/DADOS/PRELIM"),
@@ -717,8 +738,8 @@ class SINAN(Database):
         "ZIKA": "Zika Vírus",
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.extension.upper() != ".DBC":
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.extension.upper() != ".DBC":
             return None
 
         dis_code, year = self.format(file)
@@ -732,7 +753,7 @@ class SINAN(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         year = file.name[-2:]
 
         if file.name.startswith("SRC"):
@@ -750,9 +771,10 @@ class SINAN(Database):
         self,
         dis_code: Optional[Union[str, list]] = None,
         year: Optional[Union[str, int, list]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = list(
-            filter(lambda f: f.extension.upper() in [".DBC", ".DBF"], self.files)
+            filter(lambda f: f.extension.upper()
+                   in [".DBC", ".DBF"], self.files)
         )
 
         if dis_code:
@@ -760,7 +782,8 @@ class SINAN(Database):
 
             if codes and not all(code in self.diseases for code in codes):
                 raise ValueError(
-                    f"Unknown disease(s): {set(codes).difference(set(self.diseases))}"
+                    f"Unknown disease(s): {set(
+                        codes).difference(set(self.diseases))}"
                 )
 
             files = list(filter(lambda f: self.format(f)[0] in codes, files))
@@ -773,7 +796,7 @@ class SINAN(Database):
 
 
 class SINASC(Database):
-    name = "SINASC"
+    name: str = "SINASC"
     paths = (
         Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
         Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
@@ -788,8 +811,8 @@ class SINASC(Database):
         "DNR": "Dados dos Nascidos Vivos por UF de residência",
     }
 
-    def describe(self, file: File) -> Optional[FileDescription]:
-        if not isinstance(file, File) or file.extension.upper() != ".DBC":
+    def describe(self, file: FTPFile):
+        if not isinstance(file, FTPFile) or file.extension.upper() != ".DBC":
             return None
 
         group_code, _uf, year = self.format(file)
@@ -803,7 +826,7 @@ class SINASC(Database):
             last_update=file.info.get("modify"),
         )
 
-    def format(self, file: File) -> tuple:
+    def format(self, file: FTPFile) -> tuple:
         if file.name == "DNEX2021":
             pass
 
@@ -817,7 +840,7 @@ class SINASC(Database):
         group: Union[List[str], str],
         uf: Optional[Union[List[str], str]] = None,
         year: Optional[Union[List, str, int]] = None,
-    ) -> List[File]:
+    ) -> List[FTPFile]:
         files = self.files
 
         groups = to_list(group)

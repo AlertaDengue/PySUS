@@ -1,8 +1,7 @@
-from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, ListView, ListItem, Label
-from textual.containers import Container
-
 from pysus.api.ducklake.client import DuckLake
+from textual.app import App, ComposeResult
+from textual.containers import Container
+from textual.widgets import Footer, Header, Label, ListItem, ListView
 
 
 class PySUS(App):
@@ -25,7 +24,7 @@ class PySUS(App):
 
     async def on_mount(self):
         self.notify("Checking catalog updates...")
-        await self.lake.load_catalog()
+        await self.lake._load_catalog()
         self.notify("Catalog ready!")
         self.push_screen("browser")
 

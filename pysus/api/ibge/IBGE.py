@@ -12,8 +12,8 @@ from zipfile import ZipFile
 import pandas as pd
 import requests
 import urllib3
-from pysus.data.local import ParquetSet
 from pysus.api.ftp import IBGEDATASUS
+from pysus.data.local import ParquetSet
 
 # requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
 
@@ -296,10 +296,12 @@ class FetchData:
             resultados vêm a partir do segundo elemento.
     """
 
-    def __init__(self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs):
+    def __init__(
+        self, agregado: int, periodos: str, variavel: str = "allxp", **kwargs
+    ):
         self.url = (
-            APIBASE +
-            f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
+            APIBASE
+            + f"agregados/{agregado}/periodos/{periodos}/variaveis/{variavel}?"
         )
         self.url += "&".join([f"{k}={v}" for k, v in kwargs.items()])
         self.JSON = None
@@ -388,7 +390,8 @@ def get_population(
         opts = ["ALF", "ESCA", "ESCB", "IDOSO", "RENDA"]
         if not censo_data or censo_data not in opts:
             raise ValueError(
-                f"Incorrect 'censo_data' parameter. Options: {opts}")
+                f"Incorrect 'censo_data' parameter. Options: {opts}"
+            )
         file = [f for f in files if censo_data in f.name][0].download()
     else:
         file = files[0].download()
@@ -412,6 +415,8 @@ def _unzip_to_dataframe(file: str) -> pd.DataFrame:
                 return pd.read_csv(zip_file.extract(file, tempdir))
 
             if file.lower().endswith((".dbf", ".dbc")):
-                return ParquetSet(zip_file.extract(file, tempdir)).to_dataframe()
+                return ParquetSet(
+                    zip_file.extract(file, tempdir)
+                ).to_dataframe()
 
         raise ValueError(f"No data found in {zip_file}")
