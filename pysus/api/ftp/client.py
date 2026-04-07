@@ -76,7 +76,7 @@ class FTP(BaseRemoteClient):
                 except Exception:
                     self.ftp.close()
                 finally:
-                    self.ftp = None
+                    self._ftp = None
 
         await anyio.to_thread.run_sync(_close)
 
@@ -130,7 +130,8 @@ class FTP(BaseRemoteClient):
 
         try:
             modify = datetime.strptime(
-                f"{date_str} {time_str}", "%m-%d-%y %I:%M%p"
+                f"{date_str} {time_str}",
+                "%m-%d-%y %I:%M%p",
             )
         except ValueError:
             modify = datetime.now()

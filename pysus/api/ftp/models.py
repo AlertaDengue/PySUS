@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import pathlib
+from pathlib import Path
 from abc import abstractmethod
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -38,7 +38,7 @@ class File(BaseRemoteFile):
 
     @property
     def extension(self) -> str:
-        return pathlib.Path(self.path).suffix
+        return Path(self.path).suffix
 
     @property
     def size(self) -> int:
@@ -71,11 +71,11 @@ class File(BaseRemoteFile):
 
     async def _download(
         self,
-        output: Optional[pathlib.Path] = None,
+        output: Optional[Path] = None,
         callback: Optional[Callable[[int], None]] = None,
-    ) -> pathlib.Path:
+    ) -> Path:
         if output is None:
-            cache_dir = pathlib.Path(CACHEPATH)
+            cache_dir = Path(CACHEPATH)
             cache_dir.mkdir(parents=True, exist_ok=True)
             output = cache_dir / self.basename
 
@@ -109,9 +109,7 @@ class Directory:
         return self._content
 
     async def load(self) -> None:
-        raw_infos = await self.client._list_directory(
-            self.path, self.formatter
-        )
+        raw_infos = await self.client._list_directory(self.path, self.formatter)
         self._content = []
 
         file_parent = (
@@ -147,7 +145,12 @@ class Directory:
         return f"<Directory: {self.path}>"
 
 
-class Group(Directory, BaseRemoteGroup):
+class Group(BaseRemoteGroup):
+    path: str
+    _long_name: str = PrivateAttr()
+    _description: str = PrivateAttr()
+    _dir: Directory = PrivateAttr()
+
     def __init__(
         self,
         path: str,
@@ -155,14 +158,20 @@ class Group(Directory, BaseRemoteGroup):
         long_name: str,
         description: str = "",
     ):
-        super().__init__(
+        super().__init__(dataset=dataset, path=path)
+        self._long_name = long_name
+        self._description = description
+        self._dir = Directory(
             path=path,
             client=dataset.client,
             formatter=dataset.formatter,
+            dataset=dataset,
+            parent=self,
         )
-        self.dataset = dataset
-        self._long_name = long_name
-        self._description = description
+
+    @property
+    def name(self) -> str:
+        return os.path.basename(self.path)
 
     @property
     def long_name(self) -> str:
@@ -171,6 +180,10 @@ class Group(Directory, BaseRemoteGroup):
     @property
     def description(self) -> str:
         return self._description
+
+    @property
+    async def content(self) -> List[Union[Directory, File]]:
+        return await self._dir.content
 
     async def _fetch_files(self) -> List[BaseRemoteFile]:
         items = await self.content

@@ -427,21 +427,81 @@ class Zip(BaseCompressedFile):
 
         return await anyio.to_thread.run_sync(_list)
 
+    async def open_member(self, member_name: str) -> bytes:
+        def _read():
+            with zipfile.ZipFile(self.path) as z:
+                return z.read(member_name)
+
+        return await anyio.to_thread.run_sync(_read)
+
     async def extract(
         self, target_dir: Optional[Path] = CACHEPATH
     ) -> List[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
+        target_dir = Path(target_dir).expanduser().resolve()
         target_dir.mkdir(parents=True, exist_ok=True)
-        members = await self.list_members()
 
-        def _extract():
+        def _extract_sync():
             with zipfile.ZipFile(self.path) as z:
                 z.extractall(target_dir)
 
-        await anyio.to_thread.run_sync(_extract)
+        await anyio.to_thread.run_sync(_extract_sync)
+
+        members = await self.list_members()
         tasks = [ExtensionFactory.instantiate(target_dir / m) for m in members]
         return list(await asyncio.gather(*tasks))
+
+    async def to_parquet(
+        self,
+        output_path: Optional[Union[str, Path]] = None,
+        chunk_size: int = 30000,
+    ) -> "Parquet":
+        final_output = (
+            Path(output_path or self.path.with_suffix(".parquet"))
+            .expanduser()
+            .resolve()
+        )
+        temp_dir = self.path.with_suffix(".tmp_extract")
+
+        try:
+            extracted_files = await self.extract(target_dir=temp_dir)
+
+            tabular_file = next(
+                (f for f in extracted_files if isinstance(f, BaseTabularFile)),
+                None,
+            )
+
+            if not tabular_file:
+                raise ValueError(
+                    f"No tabular file found inside {self.path.name}",
+                )
+
+            return await tabular_file.to_parquet(
+                output_path=final_output, chunk_size=chunk_size
+            )
+
+        finally:
+            await self._safe_cleanup(temp_dir)
+
+    async def _safe_cleanup(self, directory: Path):
+        def _cleanup():
+            if not directory.exists():
+                return
+
+            for item in directory.iterdir():
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    for subitem in item.iterdir():
+                        if subitem.is_file():
+                            subitem.unlink()
+                    item.rmdir()
+
+            if directory.exists():
+                directory.rmdir()
+
+        await anyio.to_thread.run_sync(_cleanup)
 
 
 class GZip(BaseCompressedFile):
@@ -508,9 +568,7 @@ class Tar(BaseCompressedFile):
 
 class FTPNotImported(BaseTabularFile):
     type: FileType = Field(None)
-    import_err: ClassVar[
-        str
-    ] = """
+    import_err: ClassVar[str] = """
         run "pip install pysus[ftp]" to handle DBC or DBF files
     """
 
