@@ -124,9 +124,13 @@ class CSV(BaseTabularFile):
     async def load(self) -> pd.DataFrame:
         encoding = await self._get_encoding()
         separator = await self._get_sep()
-        return await anyio.to_thread.run_sync(
-            pd.read_csv, self.path, sep=separator, encoding=encoding
-        )
+
+        def _read_sync():
+            return pd.read_csv(
+                self.path, sep=separator, encoding=encoding, low_memory=False
+            )
+
+        return await anyio.to_thread.run_sync(_read_sync)
 
     async def stream(
         self,
@@ -135,7 +139,7 @@ class CSV(BaseTabularFile):
         encoding = await self._get_encoding()
         separator = await self._get_sep()
 
-        def _get_reader():
+        def _get_reader_sync():
             return pd.read_csv(
                 self.path,
                 sep=separator,
@@ -145,7 +149,7 @@ class CSV(BaseTabularFile):
                 low_memory=False,
             )
 
-        reader = await anyio.to_thread.run_sync(_get_reader)
+        reader = await anyio.to_thread.run_sync(_get_reader_sync)
         for chunk in reader:
             yield chunk
             await anyio.sleep(0)
@@ -514,6 +518,12 @@ class GZip(BaseCompressedFile):
 
         return await anyio.to_thread.run_sync(_read)
 
+    async def list_members(self) -> List[str]:
+        return [self.path.stem]
+
+    async def open_member(self, member_name: str) -> bytes:
+        return await self.load()
+
     async def extract(
         self, target_dir: Optional[Path] = CACHEPATH
     ) -> List[BaseLocalFile]:
@@ -548,6 +558,14 @@ class Tar(BaseCompressedFile):
                 return t.getnames()
 
         return await anyio.to_thread.run_sync(_list)
+
+    async def open_member(self, member_name: str) -> bytes:
+        def _read():
+            with tarfile.open(self.path) as t:
+                f = t.extractfile(member_name)
+                return f.read() if f else b""
+
+        return await anyio.to_thread.run_sync(_read)
 
     async def extract(
         self, target_dir: Optional[Path] = CACHEPATH

@@ -23,9 +23,6 @@ from pysus.api.extensions import (
 )
 
 
-# -------------------------
-# Fixtures & helpers
-# -------------------------
 @pytest.fixture
 def tmp_dir(tmp_path: Path):
     return tmp_path
@@ -38,9 +35,6 @@ async def collect_async(gen):
     return out
 
 
-# -------------------------
-# Directory
-# -------------------------
 @pytest.mark.asyncio
 async def test_directory_load_and_stream(tmp_dir):
     subdir = tmp_dir / "dir"
@@ -71,9 +65,6 @@ async def test_directory_empty(tmp_dir):
     assert loaded == []
 
 
-# -------------------------
-# CSV
-# -------------------------
 @pytest.mark.asyncio
 async def test_csv_load_and_stream(tmp_dir):
     path = tmp_dir / "data.csv"
@@ -106,9 +97,6 @@ async def test_csv_sep_and_encoding_fallback(tmp_dir):
     assert df.iloc[0]["a"] == 1
 
 
-# -------------------------
-# Parquet
-# -------------------------
 @pytest.mark.asyncio
 async def test_parquet_parse_and_stream(tmp_dir):
     csv_path = tmp_dir / "data.csv"
@@ -136,9 +124,6 @@ async def test_parquet_parse_and_stream(tmp_dir):
     assert len(chunks) >= 1
 
 
-# -------------------------
-# DBF
-# -------------------------
 @pytest.mark.asyncio
 async def test_dbf_decode_and_failure(tmp_dir):
     pytest.importorskip("dbfread")
@@ -156,9 +141,6 @@ async def test_dbf_decode_and_failure(tmp_dir):
         await obj.load()
 
 
-# -------------------------
-# DBC
-# -------------------------
 @pytest.mark.asyncio
 async def test_dbc_import_behavior(tmp_dir):
     path = tmp_dir / "file.dbc"
@@ -177,9 +159,6 @@ async def test_dbc_import_behavior(tmp_dir):
             await obj.to_parquet(tmp_dir / "out.parquet")
 
 
-# -------------------------
-# JSON
-# -------------------------
 @pytest.mark.asyncio
 async def test_json_load_and_stream(tmp_dir):
     path = tmp_dir / "data.json"
@@ -197,9 +176,6 @@ async def test_json_load_and_stream(tmp_dir):
     assert streamed[0].equals(df)
 
 
-# -------------------------
-# PDF
-# -------------------------
 @pytest.mark.asyncio
 async def test_pdf_load_and_stream(tmp_dir):
     path = tmp_dir / "file.pdf"
@@ -215,9 +191,6 @@ async def test_pdf_load_and_stream(tmp_dir):
     assert b"".join(chunks) == content
 
 
-# -------------------------
-# Generic File
-# -------------------------
 @pytest.mark.asyncio
 async def test_file_load_and_stream(tmp_dir):
     path = tmp_dir / "file.bin"
@@ -233,9 +206,6 @@ async def test_file_load_and_stream(tmp_dir):
     assert b"".join(chunks) == content
 
 
-# -------------------------
-# ZIP
-# -------------------------
 @pytest.mark.asyncio
 async def test_zip_full_flow(tmp_dir):
     zip_path = tmp_dir / "file.zip"
@@ -258,9 +228,6 @@ async def test_zip_full_flow(tmp_dir):
     assert any(isinstance(f, CSV) for f in extracted)
 
 
-# -------------------------
-# GZIP
-# -------------------------
 @pytest.mark.asyncio
 async def test_gzip_full_flow(tmp_dir):
     path = tmp_dir / "data.csv.gz"
@@ -280,9 +247,6 @@ async def test_gzip_full_flow(tmp_dir):
     assert isinstance(extracted[0], CSV)
 
 
-# -------------------------
-# TAR
-# -------------------------
 @pytest.mark.asyncio
 async def test_tar_full_flow(tmp_dir):
     tar_path = tmp_dir / "file.tar"

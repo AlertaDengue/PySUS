@@ -12,12 +12,12 @@ from pysus.api.models import (
     BaseRemoteGroup,
 )
 
-from .catalog import Dataset, DatasetGroup, File
+from .catalog import CatalogDataset, DatasetGroup, CatalogFile
 
 
-class CatalogFile(BaseRemoteFile):
-    record: File = Field(exclude=True)
-    parent: Union["CatalogDataset", "CatalogGroup"] = Field(exclude=True)
+class File(BaseRemoteFile):
+    record: CatalogFile = Field(exclude=True)
+    parent: Union["Dataset", "Group"] = Field(exclude=True)
 
     type: str = "remote"
 
@@ -52,9 +52,7 @@ class CatalogFile(BaseRemoteFile):
     async def _download(
         self, output: Path, callback: Optional[Callable[[int], None]] = None
     ) -> Path:
-        return await self.client._download_file(
-            self, output, callback=callback
-        )
+        return await self.client._download_file(self, output, callback=callback)
 
     async def verify(self, path: Path) -> bool:
         if not self.sha256:
@@ -71,9 +69,9 @@ class CatalogFile(BaseRemoteFile):
         return actual_hash == self.sha256
 
 
-class CatalogGroup(BaseRemoteGroup):
+class Group(BaseRemoteGroup):
     record: DatasetGroup = Field(exclude=True)
-    dataset: "CatalogDataset" = Field(exclude=True)
+    dataset: "Dataset" = Field(exclude=True)
 
     @property
     def name(self) -> str:
@@ -90,17 +88,15 @@ class CatalogGroup(BaseRemoteGroup):
     @property
     def description(self) -> str:
         return (
-            self.record.group_metadata.description
-            if self.record.group_metadata
-            else ""
+            self.record.group_metadata.description if self.record.group_metadata else ""
         )
 
-    async def files(self, **kwargs) -> List[CatalogFile]:
-        return [CatalogFile(record=f, parent=self) for f in self.record.files]
+    async def files(self, **kwargs) -> List[File]:
+        return [File(record=f, parent=self) for f in self.record.files]
 
 
-class CatalogDataset(BaseRemoteDataset):
-    record: Dataset = Field(exclude=True)
+class Dataset(BaseRemoteDataset):
+    record: CatalogDataset = Field(exclude=True)
     client: BaseRemoteClient = Field(exclude=True)
 
     @property
@@ -123,22 +119,13 @@ class CatalogDataset(BaseRemoteDataset):
             else ""
         )
 
-    async def content(
-        self, **kwargs
-    ) -> List[Union[CatalogGroup, CatalogFile]]:
+    async def content(self, **kwargs) -> List[Union[Group, File]]:
         items = []
 
         if self.record.groups:
-            items.extend(
-                [
-                    CatalogGroup(record=g, dataset=self)
-                    for g in self.record.groups
-                ]
-            )
+            items.extend([Group(record=g, dataset=self) for g in self.record.groups])
 
         if self.record.files:
-            items.extend(
-                [CatalogFile(record=f, parent=self) for f in self.record.files]
-            )
+            items.extend([File(record=f, parent=self) for f in self.record.files])
 
         return items

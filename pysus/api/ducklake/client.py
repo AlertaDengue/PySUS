@@ -11,8 +11,8 @@ from pysus.api.models import BaseRemoteClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import joinedload, sessionmaker
 
-from .catalog import Dataset, DatasetGroup
-from .models import CatalogDataset, CatalogFile
+from .catalog import CatalogDataset, DatasetGroup
+from .models import Dataset, File
 
 
 class DuckLakeCredentials(BaseModel):
@@ -47,17 +47,17 @@ class DuckLake(BaseRemoteClient):
     def _is_authenticated(self) -> bool:
         return self.credentials is not None
 
-    async def datasets(self, **kwargs) -> List[CatalogDataset]:
+    async def datasets(self, **kwargs) -> List[Dataset]:
         if not self._Session:
             await self.connect()
 
         def _fetch():
             with self._Session() as session:
                 return (
-                    session.query(Dataset)
+                    session.query(CatalogDataset)
                     .options(
-                        joinedload(Dataset.dataset_metadata),
-                        joinedload(Dataset.groups).joinedload(
+                        joinedload(CatalogDataset.dataset_metadata),
+                        joinedload(CatalogDataset.groups).joinedload(
                             DatasetGroup.files
                         ),
                     )
@@ -65,7 +65,7 @@ class DuckLake(BaseRemoteClient):
                 )
 
         records = await anyio.to_thread.run_sync(_fetch)
-        return [CatalogDataset(record=rec, client=self) for rec in records]
+        return [Dataset(record=rec, client=self) for rec in records]
 
     async def login(
         self,
@@ -102,12 +102,12 @@ class DuckLake(BaseRemoteClient):
                 "s3_use_ssl": "true",
             }
             if self._is_authenticated:
-                s3_cfg[
-                    "s3_access_key_id"
-                ] = self.credentials.access_key.get_secret_value()
-                s3_cfg[
-                    "s3_secret_access_key"
-                ] = self.credentials.secret_key.get_secret_value()
+                s3_cfg["s3_access_key_id"] = (
+                    self.credentials.access_key.get_secret_value()
+                )
+                s3_cfg["s3_secret_access_key"] = (
+                    self.credentials.secret_key.get_secret_value()
+                )
 
             for key, value in s3_cfg.items():
                 conn.exec_driver_sql(f"SET {key}='{value}';")
@@ -134,7 +134,7 @@ class DuckLake(BaseRemoteClient):
 
     async def _download_file(
         self,
-        file: "CatalogFile",
+        file: "File",
         output: Path,
         callback: Optional[Callable[[int], None]] = None,
     ) -> Path:
@@ -185,9 +185,7 @@ class DuckLake(BaseRemoteClient):
 
     async def _upload_catalog(self):
         if not self._is_authenticated:
-            raise PermissionError(
-                "Admin credentials required to upload catalog."
-            )
+            raise PermissionError("Admin credentials required to upload catalog.")
 
         def _upload():
             self._s3_client.upload_file(

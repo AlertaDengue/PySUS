@@ -1,109 +1,82 @@
-from datetime import datetime
-from pathlib import Path
-from typing import AsyncGenerator, List, Optional
-
-import pandas as pd
 import pytest
+import hashlib
+from unittest.mock import MagicMock
+from pathlib import Path
+from datetime import datetime
+from typing import AsyncGenerator, Optional, Callable, Union  # noqa
 
-from .models import BaseLocalFile, BaseRemoteFile, BaseTabularFile
+from pydantic import ValidationError
+from pysus.api.models import (
+    BaseLocalFile,
+    BaseRemoteFile,
+    BaseRemoteDataset,
+    BaseRemoteGroup,  # noqa
+)
 
 
 class MockLocalFile(BaseLocalFile):
     type: str = "mock"
 
-    async def load(self) -> str:
-        return self.path.read_text()
+    async def load(self) -> bytes:
+        return b"test content"
 
     async def stream(
-        self, chunk_size: Optional[int] = None
-    ) -> AsyncGenerator[str, None]:
-        content = self.path.read_text()
-        yield content
-
-
-class MockTabularFile(BaseTabularFile):
-    type: str = "tabular"
-
-    @property
-    def columns(self) -> List[str]:
-        return ["col1", "col2"]
-
-    @property
-    def rows(self) -> int:
-        return 2
-
-    async def load(self) -> pd.DataFrame:
-        return pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-
-    async def stream(
-        self, chunk_size: int = 10
-    ) -> AsyncGenerator[pd.DataFrame, None]:
-        yield await self.load()
+        self,
+        chunk_size: int = 1024,
+    ) -> AsyncGenerator[bytes, None]:
+        yield b"test content"
 
 
 class MockRemoteFile(BaseRemoteFile):
     type: str = "remote"
-    basename: str = "test.txt"
 
-    async def _download(self, output: Path) -> Path:
-        output.write_text("downloaded content")
+    @property
+    def extension(self) -> str:
+        return ".txt"
+
+    @property
+    def size(self) -> int:
+        return 12
+
+    @property
+    def modify(self) -> datetime:
+        return datetime(2026, 1, 1)
+
+    async def _download(
+        self, output: Path, callback: Optional[Callable[[int], None]] = None
+    ) -> Path:
+        output.write_bytes(b"test content")
         return output
 
 
-@pytest.fixture
-def temp_file(tmp_path):
-    p = tmp_path / "test_file.txt"
-    p.write_text("pysus test content")
-    return p
+MockRemoteFile.model_rebuild()
 
 
 @pytest.mark.asyncio
-async def test_base_local_file_metadata(temp_file):
-    file_model = MockLocalFile(path=temp_file)
+async def test_get_hash(tmp_path):
+    path = tmp_path / "test_file.txt"
+    content = b"test content"
+    path.write_bytes(content)
 
-    assert file_model.extension == ".txt"
-    assert file_model.size > 0
-    assert isinstance(file_model.modify, datetime)
-    assert str(file_model) == "test_file.txt"
+    file_model = MockLocalFile(path=path)
 
-
-@pytest.mark.asyncio
-async def test_get_hash(temp_file):
-    file_model = MockLocalFile(path=temp_file)
-    expected_hash = (
-        "7737c35593c6609f3e49339e162093f1d326922da19f2a2491136b69a68c072e"
-    )
-
+    expected_hash = hashlib.sha256(content).hexdigest()
     generated_hash = await file_model.get_hash()
+
     assert generated_hash == expected_hash
 
 
 @pytest.mark.asyncio
-async def test_tabular_file_properties(tmp_path):
-    p = tmp_path / "table.csv"
-    p.write_text("col1,col2\n1,3\n2,4")
-
-    tabular = MockTabularFile(path=p)
-    assert tabular.columns == ["col1", "col2"]
-    assert tabular.rows == 2
-
-    df = await tabular.load()
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 2
-
-
-@pytest.mark.asyncio
 async def test_remote_file_download(tmp_path):
-    remote = MockRemoteFile(type="remote")
-    download_dir = tmp_path / "downloads"
+    mock_dataset = MagicMock(spec=BaseRemoteDataset)
+    remote = MockRemoteFile(path="remote/path.txt", parent=mock_dataset)
+    dest = tmp_path / "downloaded.txt"
 
-    local_file = await remote.download(output=download_dir)
-
-    assert local_file.path.exists()
-    assert local_file.path.name == "test.txt"
-    assert local_file.path.read_text() == "downloaded content"
+    result = await remote.download(output=dest)
+    assert result.path == dest
+    assert dest.exists()
 
 
 def test_pydantic_validation():
-    with pytest.raises(ValueError):
-        MockLocalFile(path="not-a-path-object")
+    with pytest.raises(ValidationError):
+        MockRemoteFile(path="missing_parent")

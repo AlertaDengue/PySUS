@@ -35,7 +35,7 @@ class CatalogTable(Base):
     __table_args__ = {"schema": "pysus"}
 
 
-class Dataset(CatalogTable):
+class CatalogDataset(CatalogTable):
     __tablename__ = "datasets"
 
     id = Column(Integer, primary_key=True)
@@ -138,7 +138,7 @@ class DatasetGroup(CatalogTable):
     )
 
 
-class File(CatalogTable):
+class CatalogFile(CatalogTable):
     __tablename__ = "files"
 
     id = Column(Integer, primary_key=True)
