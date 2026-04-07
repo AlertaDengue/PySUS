@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import anyio
 from pydantic import Field
@@ -49,8 +49,12 @@ class CatalogFile(BaseRemoteFile):
     def sha256(self) -> Optional[str]:
         return self.record.sha256
 
-    async def _download(self, output: Path) -> Path:
-        return await self.client._download_file(self, output)
+    async def _download(
+        self, output: Path, callback: Optional[Callable[[int], None]] = None
+    ) -> Path:
+        return await self.client._download_file(
+            self, output, callback=callback
+        )
 
     async def verify(self, path: Path) -> bool:
         if not self.sha256:
@@ -119,10 +123,22 @@ class CatalogDataset(BaseRemoteDataset):
             else ""
         )
 
-    async def groups(self) -> List[CatalogGroup]:
-        return [
-            CatalogGroup(record=g, dataset=self) for g in self.record.groups
-        ]
+    async def content(
+        self, **kwargs
+    ) -> List[Union[CatalogGroup, CatalogFile]]:
+        items = []
 
-    async def files(self, **kwargs) -> List[CatalogFile]:
-        return [CatalogFile(record=f, parent=self) for f in self.record.files]
+        if self.record.groups:
+            items.extend(
+                [
+                    CatalogGroup(record=g, dataset=self)
+                    for g in self.record.groups
+                ]
+            )
+
+        if self.record.files:
+            items.extend(
+                [CatalogFile(record=f, parent=self) for f in self.record.files]
+            )
+
+        return items

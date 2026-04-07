@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import asyncio
 import hashlib
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, List, Optional, Union
+from typing import Any, AsyncGenerator, Callable, List, Optional, Union
 
 import anyio
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pysus import CACHEPATH
 from tqdm.asyncio import tqdm
+
+from .types import State
 
 
 class BaseFile(BaseModel, ABC):
@@ -22,11 +26,18 @@ class BaseFile(BaseModel, ABC):
 
     type: str
 
-    def __str__(self) -> str:
-        return self.path.name
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
 
-    def __repr__(self):
-        return self.path.name
+    @property
+    def basename(self) -> str:
+        p = self.path
+        return p.name if isinstance(p, Path) else p.split("/")[-1]
+
+    def __str__(self) -> str:
+        return self.basename
 
     @property
     @abstractmethod
@@ -46,6 +57,10 @@ class BaseFile(BaseModel, ABC):
 
 class BaseLocalFile(BaseFile, ABC):
     path: Path
+
+    @property
+    def name(self) -> str:
+        return self.path.name
 
     async def get_hash(
         self, algorithm: str = "sha256", chunk_size: int = 1024 * 1024
@@ -178,8 +193,26 @@ class BaseCompressedFile(BaseLocalFile, ABC):
             await asyncio.sleep(0)
 
 
-class BaseRemoteFile(BaseFile, ABC):
+class SearchableMixin:
+    def _matches(self, obj: Any, **kwargs) -> bool:
+        for key, value in kwargs.items():
+            obj_value = getattr(obj, key, None)
+            if obj_value != value:
+                return False
+        return True
+
+
+class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
     parent: Union["BaseRemoteDataset", "BaseRemoteGroup"] = Field(exclude=True)
+    _path: str = PrivateAttr()
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+    @property
+    def name(self) -> str:
+        return self.basename
 
     @property
     def client(self) -> "BaseRemoteClient":
@@ -187,58 +220,57 @@ class BaseRemoteFile(BaseFile, ABC):
             return self.parent.client
         return self.parent.dataset.client
 
+    @property
+    def year(self) -> Optional[int]:
+        return None
+
+    @property
+    def month(self) -> Optional[int]:
+        return None
+
+    @property
+    def state(self) -> Optional[State]:
+        return None
+
     @abstractmethod
-    async def _download(self, output: Path) -> Path:
+    async def _download(
+        self,
+        output: Optional[Path] = None,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> Path:
         pass
 
-    async def download(self, output: Union[str, Path]) -> BaseLocalFile:
+    async def download(
+        self,
+        output: Optional[Union[str, Path]] = None,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> BaseLocalFile:
         from pysus.api.extensions import ExtensionFactory
 
-        output_path = Path(output).expanduser().resolve()
-
-        if output_path.is_dir():
-            output_path.mkdir(parents=True, exist_ok=True)
-            dest = output_path / self.basename
+        if output is None:
+            cache_dir = Path(CACHEPATH)
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            dest = cache_dir / self.basename
         else:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            dest = output_path
+            output_path = Path(output).expanduser().resolve()
+            if output_path.is_dir():
+                output_path.mkdir(parents=True, exist_ok=True)
+                dest = output_path / self.basename
+            else:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                dest = output_path
 
-        local_path = await self._download(output=dest)
+        local_path = await self._download(output=dest, callback=callback)
 
         return await ExtensionFactory.instantiate(local_path)
 
 
-class BaseRemoteGroup(BaseModel, ABC):
-    dataset: "BaseRemoteDataset" = Field(exclude=True)
+class BaseRemoteObject(BaseModel, ABC):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def long_name(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        pass
-
-    @abstractmethod
-    async def files(self, **kwargs) -> List["BaseRemoteFile"]:
-        pass
-
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-
-class BaseRemoteDataset(BaseModel, ABC):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    client: "BaseRemoteClient" = Field(exclude=True)
-
     @property
     @abstractmethod
     def name(self) -> str:
@@ -254,26 +286,73 @@ class BaseRemoteDataset(BaseModel, ABC):
     def description(self) -> str:
         pass
 
-    @abstractmethod
-    async def groups(self) -> List["BaseRemoteGroup"]:
-        pass
+
+class BaseRemoteGroup(BaseRemoteObject, SearchableMixin, ABC):
+    dataset: "BaseRemoteDataset" = Field(exclude=True)
+    _files: Optional[List["BaseRemoteFile"]] = PrivateAttr(default=None)
+
+    @property
+    def parent(self) -> "BaseRemoteDataset":
+        return self.dataset
 
     @abstractmethod
-    async def files(self, **kwargs) -> List["BaseRemoteFile"]:
+    async def _fetch_files(self) -> List["BaseRemoteFile"]:
         pass
 
-    async def children(
+    @property
+    async def files(self) -> List["BaseRemoteFile"]:
+        if self._files is None:
+            self._files = await self._fetch_files()
+        return self._files
+
+    async def search(self, **kwargs) -> List["BaseRemoteFile"]:
+        all_files = await self.files
+        if not kwargs:
+            return all_files
+        return [f for f in all_files if self._matches(f, **kwargs)]
+
+
+class BaseRemoteDataset(BaseRemoteObject, SearchableMixin, ABC):
+    client: "BaseRemoteClient" = Field(exclude=True)
+    _content: Optional[
+        List[
+            Union[
+                "BaseRemoteGroup",
+                "BaseRemoteFile",
+            ]
+        ]
+    ] = PrivateAttr(default=None)
+
+    @abstractmethod
+    async def _fetch_content(
         self,
-    ) -> Union[List["BaseRemoteGroup"], List["BaseRemoteFile"],]:
-        groups = await self.groups()
-        if groups:
-            return groups
-        return await self.files()
+    ) -> List[Union["BaseRemoteGroup", "BaseRemoteFile",]]:
+        pass
+
+    @property
+    async def content(
+        self,
+    ) -> List[Union["BaseRemoteGroup", "BaseRemoteFile"]]:
+        if self._content is None:
+            self._content = await self._fetch_content()
+        return self._content
+
+    async def search(self, **kwargs) -> List["BaseRemoteFile"]:
+        contents = await self.content
+
+        matches = []
+        for item in contents:
+            if isinstance(item, BaseRemoteGroup):
+                group_matches = await item.search(**kwargs)
+                matches.extend(group_matches)
+            elif isinstance(item, BaseRemoteFile):
+                if self._matches(item, **kwargs):
+                    matches.append(item)
+
+        return matches
 
 
-class BaseRemoteClient(BaseModel, ABC):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
+class BaseRemoteClient(BaseRemoteObject, ABC):
     @abstractmethod
     async def connect(self) -> None:
         pass
@@ -291,5 +370,10 @@ class BaseRemoteClient(BaseModel, ABC):
         pass
 
     @abstractmethod
-    async def _download_file(self, file: BaseRemoteFile, output: Path) -> Path:
+    async def _download_file(
+        self,
+        file: BaseRemoteFile,
+        output: Path,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> Path:
         pass

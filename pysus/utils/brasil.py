@@ -1,12 +1,3 @@
-__all__ = [
-    "MUNICIPALITIES",
-    "MUN_BY_GEOCODE",
-    "UFs",
-    "MONTHS",
-    "get_city_name_by_geocode",
-    "parse_UFs",
-]
-
 import json
 from pathlib import Path
 from typing import Union

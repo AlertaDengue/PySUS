@@ -1,14 +1,13 @@
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 import anyio
 import boto3
-import duckdb
 import httpx
 from botocore.config import Config
 from pydantic import BaseModel, PrivateAttr, SecretStr
 from pysus import CACHEPATH
-from pysus.api.models import BaseLocalFile, BaseRemoteClient
+from pysus.api.models import BaseRemoteClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import joinedload, sessionmaker
 
@@ -30,7 +29,6 @@ class DuckLake(BaseRemoteClient):
     _cache_dir: Path = PrivateAttr()
     _catalog_local: Path = PrivateAttr()
     _catalog_remote: str = "public/catalog.db"
-    _con: Optional[duckdb.DuckDBPyConnection] = PrivateAttr(default=None)
     _s3_client: Any = PrivateAttr(default=None)
     _engine: Any = PrivateAttr(default=None)
     _Session: Any = PrivateAttr(default=None)
@@ -82,92 +80,81 @@ class DuckLake(BaseRemoteClient):
         else:
             self.credentials = None
 
-        if self._con:
-            await self.close()
-
-        self._con = await anyio.to_thread.run_sync(self._create_connection)
+        await self.connect(force=True)
 
         if self._is_authenticated:
             self._s3_client = await anyio.to_thread.run_sync(
-                self._get_s3_client
+                self._get_s3_client,
             )
 
+    def _setup_engine(self):
+        engine = create_engine(f"duckdb:///{self._catalog_local}")
+
+        with engine.connect() as conn:
+            conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
+
+            conn.exec_driver_sql("SET search_path='pysus,main';")
+
+            s3_cfg = {
+                "s3_endpoint": self.endpoint,
+                "s3_region": self.region,
+                "s3_url_style": "path",
+                "s3_use_ssl": "true",
+            }
+            if self._is_authenticated:
+                s3_cfg[
+                    "s3_access_key_id"
+                ] = self.credentials.access_key.get_secret_value()
+                s3_cfg[
+                    "s3_secret_access_key"
+                ] = self.credentials.secret_key.get_secret_value()
+
+            for key, value in s3_cfg.items():
+                conn.exec_driver_sql(f"SET {key}='{value}';")
+
+        return engine
+
     async def connect(self, force: bool = False):
-        if self._con and not force:
+        if self._engine and not force:
             return
 
         await self._load_catalog()
-
-        self._con = await anyio.to_thread.run_sync(self._create_connection)
-
-        self._engine = create_engine(f"duckdb:///{self._catalog_local}")
+        self._engine = await anyio.to_thread.run_sync(self._setup_engine)
         self._Session = sessionmaker(bind=self._engine)
 
     async def close(self):
-        if self._con:
+        if self._engine:
             if self._is_authenticated:
                 await self._upload_catalog()
 
-            await anyio.to_thread.run_sync(self._con.close)
-            self._con = None
+            await anyio.to_thread.run_sync(self._engine.dispose)
+            self._engine = None
+            self._Session = None
             self._s3_client = None
 
-    async def upload(self, file: BaseLocalFile, remote_path: str, **kwargs):
-        if not self._is_authenticated:
-            raise PermissionError("Authentication required")
-
-        def _upload():
-            self._s3_client.upload_file(
-                str(file.path),
-                self.bucket,
-                remote_path,
-            )
-
-        await anyio.to_thread.run_sync(_upload)
-
-    async def _download_file(self, file: "CatalogFile", output: Path) -> Path:
+    async def _download_file(
+        self,
+        file: "CatalogFile",
+        output: Path,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> Path:
         url = f"https://{self.endpoint}/{self.bucket}/{file.record.path}"
         async with httpx.AsyncClient(follow_redirects=True) as client:
             async with client.stream("GET", url) as r:
                 r.raise_for_status()
-
-                def _write():
-                    with open(output, "wb") as f:
-                        for chunk in r.iter_bytes(chunk_size=1024 * 1024):
-                            f.write(chunk)
-
-                await anyio.to_thread.run_sync(_write)
+                with open(output, "wb") as f:
+                    async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
+                        await anyio.to_thread.run_sync(f.write, chunk)
+                        if callback:
+                            callback(len(chunk))
         return output
-
-    async def _load_catalog(self):
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            local_size = -1
-            if self._catalog_local.exists():
-                try:
-                    local_size = self._catalog_local.stat().st_size
-                except OSError:
-                    pass
-
-            try:
-                head = await client.head(self._catalog_url)
-                head.raise_for_status()
-                remote_size = int(head.headers.get("content-length", 0))
-            except Exception:
-                remote_size = 0
-
-            if remote_size != local_size:
-                await self._download_catalog(client)
 
     async def _download_catalog(self, client: httpx.AsyncClient):
         async with client.stream("GET", self._catalog_url) as r:
             r.raise_for_status()
-
-            def _write():
-                with open(self._catalog_local, "wb") as f:
-                    for chunk in r.iter_bytes(chunk_size=1024 * 1024):
-                        f.write(chunk)
-
-            await anyio.to_thread.run_sync(_write)
+            with open(self._catalog_local, "wb") as f:
+                async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
+                    await anyio.to_thread.run_sync(f.write, chunk)
 
     def _get_s3_client(self):
         return boto3.client(
@@ -179,34 +166,22 @@ class DuckLake(BaseRemoteClient):
             config=Config(signature_version="s3v4"),
         )
 
-    def _create_connection(self):
-        con = duckdb.connect(config={"allow_unsigned_extensions": "true"})
-        con.execute("INSTALL ducklake; LOAD ducklake;")
-
-        s3_cfg = {
-            "s3_endpoint": self.endpoint,
-            "s3_region": self.region,
-            "s3_url_style": "path",
-            "s3_use_ssl": "true",
-        }
-
-        if self._is_authenticated:
-            s3_cfg[
-                "s3_access_key_id"
-            ] = self.credentials.access_key.get_secret_value()
-            s3_cfg[
-                "s3_secret_access_key"
-            ] = self.credentials.secret_key.get_secret_value()
-
-        for key, value in s3_cfg.items():
-            con.execute(f"SET {key}='{value}';")
-
-        mode = "" if self._is_authenticated else "(READ_ONLY)"
-        con.execute(
-            f"ATTACH 'ducklake:{self._catalog_local}' AS pysus {mode};"
-        )
-        con.execute("USE pysus;")
-        return con
+    async def _load_catalog(self):
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            local_size = -1
+            if self._catalog_local.exists():
+                try:
+                    local_size = self._catalog_local.stat().st_size
+                except OSError:
+                    pass
+            try:
+                head = await client.head(self._catalog_url)
+                head.raise_for_status()
+                remote_size = int(head.headers.get("content-length", 0))
+            except Exception:
+                remote_size = 0
+            if remote_size != local_size:
+                await self._download_catalog(client)
 
     async def _upload_catalog(self):
         if not self._is_authenticated:

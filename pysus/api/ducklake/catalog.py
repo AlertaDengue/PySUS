@@ -156,6 +156,9 @@ class File(CatalogTable):
     rows = Column(Integer, nullable=False)
     modified = Column(DateTime, nullable=False)
     sha256 = Column(String(64), nullable=True, index=True)
+    year = Column(Integer, nullable=True, index=True)
+    month = Column(Integer, nullable=True, index=True)
+    state = Column(String(2), nullable=True, index=True)
 
     dataset = relationship("Dataset", back_populates="files")
     group = relationship("DatasetGroup", back_populates="files")
@@ -165,6 +168,7 @@ class File(CatalogTable):
 
     __table_args__ = (
         Index("ix_files_dataset_group", "dataset_id", "group_id"),
+        Index("ix_files_temporal", "year", "month"),
         {"schema": "pysus"},
     )
 
