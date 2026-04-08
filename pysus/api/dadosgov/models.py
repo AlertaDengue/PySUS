@@ -1,12 +1,12 @@
-import pathlib
-import zipfile
-from datetime import datetime as dt
-from typing import Annotated, Any, List, Optional
+from __future__ import annotations
 
-import anyio
-import httpx
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
-from pysus.api.models import BaseRemoteDataset, BaseRemoteFile
+import pathlib
+from datetime import datetime as dt
+from typing import Annotated, Any, Callable, Dict, List, Optional, Union
+
+from pydantic import BeforeValidator, ConfigDict, Field
+from pysus.api.models import BaseRemoteClient  # noqa
+from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 
 
 def to_datetime(value: Any) -> Optional[dt]:
@@ -27,13 +27,6 @@ def to_bool(value: Any) -> bool:
 
 
 DateTime = Annotated[Optional[dt], BeforeValidator(to_datetime)]
-Bool = Annotated[bool, BeforeValidator(to_bool)]
-
-
-class Tag(BaseModel):
-    id: str
-    name: str
-    display_name: Optional[str] = None
 
 
 class Resource(BaseRemoteFile):
@@ -42,51 +35,57 @@ class Resource(BaseRemoteFile):
     id: str
     title: str = Field(alias="titulo")
     url: str = Field(alias="link")
-    api_size: int = Field(alias="tamanho")
+    api_size: Optional[int] = Field(0, alias="tamanho")
     last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
     file_name: Optional[str] = Field(None, alias="nomeArquivo")
+    type: str = "remote"
+    parent: Any = Field(None, exclude=True)
 
-    def __init__(self, **data):
-        url = data.get("link") or data.get("url")
-        basename = url.split("/")[-1].rstrip(".zip").replace("_csv", ".csv")
-        super().__init__(
-            basename=basename,
-            path=url,
-            extension=pathlib.Path(basename).suffix,
-            type="RemoteResource",
-            **data,
+    @property
+    def path(self) -> str:
+        return self.url
+
+    @property
+    def extension(self) -> str:
+        if self.file_name:
+            return pathlib.Path(self.file_name).suffix
+        return pathlib.Path(self.url.split("?")[0]).suffix
+
+    @property
+    def size(self) -> int:
+        return self.api_size or 0
+
+    @property
+    def modify(self) -> dt:
+        return self.last_modified or dt.now()
+
+    async def _download(
+        self,
+        output: Optional[pathlib.Path] = None,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> pathlib.Path:
+        return await self.client._download_file(
+            self, output, callback=callback
         )
 
-    async def _download(self, output: pathlib.Path) -> pathlib.Path:
-        tmp_file = output.with_suffix(".download")
 
-        async with httpx.AsyncClient(verify=False) as client:
-            async with client.stream(
-                "GET", self.url, follow_redirects=True
-            ) as response:
-                response.raise_for_status()
-                with open(tmp_file, "wb") as f:
-                    async for chunk in response.aiter_bytes():
-                        f.write(chunk)
+class ResourceGroup(BaseRemoteGroup):
+    name: str
+    group_id: str = Field(exclude=True)
 
-        if zipfile.is_zipfile(tmp_file):
+    def __init__(self, name: str, group_id: str, dataset: Dataset):
+        super().__init__(dataset=dataset, name=name, group_id=group_id)
 
-            def _extract():
-                with zipfile.ZipFile(tmp_file) as z:
-                    members = z.namelist()
-                    z.extractall(output.parent)
-                    return (
-                        output.parent / members[0]
-                        if len(members) == 1
-                        else output.parent
-                    )
+    @property
+    def long_name(self) -> str:
+        return self.name
 
-            final_path = await anyio.to_thread.run_sync(_extract)
-            tmp_file.unlink()
-            return final_path
+    @property
+    def description(self) -> str:
+        return f"Grupo de recursos: {self.name}"
 
-        tmp_file.rename(output)
-        return output
+    async def _fetch_files(self) -> List[BaseRemoteFile]:
+        return [r for r in self.dataset.resources if r.parent == self]
 
 
 class Dataset(BaseRemoteDataset):
@@ -97,22 +96,43 @@ class Dataset(BaseRemoteDataset):
     slug: str = Field(alias="nome")
     resources: List[Resource] = Field(default_factory=list, alias="recursos")
     file_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
+    group_definitions: Dict[str, str] = Field(
+        default_factory=dict, exclude=True
+    )
 
-    async def get_files(self, **kwargs) -> List[Resource]:
-        for res in self.resources:
-            res.description = self.describe(res)
-        return self.resources
+    def model_post_init(self, __context: Any) -> None:
+        for resource in self.resources:
+            resource.parent = self
 
-    def describe(self, resource: Resource):
-        return FileDescription(
-            name=resource.basename,
-            group=self.slug,
-            year=0,
-            size=resource.api_size,
-            last_update=resource.last_modified
-            or self.file_updated
-            or dt.now(),
-            uf=None,
-            month=None,
-            disease=self.title,
-        )
+    @property
+    def name(self) -> str:
+        return self.slug
+
+    @property
+    def long_name(self) -> str:
+        return self.title
+
+    @property
+    def description(self) -> str:
+        return f"DadosGov Dataset: {self.title}"
+
+    async def _fetch_content(
+        self,
+    ) -> List[Union[BaseRemoteGroup, BaseRemoteFile]]:
+        if not self.resources:
+            full_dataset = await self.client.get_dataset(self.id)
+            self.resources = full_dataset.resources
+            self.model_post_init(None)
+
+        items: List[Union[BaseRemoteGroup, BaseRemoteFile]] = []
+        if self.group_definitions:
+            for name, group_id in self.group_definitions.items():
+                items.append(
+                    ResourceGroup(name=name, group_id=group_id, dataset=self)
+                )
+        items.extend(self.resources)
+        return items
+
+
+Resource.model_rebuild()
+Dataset.model_rebuild()

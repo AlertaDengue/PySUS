@@ -12,7 +12,7 @@ from pysus.api.models import (
     BaseRemoteGroup,
 )
 
-from .catalog import CatalogDataset, DatasetGroup, CatalogFile
+from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 
 
 class File(BaseRemoteFile):
@@ -52,7 +52,9 @@ class File(BaseRemoteFile):
     async def _download(
         self, output: Path, callback: Optional[Callable[[int], None]] = None
     ) -> Path:
-        return await self.client._download_file(self, output, callback=callback)
+        return await self.client._download_file(
+            self, output, callback=callback
+        )
 
     async def verify(self, path: Path) -> bool:
         if not self.sha256:
@@ -87,9 +89,9 @@ class Group(BaseRemoteGroup):
 
     @property
     def description(self) -> str:
-        return (
-            self.record.group_metadata.description if self.record.group_metadata else ""
-        )
+        if self.record.group_metadata:
+            return self.record.group_metadata.description
+        return ""
 
     async def files(self, **kwargs) -> List[File]:
         return [File(record=f, parent=self) for f in self.record.files]
@@ -123,9 +125,13 @@ class Dataset(BaseRemoteDataset):
         items = []
 
         if self.record.groups:
-            items.extend([Group(record=g, dataset=self) for g in self.record.groups])
+            items.extend(
+                [Group(record=g, dataset=self) for g in self.record.groups],
+            )
 
         if self.record.files:
-            items.extend([File(record=f, parent=self) for f in self.record.files])
+            items.extend(
+                [File(record=f, parent=self) for f in self.record.files],
+            )
 
         return items

@@ -1,17 +1,13 @@
-import pytest
 import hashlib
-from unittest.mock import MagicMock
-from pathlib import Path
 from datetime import datetime
-from typing import AsyncGenerator, Optional, Callable, Union  # noqa
+from pathlib import Path
+from typing import AsyncGenerator, Callable, Optional, Union  # noqa
+from unittest.mock import MagicMock
 
+import pytest
 from pydantic import ValidationError
-from pysus.api.models import (
-    BaseLocalFile,
-    BaseRemoteFile,
-    BaseRemoteDataset,
-    BaseRemoteGroup,  # noqa
-)
+from pysus.api.models import BaseRemoteGroup  # noqa
+from pysus.api.models import BaseLocalFile, BaseRemoteDataset, BaseRemoteFile
 
 
 class MockLocalFile(BaseLocalFile):

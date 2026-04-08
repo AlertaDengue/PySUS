@@ -102,12 +102,12 @@ class DuckLake(BaseRemoteClient):
                 "s3_use_ssl": "true",
             }
             if self._is_authenticated:
-                s3_cfg["s3_access_key_id"] = (
-                    self.credentials.access_key.get_secret_value()
-                )
-                s3_cfg["s3_secret_access_key"] = (
-                    self.credentials.secret_key.get_secret_value()
-                )
+                s3_cfg[
+                    "s3_access_key_id"
+                ] = self.credentials.access_key.get_secret_value()
+                s3_cfg[
+                    "s3_secret_access_key"
+                ] = self.credentials.secret_key.get_secret_value()
 
             for key, value in s3_cfg.items():
                 conn.exec_driver_sql(f"SET {key}='{value}';")
@@ -185,7 +185,9 @@ class DuckLake(BaseRemoteClient):
 
     async def _upload_catalog(self):
         if not self._is_authenticated:
-            raise PermissionError("Admin credentials required to upload catalog.")
+            raise PermissionError(
+                "Admin credentials required to upload catalog."
+            )
 
         def _upload():
             self._s3_client.upload_file(

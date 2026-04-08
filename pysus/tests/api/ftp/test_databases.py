@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import MagicMock
-from pysus.api.ftp.databases import AVAILABLE_DATABASES
+
+import pytest
 from pysus.api.ftp.client import FTP
+from pysus.api.ftp.databases import AVAILABLE_DATABASES
 
 
 @pytest.fixture

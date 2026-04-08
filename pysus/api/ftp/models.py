@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from abc import abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import PrivateAttr
@@ -109,7 +109,9 @@ class Directory:
         return self._content
 
     async def load(self) -> None:
-        raw_infos = await self.client._list_directory(self.path, self.formatter)
+        raw_infos = await self.client._list_directory(
+            self.path, self.formatter
+        )
         self._content = []
 
         file_parent = (

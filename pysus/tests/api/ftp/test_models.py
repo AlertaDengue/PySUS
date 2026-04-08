@@ -1,8 +1,9 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from pathlib import Path
 from datetime import datetime
-from pysus.api.ftp.models import File, Directory, Group, Dataset
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from pysus.api.ftp.models import Dataset, Directory, File, Group
 from pysus.api.models import BaseRemoteClient, BaseRemoteDataset
 
 

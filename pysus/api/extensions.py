@@ -586,7 +586,9 @@ class Tar(BaseCompressedFile):
 
 class FTPNotImported(BaseTabularFile):
     type: FileType = Field(None)
-    import_err: ClassVar[str] = """
+    import_err: ClassVar[
+        str
+    ] = """
         run "pip install pysus[ftp]" to handle DBC or DBF files
     """
 

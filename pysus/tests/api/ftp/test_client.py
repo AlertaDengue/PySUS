@@ -1,7 +1,8 @@
-import pytest
 import pathlib
-from unittest.mock import MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
 from pysus.api.ftp.client import FTP
 
 
