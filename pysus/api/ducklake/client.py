@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
 
 import anyio
 import boto3
@@ -24,7 +25,7 @@ class DuckLake(BaseRemoteClient):
     endpoint: str = "nbg1.your-objectstorage.com"
     region: str = "nbg1"
     bucket: str = "pysus"
-    credentials: Optional[DuckLakeCredentials] = None
+    credentials: DuckLakeCredentials | None = None
 
     _cache_dir: Path = PrivateAttr()
     _catalog_local: Path = PrivateAttr()
@@ -47,7 +48,7 @@ class DuckLake(BaseRemoteClient):
     def _is_authenticated(self) -> bool:
         return self.credentials is not None
 
-    async def datasets(self, **kwargs) -> List[Dataset]:
+    async def datasets(self, **kwargs) -> list[Dataset]:
         if not self._Session:
             await self.connect()
 
@@ -69,8 +70,8 @@ class DuckLake(BaseRemoteClient):
 
     async def login(
         self,
-        access_key: Optional[str] = None,
-        secret_key: Optional[str] = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
     ) -> None:
         if access_key and secret_key:
             self.credentials = DuckLakeCredentials(
@@ -102,12 +103,12 @@ class DuckLake(BaseRemoteClient):
                 "s3_use_ssl": "true",
             }
             if self._is_authenticated:
-                s3_cfg[
-                    "s3_access_key_id"
-                ] = self.credentials.access_key.get_secret_value()
-                s3_cfg[
-                    "s3_secret_access_key"
-                ] = self.credentials.secret_key.get_secret_value()
+                s3_cfg["s3_access_key_id"] = (
+                    self.credentials.access_key.get_secret_value()
+                )
+                s3_cfg["s3_secret_access_key"] = (
+                    self.credentials.secret_key.get_secret_value()
+                )
 
             for key, value in s3_cfg.items():
                 conn.exec_driver_sql(f"SET {key}='{value}';")
@@ -136,7 +137,7 @@ class DuckLake(BaseRemoteClient):
         self,
         file: "File",
         output: Path,
-        callback: Optional[Callable[[int], None]] = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
         url = f"https://{self.endpoint}/{self.bucket}/{file.record.path}"
         async with httpx.AsyncClient(follow_redirects=True) as client:

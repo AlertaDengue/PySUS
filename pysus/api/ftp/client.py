@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
 from datetime import datetime
 from ftplib import FTP as FTPLib
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict
 
 import anyio
 from pydantic import PrivateAttr
@@ -15,8 +16,8 @@ if TYPE_CHECKING:
 
 class FTPGroupInfo(TypedDict):
     name: str
-    long_name: Optional[str]
-    description: Optional[str]
+    long_name: str | None
+    description: str | None
 
 
 class FTPFileInfo(TypedDict):
@@ -24,16 +25,16 @@ class FTPFileInfo(TypedDict):
     size: int
     type: str
     modify: datetime
-    group: Optional[FTPGroupInfo]
-    year: Optional[int]
-    month: Optional[int]
-    state: Optional[str]
+    group: FTPGroupInfo | None
+    year: int | None
+    month: int | None
+    state: str | None
 
 
 class FTP(BaseRemoteClient):
     host: str = "ftp.datasus.gov.br"
 
-    _ftp: Optional[FTPLib] = PrivateAttr(default=None)
+    _ftp: FTPLib | None = PrivateAttr(default=None)
 
     @property
     def name(self) -> str:
@@ -80,7 +81,7 @@ class FTP(BaseRemoteClient):
 
         await anyio.to_thread.run_sync(_close)
 
-    async def datasets(self, **kwargs) -> List[Dataset]:
+    async def datasets(self, **kwargs) -> list[Dataset]:
         from .databases import AVAILABLE_DATABASES
 
         if self.ftp is None:
@@ -95,7 +96,7 @@ class FTP(BaseRemoteClient):
         self,
         file: File,
         output: pathlib.Path,
-        callback: Optional[Callable[[int], None]] = None,
+        callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
         def _fetch():
             try:
@@ -118,7 +119,7 @@ class FTP(BaseRemoteClient):
     @staticmethod
     def _line_parser(
         file_line: str,
-        formatter: Optional[Callable[[str], Dict[str, Any]]] = None,
+        formatter: Callable[[str], dict[str, Any]] | None = None,
     ) -> FTPFileInfo:
         parts = file_line.strip().split()
         if len(parts) < 4:
@@ -155,8 +156,8 @@ class FTP(BaseRemoteClient):
     async def _list_directory(
         self,
         path: str,
-        formatter: Optional[Callable[[str], Dict[str, Any]]] = None,
-    ) -> List[FTPFileInfo]:
+        formatter: Callable[[str], dict[str, Any]] | None = None,
+    ) -> list[FTPFileInfo]:
         def _list():
             self.ftp.cwd(path)
             lines = []

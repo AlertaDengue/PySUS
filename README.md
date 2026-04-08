@@ -54,7 +54,7 @@ First, clone the Pysus repository:
 
 ```bash
 git clone https://github.com/AlertaDengue/PySUS.git
-``` 
+```
 
 then from within the PySUS directory build the container
 

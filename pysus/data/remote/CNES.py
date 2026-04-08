@@ -26,7 +26,7 @@ group_dict = {
 
 def get_available_years(
     group: str,
-    states: Union[str, list] = None,
+    states: str | list = None,
 ):
     """
     Get CNES years for group and/or state and returns a
@@ -56,7 +56,7 @@ def get_available_years(
         files = cnes.get_files(group, uf=uf)
         years[uf] = sorted([cnes.describe(f)["year"] for f in files])
 
-    if len(set([len(v) for v in years.values()])) > 1:
+    if len({len(v) for v in years.values()}) > 1:
         logger.warning(f"Distinct years were found for UFs: {years}")
 
     return sorted(list(set.intersection(*map(set, years.values()))))
@@ -64,9 +64,9 @@ def get_available_years(
 
 def download(
     group: str,
-    states: Union[str, list],
-    years: Union[str, list, int],
-    months: Union[str, list, int],
+    states: str | list,
+    years: str | list | int,
+    months: str | list | int,
     data_dir: str = CACHEPATH,
 ) -> list:
     """

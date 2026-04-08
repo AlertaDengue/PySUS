@@ -1,21 +1,42 @@
 from __future__ import annotations
 
 import pathlib
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
+from datetime import datetime
+from typing import Annotated, Any, Dict, List, Optional
 
 import httpx
-from pydantic import PrivateAttr
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
-from pysus.api.models import BaseRemoteClient, BaseRemoteDataset, BaseRemoteFile
+from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 
-from .models import Dataset
+
+def to_datetime(value: Any) -> datetime | None:
+    if not value or not isinstance(value, str) or "Indisponível" in value:
+        return None
+    for fmt in ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).lower() in ("sim", "true", "1")
+
+
+DateTime = Annotated[Optional[datetime], BeforeValidator(to_datetime)]
+Bool = Annotated[bool, BeforeValidator(to_bool)]
 
 
 class DadosGov(BaseRemoteClient):
     base_url: str = "https://dados.gov.br/dados/api"
 
-    _token: Optional[str] = PrivateAttr(default=None)
-    _client: Optional[httpx.AsyncClient] = PrivateAttr(default=None)
+    _token: str | None = PrivateAttr(default=None)
+    _client: httpx.AsyncClient | None = PrivateAttr(default=None)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -32,7 +53,7 @@ class DadosGov(BaseRemoteClient):
     def description(self) -> str:
         return "Interface de acesso ao API do Portal de Dados Abertos"
 
-    async def connect(self, token: Optional[str] = None) -> None:
+    async def connect(self, token: str | None = None) -> None:
         _token = token or self._token
 
         if not _token:
@@ -59,7 +80,7 @@ class DadosGov(BaseRemoteClient):
             follow_redirects=True,
         )
 
-    async def login(self, token: Optional[str] = None, **kwargs) -> None:
+    async def login(self, token: str | None = None, **kwargs) -> None:
         await self.connect(token=token)
 
     async def close(self) -> None:
@@ -67,12 +88,12 @@ class DadosGov(BaseRemoteClient):
             await self._client.aclose()
             self._client = None
 
-    async def datasets(self, **kwargs) -> List[Dataset]:
+    async def datasets(self, **kwargs) -> list[ConjuntoDados]:
         from .databases import AVAILABLE_DATABASES
 
         return [db_class(client=self) for db_class in AVAILABLE_DATABASES]
 
-    async def list_datasets(self, **kwargs) -> List[Dataset]:
+    async def list_datasets(self, **kwargs) -> list[ConjuntoDados]:
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -94,11 +115,11 @@ class DadosGov(BaseRemoteClient):
         response.raise_for_status()
 
         data = response.json()
-        return [Dataset(**item, client=self) for item in data]
+        return [ConjuntoDados(**item, client=self) for item in data]
 
     async def get_dataset(
-        self, id: str, group_definitions: Optional[Dict[str, str]] = None
-    ) -> Dataset:
+        self, id: str, group_definitions: dict[str, str] | None = None
+    ) -> ConjuntoDados:
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -107,7 +128,7 @@ class DadosGov(BaseRemoteClient):
         response = await self._client.get(f"publico/conjuntos-dados/{id}")
         response.raise_for_status()
 
-        return Dataset(
+        return ConjuntoDados(
             **response.json(),
             client=self,
             group_definitions=group_definitions or {},
@@ -117,7 +138,7 @@ class DadosGov(BaseRemoteClient):
         self,
         file: BaseRemoteFile,
         output: pathlib.Path,
-        callback: Optional[Callable[[int], None]] = None,
+        callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
         if self._client is None:
             raise ConnectionError(
@@ -132,3 +153,36 @@ class DadosGov(BaseRemoteClient):
                     if callback:
                         callback(len(chunk))
         return output
+
+
+class Recurso(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    title: str = Field(alias="titulo")
+    url: str = Field(alias="link")
+    api_size: int = Field(alias="tamanho")
+    last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
+    file_name: str | None = Field(None, alias="nomeArquivo")
+
+    async def get_size(self) -> int:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.head(self.url)
+
+            if response.status_code == 405:
+                response = await client.get(
+                    self.url,
+                    headers={"Range": "bytes=0-0"},
+                )
+
+            size = response.headers.get("Content-Length")
+            return int(size) if size else 0
+
+
+class ConjuntoDados(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    title: str = Field(alias="titulo")
+    slug: str = Field(alias="nome")
+    resources: list[Recurso] = Field(default_factory=list, alias="recursos")

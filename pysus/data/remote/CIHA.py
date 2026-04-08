@@ -17,7 +17,7 @@ ciha = CIHA().load()
 
 
 def get_available_years(
-    states: Union[list, str] = None,
+    states: list | str = None,
 ) -> dict[str : set[int]]:
     """
     Fetch available years for the `states`.
@@ -31,16 +31,16 @@ def get_available_years(
         files = ciha.get_files(uf=uf)
         years[uf] = set(sorted([ciha.describe(f)["year"] for f in files]))
 
-    if len(set([len(v) for v in years.values()])) > 1:
+    if len({len(v) for v in years.values()}) > 1:
         logger.warning(f"Distinct years were found for UFs: {years}")
 
     return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(
-    states: Union[str, list],
-    years: Union[str, list, int],
-    months: Union[str, list, int],
+    states: str | list,
+    years: str | list | int,
+    months: str | list | int,
     data_dir: str = CACHEPATH,
 ) -> list:
     """

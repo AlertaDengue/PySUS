@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 from abc import abstractmethod
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import PrivateAttr
 from pysus import CACHEPATH
@@ -49,30 +50,30 @@ class File(BaseRemoteFile):
         return self._info.get("modify")
 
     @property
-    def group(self) -> Optional[str]:
+    def group(self) -> str | None:
         group_data = self._info.get("group")
         return group_data["name"] if group_data else None
 
     @property
-    def group_info(self) -> Optional[FTPGroupInfo]:
+    def group_info(self) -> FTPGroupInfo | None:
         return self._info.get("group")
 
     @property
-    def year(self) -> Optional[int]:
+    def year(self) -> int | None:
         return self._info.get("year")
 
     @property
-    def month(self) -> Optional[int]:
+    def month(self) -> int | None:
         return self._info.get("month")
 
     @property
-    def state(self) -> Optional[str]:
+    def state(self) -> str | None:
         return self._info.get("state")
 
     async def _download(
         self,
-        output: Optional[Path] = None,
-        callback: Optional[Callable[[int], None]] = None,
+        output: Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
         if output is None:
             cache_dir = Path(CACHEPATH)
@@ -86,10 +87,10 @@ class Directory:
     def __init__(
         self,
         path: str,
-        parent: Optional[Union[Directory, Dataset, Group]] = None,
-        client: Optional[BaseRemoteClient] = None,
-        formatter: Optional[Callable] = None,
-        dataset: Optional[Dataset] = None,
+        parent: Directory | Dataset | Group | None = None,
+        client: BaseRemoteClient | None = None,
+        formatter: Callable | None = None,
+        dataset: Dataset | None = None,
     ):
         self.path = os.path.normpath(path)
         self.parent = parent
@@ -100,10 +101,10 @@ class Directory:
         self.formatter = formatter or (parent.formatter if parent else None)
         self.name = os.path.basename(self.path) or "/"
         self.loaded = False
-        self._content: List[Union[Directory, File]] = []
+        self._content: list[Directory | File] = []
 
     @property
-    async def content(self) -> List[Union[Directory, File]]:
+    async def content(self) -> list[Directory | File]:
         if not self.loaded:
             await self.load()
         return self._content
@@ -184,26 +185,20 @@ class Group(BaseRemoteGroup):
         return self._description
 
     @property
-    async def content(self) -> List[Union[Directory, File]]:
+    async def content(self) -> list[Directory | File]:
         return await self._dir.content
 
-    async def _fetch_files(self) -> List[BaseRemoteFile]:
+    async def _fetch_files(self) -> list[BaseRemoteFile]:
         items = await self.content
         return [item for item in items if isinstance(item, BaseRemoteFile)]
 
 
 class Dataset(BaseRemoteDataset):
-    paths: List[Directory] = []
-    group_definitions: Dict[str, str] = {}
-    _content: Optional[
-        List[
-            Union[
-                Group,
-                Directory,
-                File,
-            ]
-        ]
-    ] = PrivateAttr(default=None)
+    paths: list[Directory] = []
+    group_definitions: dict[str, str] = {}
+    _content: None | (list[(Group | Directory | File)]) = PrivateAttr(
+        default=None
+    )
 
     @property
     @abstractmethod
@@ -221,10 +216,10 @@ class Dataset(BaseRemoteDataset):
         pass
 
     @abstractmethod
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         pass
 
-    async def _fetch_content(self) -> List[Union[Group, Directory, File]]:
+    async def _fetch_content(self) -> list[Group | Directory | File]:
         results = []
 
         for root_dir in self.paths:

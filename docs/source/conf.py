@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # PySUS documentation build configuration file, created by
 # sphinx-quickstart on Thu Aug 25 10:37:19 2016.

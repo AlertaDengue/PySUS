@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Union
 
 with open(
-    f"{Path(__file__).parent}/municipios.json", "r", encoding="utf-8-sig"
+    f"{Path(__file__).parent}/municipios.json", encoding="utf-8-sig"
 ) as muns:
     MUNICIPALITIES = json.loads(muns.read())
 
@@ -57,7 +57,7 @@ MONTHS = {
 }
 
 
-def get_city_name_by_geocode(geocode: Union[str, int]):
+def get_city_name_by_geocode(geocode: str | int):
     """
     Returns the Municipality name from its geocode (IBGE)
     :param geocode: 7 digits city code, according to IBGE format
@@ -67,7 +67,7 @@ def get_city_name_by_geocode(geocode: Union[str, int]):
     return MUN_BY_GEOCODE[int(geocode)]
 
 
-def parse_UFs(UF: Union[list[str], str]) -> list:
+def parse_UFs(UF: list[str] | str) -> list:
     """
     Formats states abbreviations into correct format and retuns a list.
     Also checks if there is an incorrect UF in the list.

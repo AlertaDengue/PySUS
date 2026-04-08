@@ -3,19 +3,19 @@ from typing import List, Union
 from pysus.api.ftp import CACHEPATH, Directory, FTPFile
 
 
-def list_tables() -> List[FTPFile]:
+def list_tables() -> list[FTPFile]:
     d = Directory("/territorio/tabelas")
     tabelas = [f for f in d.content if "territor" in f.name]
     return tabelas
 
 
-def list_maps() -> List[FTPFile]:
+def list_maps() -> list[FTPFile]:
     d = Directory("/territorio/mapas")
     mapas = [f for f in d.content if "mapas" in f.name]
     return mapas
 
 
-def download(fname: Union[str, list], data_path: str = CACHEPATH):
+def download(fname: str | list, data_path: str = CACHEPATH):
     files = (
         Directory("/territorio/tabelas").content
         + Directory("/territorio/mapas").content

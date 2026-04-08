@@ -197,7 +197,8 @@ def translate_variables_SIM(
     # SEXO
     if "SEXO" in variables_names:
         df["SEXO"] = df.SEXO.replace(
-            {0: None, 9: None, 1: "Masculino", 2: "Feminino"})
+            {0: None, 9: None, 1: "Masculino", 2: "Feminino"}
+        )
         df["SEXO"] = df["SEXO"].astype("category")
         df["SEXO"] = df["SEXO"].cat.add_categories(["NA"])
         df["SEXO"] = df["SEXO"].fillna("NA")
@@ -301,8 +302,9 @@ def get_CID10_code_index(datasus_chapters):
             number_range_start = int(chapter_range[0][1:3])
             number_range_finish = int(chapter_range[1][1:3])
             for code in range(number_range_start, number_range_finish + 1):
-                code_index[f"{start_letter}{
-                    str(code).zfill(2)}"] = ch_array_index + 1
+                code_index[f"{start_letter}{str(code).zfill(2)}"] = (
+                    ch_array_index + 1
+                )
         else:
             string_range_start = chapter_range[0][0]
             string_range_end = chapter_range[1][0]
@@ -322,7 +324,9 @@ def get_CID10_code_index(datasus_chapters):
                 else:  # Middle letters
                     number_range_start = 0
                     number_range_end = 99
-                for code_number in range(number_range_start, number_range_end + 1):
+                for code_number in range(
+                    number_range_start, number_range_end + 1
+                ):
                     code_index[f"{letter}{str(code_number).zfill(2)}"] = (
                         ch_array_index + 1
                     )

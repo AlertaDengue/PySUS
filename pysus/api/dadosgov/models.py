@@ -1,138 +1,131 @@
-from __future__ import annotations
-
+import asyncio
 import pathlib
+from abc import ABC
+from collections.abc import Callable
 from datetime import datetime as dt
-from typing import Annotated, Any, Callable, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
-from pydantic import BeforeValidator, ConfigDict, Field
-from pysus.api.models import BaseRemoteClient  # noqa
-from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
+import httpx
+from pysus.api.models import (
+    BaseRemoteClient,
+    BaseRemoteDataset,
+    BaseRemoteFile,
+    BaseRemoteGroup,
+)
 
-
-def to_datetime(value: Any) -> Optional[dt]:
-    if not value or not isinstance(value, str) or "Indisponível" in value:
-        return None
-    for fmt in ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y"):
-        try:
-            return dt.strptime(value, fmt)
-        except ValueError:
-            continue
-    return None
+from .client import ConjuntoDados, Recurso
 
 
-def to_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    return str(value).lower() in ("sim", "true", "1")
+class File(BaseRemoteFile):
+    record: Recurso
+    type: str | None = "remote"
 
+    def __repr__(self):
+        return self.basename
 
-DateTime = Annotated[Optional[dt], BeforeValidator(to_datetime)]
-
-
-class Resource(BaseRemoteFile):
-    model_config = ConfigDict(populate_by_name=True)
-
-    id: str
-    title: str = Field(alias="titulo")
-    url: str = Field(alias="link")
-    api_size: Optional[int] = Field(0, alias="tamanho")
-    last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
-    file_name: Optional[str] = Field(None, alias="nomeArquivo")
-    type: str = "remote"
-    parent: Any = Field(None, exclude=True)
+    def model_post_init(self, __context: Any) -> None:
+        if self.record.api_size is None or self.record.api_size == 0:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self.fetch_size())
+            except RuntimeError:
+                pass
 
     @property
     def path(self) -> str:
-        return self.url
+        return self.record.url
 
     @property
     def extension(self) -> str:
-        if self.file_name:
-            return pathlib.Path(self.file_name).suffix
-        return pathlib.Path(self.url.split("?")[0]).suffix
+        if self.record.file_name:
+            return pathlib.Path(self.record.file_name).suffix
+        return pathlib.Path(
+            self.record.url.split("/")[-1].split("?")[0]
+        ).suffix
 
     @property
     def size(self) -> int:
-        return self.api_size or 0
+        return self.record.api_size or 0
 
     @property
     def modify(self) -> dt:
-        return self.last_modified or dt.now()
+        return self.record.last_modified
 
     async def _download(
         self,
-        output: Optional[pathlib.Path] = None,
-        callback: Optional[Callable[[int], None]] = None,
+        output: pathlib.Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
         return await self.client._download_file(
             self, output, callback=callback
         )
 
+    async def fetch_size(self) -> int:
+        try:
+            async with httpx.AsyncClient(
+                follow_redirects=True,
+                timeout=1,
+            ) as client:
+                response = await client.head(self.path)
 
-class ResourceGroup(BaseRemoteGroup):
-    name: str
-    group_id: str = Field(exclude=True)
+                if response.status_code == 405:
+                    response = await client.get(
+                        self.path, headers={"Range": "bytes=0-0"}
+                    )
 
-    def __init__(self, name: str, group_id: str, dataset: Dataset):
-        super().__init__(dataset=dataset, name=name, group_id=group_id)
+                remote_size = int(response.headers.get("Content-Length", 0))
 
-    @property
-    def long_name(self) -> str:
+                if remote_size > 0:
+                    self.record.api_size = remote_size
+
+                return remote_size
+        except Exception:
+            return 0
+
+
+class Group(BaseRemoteGroup):
+    record: ConjuntoDados
+
+    def __repr__(self):
         return self.name
 
     @property
-    def description(self) -> str:
-        return f"Grupo de recursos: {self.name}"
-
-    async def _fetch_files(self) -> List[BaseRemoteFile]:
-        return [r for r in self.dataset.resources if r.parent == self]
-
-
-class Dataset(BaseRemoteDataset):
-    model_config = ConfigDict(populate_by_name=True)
-
-    id: str
-    title: str = Field(alias="titulo")
-    slug: str = Field(alias="nome")
-    resources: List[Resource] = Field(default_factory=list, alias="recursos")
-    file_updated: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
-    group_definitions: Dict[str, str] = Field(
-        default_factory=dict, exclude=True
-    )
-
-    def model_post_init(self, __context: Any) -> None:
-        for resource in self.resources:
-            resource.parent = self
-
-    @property
     def name(self) -> str:
-        return self.slug
+        return self.record.slug
 
     @property
     def long_name(self) -> str:
-        return self.title
+        return self.record.title
 
     @property
     def description(self) -> str:
-        return f"DadosGov Dataset: {self.title}"
+        return ""  # TODO:
+
+    async def _fetch_files(self) -> list[File]:
+        files = []
+        for recurso in self.record.resources:
+            file = File(
+                record=recurso,
+                parent=self,
+            )
+            await file.fetch_size()
+            files.append(file)
+        return files
+
+
+class Dataset(BaseRemoteDataset, ABC):
+    ids: list[str]
+
+    def __repr__(self):
+        return self.name
 
     async def _fetch_content(
         self,
-    ) -> List[Union[BaseRemoteGroup, BaseRemoteFile]]:
-        if not self.resources:
-            full_dataset = await self.client.get_dataset(self.id)
-            self.resources = full_dataset.resources
-            self.model_post_init(None)
-
-        items: List[Union[BaseRemoteGroup, BaseRemoteFile]] = []
-        if self.group_definitions:
-            for name, group_id in self.group_definitions.items():
-                items.append(
-                    ResourceGroup(name=name, group_id=group_id, dataset=self)
-                )
-        items.extend(self.resources)
+    ) -> list[Group]:
+        items: list[Group] = []
+        client: BaseRemoteClient = self.client
+        if self.ids:
+            for group_id in self.ids:
+                record = await client.get_dataset(group_id)
+                items.append(Group(record=record, dataset=self))
         return items
-
-
-Resource.model_rebuild()
-Dataset.model_rebuild()

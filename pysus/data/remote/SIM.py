@@ -20,7 +20,7 @@ sim = SIM().load()
 
 def get_available_years(
     group: str,
-    states: Union[str, list] = None,
+    states: str | list = None,
 ) -> list:
     """
     Get SIH years for group and/or state and returns a list of years
@@ -35,16 +35,16 @@ def get_available_years(
         files = sim.get_files(group, uf=uf)
         years[uf] = set(sorted([sim.describe(f)["year"] for f in files]))
 
-    if len(set([len(v) for v in years.values()])) > 1:
+    if len({len(v) for v in years.values()}) > 1:
         logger.warning(f"Distinct years were found for UFs: {years}")
 
     return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(
-    groups: Union[str, list],
-    states: Union[str, list],
-    years: Union[str, list, int],
+    groups: str | list,
+    states: str | list,
+    years: str | list | int,
     data_dir: str = CACHEPATH,
 ):
     """
@@ -87,10 +87,10 @@ def get_CID10_chapters_table(cache=True):
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception(f"Could not download {fname}")
 
     dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
@@ -133,10 +133,10 @@ def get_CID10_table(cache=True):
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception(f"Could not download {fname}")
 
     dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
@@ -179,10 +179,10 @@ def get_CID9_table(cache=True):
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
 
     except error_perm:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception(f"Could not download {fname}")
 
     dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
@@ -225,10 +225,10 @@ def get_municipios(cache=True):
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
 
     except Exception:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception(f"Could not download {fname}")
 
     dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))
@@ -270,10 +270,10 @@ def get_ocupations(cache=True):
         return df
 
     try:
-        ftp.retrbinary("RETR {}".format(fname), open(fname, "wb").write)
+        ftp.retrbinary(f"RETR {fname}", open(fname, "wb").write)
 
     except Exception:
-        raise Exception("Could not download {}".format(fname))
+        raise Exception(f"Could not download {fname}")
 
     dbf = DBF(fname, encoding="iso-8859-1")
     df = pd.DataFrame(list(dbf))

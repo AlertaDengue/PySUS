@@ -1,7 +1,8 @@
 import hashlib
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
 import anyio
 from pydantic import Field
@@ -46,11 +47,11 @@ class File(BaseRemoteFile):
         return self.record.rows
 
     @property
-    def sha256(self) -> Optional[str]:
+    def sha256(self) -> str | None:
         return self.record.sha256
 
     async def _download(
-        self, output: Path, callback: Optional[Callable[[int], None]] = None
+        self, output: Path, callback: Callable[[int], None] | None = None
     ) -> Path:
         return await self.client._download_file(
             self, output, callback=callback
@@ -93,7 +94,7 @@ class Group(BaseRemoteGroup):
             return self.record.group_metadata.description
         return ""
 
-    async def files(self, **kwargs) -> List[File]:
+    async def files(self, **kwargs) -> list[File]:
         return [File(record=f, parent=self) for f in self.record.files]
 
 
@@ -121,7 +122,7 @@ class Dataset(BaseRemoteDataset):
             else ""
         )
 
-    async def content(self, **kwargs) -> List[Union[Group, File]]:
+    async def content(self, **kwargs) -> list[Group | File]:
         items = []
 
         if self.record.groups:

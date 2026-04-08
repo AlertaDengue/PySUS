@@ -12,7 +12,7 @@ import unidecode
 APP_DIR = Path(__file__).resolve(strict=True).parent.parent
 CID10 = {"dengue": "A90", "chikungunya": "A92.0", "zika": "A928"}
 
-with open(APP_DIR / "dataset/geocode_by_cities.json", "r") as f:
+with open(APP_DIR / "dataset/geocode_by_cities.json") as f:
     geocode_by_cities = json.load(f)
 
 
@@ -23,7 +23,7 @@ def normalize(s):
     return unidecode.unidecode(s.lower().strip())
 
 
-def search_string(substr: str) -> Dict[str, int]:
+def search_string(substr: str) -> dict[str, int]:
     """
     Fetch geocode of the city name matching to the substring.
 

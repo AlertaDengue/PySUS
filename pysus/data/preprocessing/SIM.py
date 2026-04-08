@@ -1,4 +1,3 @@
-# -*- coding:utf-8 -*-
 """
 This module contains a set of functions to process data on SIM
 Created on 16/08/2020

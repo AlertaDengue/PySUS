@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, Callable, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 import anyio
 import pandas as pd
@@ -81,7 +82,7 @@ class BaseLocalFile(BaseFile, ABC):
     @abstractmethod
     async def stream(
         self,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> AsyncGenerator[Any, None]:
         pass
 
@@ -101,7 +102,7 @@ class BaseLocalFile(BaseFile, ABC):
 class BaseTabularFile(BaseLocalFile, ABC):
     @property
     @abstractmethod
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         pass
 
     @property
@@ -122,9 +123,9 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
     async def to_parquet(
         self,
-        output_path: Optional[Union[str, Path]] = None,
+        output_path: str | Path | None = None,
         chunk_size: int = 10000,
-    ) -> "BaseTabularFile":
+    ) -> BaseTabularFile:
         from pysus.api.extensions import ExtensionFactory
 
         if output_path is None:
@@ -170,7 +171,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
 class BaseCompressedFile(BaseLocalFile, ABC):
     @abstractmethod
-    async def list_members(self) -> List[str]:
+    async def list_members(self) -> list[str]:
         pass
 
     @abstractmethod
@@ -179,13 +180,13 @@ class BaseCompressedFile(BaseLocalFile, ABC):
 
     @abstractmethod
     async def extract(
-        self, target_dir: Optional[Path] = CACHEPATH
-    ) -> List[BaseLocalFile]:
+        self, target_dir: Path | None = CACHEPATH
+    ) -> list[BaseLocalFile]:
         pass
 
     async def stream(
         self,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> AsyncGenerator[Any, None]:
         members = await self.list_members()
         for member in members:
@@ -203,7 +204,7 @@ class SearchableMixin:
 
 
 class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
-    parent: Union["BaseRemoteDataset", "BaseRemoteGroup"] = Field(exclude=True)
+    parent: BaseRemoteDataset | BaseRemoteGroup = Field(exclude=True)
     _path: str = PrivateAttr()
 
     @property
@@ -215,35 +216,35 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
         return self.basename
 
     @property
-    def client(self) -> "BaseRemoteClient":
+    def client(self) -> BaseRemoteClient:
         if hasattr(self.parent, "client"):
             return self.parent.client
         return self.parent.dataset.client
 
     @property
-    def year(self) -> Optional[int]:
+    def year(self) -> int | None:
         return None
 
     @property
-    def month(self) -> Optional[int]:
+    def month(self) -> int | None:
         return None
 
     @property
-    def state(self) -> Optional[State]:
+    def state(self) -> State | None:
         return None
 
     @abstractmethod
     async def _download(
         self,
-        output: Optional[Path] = None,
-        callback: Optional[Callable[[int], None]] = None,
+        output: Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
         pass
 
     async def download(
         self,
-        output: Optional[Union[str, Path]] = None,
-        callback: Optional[Callable[[int], None]] = None,
+        output: str | Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> BaseLocalFile:
         from pysus.api.extensions import ExtensionFactory
 
@@ -288,24 +289,24 @@ class BaseRemoteObject(BaseModel, ABC):
 
 
 class BaseRemoteGroup(BaseRemoteObject, SearchableMixin, ABC):
-    dataset: "BaseRemoteDataset" = Field(exclude=True)
-    _files: Optional[List["BaseRemoteFile"]] = PrivateAttr(default=None)
+    dataset: BaseRemoteDataset = Field(exclude=True)
+    _files: list[BaseRemoteFile] | None = PrivateAttr(default=None)
 
     @property
-    def parent(self) -> "BaseRemoteDataset":
+    def parent(self) -> BaseRemoteDataset:
         return self.dataset
 
     @abstractmethod
-    async def _fetch_files(self) -> List["BaseRemoteFile"]:
+    async def _fetch_files(self) -> list[BaseRemoteFile]:
         pass
 
     @property
-    async def files(self) -> List["BaseRemoteFile"]:
+    async def files(self) -> list[BaseRemoteFile]:
         if self._files is None:
             self._files = await self._fetch_files()
         return self._files
 
-    async def search(self, **kwargs) -> List["BaseRemoteFile"]:
+    async def search(self, **kwargs) -> list[BaseRemoteFile]:
         all_files = await self.files
         if not kwargs:
             return all_files
@@ -313,31 +314,26 @@ class BaseRemoteGroup(BaseRemoteObject, SearchableMixin, ABC):
 
 
 class BaseRemoteDataset(BaseRemoteObject, SearchableMixin, ABC):
-    client: "BaseRemoteClient" = Field(exclude=True)
-    _content: Optional[
-        List[
-            Union[
-                "BaseRemoteGroup",
-                "BaseRemoteFile",
-            ]
-        ]
-    ] = PrivateAttr(default=None)
+    client: BaseRemoteClient = Field(exclude=True)
+    _content: None | (list[(BaseRemoteGroup | BaseRemoteFile)]) = PrivateAttr(
+        default=None
+    )
 
     @abstractmethod
     async def _fetch_content(
         self,
-    ) -> List[Union["BaseRemoteGroup", "BaseRemoteFile",]]:
+    ) -> list[(BaseRemoteGroup | BaseRemoteFile)]:
         pass
 
     @property
     async def content(
         self,
-    ) -> List[Union["BaseRemoteGroup", "BaseRemoteFile"]]:
+    ) -> list[BaseRemoteGroup | BaseRemoteFile]:
         if self._content is None:
             self._content = await self._fetch_content()
         return self._content
 
-    async def search(self, **kwargs) -> List["BaseRemoteFile"]:
+    async def search(self, **kwargs) -> list[BaseRemoteFile]:
         contents = await self.content
 
         matches = []
@@ -366,7 +362,7 @@ class BaseRemoteClient(BaseRemoteObject, ABC):
         pass
 
     @abstractmethod
-    async def datasets(self, **kwargs) -> List[BaseRemoteDataset]:
+    async def datasets(self, **kwargs) -> list[BaseRemoteDataset]:
         pass
 
     @abstractmethod
@@ -374,6 +370,6 @@ class BaseRemoteClient(BaseRemoteObject, ABC):
         self,
         file: BaseRemoteFile,
         output: Path,
-        callback: Optional[Callable[[int], None]] = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
         pass

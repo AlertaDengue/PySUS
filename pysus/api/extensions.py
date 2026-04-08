@@ -4,9 +4,10 @@ import gzip
 import shutil
 import tarfile
 import zipfile
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncGenerator, ClassVar, Dict, List, Optional, Type, Union
+from typing import ClassVar, Dict, List, Optional, Type, Union
 
 import anyio
 import chardet
@@ -56,7 +57,7 @@ class Directory(BaseLocalFile):
     def __repr__(self) -> str:
         return f"{self.basename}/"
 
-    async def load(self) -> List[BaseLocalFile]:
+    async def load(self) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
         if not self.path.exists():
@@ -68,7 +69,7 @@ class Directory(BaseLocalFile):
 
     async def stream(
         self,
-        chunk_size: Optional[int] = None,
+        chunk_size: int | None = None,
     ) -> AsyncGenerator[BaseLocalFile, None]:
         from pysus.api.extensions import ExtensionFactory
 
@@ -78,11 +79,11 @@ class Directory(BaseLocalFile):
 
 class CSV(BaseTabularFile):
     type: FileType = Field("CSV")
-    _encoding: Optional[str] = PrivateAttr(default=None)
-    _sep: Optional[str] = PrivateAttr(default=None)
+    _encoding: str | None = PrivateAttr(default=None)
+    _sep: str | None = PrivateAttr(default=None)
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         df = pd.read_csv(self.path, sep=",", nrows=0)
         return df.columns.tolist()
 
@@ -111,7 +112,7 @@ class CSV(BaseTabularFile):
 
             def sniff():
                 try:
-                    with open(self.path, "r", encoding=encoding) as f:
+                    with open(self.path, encoding=encoding) as f:
                         sample = f.read(1024 * 10)
                         dialect = csv.Sniffer().sniff(sample)
                         return dialect.delimiter
@@ -159,7 +160,7 @@ class Parquet(BaseTabularFile):
     type: FileType = Field("Parquet")
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return pq.read_schema(self.path).names
 
     @property
@@ -216,7 +217,7 @@ class DBF(BaseTabularFile):
     type: FileType = Field("DBF")
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return DBFReader(self.path, load=False).field_names
 
     @property
@@ -263,7 +264,7 @@ class DBF(BaseTabularFile):
 
     async def to_parquet(
         self,
-        output_path: Optional[Union[str, Path]] = None,
+        output_path: str | Path | None = None,
         chunk_size: int = 30000,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
@@ -318,7 +319,7 @@ class DBC(BaseTabularFile):
     type: FileType = Field("DBC")
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         raise NotImplementedError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
         )
@@ -343,7 +344,7 @@ class DBC(BaseTabularFile):
 
     async def to_parquet(
         self,
-        output_path: Optional[Union[str, Path]] = None,
+        output_path: str | Path | None = None,
         chunk_size: int = 30000,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
@@ -375,7 +376,7 @@ class JSON(BaseTabularFile):
     type: FileType = Field("JSON")
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         df = (
             pd.read_json(self.path, nrows=0)
             if self.path.stat().st_size > 0
@@ -391,7 +392,7 @@ class JSON(BaseTabularFile):
         return await anyio.to_thread.run_sync(pd.read_json, self.path)
 
     async def stream(
-        self, chunk_size: Optional[int] = None
+        self, chunk_size: int | None = None
     ) -> AsyncGenerator[pd.DataFrame, None]:
         yield await self.load()
 
@@ -403,7 +404,7 @@ class PDF(BaseLocalFile):
         return await anyio.to_thread.run_sync(self.path.read_bytes)
 
     async def stream(
-        self, chunk_size: Optional[int] = None
+        self, chunk_size: int | None = None
     ) -> AsyncGenerator[bytes, None]:
         def _read():
             with open(self.path, "rb") as f:
@@ -424,7 +425,7 @@ class Zip(BaseCompressedFile):
     async def load(self) -> zipfile.ZipFile:
         return await anyio.to_thread.run_sync(zipfile.ZipFile, self.path)
 
-    async def list_members(self) -> List[str]:
+    async def list_members(self) -> list[str]:
         def _list():
             with zipfile.ZipFile(self.path) as z:
                 return z.namelist()
@@ -439,8 +440,8 @@ class Zip(BaseCompressedFile):
         return await anyio.to_thread.run_sync(_read)
 
     async def extract(
-        self, target_dir: Optional[Path] = CACHEPATH
-    ) -> List[BaseLocalFile]:
+        self, target_dir: Path | None = CACHEPATH
+    ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
         target_dir = Path(target_dir).expanduser().resolve()
@@ -458,7 +459,7 @@ class Zip(BaseCompressedFile):
 
     async def to_parquet(
         self,
-        output_path: Optional[Union[str, Path]] = None,
+        output_path: str | Path | None = None,
         chunk_size: int = 30000,
     ) -> "Parquet":
         final_output = (
@@ -518,15 +519,15 @@ class GZip(BaseCompressedFile):
 
         return await anyio.to_thread.run_sync(_read)
 
-    async def list_members(self) -> List[str]:
+    async def list_members(self) -> list[str]:
         return [self.path.stem]
 
     async def open_member(self, member_name: str) -> bytes:
         return await self.load()
 
     async def extract(
-        self, target_dir: Optional[Path] = CACHEPATH
-    ) -> List[BaseLocalFile]:
+        self, target_dir: Path | None = CACHEPATH
+    ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -552,7 +553,7 @@ class Tar(BaseCompressedFile):
     async def load(self) -> tarfile.TarFile:
         return await anyio.to_thread.run_sync(tarfile.open, self.path)
 
-    async def list_members(self) -> List[str]:
+    async def list_members(self) -> list[str]:
         def _list():
             with tarfile.open(self.path) as t:
                 return t.getnames()
@@ -568,8 +569,8 @@ class Tar(BaseCompressedFile):
         return await anyio.to_thread.run_sync(_read)
 
     async def extract(
-        self, target_dir: Optional[Path] = CACHEPATH
-    ) -> List[BaseLocalFile]:
+        self, target_dir: Path | None = CACHEPATH
+    ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -593,7 +594,7 @@ class FTPNotImported(BaseTabularFile):
     """
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         raise ImportError(self.import_err)
 
     @property
@@ -611,7 +612,7 @@ class FTPNotImported(BaseTabularFile):
 
 
 class ExtensionFactory:
-    _mime: Dict[str, Type[BaseLocalFile]] = {
+    _mime: dict[str, type[BaseLocalFile]] = {
         "application/zip": Zip,
         "application/x-gzip": GZip,
         "application/x-tar": Tar,
@@ -620,7 +621,7 @@ class ExtensionFactory:
         "application/json": JSON,
     }
 
-    _extensions: Dict[str, Type[BaseLocalFile]] = {
+    _extensions: dict[str, type[BaseLocalFile]] = {
         ".zip": Zip,
         ".gz": GZip,
         ".tar": Tar,
@@ -635,7 +636,7 @@ class ExtensionFactory:
     }
 
     @classmethod
-    async def _identify(cls, path: Path) -> Optional[Type[BaseLocalFile]]:
+    async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
         try:
             mime = await anyio.to_thread.run_sync(
                 magic.from_file,
@@ -647,7 +648,7 @@ class ExtensionFactory:
             return None
 
     @classmethod
-    async def get_file_class(cls, path: Path) -> Type[BaseLocalFile]:
+    async def get_file_class(cls, path: Path) -> type[BaseLocalFile]:
         mime_class = await cls._identify(path)
         if mime_class:
             return mime_class
@@ -657,7 +658,7 @@ class ExtensionFactory:
         return cls._extensions.get(path.suffix.lower(), File)
 
     @classmethod
-    async def instantiate(cls, path: Union[str, Path]) -> BaseLocalFile:
+    async def instantiate(cls, path: str | Path) -> BaseLocalFile:
         path = Path(path).expanduser().resolve()
         if await anyio.to_thread.run_sync(path.is_dir):
             return Directory(path=path)

@@ -21,12 +21,12 @@ def get_available_years(disease_code: str) -> list:
         A list of DBC files from a specific disease found in the FTP Server.
     """
     files = sinan.get_files(dis_code=disease_code)
-    return sorted(list(set(sinan.describe(f)["year"] for f in files)))
+    return sorted(list({sinan.describe(f)["year"] for f in files}))
 
 
 def download(
-    diseases: Union[str, list],
-    years: Union[str, list, int],
+    diseases: str | list,
+    years: str | list | int,
     data_path: str = CACHEPATH,
 ) -> list:
     """

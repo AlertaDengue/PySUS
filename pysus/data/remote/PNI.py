@@ -25,16 +25,16 @@ def get_available_years(group, states):
         files = pni.get_files(group, uf=uf)
         years[uf] = set(sorted([pni.describe(f)["year"] for f in files]))
 
-    if len(set([len(v) for v in years.values()])) > 1:
+    if len({len(v) for v in years.values()}) > 1:
         logger.warning(f"Distinct years were found for UFs: {years}")
 
     return sorted(list(set.intersection(*map(set, years.values()))))
 
 
 def download(
-    group: Union[list, Literal["CNPI", "DPNI"]],
-    states: Union[str, list],
-    years: Union[str, list, int],
+    group: list | Literal["CNPI", "DPNI"],
+    states: str | list,
+    years: str | list | int,
     data_dir: str = CACHEPATH,
 ) -> list:
     """

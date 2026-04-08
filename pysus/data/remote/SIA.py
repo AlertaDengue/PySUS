@@ -17,7 +17,7 @@ from pysus.utils.brasil import parse_UFs
 sia = SIA().load()
 
 
-group_dict: Dict[str, Tuple[str, int, int]] = {
+group_dict: dict[str, tuple[str, int, int]] = {
     "PA": ("Produção Ambulatorial", 7, 1994),
     "BI": ("Boletim de Produção Ambulatorial individualizado", 1, 2008),
     "AD": ("APAC de Laudos Diversos", 1, 2008),
@@ -36,7 +36,7 @@ group_dict: Dict[str, Tuple[str, int, int]] = {
 
 def get_available_years(
     group: str,
-    states: Union[str, list] = None,
+    states: str | list = None,
 ):
     """
     Get SIA years for group and/or state and returns a list of years
@@ -63,7 +63,7 @@ def get_available_years(
         files = sia.get_files(group, uf=uf)
         years[uf] = set(sorted([sia.describe(f)["year"] for f in files]))
 
-    if len(set([len(v) for v in years.values()])) > 1:
+    if len({len(v) for v in years.values()}) > 1:
         logger.warning(f"Distinct years were found for UFs: {years}")
 
     return sorted(list(set.intersection(*map(set, years.values()))))
@@ -74,10 +74,10 @@ def show_datatypes():
 
 
 def download(
-    states: Union[str, list],
-    years: Union[str, list, int],
-    months: Union[str, list, int],
-    groups: Union[str, list],
+    states: str | list,
+    years: str | list | int,
+    months: str | list | int,
+    groups: str | list,
     data_dir: str = CACHEPATH,
 ) -> list:
     """

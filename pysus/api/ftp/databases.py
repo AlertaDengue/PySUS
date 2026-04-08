@@ -5,11 +5,11 @@ from pysus.utils import zfill_year
 
 
 class CIHA(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/CIHA/201101_/Dados"),
     ]
 
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "CIHA": "Comunicação de Internação Hospitalar e Ambulatorial",
     }
 
@@ -30,7 +30,7 @@ class CIHA(Dataset):
             "perfis nosológico e epidemiológico da população brasileira."
         )
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:4]
@@ -57,10 +57,10 @@ class CIHA(Dataset):
 
 
 class CNES(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/CNES/200508_/Dados"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "DC": "Dados Complementares",
         "EE": "Estabelecimento de Ensino",
         "EF": "Estabelecimento Filantrópico",
@@ -92,7 +92,7 @@ class CNES(Dataset):
             "de todos os estabelecimentos de saúde no país."
         )
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -118,11 +118,11 @@ class CNES(Dataset):
 
 
 class SINASC(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
         Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "DN": "Declarações de Nascidos Vivos",
         "DNR": "Nascidos Vivos por UF de residência",
     }
@@ -142,7 +142,7 @@ class SINASC(Dataset):
             planejamento de políticas.
         """
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]
@@ -162,11 +162,11 @@ class SINASC(Dataset):
 
 
 class SIM(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/SIM/CID10/DORES"),
         Directory("/dissemin/publicos/SIM/CID9/DORES"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "DO": "Mortalidade Geral (CID-10)",
         "DOR": "Mortalidade Geral (CID-9)",
     }
@@ -185,7 +185,7 @@ class SIM(Dataset):
             O SIM coleta dados sobre óbitos no país para análise epidemiológica.
         """
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             if "CID9" in filename:
@@ -206,10 +206,10 @@ class SIM(Dataset):
 
 
 class PNI(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/PNI/DADOS"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "CPNI": "Cobertura Vacinal",
         "DPNI": "Doses Aplicadas",
     }
@@ -226,7 +226,7 @@ class PNI(Dataset):
     def description(self) -> str:
         return "O SI-PNI monitora a cobertura vacinal e doses aplicadas."
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             group_code, state, year_short = name[:4], name[4:6], name[-2:]
@@ -244,7 +244,7 @@ class PNI(Dataset):
 
 
 class IBGEDATASUS(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/IBGE/POP"),
         Directory("/dissemin/publicos/IBGE/censo"),
         Directory("/dissemin/publicos/IBGE/POPTCU"),
@@ -263,7 +263,7 @@ class IBGEDATASUS(Dataset):
     def description(self) -> str:
         return "Informações sobre a população residente obtidas de Censos."
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]
@@ -276,11 +276,11 @@ class IBGEDATASUS(Dataset):
 
 
 class SIA(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
         Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "PA": "Produção Ambulatorial",
         "BI": "Boletim de Produção Ambulatorial Individualizado",
         "AD": "APAC de Laudos Diversos",
@@ -302,7 +302,7 @@ class SIA(Dataset):
     def description(self) -> str:
         return "O SIA acompanha as ações de saúde produzidas."
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             digits = "".join([d for d in name if d.isdigit()])
@@ -331,11 +331,11 @@ class SIA(Dataset):
 
 
 class SIH(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/SIHSUS/199201_200712/Dados"),
         Directory("/dissemin/publicos/SIHSUS/200801_/Dados"),
     ]
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "RD": "AIH Reduzida",
         "RJ": "AIH Rejeitada",
         "SP": "Serviços Profissionais",
@@ -356,7 +356,7 @@ class SIH(Dataset):
             O SIH processa as internações hospitalares financiadas pelo SUS.
         """
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -378,12 +378,12 @@ class SIH(Dataset):
 
 
 class SINAN(Dataset):
-    paths: List[Directory] = [
+    paths: list[Directory] = [
         Directory("/dissemin/publicos/SINAN/DADOS/FINAIS"),
         Directory("/dissemin/publicos/SINAN/DADOS/PRELIM"),
     ]
 
-    group_definitions: Dict[str, str] = {
+    group_definitions: dict[str, str] = {
         "DENG": "Dengue",
         "ZIKA": "Zika Vírus",
         "CHIK": "Febre de Chikungunya",
@@ -404,7 +404,7 @@ class SINAN(Dataset):
     def description(self) -> str:
         return "O SINAN é alimentado pela notificação de doenças compulsórias."
 
-    def formatter(self, filename: str) -> Dict[str, Any]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]

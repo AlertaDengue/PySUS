@@ -6,14 +6,14 @@ from .brasil import *  # noqa
 T = TypeVar("T")
 
 
-def to_list(item: Union[T, List[T], Tuple[T, ...], None]) -> List[T]:
+def to_list(item: T | list[T] | tuple[T, ...] | None) -> list[T]:
     """Parse any builtin data type into a list"""
     if item is None:
         return []
     return [item] if not isinstance(item, (list, tuple)) else list(item)
 
 
-def zfill_year(year: Union[str, int]) -> int:
+def zfill_year(year: str | int) -> int:
     """
     Formats a len(2) year into len(4) with the correct year preffix
     E.g: 20 -> 2020; 99 -> 1999
