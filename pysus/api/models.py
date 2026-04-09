@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any
 
 import anyio
 import pandas as pd
@@ -180,7 +180,8 @@ class BaseCompressedFile(BaseLocalFile, ABC):
 
     @abstractmethod
     async def extract(
-        self, target_dir: Path | None = CACHEPATH
+        self,
+        target_dir: Path | None = CACHEPATH,
     ) -> list[BaseLocalFile]:
         pass
 

@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from pydantic import PrivateAttr
 from pysus import CACHEPATH
@@ -110,9 +110,7 @@ class Directory:
         return self._content
 
     async def load(self) -> None:
-        raw_infos = await self.client._list_directory(
-            self.path, self.formatter
-        )
+        raw_infos = await self.client._list_directory(self.path, self.formatter)
         self._content = []
 
         file_parent = (
@@ -196,9 +194,8 @@ class Group(BaseRemoteGroup):
 class Dataset(BaseRemoteDataset):
     paths: list[Directory] = []
     group_definitions: dict[str, str] = {}
-    _content: None | (list[(Group | Directory | File)]) = PrivateAttr(
-        default=None
-    )
+    _content: None | (list[(Group | Directory | File)]
+                      ) = PrivateAttr(default=None)
 
     @property
     @abstractmethod
@@ -247,4 +244,4 @@ class Dataset(BaseRemoteDataset):
         return results
 
     def __repr__(self) -> str:
-        return f"<Database: {self.name}>"
+        return self.name

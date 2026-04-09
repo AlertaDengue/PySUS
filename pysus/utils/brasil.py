@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
-from typing import Union
 
 with open(
-    f"{Path(__file__).parent}/municipios.json", encoding="utf-8-sig"
+    f"{Path(__file__).parent}/municipios.json",
+    encoding="utf-8-sig",
 ) as muns:
     MUNICIPALITIES = json.loads(muns.read())
 

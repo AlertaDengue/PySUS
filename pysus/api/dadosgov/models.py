@@ -1,11 +1,12 @@
 import asyncio
 import pathlib
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime as dt
-from typing import Any, List, Optional, Union
+from typing import Any
 
 import httpx
+from pydantic import PrivateAttr
 from pysus.api.models import (
     BaseRemoteClient,
     BaseRemoteDataset,
@@ -19,6 +20,12 @@ from .client import ConjuntoDados, Recurso
 class File(BaseRemoteFile):
     record: Recurso
     type: str | None = "remote"
+    _metadata: dict[str, Any] = PrivateAttr(default_factory=dict)
+
+    def __init__(self, **data):
+        metadata = data.pop("_metadata", {})
+        super().__init__(**data)
+        self._metadata = metadata
 
     def __repr__(self):
         return self.basename
@@ -51,6 +58,18 @@ class File(BaseRemoteFile):
     def modify(self) -> dt:
         return self.record.last_modified
 
+    @property
+    def year(self) -> int | None:
+        return self._metadata.get("year")
+
+    @property
+    def month(self) -> int | None:
+        return self._metadata.get("month")
+
+    @property
+    def state(self) -> str | None:
+        return self._metadata.get("state")
+
     async def _download(
         self,
         output: pathlib.Path | None = None,
@@ -64,7 +83,7 @@ class File(BaseRemoteFile):
         try:
             async with httpx.AsyncClient(
                 follow_redirects=True,
-                timeout=1,
+                timeout=3,
             ) as client:
                 response = await client.head(self.path)
 
@@ -85,6 +104,19 @@ class File(BaseRemoteFile):
 
 class Group(BaseRemoteGroup):
     record: ConjuntoDados
+    _formatter: Callable[[Recurso, "Group"], dict[str, Any]] | None = (
+        PrivateAttr(default=None)
+    )
+
+    def __init__(
+        self,
+        record: ConjuntoDados,
+        dataset: BaseRemoteDataset,
+        formatter: Callable | None = None,
+    ):
+        super().__init__(dataset=dataset)
+        self.record = record
+        self._formatter = formatter
 
     def __repr__(self):
         return self.name
@@ -99,16 +131,15 @@ class Group(BaseRemoteGroup):
 
     @property
     def description(self) -> str:
-        return ""  # TODO:
+        return ""
 
     async def _fetch_files(self) -> list[File]:
         files = []
         for recurso in self.record.resources:
-            file = File(
-                record=recurso,
-                parent=self,
+            metadata = (
+                self._formatter(recurso, self) if self._formatter else {}
             )
-            await file.fetch_size()
+            file = File(record=recurso, parent=self, _metadata=metadata)
             files.append(file)
         return files
 
@@ -119,13 +150,20 @@ class Dataset(BaseRemoteDataset, ABC):
     def __repr__(self):
         return self.name
 
-    async def _fetch_content(
-        self,
-    ) -> list[Group]:
+    @property
+    @abstractmethod
+    def formatter(self) -> Callable[[Recurso, Group], dict[str, Any]]:
+        pass
+
+    async def _fetch_content(self) -> list[Group]:
         items: list[Group] = []
         client: BaseRemoteClient = self.client
         if self.ids:
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)
-                items.append(Group(record=record, dataset=self))
+                items.append(
+                    Group(
+                        record=record, dataset=self, formatter=self.formatter
+                    )
+                )
         return items

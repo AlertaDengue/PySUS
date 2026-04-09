@@ -15,7 +15,6 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
-
 file_columns = Table(
     "file_columns",
     Base.metadata,
@@ -35,34 +34,30 @@ class CatalogTable(Base):
     __table_args__ = {"schema": "pysus"}
 
 
+class Origin(enum.Enum):
+    FTP = "ftp"
+    API = "api"
+
+
 class CatalogDataset(CatalogTable):
     __tablename__ = "datasets"
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True, index=True)
-    metadata_id = Column(
-        Integer,
-        ForeignKey("pysus.dataset_metadata.id"),
-        index=True,
-    )
-
-    dataset_metadata = relationship(
-        "DatasetMetadata",
-        back_populates="datasets",
-    )
+    long_name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    origin = Column(Enum(Origin), nullable=False)
 
     groups = relationship(
         "DatasetGroup",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
-
     files = relationship(
-        "File",
+        "CatalogFile",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
-
     columns = relationship(
         "ColumnDefinition",
         back_populates="dataset",
@@ -85,10 +80,9 @@ class ColumnDefinition(CatalogTable):
     description = Column(String, nullable=True)
     nullable = Column(Boolean, nullable=False, default=True)
 
-    dataset = relationship("Dataset", back_populates="columns")
-
+    dataset = relationship("CatalogDataset", back_populates="columns")
     files = relationship(
-        "File",
+        "CatalogFile",
         secondary=file_columns,
         back_populates="columns",
     )
@@ -110,24 +104,12 @@ class DatasetGroup(CatalogTable):
         nullable=False,
         index=True,
     )
-    metadata_id = Column(
-        Integer,
-        ForeignKey("pysus.dataset_group_metadata.id"),
-        index=True,
-    )
+    long_name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
 
-    dataset = relationship(
-        "Dataset",
-        back_populates="groups",
-    )
-
-    group_metadata = relationship(
-        "DatasetGroupMetadata",
-        back_populates="groups",
-    )
-
+    dataset = relationship("CatalogDataset", back_populates="groups")
     files = relationship(
-        "File",
+        "CatalogFile",
         back_populates="group",
         cascade="all, delete-orphan",
     )
@@ -160,7 +142,7 @@ class CatalogFile(CatalogTable):
     month = Column(Integer, nullable=True, index=True)
     state = Column(String(2), nullable=True, index=True)
 
-    dataset = relationship("Dataset", back_populates="files")
+    dataset = relationship("CatalogDataset", back_populates="files")
     group = relationship("DatasetGroup", back_populates="files")
     columns = relationship(
         "ColumnDefinition", secondary=file_columns, back_populates="files"
@@ -170,35 +152,4 @@ class CatalogFile(CatalogTable):
         Index("ix_files_dataset_group", "dataset_id", "group_id"),
         Index("ix_files_temporal", "year", "month"),
         {"schema": "pysus"},
-    )
-
-
-class DatasetMetadata(CatalogTable):
-    class Origin(enum.Enum):
-        FTP = "ftp"
-        API = "api"
-
-    __tablename__ = "dataset_metadata"
-
-    id = Column(Integer, primary_key=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    origin = Column(Enum(Origin), nullable=False)
-
-    datasets = relationship(
-        "Dataset",
-        back_populates="dataset_metadata",
-    )
-
-
-class DatasetGroupMetadata(CatalogTable):
-    __tablename__ = "dataset_group_metadata"
-
-    id = Column(Integer, primary_key=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-
-    groups = relationship(
-        "DatasetGroup",
-        back_populates="group_metadata",
     )

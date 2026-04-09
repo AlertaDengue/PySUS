@@ -7,7 +7,7 @@ import zipfile
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, Type, Union
+from typing import ClassVar
 
 import anyio
 import chardet
@@ -440,7 +440,8 @@ class Zip(BaseCompressedFile):
         return await anyio.to_thread.run_sync(_read)
 
     async def extract(
-        self, target_dir: Path | None = CACHEPATH
+        self,
+        target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
@@ -526,7 +527,8 @@ class GZip(BaseCompressedFile):
         return await self.load()
 
     async def extract(
-        self, target_dir: Path | None = CACHEPATH
+        self,
+        target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 
@@ -569,7 +571,8 @@ class Tar(BaseCompressedFile):
         return await anyio.to_thread.run_sync(_read)
 
     async def extract(
-        self, target_dir: Path | None = CACHEPATH
+        self,
+        target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
         from pysus.api.extensions import ExtensionFactory
 

@@ -5,9 +5,11 @@ import pathlib
 from importlib import metadata as importlib_metadata
 from typing import Final
 
-CACHEPATH: Final[str] = os.getenv(
-    "PYSUS_CACHEPATH",
-    os.path.join(str(pathlib.Path.home()), "pysus"),
+CACHEPATH: Final[pathlib.Path] = pathlib.Path(
+    os.getenv(
+        "PYSUS_CACHEPATH",
+        os.path.join(str(pathlib.Path.home()), "pysus"),
+    )
 )
 
 # from pysus.api.ftp.databases import *  # noqa

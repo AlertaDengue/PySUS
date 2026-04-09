@@ -4,7 +4,7 @@ import pathlib
 from collections.abc import Callable
 from datetime import datetime
 from ftplib import FTP as FTPLib
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import anyio
 from pydantic import PrivateAttr

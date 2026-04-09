@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 import anyio
 import boto3
@@ -34,11 +34,28 @@ class DuckLake(BaseRemoteClient):
     _engine: Any = PrivateAttr(default=None)
     _Session: Any = PrivateAttr(default=None)
 
-    def __init__(self, **data):
+    def __init__(self, engine=None, **data):
         super().__init__(**data)
+        self._engine = engine
         self._cache_dir = Path(CACHEPATH) / "ducklake"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         self._catalog_local = self._cache_dir / "catalog.db"
+
+    @property
+    def name(self) -> str:
+        return "DuckLake"
+
+    @property
+    def long_name(self) -> str:
+        return "PySUS s3 Client"
+
+    @property
+    def description(self) -> str:
+        return ""  # TODO:
+
+    @property
+    def catalog_path(self) -> Path:
+        return self._catalog_local
 
     @property
     def _catalog_url(self) -> str:
@@ -94,7 +111,17 @@ class DuckLake(BaseRemoteClient):
         with engine.connect() as conn:
             conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
 
-            conn.exec_driver_sql("SET search_path='pysus,main';")
+            has_pysus = conn.exec_driver_sql(
+                """
+                SELECT 1 FROM information_schema.schemata WHERE
+                schema_name = 'pysus'
+            """
+            ).fetchone()
+
+            if has_pysus:
+                conn.exec_driver_sql("SET search_path='pysus,main';")
+            else:
+                conn.exec_driver_sql("SET search_path='main';")
 
             s3_cfg = {
                 "s3_endpoint": self.endpoint,
@@ -102,6 +129,7 @@ class DuckLake(BaseRemoteClient):
                 "s3_url_style": "path",
                 "s3_use_ssl": "true",
             }
+
             if self._is_authenticated:
                 s3_cfg["s3_access_key_id"] = (
                     self.credentials.access_key.get_secret_value()
@@ -117,6 +145,8 @@ class DuckLake(BaseRemoteClient):
 
     async def connect(self, force: bool = False):
         if self._engine and not force:
+            if not self._Session:
+                self._Session = sessionmaker(bind=self._engine)
             return
 
         await self._load_catalog()
@@ -187,7 +217,7 @@ class DuckLake(BaseRemoteClient):
     async def _upload_catalog(self):
         if not self._is_authenticated:
             raise PermissionError(
-                "Admin credentials required to upload catalog."
+                "Admin credentials required to upload catalog.",
             )
 
         def _upload():
