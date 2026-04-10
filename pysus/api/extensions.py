@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
+from collections.abc import Callable
 
 import anyio
 import chardet
@@ -266,6 +267,7 @@ class DBF(BaseTabularFile):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
+        callback: Callable[[int, int], None] = None,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
 
@@ -280,19 +282,25 @@ class DBF(BaseTabularFile):
 
         async def _stream_to_single_file():
             dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
+            total_rows = len(dbf_reader)
             writer = None
             records = []
 
             try:
                 for i, record in enumerate(dbf_reader):
                     records.append(record)
-                    if (i + 1) % chunk_size == 0:
+                    current_count = i + 1
+
+                    if current_count % chunk_size == 0:
                         df = pd.DataFrame(records).map(self.decode_column)
                         table = pa.Table.from_pandas(df)
                         if writer is None:
                             writer = pq.ParquetWriter(str(out), table.schema)
                         writer.write_table(table)
                         records = []
+
+                        if callback:
+                            callback(current_count, total_rows)
                         await anyio.sleep(0)
 
                 if records:
@@ -301,6 +309,9 @@ class DBF(BaseTabularFile):
                     if writer is None:
                         writer = pq.ParquetWriter(str(out), table.schema)
                     writer.write_table(table)
+
+                    if callback:
+                        callback(total_rows, total_rows)
 
                 if writer is None:
                     df_empty = pd.DataFrame(columns=self.columns)
@@ -346,6 +357,7 @@ class DBC(BaseTabularFile):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
+        callback: Callable[[int, int], None] = None,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
 
@@ -365,7 +377,9 @@ class DBC(BaseTabularFile):
             )
             dbf_ext = await ExtensionFactory.instantiate(tmp_dbf_path)
             return await dbf_ext.to_parquet(
-                output_path=output_path, chunk_size=chunk_size
+                output_path=output_path,
+                chunk_size=chunk_size,
+                callback=callback,
             )
         finally:
             if tmp_dbf_path.exists():
@@ -462,6 +476,7 @@ class Zip(BaseCompressedFile):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
+        callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
         final_output = (
             Path(output_path or self.path.with_suffix(".parquet"))
@@ -484,9 +499,10 @@ class Zip(BaseCompressedFile):
                 )
 
             return await tabular_file.to_parquet(
-                output_path=final_output, chunk_size=chunk_size
+                output_path=final_output,
+                chunk_size=chunk_size,
+                callback=callback,
             )
-
         finally:
             await self._safe_cleanup(temp_dir)
 

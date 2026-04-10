@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from pysus import CACHEPATH
-from sqlalchemy import Column, Integer, DateTime, Enum, String, create_engine
+from sqlalchemy import Column, DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from .dadosgov import DadosGovClient
@@ -44,6 +44,7 @@ class PySUS:
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
+        self.cachepath = db_path.parent
         self.engine = create_engine(f"duckdb:///{db_path}")
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
@@ -119,8 +120,20 @@ class PySUS:
             await self._dadosgov.close()
         self.engine.dispose()
 
-    def _get_dest_path(self, client_name: str, remote_path: str) -> Path:
-        return CACHEPATH / "downloads" / client_name / remote_path.lstrip("/")
+    def _get_dest_path(self, file: BaseRemoteFile) -> Path:
+        client_name = file.client.name.lower()
+        dataset_name = getattr(file.parent, "name", "unknown_dataset")
+
+        group_name = ""
+        if hasattr(file, "group") and file.group:
+            group_name = getattr(file.group, "name", "")
+
+        base_dir = self.cachepath / "downloads" / client_name / dataset_name
+
+        if group_name:
+            return base_dir / group_name / file.basename
+
+        return base_dir / file.basename
 
     async def _update_state(
         self,
@@ -168,7 +181,7 @@ class PySUS:
 
         client_name = file.client.name.lower()
         remote_path = file.path
-        local_path = self._get_dest_path(client_name, remote_path)
+        local_path = self._get_dest_path(file)
 
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -206,11 +219,18 @@ class PySUS:
             )
             raise
 
+    async def _delete_record(self, path: str):
+        with self.Session() as session:
+            record = session.query(LocalFileState).filter_by(path=path).first()
+            if record:
+                session.delete(record)
+                session.commit()
+
     async def download_to_parquet(
         self,
         file: BaseRemoteFile,
         token: str = None,
-        callback: Callable = None,
+        callback: Callable[[int, int], None] = None,
     ):
         local_file = await self.download(
             file=file,
@@ -219,13 +239,63 @@ class PySUS:
         )
 
         if hasattr(local_file, "to_parquet"):
-            parquet_file = await local_file.to_parquet()
+            original_path = local_file.path
+
+            parquet_file = await local_file.to_parquet(callback=callback)
 
             await self._update_state(
                 local_path=parquet_file.path,
                 remote_path=file.path,
                 client_name=file.client.name.lower(),
                 status=DownloadStatus.COMPLETED,
+                year=file.year,
+                month=file.month,
+                state=file.state,
+                group=getattr(file.group, "name", None),
             )
+
+            if original_path.exists() and original_path != parquet_file.path:
+                original_path.unlink()
+                await self._delete_record(str(original_path))
+
             return parquet_file
+
         return local_file
+
+    def get_local_hierarchy(self):
+        with self.Session() as session:
+            records = session.query(LocalFileState).all()
+
+        hierarchy = {}
+        for r in records:
+            client = r.client_name.upper()
+
+            path_obj = Path(r.path)
+            parts = path_obj.parts
+
+            dataset = parts[-2] if len(parts) > 2 else "Other"
+            if path_obj.is_file() and len(parts) > 3:
+                dataset = parts[-2] if not r.group else parts[-3]
+
+            client_dict = hierarchy.setdefault(client, {})
+            ds_dict = client_dict.setdefault(dataset, {})
+            group_list = ds_dict.setdefault(r.group or "", [])
+
+            group_list.append(
+                {
+                    "name": path_obj.name,
+                    "status": r.status,
+                    "path": r.path,
+                    "record": r,
+                }
+            )
+        return hierarchy
+
+    def get_completed_remote_paths(self) -> set[str]:
+        with self.Session() as session:
+            records = (
+                session.query(LocalFileState.remote_path)
+                .filter(LocalFileState.status == DownloadStatus.COMPLETED)
+                .all()
+            )
+            return {str(r.remote_path) for r in records}

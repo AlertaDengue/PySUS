@@ -125,6 +125,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 10000,
+        callback: Callable[[int, int], None] | None = None,
     ) -> BaseTabularFile:
         from pysus.api.extensions import ExtensionFactory
 
@@ -133,11 +134,14 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
         output_path = Path(output_path).expanduser().resolve()
         writer = None
+        total_rows = self.rows
+        current_rows = 0
 
         pbar = tqdm(
             desc=f"Converting {self.basename}",
             unit=" rows",
             unit_scale=True,
+            total=total_rows,
         )
 
         try:
@@ -146,6 +150,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
                     continue
 
                 rows_in_chunk = len(chunk)
+                current_rows += rows_in_chunk
 
                 table = await anyio.to_thread.run_sync(
                     pa.Table.from_pandas,
@@ -160,6 +165,10 @@ class BaseTabularFile(BaseLocalFile, ABC):
                 await anyio.to_thread.run_sync(writer.write_table, table)
 
                 pbar.update(rows_in_chunk)
+
+                if callback:
+                    callback(current_rows, total_rows)
+
                 await anyio.sleep(0)
         finally:
             pbar.close()

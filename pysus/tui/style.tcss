@@ -1,0 +1,154 @@
+LoadingScreen Middle {
+    height: 90%;
+    width: 100%;
+    align: center middle;
+}
+
+#welcome-text {
+    text-style: bold;
+    color: white;
+    width: 100%;
+    text-align: center;
+}
+
+#config-container {
+    width: 60;
+    height: auto;
+    border: thick;
+    background: $surface;
+    padding: 1 2;
+}
+
+#config-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#config-grid {
+    grid-size: 2;
+    grid-gutter: 1 2;
+    grid-columns: 1fr 2fr;
+    height: auto;
+    margin-bottom: 1;
+}
+
+#cfg-save {
+    width: 100%;
+}
+
+Label {
+    height: 3;
+    content-align: left middle;
+}
+
+#loader {
+    width: auto;
+    height: auto;
+}
+
+#main-container {
+    width: 70%;
+    margin-right: 1;
+}
+
+ModalScreen {
+    background: rgba(0, 0, 0, 0.7);
+    align: center middle;
+}
+
+#modal-content-wrapper {
+    width: 60;
+    height: auto;
+    background: $surface;
+    border: round white;
+    padding: 1 2;
+}
+
+#modal-title {
+    text-style: bold;
+    color: $accent;
+    width: 100%;
+    text-align: center;
+    border-bottom: solid $primary;
+    margin-bottom: 1;
+}
+
+#modal-content {
+    margin: 1 0;
+}
+
+#modal-footer {
+    text-align: center;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+#sidebar {
+    width: 30%;
+}
+
+#panel-label, #sidebar-label {
+    padding-left: 1;
+    text-style: bold;
+    color: white;
+}
+
+#client-switcher, #ftp-data-table, #ftp-local-tree {
+    height: 1fr;
+    border: round white;
+    padding: 1;
+}
+
+#client-switcher:focus-within, #ftp-data-table:focus, #ftp-local-tree:focus {
+    border: double white;
+}
+
+#local-tree {
+    height: 1fr;
+    border: round white;
+    padding: 1;
+    background: transparent;
+}
+
+DataTable {
+    height: 1fr;
+    border: none;
+    scrollbar-size: 1 1;
+}
+
+#local-tree {
+    height: 1fr;
+    border: round white;
+    padding: 1;
+    background: transparent;
+    scrollbar-size: 1 1;
+}
+
+ScrollBar {
+    width: 1;
+}
+
+ScrollBar > .scrollbar--button {
+    display: none;
+}
+
+ProgressBar {
+    width: 100%;
+    margin: 1 0;
+    display: none;
+}
+
+ProgressBar.visible {
+    display: block;
+}
+
+#download-progress {
+    width: 100%;
+    margin-top: 1;
+    display: none;
+}
+
+#download-progress.visible {
+    display: block;
+}

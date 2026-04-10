@@ -1563,10 +1563,9 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "humanize"
 version = "4.11.0"
 description = "Python humanize utilities"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ftp\""
 files = [
     {file = "humanize-4.11.0-py3-none-any.whl", hash = "sha256:b53caaec8532bcb2fff70c8826f904c35943f8cecaca29d272d9df38092736c0"},
     {file = "humanize-4.11.0.tar.gz", hash = "sha256:e66f36020a2d5a974c504bd2555cf770621dbdbb6d82f94a6857c0b1ea2608be"},
@@ -5369,9 +5368,9 @@ files = [
 dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 
 [extras]
-ftp = ["aioftp", "bigtree", "dbfread", "humanize", "pycparser", "pyreaddbc"]
+ftp = ["aioftp", "bigtree", "dbfread", "pycparser", "pyreaddbc"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "3f57e12c2511876b6e51574b854600169be9faa7f9f5fb98205a6ee51721df1a"
+content-hash = "0afc6d04352b8503480de2dff471acec6ccf8c5705c38f83ef64685c96478f95"
