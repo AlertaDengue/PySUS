@@ -36,15 +36,15 @@ python-magic = "^0.4.27"
 chardet = "^7.4.0.post2"
 anyio = "^4.13.0"
 humanize = "^4.8.0"
+aioftp = "^0.21.4"
+dbfread = "2.0.7"
+bigtree = "^0.12.2"
 
-dbfread = { version = "2.0.7", optional = true }
 pyreaddbc = { version = ">=1.1.0", optional = true }
 pycparser = { version = "2.21", optional = true }
-bigtree = { version = "^0.12.2", optional = true }
-aioftp = { version = "^0.21.4", optional = true }
 
 [tool.poetry.extras]
-ftp = ["dbfread", "pyreaddbc", "pycparser", "bigtree", "aioftp"]
+dbc = ["pyreaddbc", "pycparser"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"

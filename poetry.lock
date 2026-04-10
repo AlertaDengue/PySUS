@@ -4,10 +4,9 @@
 name = "aioftp"
 version = "0.21.4"
 description = "ftp client/server for asyncio"
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"ftp\""
 files = [
     {file = "aioftp-0.21.4-py3-none-any.whl", hash = "sha256:ad7c1136754799808fca890ea41ea7ec8fcd1bb5167a1f46e04db15267242324"},
     {file = "aioftp-0.21.4.tar.gz", hash = "sha256:28bb26d4616c7c381a1543281f987051b8d2d1d5bfaf023d9e7e2c2105c51bb9"},
@@ -276,10 +275,9 @@ lxml = ["lxml"]
 name = "bigtree"
 version = "0.12.5"
 description = "Tree Implementation and Methods for Python, integrated with Python list, dictionary, and pandas DataFrame."
-optional = true
+optional = false
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"ftp\""
 files = [
     {file = "bigtree-0.12.5-py3-none-any.whl", hash = "sha256:f574b28912f75e382cca6df75390e281a738972c6939969596e09d08f4c58faa"},
     {file = "bigtree-0.12.5.tar.gz", hash = "sha256:bc432e2255173136f45b2d2580e33eddf591aeae46bbe4e12a7fdff688983513"},
@@ -446,7 +444,7 @@ files = [
     {file = "cffi-1.17.1-cp39-cp39-win_amd64.whl", hash = "sha256:d016c76bdd850f3c626af19b0542c9677ba156e4ee4fccfdd7848803533ef662"},
     {file = "cffi-1.17.1.tar.gz", hash = "sha256:1c39c6016c32bc48dd54561950ebd6836e1670f2ae46128f67cf49e789c52824"},
 ]
-markers = {main = "extra == \"ftp\"", dev = "implementation_name == \"pypy\""}
+markers = {main = "extra == \"dbc\"", dev = "implementation_name == \"pypy\""}
 
 [package.dependencies]
 pycparser = "*"
@@ -920,10 +918,9 @@ langdetect = ["langdetect"]
 name = "dbfread"
 version = "2.0.7"
 description = "Read DBF Files with Python"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ftp\""
 files = [
     {file = "dbfread-2.0.7-py2.py3-none-any.whl", hash = "sha256:f604def58c59694fa0160d7be5d0b8d594467278d2bb6a47d46daf7162c84cec"},
     {file = "dbfread-2.0.7.tar.gz", hash = "sha256:07c8a9af06ffad3f6f03e8fe91ad7d2733e31a26d2b72c4dd4cfbae07ee3b73d"},
@@ -3269,7 +3266,7 @@ files = [
     {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
     {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
 ]
-markers = {main = "extra == \"ftp\"", dev = "implementation_name == \"pypy\" or extra == \"ftp\""}
+markers = {main = "extra == \"dbc\"", dev = "implementation_name == \"pypy\" or extra == \"dbc\""}
 
 [[package]]
 name = "pydantic"
@@ -3476,7 +3473,7 @@ description = "pyreaddbc package"
 optional = true
 python-versions = ">=3.9,<4"
 groups = ["main"]
-markers = "extra == \"ftp\""
+markers = "extra == \"dbc\""
 files = [
     {file = "pyreaddbc-1.2.0-cp311-cp311-manylinux_2_37_x86_64.whl", hash = "sha256:48446cbd497da0b4ec2ad272c050cfad366844af5da8fd7113851c8856e40ace"},
     {file = "pyreaddbc-1.2.0.tar.gz", hash = "sha256:5a4733ceeeec2409829e281e738d69e063f5dbdd38b05fb6254d7e8454a0fe80"},
@@ -3724,7 +3721,7 @@ files = [
     {file = "PyYAML-6.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:39693e1f8320ae4f43943590b49779ffb98acb81f788220ea932a6b6c51004d8"},
     {file = "pyyaml-6.0.2.tar.gz", hash = "sha256:d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e"},
 ]
-markers = {main = "extra == \"ftp\""}
+markers = {main = "extra == \"dbc\""}
 
 [[package]]
 name = "pyzmq"
@@ -5368,9 +5365,9 @@ files = [
 dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 
 [extras]
-ftp = ["aioftp", "bigtree", "dbfread", "pycparser", "pyreaddbc"]
+dbc = ["pycparser", "pyreaddbc"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "0afc6d04352b8503480de2dff471acec6ccf8c5705c38f83ef64685c96478f95"
+content-hash = "dacf848c8b087fb7362648f7a250b921bfa3a3ebf4eed7775c14f471260a1035"

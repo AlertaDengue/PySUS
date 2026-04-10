@@ -606,10 +606,8 @@ class Tar(BaseCompressedFile):
 
 class FTPNotImported(BaseTabularFile):
     type: FileType = Field(None)
-    import_err: ClassVar[
-        str
-    ] = """
-        run "pip install pysus[ftp]" to handle DBC or DBF files
+    import_err: ClassVar[str] = """
+        run "pip install pysus[dbc]" to handle DBC files
     """
 
     @property
@@ -648,7 +646,7 @@ class ExtensionFactory:
         ".tar.gz": Tar,
         ".csv": CSV,
         ".parquet": Parquet,
-        ".dbf": DBF if FTP_IMPORT else FTPNotImported,
+        ".dbf": DBF,
         ".dbc": DBC if FTP_IMPORT else FTPNotImported,
         ".pdf": PDF,
         ".json": JSON,
