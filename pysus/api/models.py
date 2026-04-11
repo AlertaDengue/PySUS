@@ -214,7 +214,8 @@ class SearchableMixin:
 
 
 class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
-    parent: BaseRemoteDataset | BaseRemoteGroup = Field(exclude=True)
+    dataset: BaseRemoteDataset = Field(exclude=True)
+    group: BaseRemoteGroup | None = Field(default=None, exclude=True)
     _path: str = PrivateAttr()
 
     @property
@@ -227,9 +228,7 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
 
     @property
     def client(self) -> BaseRemoteClient:
-        if hasattr(self.parent, "client"):
-            return self.parent.client
-        return self.parent.dataset.client
+        return self.dataset.client
 
     @property
     def year(self) -> int | None:

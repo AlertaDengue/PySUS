@@ -155,12 +155,14 @@ class DuckLake(BaseRemoteClient):
 
     async def close(self):
         if self._engine:
+            await anyio.to_thread.run_sync(self._engine.dispose)
+
+            self._engine = None
+            self._Session = None
+
             if self._is_authenticated:
                 await self._upload_catalog()
 
-            await anyio.to_thread.run_sync(self._engine.dispose)
-            self._engine = None
-            self._Session = None
             self._s3_client = None
 
     async def _download_file(

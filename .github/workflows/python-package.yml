@@ -45,7 +45,7 @@ jobs:
         poetry export --with dev --extras ftp --format requirements.txt --output reqs.txt --without-hashes
 
         pip install -r reqs.txt
-        pip install -e ".[ftp]"
+        pip install -e ".[dbc]"
 
         # pre-commit run --all-files
 

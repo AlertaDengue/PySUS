@@ -46,9 +46,7 @@ class File(BaseRemoteFile):
     def extension(self) -> str:
         if self.record.file_name:
             return pathlib.Path(self.record.file_name).suffix
-        return pathlib.Path(
-            self.record.url.split("/")[-1].split("?")[0]
-        ).suffix
+        return pathlib.Path(self.record.url.split("/")[-1].split("?")[0]).suffix
 
     @property
     def size(self) -> int:
@@ -75,9 +73,7 @@ class File(BaseRemoteFile):
         output: pathlib.Path | None = None,
         callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
-        return await self.client._download_file(
-            self, output, callback=callback
-        )
+        return await self.client._download_file(self, output, callback=callback)
 
     async def fetch_size(self) -> int:
         try:
@@ -104,9 +100,13 @@ class File(BaseRemoteFile):
 
 class Group(BaseRemoteGroup):
     record: ConjuntoDados
-    _formatter: Callable[[Recurso, "Group"], dict[str, Any]] | None = (
-        PrivateAttr(default=None)
-    )
+    _formatter: (
+        Callable[
+            [Recurso, "Group"],
+            dict[str, Any],
+        ]
+        | None
+    ) = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -136,10 +136,13 @@ class Group(BaseRemoteGroup):
     async def _fetch_files(self) -> list[File]:
         files = []
         for recurso in self.record.resources:
-            metadata = (
-                self._formatter(recurso, self) if self._formatter else {}
+            metadata = self._formatter(recurso, self) if self._formatter else {}
+            file = File(
+                record=recurso,
+                dataset=self.dataset,
+                group=self,
+                _metadata=metadata,
             )
-            file = File(record=recurso, parent=self, _metadata=metadata)
             files.append(file)
         return files
 
@@ -162,8 +165,6 @@ class Dataset(BaseRemoteDataset, ABC):
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)
                 items.append(
-                    Group(
-                        record=record, dataset=self, formatter=self.formatter
-                    )
+                    Group(record=record, dataset=self, formatter=self.formatter)
                 )
         return items

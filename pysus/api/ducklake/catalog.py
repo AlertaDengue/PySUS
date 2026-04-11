@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
+    Sequence,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -42,7 +43,11 @@ class Origin(enum.Enum):
 class CatalogDataset(CatalogTable):
     __tablename__ = "datasets"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        Sequence("datasets_id_seq", schema="pysus"),
+        primary_key=True,
+    )
     name = Column(String, nullable=False, unique=True, index=True)
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
@@ -68,7 +73,11 @@ class CatalogDataset(CatalogTable):
 class ColumnDefinition(CatalogTable):
     __tablename__ = "dataset_columns"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        Sequence("columns_id_seq", schema="pysus"),
+        primary_key=True,
+    )
     dataset_id = Column(
         Integer,
         ForeignKey("pysus.datasets.id"),
@@ -96,7 +105,11 @@ class ColumnDefinition(CatalogTable):
 class DatasetGroup(CatalogTable):
     __tablename__ = "dataset_groups"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        Sequence("groups_id_seq", schema="pysus"),
+        primary_key=True,
+    )
     name = Column(String, nullable=False)
     dataset_id = Column(
         Integer,
@@ -123,7 +136,11 @@ class DatasetGroup(CatalogTable):
 class CatalogFile(CatalogTable):
     __tablename__ = "files"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(
+        Integer,
+        Sequence("files_id_seq", schema="pysus"),
+        primary_key=True,
+    )
     dataset_id = Column(
         Integer, ForeignKey("pysus.datasets.id"), nullable=False, index=True
     )
@@ -137,6 +154,7 @@ class CatalogFile(CatalogTable):
     size = Column(Integer, nullable=False)
     rows = Column(Integer, nullable=False)
     modified = Column(DateTime, nullable=False)
+    origin_modified = Column(DateTime, nullable=True)
     sha256 = Column(String(64), nullable=True, index=True)
     year = Column(Integer, nullable=True, index=True)
     month = Column(Integer, nullable=True, index=True)
@@ -151,5 +169,6 @@ class CatalogFile(CatalogTable):
     __table_args__ = (
         Index("ix_files_dataset_group", "dataset_id", "group_id"),
         Index("ix_files_temporal", "year", "month"),
+        Index("ix_files_lookup", "dataset_id", "group_id", "year", "month", "state"),
         {"schema": "pysus"},
     )

@@ -10,7 +10,7 @@ from pysus.api.extensions import (
     CSV,
     DBC,
     DBF,
-    FTP_IMPORT,
+    DBC_IMPORT,
     JSON,
     PDF,
     Directory,
@@ -149,7 +149,7 @@ async def test_dbc_import_behavior(tmp_dir):
     obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, DBC)
 
-    if not FTP_IMPORT:
+    if not DBC_IMPORT:
         with pytest.raises(ImportError):
             await obj.load()
         with pytest.raises(ImportError):

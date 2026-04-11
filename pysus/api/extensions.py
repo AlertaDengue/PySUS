@@ -18,18 +18,29 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pydantic import Field, PrivateAttr
+from dbfread import DBF as DBFReader
+
 from pysus import CACHEPATH
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 
 from .types import FileType
 
-try:
-    from dbfread import DBF as DBFReader
-    from pyreaddbc import dbc2dbf
+import sys
+import ctypes.util
 
-    FTP_IMPORT = True
+try:
+    LIBFFI = True
+    if sys.platform.startswith("linux"):
+        LIBFFI = ctypes.util.find_library("ffi") is not None
+
+    if LIBFFI:
+        from pyreaddbc import dbc2dbf
+
+        DBC_IMPORT = True
+    else:
+        DBC_IMPORT = False
 except ImportError:
-    FTP_IMPORT = False
+    DBC_IMPORT = False
 
 
 class File(BaseLocalFile):
@@ -159,6 +170,10 @@ class CSV(BaseTabularFile):
 
 class Parquet(BaseTabularFile):
     type: FileType = Field("Parquet")
+
+    @property
+    def schema(self) -> pa.Schema:
+        return pq.read_schema(self.path)
 
     @property
     def columns(self) -> list[str]:
@@ -607,7 +622,9 @@ class Tar(BaseCompressedFile):
 class FTPNotImported(BaseTabularFile):
     type: FileType = Field(None)
     import_err: ClassVar[str] = """
-        run "pip install pysus[dbc]" to handle DBC files
+        run "pip install pysus[dbc]" to handle DBC files.
+        Make sure you also have libffi installed on the system. It may not work
+        on Windows
     """
 
     @property
@@ -647,7 +664,7 @@ class ExtensionFactory:
         ".csv": CSV,
         ".parquet": Parquet,
         ".dbf": DBF,
-        ".dbc": DBC if FTP_IMPORT else FTPNotImported,
+        ".dbc": DBC if DBC_IMPORT else FTPNotImported,
         ".pdf": PDF,
         ".json": JSON,
     }

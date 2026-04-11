@@ -50,11 +50,6 @@ class File(BaseRemoteFile):
         return self._info.get("modify")
 
     @property
-    def group(self) -> str | None:
-        group_data = self._info.get("group")
-        return group_data["name"] if group_data else None
-
-    @property
     def group_info(self) -> FTPGroupInfo | None:
         return self._info.get("group")
 
@@ -110,22 +105,19 @@ class Directory:
         return self._content
 
     async def load(self) -> None:
-        raw_infos = await self.client._list_directory(
-            self.path, self.formatter
-        )
+        raw_infos = await self.client._list_directory(self.path, self.formatter)
         self._content = []
 
-        file_parent = (
-            self
-            if isinstance(self, (BaseRemoteGroup, BaseRemoteDataset))
-            else self.dataset
+        current_group = (
+            self.parent if isinstance(self.parent, BaseRemoteGroup) else None
         )
 
         for info in raw_infos:
+            item_path = f"{self.path}/{info['name']}"
             if info["type"] == "dir":
                 self._content.append(
                     Directory(
-                        path=f"{self.path}/{info['name']}",
+                        path=item_path,
                         parent=self,
                         dataset=self.dataset,
                     )
@@ -133,8 +125,9 @@ class Directory:
             else:
                 self._content.append(
                     File(
-                        path=f"{self.path}/{info['name']}",
-                        parent=file_parent,
+                        path=item_path,
+                        dataset=self.dataset,
+                        group=current_group,
                         type=info["type"],
                         _info=info,
                     )
@@ -197,7 +190,7 @@ class Dataset(BaseRemoteDataset):
     paths: list[Directory] = []
     group_definitions: dict[str, str] = {}
     _content: None | (list[(Group | Directory | File)]) = PrivateAttr(
-        default=None
+        default=None,
     )
 
     @property

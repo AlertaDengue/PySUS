@@ -96,7 +96,7 @@ class FTP(BaseRemoteClient):
         self,
         file: File,
         output: pathlib.Path,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> pathlib.Path:
         def _fetch():
             try:
@@ -104,12 +104,17 @@ class FTP(BaseRemoteClient):
             except (BrokenPipeError, Exception):
                 self.connect()
 
+            total_size = self.ftp.size(file.path)
+            current_size = 0
+
             with open(output, "wb") as f:
 
                 def _write_and_callback(chunk):
+                    nonlocal current_size
                     f.write(chunk)
+                    current_size += len(chunk)
                     if callback:
-                        callback(len(chunk))
+                        callback(current_size, total_size)
 
                 self.ftp.retrbinary(f"RETR {file.path}", _write_and_callback)
             return output

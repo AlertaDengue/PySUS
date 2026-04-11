@@ -11,6 +11,7 @@ from .dadosgov import DadosGovClient
 from .ducklake import DuckLakeClient
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
+from .extensions import Parquet
 
 Base = declarative_base()
 
@@ -108,8 +109,7 @@ class PySUS:
             existing = conn.exec_driver_sql(q, (abs_path,)).fetchone()
 
             if not existing:
-                conn.exec_driver_sql(f"ATTACH '{abs_path}' AS {
-                                     name} (READ_ONLY)")
+                conn.exec_driver_sql(f"ATTACH '{abs_path}' AS {name} (READ_ONLY)")
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._ducklake:
@@ -122,7 +122,7 @@ class PySUS:
 
     def _get_dest_path(self, file: BaseRemoteFile) -> Path:
         client_name = file.client.name.lower()
-        dataset_name = getattr(file.parent, "name", "unknown_dataset")
+        dataset_name = file.dataset.name.lower()
 
         group_name = ""
         if hasattr(file, "group") and file.group:
@@ -148,8 +148,7 @@ class PySUS:
     ):
         with self.Session() as session:
             record = (
-                session.query(LocalFileState).filter_by(
-                    path=str(local_path)).first()
+                session.query(LocalFileState).filter_by(path=str(local_path)).first()
             )
             if not record:
                 record = LocalFileState(
@@ -231,36 +230,38 @@ class PySUS:
         file: BaseRemoteFile,
         token: str = None,
         callback: Callable[[int, int], None] = None,
-    ):
+    ) -> Parquet:
         local_file = await self.download(
             file=file,
             token=token,
             callback=callback,
         )
 
-        if hasattr(local_file, "to_parquet"):
-            original_path = local_file.path
-
-            parquet_file = await local_file.to_parquet(callback=callback)
-
-            await self._update_state(
-                local_path=parquet_file.path,
-                remote_path=file.path,
-                client_name=file.client.name.lower(),
-                status=DownloadStatus.COMPLETED,
-                year=file.year,
-                month=file.month,
-                state=file.state,
-                group=getattr(file.group, "name", None),
+        if not hasattr(local_file, "to_parquet"):
+            raise NotImplementedError(
+                f"{local_file} can't be converted to Parquet",
             )
 
-            if original_path.exists() and original_path != parquet_file.path:
-                original_path.unlink()
-                await self._delete_record(str(original_path))
+        original_path = local_file.path
 
-            return parquet_file
+        parquet_file = await local_file.to_parquet(callback=callback)
 
-        return local_file
+        await self._update_state(
+            local_path=parquet_file.path,
+            remote_path=file.path,
+            client_name=file.client.name.lower(),
+            status=DownloadStatus.COMPLETED,
+            year=file.year,
+            month=file.month,
+            state=file.state,
+            group=getattr(file.group, "name", None),
+        )
+
+        if original_path.exists() and original_path != parquet_file.path:
+            original_path.unlink()
+            await self._delete_record(str(original_path))
+
+        return parquet_file
 
     def get_local_hierarchy(self):
         with self.Session() as session:
