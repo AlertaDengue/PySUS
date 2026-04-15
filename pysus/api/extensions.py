@@ -1,32 +1,28 @@
 import asyncio
 import csv
+import ctypes.util
 import gzip
 import shutil
+import sys
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
-from collections.abc import Callable
 
-import anyio
 import chardet
-import fastparquet
 import magic
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from pydantic import Field, PrivateAttr
+from anyio import to_thread
 from dbfread import DBF as DBFReader
-
+from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 
 from .types import FileType
-
-import sys
-import ctypes.util
 
 try:
     LIBFFI = True
@@ -47,7 +43,7 @@ class File(BaseLocalFile):
     type: FileType = Field(None)
 
     async def load(self) -> bytes:
-        return await anyio.to_thread.run_sync(self.path.read_bytes)
+        return await to_thread.run_sync(self.path.read_bytes)
 
     async def stream(
         self,
@@ -60,7 +56,7 @@ class File(BaseLocalFile):
 
         for chunk in _read_sync():
             yield chunk
-            await anyio.sleep(0)
+            await asyncio.sleep(0)
 
 
 class Directory(BaseLocalFile):
@@ -81,7 +77,7 @@ class Directory(BaseLocalFile):
 
     async def stream(
         self,
-        chunk_size: int | None = None,
+        chunksize: int = 10000,
     ) -> AsyncGenerator[BaseLocalFile, None]:
         from pysus.api.extensions import ExtensionFactory
 
@@ -114,7 +110,7 @@ class CSV(BaseTabularFile):
                 with open(self.path, "rb") as f:
                     return chardet.detect(f.read(1024 * 300))
 
-            result = await anyio.to_thread.run_sync(detect)
+            result = await to_thread.run_sync(detect)
             self._encoding = result["encoding"] or "utf-8"
         return self._encoding
 
@@ -128,10 +124,10 @@ class CSV(BaseTabularFile):
                         sample = f.read(1024 * 10)
                         dialect = csv.Sniffer().sniff(sample)
                         return dialect.delimiter
-                except Exception:
+                except ValueError:
                     return ","
 
-            self._sep = await anyio.to_thread.run_sync(sniff)
+            self._sep = await to_thread.run_sync(sniff)
         return self._sep
 
     async def load(self) -> pd.DataFrame:
@@ -143,7 +139,7 @@ class CSV(BaseTabularFile):
                 self.path, sep=separator, encoding=encoding, low_memory=False
             )
 
-        return await anyio.to_thread.run_sync(_read_sync)
+        return await to_thread.run_sync(_read_sync)
 
     async def stream(
         self,
@@ -162,14 +158,14 @@ class CSV(BaseTabularFile):
                 low_memory=False,
             )
 
-        reader = await anyio.to_thread.run_sync(_get_reader_sync)
+        reader = await to_thread.run_sync(_get_reader_sync)
         for chunk in reader:
             yield chunk
-            await anyio.sleep(0)
+            await asyncio.sleep(0)
 
 
 class Parquet(BaseTabularFile):
-    type: FileType = Field("Parquet")
+    type: FileType = Field("PARQUET")
 
     @property
     def schema(self) -> pa.Schema:
@@ -188,19 +184,17 @@ class Parquet(BaseTabularFile):
             df = pd.read_parquet(self.path)
             return self.parse_dftypes(df) if parse else df
 
-        return await anyio.to_thread.run_sync(_load)
+        return await to_thread.run_sync(_load)
 
     async def stream(
-        self,
-        chunk_size: int = 10000,
+        self, chunk_size: int = 10000
     ) -> AsyncGenerator[pd.DataFrame, None]:
-        pf = await anyio.to_thread.run_sync(
-            fastparquet.ParquetFile,
-            str(self.path),
-        )
-        for batch in pf.iter_row_groups():
-            yield batch
-            await anyio.sleep(0)
+        parquet_file = await to_thread.run_sync(pq.ParquetFile, self.path)
+
+        for batch in parquet_file.iter_batches(batch_size=chunk_size):
+            df = batch.to_pandas()
+            yield df
+            await asyncio.sleep(0)
 
     @staticmethod
     def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
@@ -257,7 +251,7 @@ class DBF(BaseTabularFile):
             df = pd.DataFrame(iter(dbf))
             return df.map(self.decode_column)
 
-        return await anyio.to_thread.run_sync(_load)
+        return await to_thread.run_sync(_load)
 
     async def stream(
         self,
@@ -266,7 +260,7 @@ class DBF(BaseTabularFile):
         def _get_db():
             return DBFReader(self.path, encoding="cp1252", raw=True)
 
-        dbf_file = await anyio.to_thread.run_sync(_get_db)
+        dbf_file = await to_thread.run_sync(_get_db)
         records = []
         for i, record in enumerate(dbf_file):
             records.append(record)
@@ -274,7 +268,7 @@ class DBF(BaseTabularFile):
                 df = pd.DataFrame(records).map(self.decode_column)
                 yield df
                 records = []
-                await anyio.sleep(0)
+                await asyncio.sleep(0)
         if records:
             yield pd.DataFrame(records).map(self.decode_column)
 
@@ -282,7 +276,7 @@ class DBF(BaseTabularFile):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
-        callback: Callable[[int, int], None] = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
 
@@ -293,7 +287,9 @@ class DBF(BaseTabularFile):
         )
 
         if out.exists():
-            return await ExtensionFactory.instantiate(out)
+            file = await ExtensionFactory.instantiate(out)
+            if not isinstance(file, Parquet):
+                raise RuntimeError(f"Could not parse {out} to Parquet")
 
         async def _stream_to_single_file():
             dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
@@ -316,7 +312,7 @@ class DBF(BaseTabularFile):
 
                         if callback:
                             callback(current_count, total_rows)
-                        await anyio.sleep(0)
+                        await asyncio.sleep(0)
 
                 if records:
                     df = pd.DataFrame(records).map(self.decode_column)
@@ -329,7 +325,7 @@ class DBF(BaseTabularFile):
                         callback(total_rows, total_rows)
 
                 if writer is None:
-                    df_empty = pd.DataFrame(columns=self.columns)
+                    df_empty = pd.DataFrame(columns=pd.Index(self.columns))
                     table_empty = pa.Table.from_pandas(df_empty)
                     writer = pq.ParquetWriter(str(out), table_empty.schema)
 
@@ -338,7 +334,10 @@ class DBF(BaseTabularFile):
                     writer.close()
 
         await _stream_to_single_file()
-        return await ExtensionFactory.instantiate(out)
+        file = await ExtensionFactory.instantiate(out)
+        if not isinstance(file, Parquet):
+            raise RuntimeError(f"Could not parse {out} to Parquet")
+        return file
 
 
 class DBC(BaseTabularFile):
@@ -372,7 +371,7 @@ class DBC(BaseTabularFile):
         self,
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
-        callback: Callable[[int, int], None] = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
         from pysus.api.extensions import ExtensionFactory
 
@@ -381,16 +380,21 @@ class DBC(BaseTabularFile):
 
         output_path = Path(output_path).expanduser().resolve()
         if output_path.exists():
-            return await ExtensionFactory.instantiate(output_path)
+            file = await ExtensionFactory.instantiate(output_path)
+            if not isinstance(file, Parquet):
+                raise RuntimeError(f"Could not parse {output_path} to parquet")
+            return file
 
         tmp_dbf_path = self.path.with_suffix(".dbf")
         try:
-            await anyio.to_thread.run_sync(
+            await to_thread.run_sync(
                 dbc2dbf,
                 str(self.path),
                 str(tmp_dbf_path),
             )
             dbf_ext = await ExtensionFactory.instantiate(tmp_dbf_path)
+            if not isinstance(dbf_ext, BaseTabularFile):
+                raise RuntimeError(f"Not a DBF: {dbf_ext}")
             return await dbf_ext.to_parquet(
                 output_path=output_path,
                 chunk_size=chunk_size,
@@ -398,7 +402,7 @@ class DBC(BaseTabularFile):
             )
         finally:
             if tmp_dbf_path.exists():
-                await anyio.to_thread.run_sync(tmp_dbf_path.unlink)
+                await to_thread.run_sync(tmp_dbf_path.unlink)
 
 
 class JSON(BaseTabularFile):
@@ -418,10 +422,11 @@ class JSON(BaseTabularFile):
         return len(pd.read_json(self.path))
 
     async def load(self) -> pd.DataFrame:
-        return await anyio.to_thread.run_sync(pd.read_json, self.path)
+        return await to_thread.run_sync(pd.read_json, self.path)
 
     async def stream(
-        self, chunk_size: int | None = None
+        self,
+        chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
         yield await self.load()
 
@@ -430,7 +435,7 @@ class PDF(BaseLocalFile):
     type: FileType = Field("PDF")
 
     async def load(self) -> bytes:
-        return await anyio.to_thread.run_sync(self.path.read_bytes)
+        return await to_thread.run_sync(self.path.read_bytes)
 
     async def stream(
         self, chunk_size: int | None = None
@@ -445,28 +450,28 @@ class PDF(BaseLocalFile):
 
         for chunk in _read():
             yield chunk
-            await anyio.sleep(0)
+            await asyncio.sleep(0)
 
 
 class Zip(BaseCompressedFile):
     type: FileType = Field("ZIP")
 
     async def load(self) -> zipfile.ZipFile:
-        return await anyio.to_thread.run_sync(zipfile.ZipFile, self.path)
+        return await to_thread.run_sync(zipfile.ZipFile, self.path)
 
     async def list_members(self) -> list[str]:
         def _list():
             with zipfile.ZipFile(self.path) as z:
                 return z.namelist()
 
-        return await anyio.to_thread.run_sync(_list)
+        return await to_thread.run_sync(_list)
 
     async def open_member(self, member_name: str) -> bytes:
         def _read():
             with zipfile.ZipFile(self.path) as z:
                 return z.read(member_name)
 
-        return await anyio.to_thread.run_sync(_read)
+        return await to_thread.run_sync(_read)
 
     async def extract(
         self,
@@ -481,7 +486,7 @@ class Zip(BaseCompressedFile):
             with zipfile.ZipFile(self.path) as z:
                 z.extractall(target_dir)
 
-        await anyio.to_thread.run_sync(_extract_sync)
+        await to_thread.run_sync(_extract_sync)
 
         members = await self.list_members()
         tasks = [ExtensionFactory.instantiate(target_dir / m) for m in members]
@@ -538,7 +543,7 @@ class Zip(BaseCompressedFile):
             if directory.exists():
                 directory.rmdir()
 
-        await anyio.to_thread.run_sync(_cleanup)
+        await to_thread.run_sync(_cleanup)
 
 
 class GZip(BaseCompressedFile):
@@ -549,7 +554,7 @@ class GZip(BaseCompressedFile):
             with gzip.open(self.path, "rb") as f:
                 return f.read()
 
-        return await anyio.to_thread.run_sync(_read)
+        return await to_thread.run_sync(_read)
 
     async def list_members(self) -> list[str]:
         return [self.path.stem]
@@ -576,7 +581,7 @@ class GZip(BaseCompressedFile):
             ):
                 shutil.copyfileobj(f_in, f_out)
 
-        await anyio.to_thread.run_sync(_decompress)
+        await to_thread.run_sync(_decompress)
         return [await ExtensionFactory.instantiate(out_file)]
 
 
@@ -584,14 +589,14 @@ class Tar(BaseCompressedFile):
     type: FileType = Field("ZIP")
 
     async def load(self) -> tarfile.TarFile:
-        return await anyio.to_thread.run_sync(tarfile.open, self.path)
+        return await to_thread.run_sync(tarfile.open, self.path)
 
     async def list_members(self) -> list[str]:
         def _list():
             with tarfile.open(self.path) as t:
                 return t.getnames()
 
-        return await anyio.to_thread.run_sync(_list)
+        return await to_thread.run_sync(_list)
 
     async def open_member(self, member_name: str) -> bytes:
         def _read():
@@ -599,7 +604,7 @@ class Tar(BaseCompressedFile):
                 f = t.extractfile(member_name)
                 return f.read() if f else b""
 
-        return await anyio.to_thread.run_sync(_read)
+        return await to_thread.run_sync(_read)
 
     async def extract(
         self,
@@ -614,18 +619,37 @@ class Tar(BaseCompressedFile):
             with tarfile.open(self.path) as t:
                 t.extractall(target_dir)
 
-        await anyio.to_thread.run_sync(_extract)
+        await to_thread.run_sync(_extract)
         tasks = [ExtensionFactory.instantiate(target_dir / m) for m in members]
         return list(await asyncio.gather(*tasks))
 
 
 class FTPNotImported(BaseTabularFile):
-    type: FileType = Field(None)
-    import_err: ClassVar[str] = """
+    path: Path = Field(default_factory=lambda: Path("..."))
+    type: str | FileType = Field(default="remote")
+    import_err: ClassVar[
+        str
+    ] = """
         run "pip install pysus[dbc]" to handle DBC files.
         Make sure you also have libffi installed on the system. It may not work
         on Windows
     """
+
+    @property
+    def name(self) -> str:
+        raise ImportError(self.import_err)
+
+    @property
+    def extension(self) -> str:
+        return ".dbc"
+
+    @property
+    def size(self) -> int:
+        raise ImportError(self.import_err)
+
+    @property
+    def modify(self) -> datetime:
+        raise ImportError(self.import_err)
 
     @property
     def columns(self) -> list[str]:
@@ -635,13 +659,26 @@ class FTPNotImported(BaseTabularFile):
     def rows(self) -> int:
         raise ImportError(self.import_err)
 
-    async def load(self):
+    async def load(self) -> pd.DataFrame:
         raise ImportError(self.import_err)
 
-    async def stream(self, chunk_size=None):
-        raise ImportError(self.import_err)
+    def stream(
+        self,
+        chunk_size: int = 10000,
+    ) -> AsyncGenerator[pd.DataFrame, None]:
+        async def _internal_gen():
+            raise ImportError(self.import_err)
+            yield pd.DataFrame()
 
-    async def to_parquet(self, **kwargs):
+        return _internal_gen()
+
+    async def to_parquet(
+        self,
+        output_path: str | Path | None = None,
+        chunk_size: int = 10000,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> Parquet:
+
         raise ImportError(self.import_err)
 
 
@@ -664,7 +701,7 @@ class ExtensionFactory:
         ".csv": CSV,
         ".parquet": Parquet,
         ".dbf": DBF,
-        ".dbc": DBC if DBC_IMPORT else FTPNotImported,
+        ".dbc": DBC if DBC_IMPORT else FTPNotImported,  # type: ignore
         ".pdf": PDF,
         ".json": JSON,
     }
@@ -672,13 +709,13 @@ class ExtensionFactory:
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
         try:
-            mime = await anyio.to_thread.run_sync(
+            mime = await to_thread.run_sync(
                 magic.from_file,
                 str(path),
                 True,
             )
             return cls._mime.get(mime)
-        except Exception:
+        except (magic.MagicException, OSError):
             return None
 
     @classmethod
@@ -694,7 +731,7 @@ class ExtensionFactory:
     @classmethod
     async def instantiate(cls, path: str | Path) -> BaseLocalFile:
         path = Path(path).expanduser().resolve()
-        if await anyio.to_thread.run_sync(path.is_dir):
-            return Directory(path=path)
+        if await to_thread.run_sync(path.is_dir):
+            return Directory(path=path, type="DIR")
         FileClass = await cls.get_file_class(path)
-        return FileClass(path=path)
+        return FileClass(path=path, type=FileClass.type)

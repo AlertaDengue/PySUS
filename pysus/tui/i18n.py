@@ -1,14 +1,17 @@
-TRANSLATIONS = {
+TRANSLATIONS: dict[str, dict[str, str | dict[str, str]]] = {
     "en": {
         "welcome": "Welcome to PySUS Client",
         "clients": "Clients",
         "local": "Local",
+        "remote": "Remote",
         "search": "Search or leave empty to list all",
         "loading_err": "Failed to load",
+        "loading": "Loading",
         "settings": "Settings",
         "quit": "Quit",
         "files": "Files",
         "ftp_browser": "FTP",
+        "ducklake_browser": "DuckLake",
         "fetching": "Fetching datasets...",
         "name": "Name",
         "type": "Type",
@@ -17,6 +20,7 @@ TRANSLATIONS = {
         "size": "Size",
         "year": "Year",
         "month": "Month",
+        "modified": "Modified",
         "state": "State",
         "description": "Description",
         "group": "Group",
@@ -40,12 +44,15 @@ TRANSLATIONS = {
         "welcome": "Bem-vindo ao Cliente PySUS",
         "clients": "Clientes",
         "local": "Local",
+        "remote": "Remoto",
         "search": "Busque ou deixe em branco para listar tudo",
         "loading_err": "Erro ao carregar",
+        "loading": "Carregando",
         "settings": "Configurações",
         "quit": "Sair",
         "files": "Arquivos",
         "ftp_browser": "FTP",
+        "ducklake_browser": "DuckLake",
         "fetching": "Carregando datasets...",
         "name": "Nome",
         "type": "Tipo",
@@ -54,6 +61,7 @@ TRANSLATIONS = {
         "size": "Tamanho",
         "year": "Ano",
         "month": "Mês",
+        "modified": "Modificado",
         "state": "Estado",
         "description": "Descrição",
         "group": "Grupo",
@@ -75,15 +83,23 @@ TRANSLATIONS = {
     },
 }
 
+SUPPORTED_LANGUAGES = tuple(TRANSLATIONS.keys())
 
-def t(field: str, default: str = "", lang: str = "en"):
+
+def t(field: str, default: str = "", lang: str = "en") -> str:
+    if lang not in TRANSLATIONS:
+        lang = "en"
+
+    data: dict = TRANSLATIONS[lang]
     keys = field.split(".")
-    data = TRANSLATIONS.get(lang, TRANSLATIONS["en"])
 
     for key in keys:
-        if isinstance(data, dict):
-            data = data.get(key)
+        value = data.get(key)
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            data = value
         else:
             return default
 
-    return data or default
+    return default

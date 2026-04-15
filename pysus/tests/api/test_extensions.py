@@ -9,8 +9,8 @@ import pytest
 from pysus.api.extensions import (
     CSV,
     DBC,
-    DBF,
     DBC_IMPORT,
+    DBF,
     JSON,
     PDF,
     Directory,
@@ -137,7 +137,7 @@ async def test_dbf_decode_and_failure(tmp_dir):
     assert obj.decode_column(b"COL\x00") == "COL"
     assert obj.decode_column("COL\x00") == "COL"
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa
         await obj.load()
 
 
@@ -155,7 +155,7 @@ async def test_dbc_import_behavior(tmp_dir):
         with pytest.raises(ImportError):
             await obj.to_parquet()
     else:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa
             await obj.to_parquet(tmp_dir / "out.parquet")
 
 

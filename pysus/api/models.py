@@ -3,20 +3,23 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import anyio
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from anyio import to_thread
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pysus import CACHEPATH
 from tqdm.asyncio import tqdm
 
-from .types import State
+from .types import FileType, State
+
+if TYPE_CHECKING:
+    from extensions import Parquet
 
 
 class BaseFile(BaseModel, ABC):
@@ -25,7 +28,8 @@ class BaseFile(BaseModel, ABC):
         validate_assignment=True,
     )
 
-    type: str
+    path: Path
+    type: str | FileType
 
     @property
     @abstractmethod
@@ -34,8 +38,7 @@ class BaseFile(BaseModel, ABC):
 
     @property
     def basename(self) -> str:
-        p = self.path
-        return p.name if isinstance(p, Path) else p.split("/")[-1]
+        return self.path.name
 
     def __str__(self) -> str:
         return self.basename
@@ -73,16 +76,16 @@ class BaseLocalFile(BaseFile, ABC):
                     hash_obj.update(chunk)
             return hash_obj.hexdigest()
 
-        return await anyio.to_thread.run_sync(_compute_hash)
+        return await to_thread.run_sync(_compute_hash)
 
     @abstractmethod
     async def load(self) -> Any:
         pass
 
     @abstractmethod
-    async def stream(
+    def stream(
         self,
-        chunk_size: int | None = None,
+        chunk_size: int = 10000,
     ) -> AsyncGenerator[Any, None]:
         pass
 
@@ -115,7 +118,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
         pass
 
     @abstractmethod
-    async def stream(
+    def stream(
         self,
         chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
@@ -126,7 +129,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
         output_path: str | Path | None = None,
         chunk_size: int = 10000,
         callback: Callable[[int, int], None] | None = None,
-    ) -> BaseTabularFile:
+    ) -> Parquet:
         from pysus.api.extensions import ExtensionFactory
 
         if output_path is None:
@@ -145,37 +148,42 @@ class BaseTabularFile(BaseLocalFile, ABC):
         )
 
         try:
-            async for chunk in self.stream(chunk_size=chunk_size):
+            async for chunk in self.stream(
+                chunk_size=chunk_size,
+            ):  # type: ignore
                 if chunk.empty:
                     continue
 
                 rows_in_chunk = len(chunk)
                 current_rows += rows_in_chunk
 
-                table = await anyio.to_thread.run_sync(
+                table = await to_thread.run_sync(
                     pa.Table.from_pandas,
                     chunk,
                 )
 
                 if writer is None:
-                    writer = await anyio.to_thread.run_sync(
+                    writer = await to_thread.run_sync(
                         pq.ParquetWriter, output_path, table.schema
                     )
 
-                await anyio.to_thread.run_sync(writer.write_table, table)
+                await to_thread.run_sync(writer.write_table, table)
 
                 pbar.update(rows_in_chunk)
 
                 if callback:
                     callback(current_rows, total_rows)
 
-                await anyio.sleep(0)
+                await asyncio.sleep(0)
         finally:
             pbar.close()
             if writer:
-                await anyio.to_thread.run_sync(writer.close)
+                await to_thread.run_sync(writer.close)
 
-        return await ExtensionFactory.instantiate(output_path)
+        output = await ExtensionFactory.instantiate(output_path)
+        if not isinstance(output, Parquet):
+            raise ValueError(f"Could not parse {output} to Parquet")
+        return output
 
 
 class BaseCompressedFile(BaseLocalFile, ABC):
@@ -190,7 +198,7 @@ class BaseCompressedFile(BaseLocalFile, ABC):
     @abstractmethod
     async def extract(
         self,
-        target_dir: Path | None = CACHEPATH,
+        target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
         pass
 
@@ -216,11 +224,6 @@ class SearchableMixin:
 class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
     dataset: BaseRemoteDataset = Field(exclude=True)
     group: BaseRemoteGroup | None = Field(default=None, exclude=True)
-    _path: str = PrivateAttr()
-
-    @property
-    def path(self) -> str:
-        return self._path
 
     @property
     def name(self) -> str:
@@ -324,22 +327,23 @@ class BaseRemoteGroup(BaseRemoteObject, SearchableMixin, ABC):
 
 class BaseRemoteDataset(BaseRemoteObject, SearchableMixin, ABC):
     client: BaseRemoteClient = Field(exclude=True)
-    _content: None | (list[(BaseRemoteGroup | BaseRemoteFile)]) = PrivateAttr(
+    _content: Sequence[BaseRemoteGroup | BaseRemoteFile] | None = PrivateAttr(
         default=None
     )
 
     @abstractmethod
     async def _fetch_content(
         self,
-    ) -> list[(BaseRemoteGroup | BaseRemoteFile)]:
+    ) -> Sequence[BaseRemoteGroup | BaseRemoteFile]:
         pass
 
     @property
     async def content(
         self,
-    ) -> list[BaseRemoteGroup | BaseRemoteFile]:
+    ) -> Sequence[BaseRemoteGroup | BaseRemoteFile]:
         if self._content is None:
             self._content = await self._fetch_content()
+
         return self._content
 
     async def search(self, **kwargs) -> list[BaseRemoteFile]:
@@ -371,7 +375,7 @@ class BaseRemoteClient(BaseRemoteObject, ABC):
         pass
 
     @abstractmethod
-    async def datasets(self, **kwargs) -> list[BaseRemoteDataset]:
+    async def datasets(self, **kwargs) -> list:
         pass
 
     @abstractmethod

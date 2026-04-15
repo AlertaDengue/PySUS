@@ -6,12 +6,14 @@ from datetime import datetime
 from ftplib import FTP as FTPLib
 from typing import TYPE_CHECKING, Any, TypedDict
 
-import anyio
+from anyio import to_thread
 from pydantic import PrivateAttr
-from pysus.api.models import BaseRemoteClient
+from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 
 if TYPE_CHECKING:
-    from .models import Dataset, File
+    from pysus.api.types import State
+
+    from .models import Dataset
 
 
 class FTPGroupInfo(TypedDict):
@@ -28,7 +30,7 @@ class FTPFileInfo(TypedDict):
     group: FTPGroupInfo | None
     year: int | None
     month: int | None
-    state: str | None
+    state: State | None
 
 
 class FTP(BaseRemoteClient):
@@ -56,6 +58,8 @@ class FTP(BaseRemoteClient):
 
     @property
     def ftp(self) -> FTPLib:
+        if not self._ftp:
+            raise ConnectionError("FTP Not properly connected")
         return self._ftp
 
     async def connect(self) -> None:
@@ -64,7 +68,7 @@ class FTP(BaseRemoteClient):
                 self._ftp = FTPLib(self.host)
                 self.ftp.login()
 
-        await anyio.to_thread.run_sync(_connect)
+        await to_thread.run_sync(_connect)
 
     async def login(self, **kwargs) -> None:
         await self.connect()
@@ -74,12 +78,12 @@ class FTP(BaseRemoteClient):
             if self.ftp:
                 try:
                     self.ftp.quit()
-                except Exception:
+                except Exception:  # noqa
                     self.ftp.close()
                 finally:
                     self._ftp = None
 
-        await anyio.to_thread.run_sync(_close)
+        await to_thread.run_sync(_close)
 
     async def datasets(self, **kwargs) -> list[Dataset]:
         from .databases import AVAILABLE_DATABASES
@@ -94,17 +98,17 @@ class FTP(BaseRemoteClient):
 
     async def _download_file(
         self,
-        file: File,
+        file: BaseRemoteFile,
         output: pathlib.Path,
-        callback: Callable[[int, int], None] | None = None,
+        callback: Callable[..., None] | None = None,
     ) -> pathlib.Path:
-        def _fetch():
+        async def _fetch():
             try:
                 self.ftp.voidcmd("NOOP")
-            except (BrokenPipeError, Exception):
-                self.connect()
+            except BrokenPipeError:
+                await self.connect()
 
-            total_size = self.ftp.size(file.path)
+            total_size = self.ftp.size(str(file.path)) or 0
             current_size = 0
 
             with open(output, "wb") as f:
@@ -119,7 +123,7 @@ class FTP(BaseRemoteClient):
                 self.ftp.retrbinary(f"RETR {file.path}", _write_and_callback)
             return output
 
-        return await anyio.to_thread.run_sync(_fetch)
+        return await _fetch()
 
     @staticmethod
     def _line_parser(
@@ -154,7 +158,7 @@ class FTP(BaseRemoteClient):
         }
 
         if formatter and not is_dir:
-            info.update(formatter(name))
+            info.update(formatter(name))  # type: ignore
 
         return info
 
@@ -169,4 +173,4 @@ class FTP(BaseRemoteClient):
             self.ftp.retrlines("LIST", lines.append)
             return [self._line_parser(line, formatter) for line in lines]
 
-        return await anyio.to_thread.run_sync(_list)
+        return await to_thread.run_sync(_list)

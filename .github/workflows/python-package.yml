@@ -42,11 +42,11 @@ jobs:
 
         poetry config virtualenvs.create false
 
-        poetry export --with dev --extras ftp --format requirements.txt --output reqs.txt --without-hashes
+        poetry export --with dev --extras dbc --format requirements.txt --output reqs.txt --without-hashes
 
         pip install -r reqs.txt
         pip install -e ".[dbc]"
 
-        # pre-commit run --all-files
+        pre-commit run --all-files
 
         make test-pysus

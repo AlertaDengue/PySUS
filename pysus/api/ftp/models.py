@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-from abc import abstractmethod
-from collections.abc import Callable
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -15,8 +15,9 @@ from pysus.api.models import (
     BaseRemoteFile,
     BaseRemoteGroup,
 )
+from pysus.api.types import State
 
-from .client import FTPFileInfo, FTPGroupInfo
+from .client import FTP, FTPFileInfo, FTPGroupInfo
 
 
 class File(BaseRemoteFile):
@@ -47,7 +48,10 @@ class File(BaseRemoteFile):
 
     @property
     def modify(self) -> datetime:
-        return self._info.get("modify")
+        m = self._info.get("modify")
+        if not m:
+            raise ValueError("File requires a modify date")
+        return m
 
     @property
     def group_info(self) -> FTPGroupInfo | None:
@@ -62,8 +66,8 @@ class File(BaseRemoteFile):
         return self._info.get("month")
 
     @property
-    def state(self) -> str | None:
-        return self._info.get("state")
+    def state(self) -> State | None:
+        return self._info.get("state", None)
 
     async def _download(
         self,
@@ -89,11 +93,9 @@ class Directory:
     ):
         self.path = os.path.normpath(path)
         self.parent = parent
-        self.dataset = dataset or (
-            parent.dataset if hasattr(parent, "dataset") else None
-        )
-        self.client = client or (parent.client if parent else None)
-        self.formatter = formatter or (parent.formatter if parent else None)
+        self.dataset = dataset or getattr(parent, "dataset", None)
+        self.client = client or getattr(parent, "client", None)
+        self.formatter = formatter or getattr(parent, "formatter", None)
         self.name = os.path.basename(self.path) or "/"
         self.loaded = False
         self._content: list[Directory | File] = []
@@ -105,6 +107,8 @@ class Directory:
         return self._content
 
     async def load(self) -> None:
+        if not isinstance(self.client, FTP):
+            raise ValueError("no ftp client found")
         raw_infos = await self.client._list_directory(self.path, self.formatter)
         self._content = []
 
@@ -150,11 +154,11 @@ class Group(BaseRemoteGroup):
     def __init__(
         self,
         path: str,
-        dataset: BaseRemoteDataset,
+        dataset: Dataset,
         long_name: str,
         description: str = "",
     ):
-        super().__init__(dataset=dataset, path=path)
+        super().__init__(dataset=dataset)
         self._long_name = long_name
         self._description = description
         self._dir = Directory(
@@ -186,12 +190,9 @@ class Group(BaseRemoteGroup):
         return [item for item in items if isinstance(item, BaseRemoteFile)]
 
 
-class Dataset(BaseRemoteDataset):
+class Dataset(BaseRemoteDataset, ABC):
     paths: list[Directory] = []
     group_definitions: dict[str, str] = {}
-    _content: None | (list[(Group | Directory | File)]) = PrivateAttr(
-        default=None,
-    )
 
     @property
     @abstractmethod
@@ -212,13 +213,18 @@ class Dataset(BaseRemoteDataset):
     def formatter(self, filename: str) -> dict[str, Any]:
         pass
 
-    async def _fetch_content(self) -> list[Group | Directory | File]:
-        results = []
+    async def _fetch_content(
+        self,
+    ) -> Sequence[BaseRemoteGroup | BaseRemoteFile]:
+        results: list[BaseRemoteGroup | BaseRemoteFile] = []
 
         for root_dir in self.paths:
             root_dir.client = self.client
             root_dir.formatter = self.formatter
             root_dir.dataset = self
+
+            if not isinstance(root_dir, Directory):
+                raise RuntimeError(f"Directory {root_dir} not instantiated")
 
             items = await root_dir.content
 
@@ -232,7 +238,7 @@ class Dataset(BaseRemoteDataset):
                         )
                         results.append(group)
                     else:
-                        results.append(item)
+                        results.append(item)  # type: ignore
 
                 elif isinstance(item, File):
                     results.append(item)

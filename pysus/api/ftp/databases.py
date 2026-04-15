@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from pysus.api.ftp.models import Dataset, Directory
 from pysus.utils import zfill_year
@@ -425,7 +425,7 @@ class SINAN(Dataset):
             return {"group": None, "year": None}
 
 
-AVAILABLE_DATABASES = [
+AVAILABLE_DATABASES: list[type[Dataset]] = [
     CIHA,
     CNES,
     IBGEDATASUS,

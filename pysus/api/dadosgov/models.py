@@ -1,46 +1,46 @@
 import asyncio
 import pathlib
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Callable
-from datetime import datetime as dt
-from typing import Any
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 import httpx
+from dateparser import parse  # type: ignore[import-untyped]
 from pydantic import PrivateAttr
-from pysus.api.models import (
-    BaseRemoteClient,
-    BaseRemoteDataset,
-    BaseRemoteFile,
-    BaseRemoteGroup,
-)
+from pysus import CACHEPATH
+from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
+from pysus.api.types import State
 
 from .client import ConjuntoDados, Recurso
+
+if TYPE_CHECKING:
+    from .client import DadosGov
 
 
 class File(BaseRemoteFile):
     record: Recurso
-    type: str | None = "remote"
+    type: str = "File"
     _metadata: dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __init__(self, **data):
         metadata = data.pop("_metadata", {})
         super().__init__(**data)
         self._metadata = metadata
+        self._path = self.record.url
 
     def __repr__(self):
         return self.basename
 
     def model_post_init(self, __context: Any) -> None:
-        if self.record.api_size is None or self.record.api_size == 0:
+        if not self.record.api_size or not self.record.last_modified:
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self.fetch_size())
+                loop.create_task(self.fetch_metadata())
             except RuntimeError:
                 pass
 
-    @property
-    def path(self) -> str:
-        return self.record.url
+        return
 
     @property
     def extension(self) -> str:
@@ -53,8 +53,11 @@ class File(BaseRemoteFile):
         return self.record.api_size or 0
 
     @property
-    def modify(self) -> dt:
-        return self.record.last_modified
+    def modify(self) -> datetime:
+        m = self.record.last_modified
+        if not m:
+            raise ValueError("File requires a modify date")
+        return m
 
     @property
     def year(self) -> int | None:
@@ -65,14 +68,42 @@ class File(BaseRemoteFile):
         return self._metadata.get("month")
 
     @property
-    def state(self) -> str | None:
+    def state(self) -> State | None:
         return self._metadata.get("state")
+
+    async def fetch_metadata(self) -> None:
+        try:
+            async with httpx.AsyncClient(
+                follow_redirects=True,
+                timeout=5,
+            ) as client:
+                response = await client.head(str(self.path))
+
+                if response.status_code == 405:
+                    response = await client.get(
+                        str(self.path), headers={"Range": "bytes=0-0"}
+                    )
+
+                size_str = response.headers.get("Content-Length")
+                if size_str:
+                    self.record.api_size = int(size_str)
+
+                last_mod_str = response.headers.get("Last-Modified")
+                if last_mod_str:
+                    try:
+                        self.record.last_modified = parse(last_mod_str)
+                    except (TypeError, ValueError):
+                        pass
+        except Exception:  # noqa: B902
+            pass
 
     async def _download(
         self,
         output: pathlib.Path | None = None,
         callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
+        if not output:
+            output = CACHEPATH / self.name
         return await self.client._download_file(self, output, callback=callback)
 
     async def fetch_size(self) -> int:
@@ -81,11 +112,11 @@ class File(BaseRemoteFile):
                 follow_redirects=True,
                 timeout=3,
             ) as client:
-                response = await client.head(self.path)
+                response = await client.head(str(self.path))
 
                 if response.status_code == 405:
                     response = await client.get(
-                        self.path, headers={"Range": "bytes=0-0"}
+                        str(self.path), headers={"Range": "bytes=0-0"}
                     )
 
                 remote_size = int(response.headers.get("Content-Length", 0))
@@ -94,7 +125,7 @@ class File(BaseRemoteFile):
                     self.record.api_size = remote_size
 
                 return remote_size
-        except Exception:
+        except Exception:  # noqa: B902
             return 0
 
 
@@ -133,8 +164,8 @@ class Group(BaseRemoteGroup):
     def description(self) -> str:
         return ""
 
-    async def _fetch_files(self) -> list[File]:
-        files = []
+    async def _fetch_files(self) -> list[BaseRemoteFile]:
+        files: list[BaseRemoteFile] = []
         for recurso in self.record.resources:
             metadata = self._formatter(recurso, self) if self._formatter else {}
             file = File(
@@ -147,20 +178,20 @@ class Group(BaseRemoteGroup):
         return files
 
 
-class Dataset(BaseRemoteDataset, ABC):
-    ids: list[str]
+class Dataset(BaseRemoteDataset):
+    ids: list[str] = []
+    client: DadosGov
 
     def __repr__(self):
         return self.name
 
-    @property
     @abstractmethod
-    def formatter(self) -> Callable[[Recurso, Group], dict[str, Any]]:
+    def formatter(self, filename: str) -> dict[str, Any]:
         pass
 
     async def _fetch_content(self) -> list[Group]:
         items: list[Group] = []
-        client: BaseRemoteClient = self.client
+        client: DadosGov = self.client
         if self.ids:
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)

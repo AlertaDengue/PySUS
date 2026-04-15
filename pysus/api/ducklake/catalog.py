@@ -1,4 +1,6 @@
 import enum
+from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import (
     Boolean,
@@ -8,13 +10,16 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Sequence,
     String,
     Table,
-    Sequence,
 )
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
 
 file_columns = Table(
     "file_columns",
@@ -32,7 +37,7 @@ file_columns = Table(
 
 class CatalogTable(Base):
     __abstract__ = True
-    __table_args__ = {"schema": "pysus"}
+    __table_args__: tuple = ({"schema": "pysus"},)
 
 
 class Origin(enum.Enum):
@@ -136,39 +141,74 @@ class DatasetGroup(CatalogTable):
 class CatalogFile(CatalogTable):
     __tablename__ = "files"
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         Sequence("files_id_seq", schema="pysus"),
         primary_key=True,
     )
-    dataset_id = Column(
+    dataset_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("pysus.datasets.id"), nullable=False, index=True
     )
-    group_id = Column(
+    group_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("pysus.dataset_groups.id"),
         nullable=True,
         index=True,
     )
-    path = Column(String, nullable=False, unique=True)
-    size = Column(Integer, nullable=False)
-    rows = Column(Integer, nullable=False)
-    modified = Column(DateTime, nullable=False)
-    origin_modified = Column(DateTime, nullable=True)
-    sha256 = Column(String(64), nullable=True, index=True)
-    year = Column(Integer, nullable=True, index=True)
-    month = Column(Integer, nullable=True, index=True)
-    state = Column(String(2), nullable=True, index=True)
 
-    dataset = relationship("CatalogDataset", back_populates="files")
-    group = relationship("DatasetGroup", back_populates="files")
-    columns = relationship(
+    path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    rows: Mapped[int] = mapped_column(Integer, nullable=False)
+    modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    origin_modified: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+    origin_path: Mapped[str] = mapped_column(String, nullable=False)
+    sha256: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+    )
+
+    year: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+    month: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+    state: Mapped[str | None] = mapped_column(
+        String(2),
+        nullable=True,
+        index=True,
+    )
+
+    dataset: Mapped["CatalogDataset"] = relationship(
+        "CatalogDataset",
+        back_populates="files",
+    )
+    group: Mapped[Optional["DatasetGroup"]] = relationship(
+        "DatasetGroup",
+        back_populates="files",
+    )
+    columns: Mapped[list["ColumnDefinition"]] = relationship(
         "ColumnDefinition", secondary=file_columns, back_populates="files"
     )
 
     __table_args__ = (
         Index("ix_files_dataset_group", "dataset_id", "group_id"),
         Index("ix_files_temporal", "year", "month"),
-        Index("ix_files_lookup", "dataset_id", "group_id", "year", "month", "state"),
+        Index(
+            "ix_files_lookup",
+            "dataset_id",
+            "group_id",
+            "year",
+            "month",
+            "state",
+        ),
         {"schema": "pysus"},
     )

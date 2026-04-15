@@ -1,3 +1,5 @@
+from typing import Any
+
 from .models import Dataset
 
 
@@ -23,6 +25,9 @@ class CNES(Dataset):
             "de todos os estabelecimentos de saúde no país."
         )
 
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
+
 
 class PNI(Dataset):
     ids: list[str] = [
@@ -45,9 +50,10 @@ class PNI(Dataset):
 
     @property
     def description(self) -> str:
-        return (
-            "O PNI monitora a cobertura vacinal e doses aplicadas no Brasil."
-        )
+        return "O PNI monitora a cobertura vacinal e doses aplicadas no Brasil."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
 
 
 class SIA(Dataset):
@@ -68,6 +74,9 @@ class SIA(Dataset):
         return """
             O SIA acompanha as ações de saúde produzidas no âmbito ambulatorial.
         """
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
 
 
 class SINAN(Dataset):
@@ -93,6 +102,9 @@ class SINAN(Dataset):
             compulsória
             """
 
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
+
 
 class SIM(Dataset):
     ids: list[str] = [
@@ -112,6 +124,9 @@ class SIM(Dataset):
         return """
             O SIM coleta dados sobre óbitos no país para análise epidemiológica.
         """
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
 
 
 class SINASC(Dataset):
@@ -134,8 +149,11 @@ class SINASC(Dataset):
             planejamento de políticas de natalidade.
         """
 
+    def formatter(self, filename: str) -> dict[str, Any]:
+        raise NotImplementedError()
 
-AVAILABLE_DATABASES = [
+
+AVAILABLE_DATABASES: list[type[Dataset]] = [
     CNES,
     PNI,
     SIA,

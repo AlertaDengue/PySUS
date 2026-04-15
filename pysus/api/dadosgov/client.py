@@ -3,12 +3,14 @@ from __future__ import annotations
 import pathlib
 from collections.abc import Callable
 from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Optional
 
 import httpx
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
+
+from .models import Dataset
 
 
 def to_datetime(value: Any) -> datetime | None:
@@ -88,7 +90,7 @@ class DadosGov(BaseRemoteClient):
             await self._client.aclose()
             self._client = None
 
-    async def datasets(self, **kwargs) -> list[ConjuntoDados]:
+    async def datasets(self, **kwargs) -> list[Dataset]:
         from .databases import AVAILABLE_DATABASES
 
         return [db_class(client=self) for db_class in AVAILABLE_DATABASES]
@@ -117,9 +119,7 @@ class DadosGov(BaseRemoteClient):
         data = response.json()
         return [ConjuntoDados(**item, client=self) for item in data]
 
-    async def get_dataset(
-        self, id: str, group_definitions: dict[str, str] | None = None
-    ) -> ConjuntoDados:
+    async def get_dataset(self, id: str) -> ConjuntoDados:
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -131,7 +131,6 @@ class DadosGov(BaseRemoteClient):
         return ConjuntoDados(
             **response.json(),
             client=self,
-            group_definitions=group_definitions or {},
         )
 
     async def _download_file(
@@ -162,7 +161,9 @@ class Recurso(BaseModel):
     title: str = Field(alias="titulo")
     url: str = Field(alias="link")
     api_size: int = Field(alias="tamanho")
-    last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
+    last_modified: datetime | None = Field(
+        None, alias="dataUltimaAtualizacaoArquivo"
+    )
     file_name: str | None = Field(None, alias="nomeArquivo")
 
     async def get_size(self) -> int:
@@ -181,6 +182,7 @@ class Recurso(BaseModel):
 
 class ConjuntoDados(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
+    client: BaseRemoteClient | None = None
 
     id: str
     title: str = Field(alias="titulo")

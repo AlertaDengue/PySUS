@@ -14,18 +14,21 @@ repos:
     rev: 24.2.0
     hooks:
       - id: black
+        args: [--line-length=80]
         exclude: ^docs/
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
+        args: [--profile=black, --line-length=80]
         exclude: ^.*/js/.*$
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
     hooks:
       - id: flake8
+        args: [--max-line-length=80, --extend-ignore=E203]
         additional_dependencies: [
             'flake8-blind-except',
             'flake8-bugbear',
@@ -46,6 +49,7 @@ repos:
             'pydantic>=2.0.0',
         ]
         args: [--ignore-missing-imports, --explicit-package-bases]
+        exclude: ^docs/
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.15.0

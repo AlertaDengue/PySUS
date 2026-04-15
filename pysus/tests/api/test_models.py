@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union  # noqa
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,8 +19,8 @@ class MockLocalFile(BaseLocalFile):
 
     async def stream(
         self,
-        chunk_size: int = 1024,
-    ) -> AsyncGenerator[bytes, None]:
+        chunk_size: int = 10000,
+    ) -> AsyncGenerator[Any, None]:
         yield b"test content"
 
 
@@ -40,8 +40,12 @@ class MockRemoteFile(BaseRemoteFile):
         return datetime(2026, 1, 1)
 
     async def _download(
-        self, output: Path, callback: Callable[[int], None] | None = None
+        self,
+        output: Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
+        if not output:
+            raise ValueError()
         output.write_bytes(b"test content")
         return output
 

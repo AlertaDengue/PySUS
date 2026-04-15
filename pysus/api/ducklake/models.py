@@ -2,10 +2,11 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Union
 
 import anyio
 from pydantic import Field
+from pysus import CACHEPATH
 from pysus.api.models import (
     BaseRemoteClient,
     BaseRemoteDataset,
@@ -21,10 +22,6 @@ class File(BaseRemoteFile):
     parent: Union["Dataset", "Group"] = Field(exclude=True)
 
     type: str = "remote"
-
-    @property
-    def path(self) -> Path:
-        return Path(self.record.path)
 
     @property
     def basename(self) -> str:
@@ -51,10 +48,16 @@ class File(BaseRemoteFile):
         return self.record.sha256
 
     async def _download(
-        self, output: Path, callback: Callable[[int], None] | None = None
+        self,
+        output: Path | None = None,
+        callback: Callable[[int], None] | None = None,
     ) -> Path:
+        if not output:
+            output = CACHEPATH / self.name
         return await self.client._download_file(
-            self, output, callback=callback
+            self,
+            output,
+            callback=callback,
         )
 
     async def verify(self, path: Path) -> bool:
@@ -94,13 +97,24 @@ class Group(BaseRemoteGroup):
             return self.record.group_metadata.description
         return ""
 
-    async def files(self, **kwargs) -> list[File]:
-        return [File(record=f, parent=self) for f in self.record.files]
+    async def _fetch_files(self) -> list[BaseRemoteFile]:
+        return [
+            File(
+                path=f.path,
+                record=f,
+                parent=self,
+                dataset=self.dataset,
+            )
+            for f in self.record.files
+        ]
 
 
 class Dataset(BaseRemoteDataset):
     record: CatalogDataset = Field(exclude=True)
     client: BaseRemoteClient = Field(exclude=True)
+
+    def __repr__(self) -> str:
+        return self.name.upper()
 
     @property
     def name(self) -> str:
@@ -122,8 +136,10 @@ class Dataset(BaseRemoteDataset):
             else ""
         )
 
-    async def content(self, **kwargs) -> list[Group | File]:
-        items = []
+    async def _fetch_content(
+        self,
+    ) -> list[Group | File]:
+        items: list[Group | File] = []
 
         if self.record.groups:
             items.extend(
@@ -132,7 +148,15 @@ class Dataset(BaseRemoteDataset):
 
         if self.record.files:
             items.extend(
-                [File(record=f, parent=self) for f in self.record.files],
+                [
+                    File(
+                        path=f.path,
+                        record=f,
+                        parent=self,
+                        dataset=self,
+                    )
+                    for f in self.record.files
+                ],
             )
 
         return items

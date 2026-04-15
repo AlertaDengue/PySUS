@@ -4,16 +4,18 @@ from datetime import datetime
 from pathlib import Path
 
 from pysus import CACHEPATH
-from sqlalchemy import Column, DateTime, Enum, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import DateTime, Enum, Integer, String, create_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from .dadosgov import DadosGovClient
 from .ducklake import DuckLakeClient
-from .ftp import FTPClient
-from .models import BaseLocalFile, BaseRemoteFile
 from .extensions import Parquet
+from .ftp import FTPClient
+from .models import BaseLocalFile, BaseRemoteFile, BaseTabularFile
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class DownloadStatus(enum.Enum):
@@ -26,22 +28,28 @@ class DownloadStatus(enum.Enum):
 
 class LocalFileState(Base):
     __tablename__ = "local_file_state"
-    path = Column(String, primary_key=True)
-    remote_path = Column(String, nullable=False)
-    client_name = Column(String, nullable=False)
+    path: Mapped[str] = mapped_column(String, primary_key=True)
+    remote_path: Mapped[str] = mapped_column(String, nullable=False)
+    client_name: Mapped[str] = mapped_column(String, nullable=False)
 
-    year = Column(Integer, nullable=True)
-    month = Column(Integer, nullable=True)
-    state = Column(String, nullable=True)
-    group = Column(String, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    month: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    state: Mapped[str | None] = mapped_column(String, nullable=True)
+    group: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    status = Column(Enum(DownloadStatus), default=DownloadStatus.PENDING)
-    sha256 = Column(String, nullable=True)
-    last_synced = Column(DateTime, default=datetime.utcnow)
+    status: Mapped[DownloadStatus] = mapped_column(
+        Enum(DownloadStatus),
+        default=DownloadStatus.PENDING,
+    )
+    sha256: Mapped[str | None] = mapped_column(String, nullable=True)
+    last_synced: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+    )
 
 
 class PySUS:
-    def __init__(self, db_path: str = CACHEPATH / "config.db"):
+    def __init__(self, db_path: Path = CACHEPATH / "config.db"):
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -55,12 +63,24 @@ class PySUS:
         self._dadosgov: DadosGovClient | None = None
 
     async def __aenter__(self):
-        self._ducklake = DuckLakeClient(engine=self.engine)
+        self._ducklake = DuckLakeClient()
         await self._ducklake._load_catalog()
-        self._attach_client_catalog("ducklake", self._ducklake.catalog_path)
+        self._attach_client_catalog(
+            "ducklake", str(self._ducklake.catalog_path)
+        )
         return self
 
-    async def get_dadosgov(self, access_token: str) -> DadosGovClient:
+    async def get_ducklake(self) -> DuckLakeClient:
+        if self._ducklake is None:
+            self._ducklake = DuckLakeClient()
+            await self._ducklake._load_catalog()
+            self._attach_client_catalog(
+                "ducklake",
+                str(self._ducklake.catalog_path),
+            )
+        return self._ducklake
+
+    async def get_dadosgov(self, access_token: str | None) -> DadosGovClient:
         if self._dadosgov is None:
             self._dadosgov = DadosGovClient()
             await self._dadosgov.connect(token=access_token)
@@ -85,8 +105,8 @@ class PySUS:
             records = (
                 session.query(LocalFileState)
                 .filter_by(
-                    remote_path=remote_path,
-                    client_name=client_name,
+                    remote_path=str(remote_path),
+                    client_name=str(client_name),
                     status=DownloadStatus.COMPLETED,
                 )
                 .all()
@@ -96,11 +116,11 @@ class PySUS:
                 return None
 
             parquet_version = next(
-                (r for r in records if r.path.endswith(".parquet")), None
+                (r for r in records if str(r.path).endswith(".parquet")), None
             )
-            file = parquet_version or records[0]
+            record = parquet_version or records[0]
 
-            return await ExtensionFactory.instantiate(file.path)
+            return await ExtensionFactory.instantiate(str(record.path))
 
     def _attach_client_catalog(self, name: str, path: str):
         abs_path = str(Path(path).absolute())
@@ -109,7 +129,9 @@ class PySUS:
             existing = conn.exec_driver_sql(q, (abs_path,)).fetchone()
 
             if not existing:
-                conn.exec_driver_sql(f"ATTACH '{abs_path}' AS {name} (READ_ONLY)")
+                conn.exec_driver_sql(
+                    f"ATTACH '{abs_path}' AS {name} (READ_ONLY)",
+                )
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._ducklake:
@@ -141,19 +163,23 @@ class PySUS:
         remote_path: str,
         client_name: str,
         status: DownloadStatus,
-        year: int = None,
-        month: int = None,
-        state: str = None,
-        group: str = None,
+        year: int | None = None,
+        month: int | None = None,
+        state: str | None = None,
+        group: str | None = None,
     ):
         with self.Session() as session:
             record = (
-                session.query(LocalFileState).filter_by(path=str(local_path)).first()
+                session.query(LocalFileState)
+                .filter_by(
+                    path=str(local_path),
+                )
+                .first()
             )
             if not record:
                 record = LocalFileState(
                     path=str(local_path),
-                    remote_path=remote_path,
+                    remote_path=str(remote_path),
                     client_name=client_name,
                     year=year,
                     month=month,
@@ -169,8 +195,8 @@ class PySUS:
     async def download(
         self,
         file: BaseRemoteFile,
-        token: str = None,
-        callback: Callable = None,
+        token: str | None = None,
+        callback: Callable | None = None,
     ):
         from pysus.api.extensions import ExtensionFactory
 
@@ -185,24 +211,31 @@ class PySUS:
         local_path.parent.mkdir(parents=True, exist_ok=True)
 
         await self._update_state(
-            local_path, remote_path, client_name, DownloadStatus.DOWNLOADING
+            local_path,
+            str(remote_path),
+            client_name,
+            DownloadStatus.DOWNLOADING,
         )
+
+        client: DuckLakeClient | FTPClient | DadosGovClient
 
         try:
             if client_name == "ducklake":
-                await self._ducklake._download_file(file, local_path, callback)
+                client = await self.get_ducklake()
             elif client_name == "ftp":
                 client = await self.get_ftp()
-                await client._download_file(file, local_path, callback)
             elif client_name == "dadosgov":
                 client = await self.get_dadosgov(token)
-                await client._download_file(file, local_path, callback)
             else:
-                raise ValueError(f"No download logic for client: {client_name}")
+                raise ValueError(
+                    f"No download logic for client: {client_name}",
+                )
+
+            await client._download_file(file, local_path, callback)
 
             await self._update_state(
                 local_path=local_path,
-                remote_path=remote_path,
+                remote_path=str(remote_path),
                 client_name=client_name,
                 status=DownloadStatus.DOWNLOADING,
                 year=file.year,
@@ -212,11 +245,13 @@ class PySUS:
             )
             return await ExtensionFactory.instantiate(local_path)
 
-        except Exception:
+        except Exception as e:  # noqa: B902
             await self._update_state(
-                local_path, remote_path, client_name, DownloadStatus.FAILED
+                local_path, str(remote_path), client_name, DownloadStatus.FAILED
             )
-            raise
+            raise RuntimeError(
+                f"Unexpected error downloading {file.basename}: {e}",
+            ) from e
 
     async def _delete_record(self, path: str):
         with self.Session() as session:
@@ -228,8 +263,8 @@ class PySUS:
     async def download_to_parquet(
         self,
         file: BaseRemoteFile,
-        token: str = None,
-        callback: Callable[[int, int], None] = None,
+        token: str | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Parquet:
         local_file = await self.download(
             file=file,
@@ -237,7 +272,7 @@ class PySUS:
             callback=callback,
         )
 
-        if not hasattr(local_file, "to_parquet"):
+        if not isinstance(local_file, BaseTabularFile):
             raise NotImplementedError(
                 f"{local_file} can't be converted to Parquet",
             )
@@ -248,7 +283,7 @@ class PySUS:
 
         await self._update_state(
             local_path=parquet_file.path,
-            remote_path=file.path,
+            remote_path=str(file.path),
             client_name=file.client.name.lower(),
             status=DownloadStatus.COMPLETED,
             year=file.year,
@@ -270,13 +305,14 @@ class PySUS:
         hierarchy = {}
         for r in records:
             client = r.client_name.upper()
-
-            path_obj = Path(r.path)
+            path_obj = Path(str(r.path))
             parts = path_obj.parts
 
             dataset = parts[-2] if len(parts) > 2 else "Other"
+            has_group = getattr(r, "group", None) is not None
+
             if path_obj.is_file() and len(parts) > 3:
-                dataset = parts[-2] if not r.group else parts[-3]
+                dataset = parts[-2] if has_group else parts[-3]
 
             client_dict = hierarchy.setdefault(client, {})
             ds_dict = client_dict.setdefault(dataset, {})

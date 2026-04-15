@@ -2,15 +2,16 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import anyio
 import boto3
 import httpx
+from anyio import to_thread
 from botocore.config import Config
 from pydantic import BaseModel, PrivateAttr, SecretStr
 from pysus import CACHEPATH
-from pysus.api.models import BaseRemoteClient
+from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from .catalog import CatalogDataset, DatasetGroup
 from .models import Dataset, File
@@ -71,24 +72,27 @@ class DuckLake(BaseRemoteClient):
 
         def _fetch():
             with self._Session() as session:
-                return (
+                results = (
                     session.query(CatalogDataset)
                     .options(
-                        joinedload(CatalogDataset.dataset_metadata),
                         joinedload(CatalogDataset.groups).joinedload(
                             DatasetGroup.files
                         ),
+                        joinedload(CatalogDataset.files),
                     )
                     .all()
                 )
+                session.expunge_all()
+                return results
 
-        records = await anyio.to_thread.run_sync(_fetch)
+        records = await to_thread.run_sync(_fetch)
         return [Dataset(record=rec, client=self) for rec in records]
 
     async def login(
         self,
         access_key: str | None = None,
         secret_key: str | None = None,
+        **kwargs,
     ) -> None:
         if access_key and secret_key:
             self.credentials = DuckLakeCredentials(
@@ -101,12 +105,15 @@ class DuckLake(BaseRemoteClient):
         await self.connect(force=True)
 
         if self._is_authenticated:
-            self._s3_client = await anyio.to_thread.run_sync(
+            self._s3_client = await to_thread.run_sync(
                 self._get_s3_client,
             )
 
     def _setup_engine(self):
-        engine = create_engine(f"duckdb:///{self._catalog_local}")
+        engine = create_engine(
+            f"duckdb:///{self._catalog_local}",
+            poolclass=StaticPool,
+        )
 
         with engine.connect() as conn:
             conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
@@ -130,7 +137,7 @@ class DuckLake(BaseRemoteClient):
                 "s3_use_ssl": "true",
             }
 
-            if self._is_authenticated:
+            if self.credentials and self._is_authenticated:
                 s3_cfg["s3_access_key_id"] = (
                     self.credentials.access_key.get_secret_value()
                 )
@@ -141,6 +148,8 @@ class DuckLake(BaseRemoteClient):
             for key, value in s3_cfg.items():
                 conn.exec_driver_sql(f"SET {key}='{value}';")
 
+            conn.commit()
+
         return engine
 
     async def connect(self, force: bool = False):
@@ -150,12 +159,12 @@ class DuckLake(BaseRemoteClient):
             return
 
         await self._load_catalog()
-        self._engine = await anyio.to_thread.run_sync(self._setup_engine)
+        self._engine = await to_thread.run_sync(self._setup_engine)
         self._Session = sessionmaker(bind=self._engine)
 
     async def close(self):
         if self._engine:
-            await anyio.to_thread.run_sync(self._engine.dispose)
+            await to_thread.run_sync(self._engine.dispose)
 
             self._engine = None
             self._Session = None
@@ -167,17 +176,20 @@ class DuckLake(BaseRemoteClient):
 
     async def _download_file(
         self,
-        file: "File",
+        file: BaseRemoteFile,
         output: Path,
         callback: Callable[[int], None] | None = None,
     ) -> Path:
+        if not isinstance(file, File):
+            raise ValueError("FTP File was not properly instantiated")
+
         url = f"https://{self.endpoint}/{self.bucket}/{file.record.path}"
         async with httpx.AsyncClient(follow_redirects=True) as client:
             async with client.stream("GET", url) as r:
                 r.raise_for_status()
                 with open(output, "wb") as f:
                     async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
-                        await anyio.to_thread.run_sync(f.write, chunk)
+                        await to_thread.run_sync(f.write, chunk)
                         if callback:
                             callback(len(chunk))
         return output
@@ -187,14 +199,18 @@ class DuckLake(BaseRemoteClient):
             r.raise_for_status()
             with open(self._catalog_local, "wb") as f:
                 async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
-                    await anyio.to_thread.run_sync(f.write, chunk)
+                    await to_thread.run_sync(f.write, chunk)
 
     def _get_s3_client(self):
+        if not self.credentials:
+            raise ConnectionError("S3 Credentials not found")
         return boto3.client(
             "s3",
             endpoint_url=f"https://{self.endpoint}",
             aws_access_key_id=self.credentials.access_key.get_secret_value(),
-            aws_secret_access_key=self.credentials.secret_key.get_secret_value(),
+            aws_secret_access_key=(
+                self.credentials.secret_key.get_secret_value()
+            ),
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )
@@ -211,7 +227,7 @@ class DuckLake(BaseRemoteClient):
                 head = await client.head(self._catalog_url)
                 head.raise_for_status()
                 remote_size = int(head.headers.get("content-length", 0))
-            except Exception:
+            except Exception:  # noqa: B902
                 remote_size = 0
             if remote_size != local_size:
                 await self._download_catalog(client)
@@ -229,4 +245,4 @@ class DuckLake(BaseRemoteClient):
                 self._catalog_remote,
             )
 
-        await anyio.to_thread.run_sync(_upload)
+        await to_thread.run_sync(_upload)

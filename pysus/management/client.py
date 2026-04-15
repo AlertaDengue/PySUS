@@ -1,22 +1,22 @@
 import os
+from collections.abc import Callable
 from datetime import datetime
 from logging import error
-from typing import Callable
 from pathlib import Path
 
-import anyio
+from anyio import to_thread
 from pysus.api.client import PySUS
-from pysus.api.models import BaseRemoteFile
+from pysus.api.dadosgov.models import File as APIFile
 from pysus.api.ducklake.catalog import (
-    CatalogFile,
     CatalogDataset,
-    DatasetGroup,
+    CatalogFile,
     ColumnDefinition,
+    DatasetGroup,
     Origin,
 )
-from pysus.api.ftp.models import File as FTPFile
-from pysus.api.dadosgov.models import File as APIFile
 from pysus.api.extensions import Parquet
+from pysus.api.ftp.models import File as FTPFile
+from pysus.api.models import BaseRemoteFile
 
 
 class CatalogManager:
@@ -36,14 +36,17 @@ class CatalogManager:
 
     async def __aenter__(self):
         await self.pysus.__aenter__()
-        await self.pysus._ducklake.login(self.access_key, self.secret_key)
+        ducklake = await self.pysus.get_ducklake()
+        await ducklake.login(self.access_key, self.secret_key)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         try:
             if not exc_type:
-                await self.pysus._ducklake._upload_catalog()
-        except Exception as e:
+                ducklake = self.pysus._ducklake
+                if ducklake:
+                    await ducklake._upload_catalog()
+        except Exception as e:  # noqa
             error(e)
             pass
         finally:
@@ -52,8 +55,10 @@ class CatalogManager:
     async def upload(
         self,
         file: FTPFile | APIFile,
-        callback: Callable[[int, int], None] = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> None:
+        if not self.pysus._ducklake:
+            raise ConnectionError("DuckLake is not connected")
         with self.pysus._ducklake._Session() as session:
             dataset = self._get_or_create_dataset(session, file)
             group = self._get_or_create_group(session, file, dataset)
@@ -70,14 +75,16 @@ class CatalogManager:
 
         s3_key = (
             f"public/data/{file.client.name.lower()}"
-            + f"/{file.dataset.name.lower()}/{parquet_ext.path.name}"
+            f"/{file.dataset.name.lower()}/{parquet_ext.path.name}"
         )
 
         await self._upload_to_s3(parquet_ext.path, s3_key)
 
         with self.pysus._ducklake._Session() as session:
             current_dataset = self._get_or_create_dataset(session, file)
-            current_group = self._get_or_create_group(session, file, current_dataset)
+            current_group = self._get_or_create_group(
+                session, file, current_dataset
+            )
 
             cat_file = self._get_or_create_file(
                 session, file, current_dataset, current_group
@@ -101,9 +108,11 @@ class CatalogManager:
         self,
         local_path: Path,
         s3_path: str,
-        callback: Callable[[int], None] = None,
+        callback: Callable[[int], None] | None = None,
     ):
         def _do_upload():
+            if not self.pysus._ducklake:
+                raise ConnectionError("DuckLake not connected")
             self.pysus._ducklake._s3_client.upload_file(
                 str(local_path),
                 self.pysus._ducklake.bucket,
@@ -111,7 +120,7 @@ class CatalogManager:
                 Callback=callback,
             )
 
-        await anyio.to_thread.run_sync(_do_upload)
+        await to_thread.run_sync(_do_upload)
 
     def _should_upload(
         self,
@@ -127,12 +136,13 @@ class CatalogManager:
         self,
         session,
         file: BaseRemoteFile,
-        callback: Callable = None,
     ) -> CatalogDataset:
         ds_name = file.dataset.name.lower()
         ds = session.query(CatalogDataset).filter_by(name=ds_name).first()
         if not ds:
-            origin = Origin.FTP if file.client.name.lower() == "ftp" else Origin.API
+            origin = (
+                Origin.FTP if file.client.name.lower() == "ftp" else Origin.API
+            )
             ds = CatalogDataset(
                 name=ds_name, long_name=file.dataset.long_name, origin=origin
             )
@@ -145,7 +155,6 @@ class CatalogManager:
         session,
         file: BaseRemoteFile,
         dataset: CatalogDataset,
-        callback: Callable = None,
     ) -> DatasetGroup | None:
         if file.group is None:
             return None
@@ -159,7 +168,9 @@ class CatalogManager:
 
         if not group:
             group = DatasetGroup(
-                name=group_name, dataset=dataset, long_name=file.group.long_name
+                name=group_name,
+                dataset=dataset,
+                long_name=file.group.long_name,
             )
             session.add(group)
             session.flush()
@@ -171,7 +182,6 @@ class CatalogManager:
         file: BaseRemoteFile,
         dataset: CatalogDataset,
         group: DatasetGroup | None = None,
-        callback: Callable = None,
     ) -> CatalogFile:
         query = session.query(CatalogFile).filter(
             CatalogFile.dataset_id == dataset.id,
@@ -191,6 +201,7 @@ class CatalogManager:
                 size=0,
                 rows=0,
                 modified=datetime.min,
+                origin_path=file.path,
                 year=file.year,
                 month=file.month,
                 state=file.state,
