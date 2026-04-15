@@ -70,7 +70,7 @@ async def test_get_hash(tmp_path):
 @pytest.mark.asyncio
 async def test_remote_file_download(tmp_path):
     mock_dataset = MagicMock(spec=BaseRemoteDataset)
-    remote = MockRemoteFile(path="remote/path.txt", parent=mock_dataset)
+    remote = MockRemoteFile(path="remote/path.txt", dataset=mock_dataset)
     dest = tmp_path / "downloaded.txt"
 
     result = await remote.download(output=dest)

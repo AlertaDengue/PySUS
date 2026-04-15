@@ -180,7 +180,7 @@ class Group(BaseRemoteGroup):
 
 class Dataset(BaseRemoteDataset):
     ids: list[str] = []
-    client: DadosGov
+    client: "DadosGov"
 
     def __repr__(self):
         return self.name
@@ -191,7 +191,7 @@ class Dataset(BaseRemoteDataset):
 
     async def _fetch_content(self) -> list[Group]:
         items: list[Group] = []
-        client: DadosGov = self.client
+        client: "DadosGov" = self.client
         if self.ids:
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)

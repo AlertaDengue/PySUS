@@ -17,7 +17,7 @@ from pysus.api.models import (
 )
 from pysus.api.types import State
 
-from .client import FTP, FTPFileInfo, FTPGroupInfo
+from .client import FTP, FTPFileInfo
 
 
 class File(BaseRemoteFile):
@@ -25,15 +25,20 @@ class File(BaseRemoteFile):
 
     def __init__(self, **data):
         info = data.pop("_info", None)
-        path = data.pop("path", None)
+        if "path" not in data and info and "path" in info:
+            data["path"] = info["path"]
 
         super().__init__(**data)
 
-        if info is not None:
-            self._info = info
-
-        if path is not None:
-            self._path = path
+        self._info = info
+        group_data = self._info.get("group")
+        if group_data:
+            self.group = Group(
+                path=str(self.path.parent),
+                dataset=self.dataset,
+                long_name=group_data.get("long_name", ""),
+                description=group_data.get("description", ""),
+            )
 
     def __repr__(self) -> str:
         return self.name
@@ -52,10 +57,6 @@ class File(BaseRemoteFile):
         if not m:
             raise ValueError("File requires a modify date")
         return m
-
-    @property
-    def group_info(self) -> FTPGroupInfo | None:
-        return self._info.get("group")
 
     @property
     def year(self) -> int | None:
@@ -109,7 +110,10 @@ class Directory:
     async def load(self) -> None:
         if not isinstance(self.client, FTP):
             raise ValueError("no ftp client found")
-        raw_infos = await self.client._list_directory(self.path, self.formatter)
+        raw_infos = await self.client._list_directory(
+            self.path,
+            self.formatter,
+        )
         self._content = []
 
         current_group = (
@@ -157,8 +161,11 @@ class Group(BaseRemoteGroup):
         dataset: Dataset,
         long_name: str,
         description: str = "",
+        **data: Any,
     ):
-        super().__init__(dataset=dataset)
+        data.update({"dataset": dataset, "path": path})
+        super().__init__(**data)
+
         self._long_name = long_name
         self._description = description
         self._dir = Directory(

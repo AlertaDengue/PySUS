@@ -13,10 +13,12 @@ from pysus.api.ducklake.catalog import (
     ColumnDefinition,
     DatasetGroup,
     Origin,
+    file_columns,
 )
 from pysus.api.extensions import Parquet
 from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
+from sqlalchemy import delete
 
 
 class CatalogManager:
@@ -59,6 +61,7 @@ class CatalogManager:
     ) -> None:
         if not self.pysus._ducklake:
             raise ConnectionError("DuckLake is not connected")
+
         with self.pysus._ducklake._Session() as session:
             dataset = self._get_or_create_dataset(session, file)
             group = self._get_or_create_group(session, file, dataset)
@@ -67,7 +70,7 @@ class CatalogManager:
             if not self._should_upload(file, cat_file):
                 return
 
-            session.commit()
+            session.flush()
 
         parquet_ext = await self.pysus.download_to_parquet(
             file=file, token=self.dadosgov_token, callback=callback
@@ -78,17 +81,29 @@ class CatalogManager:
             f"/{file.dataset.name.lower()}/{parquet_ext.path.name}"
         )
 
-        await self._upload_to_s3(parquet_ext.path, s3_key)
-
         with self.pysus._ducklake._Session() as session:
-            current_dataset = self._get_or_create_dataset(session, file)
-            current_group = self._get_or_create_group(
-                session, file, current_dataset
+            existing_conflict = (
+                session.query(CatalogFile)
+                .filter(
+                    CatalogFile.path == s3_key,
+                    CatalogFile.dataset_id == dataset.id,
+                )
+                .first()
             )
 
-            cat_file = self._get_or_create_file(
-                session, file, current_dataset, current_group
-            )
+            if existing_conflict and existing_conflict.id != cat_file.id:
+                session.execute(
+                    delete(file_columns).where(
+                        file_columns.c.file_id == existing_conflict.id
+                    )
+                )
+                session.flush()
+                session.delete(existing_conflict)
+                session.flush()
+
+            cat_file = session.merge(cat_file)
+
+            await self._upload_to_s3(parquet_ext.path, s3_key)
 
             cat_file.path = s3_key
             cat_file.size = parquet_ext.size
@@ -96,7 +111,7 @@ class CatalogManager:
             cat_file.modified = datetime.utcnow()
             cat_file.origin_modified = file.modify
             cat_file.columns = self._get_or_create_columns(
-                session, current_dataset, parquet_ext
+                session, dataset, parquet_ext
             )
 
             session.commit()
@@ -140,9 +155,8 @@ class CatalogManager:
         ds_name = file.dataset.name.lower()
         ds = session.query(CatalogDataset).filter_by(name=ds_name).first()
         if not ds:
-            origin = (
-                Origin.FTP if file.client.name.lower() == "ftp" else Origin.API
-            )
+            is_ftp = file.client.name.lower() == "ftp"
+            origin = Origin.FTP if is_ftp else Origin.API
             ds = CatalogDataset(
                 name=ds_name, long_name=file.dataset.long_name, origin=origin
             )
@@ -201,7 +215,7 @@ class CatalogManager:
                 size=0,
                 rows=0,
                 modified=datetime.min,
-                origin_path=file.path,
+                origin_path=str(file.path),
                 year=file.year,
                 month=file.month,
                 state=file.state,

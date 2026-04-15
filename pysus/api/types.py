@@ -1,7 +1,7 @@
 from typing import Literal
 
 FileType = Literal[
-    None,
+    "FILE",
     "DIR",
     "PARQUET",
     "CSV",

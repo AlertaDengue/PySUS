@@ -3,14 +3,15 @@ from __future__ import annotations
 import pathlib
 from collections.abc import Callable
 from datetime import datetime
-from typing import Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 import httpx
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 
-from .models import Dataset
+if TYPE_CHECKING:
+    from .models import Dataset
 
 
 def to_datetime(value: Any) -> datetime | None:

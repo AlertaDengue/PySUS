@@ -130,7 +130,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
         chunk_size: int = 10000,
         callback: Callable[[int, int], None] | None = None,
     ) -> Parquet:
-        from pysus.api.extensions import ExtensionFactory
+        from pysus.api.extensions import ExtensionFactory, Parquet
 
         if output_path is None:
             output_path = self.path.with_suffix(".parquet")

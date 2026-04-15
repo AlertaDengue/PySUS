@@ -40,7 +40,7 @@ except ImportError:
 
 
 class File(BaseLocalFile):
-    type: FileType = Field(None)
+    type: FileType = Field("FILE")
 
     async def load(self) -> bytes:
         return await to_thread.run_sync(self.path.read_bytes)
@@ -181,24 +181,28 @@ class Parquet(BaseTabularFile):
 
     async def load(self, parse: bool = True) -> pd.DataFrame:
         def _load():
-            df = pd.read_parquet(self.path)
+            df = pd.read_parquet(self.path, engine="pyarrow")
             return self.parse_dftypes(df) if parse else df
 
         return await to_thread.run_sync(_load)
 
     async def stream(
-        self, chunk_size: int = 10000
+        self, chunk_size: int = 10000, parse: bool = False
     ) -> AsyncGenerator[pd.DataFrame, None]:
         parquet_file = await to_thread.run_sync(pq.ParquetFile, self.path)
 
         for batch in parquet_file.iter_batches(batch_size=chunk_size):
             df = batch.to_pandas()
+            if parse:
+                df = self.parse_dftypes(df)
             yield df
             await asyncio.sleep(0)
 
     @staticmethod
     def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
         def str_to_int(string):
+            if pd.isna(string):
+                return string
             clean = str(string).replace(" ", "")
             return int(clean) if clean.isnumeric() else string
 
@@ -211,7 +215,7 @@ class Parquet(BaseTabularFile):
             return string
 
         cols_to_date = ["DT_NOTIFIC", "DT_SIN_PRI", "DT_NASC", "DT_INTER"]
-        cols_to_int = ["CODMUNRES", "SEXO", "IDADE"]
+        cols_to_int = ["CODMUNRES", "IDADE"]
 
         for col in df.columns:
             if col in cols_to_date:
@@ -219,7 +223,8 @@ class Parquet(BaseTabularFile):
             elif col in cols_to_int:
                 df[col] = df[col].map(str_to_int)
 
-        df = df.map(lambda x: "" if str(x).isspace() else x)
+        df = df.replace(r"^\s+$", "", regex=True)
+
         return df.convert_dtypes()
 
 
@@ -733,5 +738,11 @@ class ExtensionFactory:
         path = Path(path).expanduser().resolve()
         if await to_thread.run_sync(path.is_dir):
             return Directory(path=path, type="DIR")
+
         FileClass = await cls.get_file_class(path)
-        return FileClass(path=path, type=FileClass.type)
+        file_type = getattr(FileClass, "type", "FILE")
+
+        if not isinstance(file_type, str):
+            file_type = "FILE"
+
+        return FileClass(path=path, type=file_type)

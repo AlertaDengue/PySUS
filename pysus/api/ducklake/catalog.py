@@ -24,7 +24,12 @@ class Base(DeclarativeBase):
 file_columns = Table(
     "file_columns",
     Base.metadata,
-    Column("file_id", Integer, ForeignKey("pysus.files.id"), primary_key=True),
+    Column(
+        "file_id",
+        Integer,
+        ForeignKey("pysus.files.id"),
+        primary_key=True,
+    ),
     Column(
         "column_id",
         Integer,
@@ -196,7 +201,10 @@ class CatalogFile(CatalogTable):
         back_populates="files",
     )
     columns: Mapped[list["ColumnDefinition"]] = relationship(
-        "ColumnDefinition", secondary=file_columns, back_populates="files"
+        "ColumnDefinition",
+        secondary=file_columns,
+        back_populates="files",
+        cascade="all, delete",
     )
 
     __table_args__ = (

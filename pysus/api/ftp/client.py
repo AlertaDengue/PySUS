@@ -57,9 +57,7 @@ class FTP(BaseRemoteClient):
         """
 
     @property
-    def ftp(self) -> FTPLib:
-        if not self._ftp:
-            raise ConnectionError("FTP Not properly connected")
+    def ftp(self) -> FTPLib | None:
         return self._ftp
 
     async def connect(self) -> None:
