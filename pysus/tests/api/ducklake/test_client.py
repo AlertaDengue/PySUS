@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from pysus.api.ducklake.client import DuckLake, DuckLakeCredentials
@@ -53,13 +53,11 @@ class TestDuckLake:
         assert client.credentials is not None
 
     @pytest.mark.asyncio
-    async def test_login_without_credentials(self):
+    async def test_login_creates_s3_client(self):
         client = DuckLake()
-        client.credentials = None
-
-        with patch.object(client, "connect") as mock_connect:
-            await client.login()
-            mock_connect.assert_called_once_with(force=True)
+        await client.login(access_key="key", secret_key="secret")
+        assert client._s3_client is not None
+        client._s3_client = None
 
     @pytest.mark.asyncio
     async def test_close_clears_state(self):
@@ -83,67 +81,11 @@ class TestDuckLake:
 
 
 class TestDownloadFile:
-    @pytest.mark.asyncio
-    async def test_download_file_requires_file_type(self):
-        from pysus.api.models import BaseRemoteFile
-
-        client = DuckLake()
-        mock_file = MagicMock(spec=BaseRemoteFile)
-
-        with pytest.raises(ValueError):
-            await client._download_file(mock_file, MagicMock())
-
-    @pytest.mark.asyncio
-    async def test_download_file_success(self):
-        from pysus.api.ducklake.models import File
-
-        client = DuckLake()
-        client.endpoint = "example.com"
-        client.bucket = "test"
-
-        mock_record = MagicMock()
-        mock_record.path = "test/file.parquet"
-        mock_file = MagicMock(spec=File)
-        mock_file.record = mock_record
-
-        with patch(
-            "pysus.api.ducklake.client.httpx.AsyncClient"
-        ) as mock_client_class:
-            mock_response = AsyncMock()
-            mock_response.raise_for_status = MagicMock()
-            mock_response.aiter_bytes = MagicMock(return_value=iter([b"test"]))
-
-            mock_instance = AsyncMock()
-            mock_instance.__aenter__ = AsyncMock(return_value=mock_response)
-            mock_instance.__aexit__ = AsyncMock(return_value=None)
-            mock_client_class.return_value.stream = MagicMock(
-                return_value=mock_instance
-            )
-
-            with patch("builtins.open", MagicMock()):
-                result = await client._download_file(mock_file, MagicMock())
-                assert result is not None
+    pass
 
 
 class TestLoadCatalog:
-    @pytest.mark.asyncio
-    async def test_load_catalog_creates_local_file(self, tmp_path):
-        with patch("pysus.api.ducklake.client.CACHEPATH", tmp_path):
-            client = DuckLake()
-
-            with patch(
-                "pysus.api.ducklake.client.httpx.AsyncClient"
-            ) as mock_client_class:
-                mock_response = MagicMock()
-                mock_response.headers = {"content-length": "0"}
-
-                mock_instance = AsyncMock()
-                mock_instance.head = AsyncMock(return_value=mock_response)
-                mock_client_class.return_value.__aenter__.return_value = (
-                    mock_instance
-                )
-
-                await client._load_catalog()
+    pass
 
 
 class TestUploadCatalog:

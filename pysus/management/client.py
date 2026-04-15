@@ -13,12 +13,10 @@ from pysus.api.ducklake.catalog import (
     ColumnDefinition,
     DatasetGroup,
     Origin,
-    file_columns,
 )
 from pysus.api.extensions import Parquet
 from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
-from sqlalchemy import delete
 
 
 class CatalogManager:
@@ -62,26 +60,59 @@ class CatalogManager:
         if not self.pysus._ducklake:
             raise ConnectionError("DuckLake is not connected")
 
+        s3_key = (
+            f"public/data/{file.client.name.lower()}"
+            f"/{file.dataset.name.lower()}/{file.basename}"
+        )
+
         with self.pysus._ducklake._Session() as session:
             dataset = self._get_or_create_dataset(session, file)
-            group = self._get_or_create_group(session, file, dataset)
-            cat_file = self._get_or_create_file(session, file, dataset, group)
 
-            if not self._should_upload(file, cat_file):
+            existing = (
+                session.query(CatalogFile)
+                .filter(
+                    CatalogFile.dataset_id == dataset.id,
+                    CatalogFile.origin_path == str(file.path),
+                )
+                .first()
+            )
+
+            if not existing:
+                existing = (
+                    session.query(CatalogFile)
+                    .filter(
+                        CatalogFile.path == s3_key,
+                        CatalogFile.dataset_id == dataset.id,
+                    )
+                    .first()
+                )
+
+            if not existing:
+                existing = (
+                    session.query(CatalogFile)
+                    .filter(
+                        CatalogFile.path
+                        == str(Path(s3_key).with_suffix(".parquet")),
+                        CatalogFile.dataset_id == dataset.id,
+                    )
+                    .first()
+                )
+
+            if existing and self._should_upload(file, existing):
                 return
 
-            session.flush()
+            group = self._get_or_create_group(session, file, dataset)
+            cat_file = self._get_or_create_file(session, file, dataset, group)
 
         parquet_ext = await self.pysus.download_to_parquet(
             file=file, token=self.dadosgov_token, callback=callback
         )
 
-        s3_key = (
-            f"public/data/{file.client.name.lower()}"
-            f"/{file.dataset.name.lower()}/{parquet_ext.path.name}"
-        )
-
         with self.pysus._ducklake._Session() as session:
+            dataset = self._get_or_create_dataset(session, file)
+            group = self._get_or_create_group(session, file, dataset)
+            cat_file = self._get_or_create_file(session, file, dataset, group)
+
             existing_conflict = (
                 session.query(CatalogFile)
                 .filter(
@@ -91,17 +122,10 @@ class CatalogManager:
                 .first()
             )
 
-            if existing_conflict and existing_conflict.id != cat_file.id:
-                session.execute(
-                    delete(file_columns).where(
-                        file_columns.c.file_id == existing_conflict.id
-                    )
-                )
-                session.flush()
-                session.delete(existing_conflict)
-                session.flush()
-
-            cat_file = session.merge(cat_file)
+            if existing_conflict:
+                cat_file = existing_conflict
+            else:
+                cat_file = session.merge(cat_file)
 
             await self._upload_to_s3(parquet_ext.path, s3_key)
 
@@ -141,11 +165,36 @@ class CatalogManager:
         self,
         file: BaseRemoteFile,
         catalog_file: CatalogFile | None = None,
+        force: bool = False,
     ) -> bool:
-        if catalog_file is None or catalog_file.origin_modified is None:
+        if force:
+            print(f"force=True, uploading {file.basename}")
             return True
 
-        return file.modify > catalog_file.origin_modified
+        if catalog_file is None:
+            print(f"no catalog record, uploading {file.basename}")
+            return True
+
+        if catalog_file.origin_modified is None:
+            print(f"no origin_modified, uploading {file.basename}")
+            return True
+
+        file_mod = getattr(file, "modify", None)
+        if file_mod is None:
+            print(f"no file modify date, uploading {file.basename}")
+            return True
+
+        if file_mod > catalog_file.origin_modified:
+            print(f"{catalog_file.origin_modified} newer than ({file_mod})")
+            return True
+
+        file_size = getattr(file, "size", None)
+        if file_size and file_size != catalog_file.size:
+            print(f"size differs: {file_size} != {catalog_file.size}")
+            return True
+
+        print(f"skipping {file.basename} - already up to date")
+        return False
 
     def _get_or_create_dataset(
         self,
