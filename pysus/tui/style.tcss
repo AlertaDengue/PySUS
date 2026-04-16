@@ -1,0 +1,327 @@
+/* =========================
+   Color Scheme (High Contrast Dark)
+   ========================= */
+
+$primary: #4a5568;
+$secondary: #718096;
+$accent: #9ae6b4;
+$surface: #0d1117;
+$text: #f0f6fc;
+$text-muted: #8b949e;
+
+/* =========================
+   Layout
+   ========================= */
+
+#main-layout {
+    width: 100%;
+    height: 100%;
+}
+
+#screen-container {
+    width: 100%;
+    height: 100%;
+}
+
+#main-container {
+    width: 65fr;
+    height: 100%;
+    border: solid $primary;
+}
+
+#local-sidebar {
+    width: 35fr;
+    height: 100%;
+    border: solid $primary;
+    background: $surface;
+}
+
+DataTable {
+    height: 1fr;
+    border: none;
+    padding: 1;
+    scrollbar-size: 1 1;
+}
+
+#client-switcher {
+    height: 1fr;
+}
+
+#loading-container {
+    width: 100%;
+    height: 100%;
+    align: center middle;
+}
+
+#welcome-text {
+    text-align: center;
+    text-style: bold;
+    color: $accent;
+    margin-top: 1;
+}
+
+#loading-status {
+    text-align: center;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+#loader {
+    align: center middle;
+}
+
+#screen-container {
+    width: 100%;
+    height: 100%;
+}
+
+.sidebar {
+    width: 30;
+    min-width: 30;
+    height: 100%;
+    dock: right;
+    border: solid $primary;
+    background: $surface;
+    layer: sidebar;
+}
+
+Screen {
+    background: transparent;
+}
+
+LoadingScreen Middle {
+    width: 100%;
+    height: 90%;
+    align: center middle;
+}
+
+#main-container {
+    width: 65%;
+    margin-right: 1;
+    border: solid $primary;
+    background: transparent;
+}
+
+#sidebar {
+    width: 35%;
+    border: solid $primary;
+    background: $surface;
+}
+
+
+/* =========================
+   Typography
+   ========================= */
+
+#welcome-text {
+    width: 100%;
+    text-align: center;
+    text-style: bold;
+    color: $accent;
+}
+
+#panel-label,
+#sidebar-label {
+    padding: 1 2;
+    text-style: bold;
+    color: $text;
+    background: $primary;
+}
+
+#config-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+    color: $accent;
+}
+
+#modal-title {
+    width: 100%;
+    text-align: center;
+    text-style: bold;
+    color: $accent;
+    border-bottom: solid $primary;
+    padding-bottom: 1;
+    margin-bottom: 1;
+}
+
+#modal-footer {
+    text-align: center;
+    color: $text-muted;
+    margin-top: 1;
+}
+
+Label {
+    height: 3;
+    content-align: left middle;
+}
+
+
+/* =========================
+   Containers
+   ========================= */
+
+#config-container {
+    width: 60;
+    height: auto;
+    padding: 2 3;
+    background: $surface;
+    border: solid $primary;
+}
+
+#modal-content-wrapper {
+    width: 70%;
+    height: auto;
+    padding: 2 3;
+    background: $surface;
+    border: solid $primary;
+}
+
+#modal-content {
+    margin: 1 0;
+    color: $text;
+}
+
+
+/* =========================
+   Grid
+   ========================= */
+
+#config-grid {
+    grid-size: 2;
+    grid-columns: 1fr 2fr;
+    grid-gutter: 1 2;
+
+    height: auto;
+    margin-bottom: 2;
+}
+
+
+/* =========================
+   Components
+   ========================= */
+
+#cfg-save {
+    width: 100%;
+}
+
+#loader {
+    width: auto;
+    height: auto;
+}
+
+DataTable > .datatable--cursor {
+    background: $primary;
+    color: $text;
+}
+
+DataTable > .datatable--header {
+    background: $primary;
+    color: $text;
+}
+
+#local-tree {
+    height: 95%;
+    padding: 1;
+    border: none;
+    scrollbar-size: 1 1;
+}
+
+#local-tree Tree > .tree--selected {
+    background: $primary;
+}
+
+
+/* =========================
+   Scrollbar
+   ========================= */
+
+ScrollBar {
+    width: 1;
+}
+
+ScrollBar > .scrollbar--button {
+    display: none;
+}
+
+
+/* =========================
+   Progress
+   ========================= */
+
+ProgressBar,
+#download-progress {
+    width: 100%;
+    display: none;
+}
+
+ProgressBar {
+    margin: 1 0;
+}
+
+#download-progress {
+    margin-top: 1;
+}
+
+ProgressBar.visible,
+#download-progress.visible {
+    display: block;
+}
+
+
+/* =========================
+   Modal
+   ========================= */
+
+ModalScreen {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+
+/* =========================
+   Buttons & Inputs
+   ========================= */
+
+Button {
+    border: none;
+}
+
+Button:hover {
+    background: $primary;
+}
+
+Button:focus {
+    border: solid $accent;
+}
+
+Input {
+    border: solid $primary;
+}
+
+Input:focus {
+    border: solid $accent;
+}
+
+Select {
+    border: solid $primary;
+}
+
+Switch {
+    color: $accent;
+}
+
+
+/* =========================
+   Headers & Footer
+   ========================= */
+
+Header {
+    background: $primary;
+    color: $text;
+}
+
+Footer {
+    background: $primary;
+    color: $text;
+}
