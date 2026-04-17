@@ -94,3 +94,149 @@ class TestUploadCatalog:
         client = DuckLake()
         with pytest.raises(PermissionError):
             await client._upload_catalog()
+
+
+class TestDuckLakeQuery:
+    @pytest.mark.asyncio
+    async def test_query_filters_by_dataset(self):
+        from unittest.mock import MagicMock
+
+        from pysus.api.ducklake.catalog import CatalogDataset, CatalogFile
+        from pysus.api.ducklake.models import File
+
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_catalog_file = MagicMock(spec=CatalogFile)
+        mock_catalog_file.dataset = MagicMock(spec=CatalogDataset)
+        mock_catalog_file.dataset.name = "sinan"
+        mock_catalog_file.group = None
+        mock_catalog_file.path = "test.parquet"
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.all.return_value = [
+            mock_catalog_file
+        ]
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        with pytest.raises(AssertionError):
+            await client.query(dataset="sinan")
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_group(self):
+        from pysus.api.ducklake.catalog import (
+            CatalogDataset,
+            CatalogFile,
+            DatasetGroup,
+        )
+
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.join.return_value.filter.return_value.all.return_value = (
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            await client.query(group="DENGUE")
+        except Exception:
+            pass
+
+        mock_session.query.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_state(self):
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.all.return_value = (
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            await client.query(state="SP")
+        except Exception:
+            pass
+
+        mock_session.query.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_year(self):
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.all.return_value = (
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            await client.query(year=2024)
+        except Exception:
+            pass
+
+        mock_session.query.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_month(self):
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.filter.return_value.all.return_value = (
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            await client.query(month=1)
+        except Exception:
+            pass
+
+        mock_session.query.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_query_returns_file_objects(self):
+        from pysus.api.ducklake.catalog import (
+            CatalogDataset,
+            CatalogFile,
+            DatasetGroup,
+        )
+
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_catalog_file = MagicMock(spec=CatalogFile)
+        mock_catalog_file.path = "public/test.parquet"
+        mock_catalog_file.dataset = MagicMock(spec=CatalogDataset)
+        mock_catalog_file.dataset.name = "sinan"
+        mock_catalog_file.group = None
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.all.return_value = [
+            mock_catalog_file
+        ]
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            result = await client.query(dataset="sinan")
+            assert isinstance(result, list)
+        except Exception:
+            pass

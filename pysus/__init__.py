@@ -12,15 +12,15 @@ CACHEPATH: Final[pathlib.Path] = pathlib.Path(
     )
 )
 
-# from pysus.api.ftp.databases import *  # noqa
-
 
 def get_version() -> str:
     try:
         return importlib_metadata.version(__name__)
     except importlib_metadata.PackageNotFoundError:  # pragma: no cover
-        return "1.0.1"
+        return "1.0.1"  # changed by semantic-release"
 
 
 version: str = get_version()
 __version__: str = version
+
+from pysus.api._impl.databases import *  # noqa

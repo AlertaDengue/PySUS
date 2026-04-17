@@ -179,3 +179,225 @@ class TestGetCompletedRemotePaths:
         assert "/remote/test2.dbc" not in paths
 
         await client.__aexit__(None, None, None)
+
+
+class TestPySUSQuery:
+    @pytest.mark.asyncio
+    async def test_query_with_dataset(self, test_db_path, tmp_path):
+        from unittest.mock import AsyncMock, MagicMock
+
+        from pysus.api.ducklake.client import DuckLake
+
+        client = PySUS(db_path=test_db_path)
+
+        mock_ducklake = MagicMock(spec=DuckLake)
+        mock_file = MagicMock()
+        mock_file.path = tmp_path / "test.parquet"
+        mock_ducklake.query = AsyncMock(return_value=[mock_file])
+
+        client._ducklake = mock_ducklake
+        client._attach_client_catalog = MagicMock()
+
+        result = await client.query(dataset="sinan")
+
+        mock_ducklake.query.assert_called_once_with(
+            dataset="sinan",
+            group=None,
+            state=None,
+            year=None,
+            month=None,
+        )
+        assert result == [mock_file]
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_query_with_group(self, test_db_path):
+        from unittest.mock import AsyncMock, MagicMock
+
+        from pysus.api.ducklake.client import DuckLake
+
+        client = PySUS(db_path=test_db_path)
+
+        mock_ducklake = MagicMock(spec=DuckLake)
+        mock_ducklake.query = AsyncMock(return_value=[])
+
+        client._ducklake = mock_ducklake
+        client._attach_client_catalog = MagicMock()
+
+        await client.query(dataset="sinan", group="DENGUE")
+
+        mock_ducklake.query.assert_called_once_with(
+            dataset="sinan",
+            group="DENGUE",
+            state=None,
+            year=None,
+            month=None,
+        )
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_query_with_all_params(self, test_db_path):
+        from unittest.mock import AsyncMock, MagicMock
+
+        from pysus.api.ducklake.client import DuckLake
+
+        client = PySUS(db_path=test_db_path)
+
+        mock_ducklake = MagicMock(spec=DuckLake)
+        mock_ducklake.query = AsyncMock(return_value=[])
+
+        client._ducklake = mock_ducklake
+        client._attach_client_catalog = MagicMock()
+
+        await client.query(
+            dataset="sinasc",
+            group="DC",
+            state="SP",
+            year=2024,
+            month=1,
+        )
+
+        mock_ducklake.query.assert_called_once_with(
+            dataset="sinasc",
+            group="DC",
+            state="SP",
+            year=2024,
+            month=1,
+        )
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_query_initializes_ducklake(self, test_db_path):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from pysus.api.ducklake.client import DuckLake
+
+        client = PySUS(db_path=test_db_path)
+        assert client._ducklake is None
+
+        mock_ducklake_instance = MagicMock(spec=DuckLake)
+        mock_ducklake_instance.query = AsyncMock(return_value=[])
+        tmp_catalog_path = test_db_path.parent / "catalog.db"
+        mock_ducklake_instance.catalog_path = tmp_catalog_path
+
+        with patch.object(
+            DuckLake, "__new__", return_value=mock_ducklake_instance
+        ):
+            await client.query(dataset="sinan")
+
+        assert client._ducklake is not None
+        await client.__aexit__(None, None, None)
+
+
+class TestReadParquet:
+    def test_read_parquet_single_path(self, tmp_path):
+        import pandas as pd
+
+        parquet_file = tmp_path / "test.parquet"
+        pd.DataFrame({"a": [1, 2], "b": [3, 4]}).to_parquet(parquet_file)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet_file])
+        df = result.df()
+
+        assert len(df) == 2
+        assert "a" in df.columns
+        assert "b" in df.columns
+
+    def test_read_parquet_union_mode(self, tmp_path):
+        import pandas as pd
+
+        parquet1 = tmp_path / "test1.parquet"
+        parquet2 = tmp_path / "test2.parquet"
+
+        pd.DataFrame({"a": [1], "b": [2]}).to_parquet(parquet1)
+        pd.DataFrame({"a": [3], "c": [4]}).to_parquet(parquet2)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet1, parquet2], mode="union")
+        df = result.df()
+
+        assert len(df) == 2
+        assert "a" in df.columns
+        assert "b" in df.columns
+        assert "c" in df.columns
+
+    def test_read_parquet_intersection_mode(self, tmp_path):
+        import pandas as pd
+
+        parquet1 = tmp_path / "test1.parquet"
+        parquet2 = tmp_path / "test2.parquet"
+
+        pd.DataFrame({"a": [1], "b": [2]}).to_parquet(parquet1)
+        pd.DataFrame({"a": [3], "c": [4]}).to_parquet(parquet2)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet1, parquet2], mode="intersection")
+        df = result.df()
+
+        assert len(df) == 2
+        assert list(df.columns) == ["a"]
+
+    def test_read_parquet_strict_mode_matching_schemas(self, tmp_path):
+        import pandas as pd
+
+        parquet1 = tmp_path / "test1.parquet"
+        parquet2 = tmp_path / "test2.parquet"
+
+        pd.DataFrame({"a": [1], "b": [2]}).to_parquet(parquet1)
+        pd.DataFrame({"a": [3], "b": [4]}).to_parquet(parquet2)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet1, parquet2], mode="strict")
+        df = result.df()
+
+        assert len(df) == 2
+
+    def test_read_parquet_strict_mode_mismatching_schemas(self, tmp_path):
+        import pandas as pd
+
+        parquet1 = tmp_path / "test1.parquet"
+        parquet2 = tmp_path / "test2.parquet"
+
+        pd.DataFrame({"a": [1], "b": [2]}).to_parquet(parquet1)
+        pd.DataFrame({"a": [3], "c": [4]}).to_parquet(parquet2)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+
+        with pytest.raises(ValueError, match="Schema mismatch"):
+            client.read_parquet([parquet1, parquet2], mode="strict")
+
+    def test_read_parquet_with_sql(self, tmp_path):
+        import pandas as pd
+
+        parquet_file = tmp_path / "test.parquet"
+        pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}).to_parquet(parquet_file)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet(
+            [parquet_file], sql="SELECT a FROM t WHERE a > 1"
+        )
+        df = result.df()
+
+        assert len(df) == 2
+        assert list(df.columns) == ["a"]
+
+    def test_read_parquet_no_paths_raises(self, tmp_path):
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+
+        with pytest.raises(ValueError, match="No paths provided"):
+            client.read_parquet([])

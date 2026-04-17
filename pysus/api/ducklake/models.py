@@ -2,7 +2,6 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Union
 
 import anyio
 from pydantic import Field
@@ -19,8 +18,6 @@ from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 
 class File(BaseRemoteFile):
     record: CatalogFile = Field(exclude=True)
-    parent: Union["Dataset", "Group"] = Field(exclude=True)
-
     type: str = "remote"
 
     @property
@@ -102,7 +99,7 @@ class Group(BaseRemoteGroup):
             File(
                 path=f.path,
                 record=f,
-                parent=self,
+                group=self,
                 dataset=self.dataset,
             )
             for f in self.record.files
@@ -152,7 +149,6 @@ class Dataset(BaseRemoteDataset):
                     File(
                         path=f.path,
                         record=f,
-                        parent=self,
                         dataset=self,
                     )
                     for f in self.record.files

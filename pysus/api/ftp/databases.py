@@ -181,9 +181,7 @@ class SIM(Dataset):
 
     @property
     def description(self) -> str:
-        return """
-            O SIM coleta dados sobre óbitos no país para análise epidemiológica.
-        """
+        return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."
 
     def formatter(self, filename: str) -> dict[str, Any]:
         try:
@@ -251,6 +249,17 @@ class IBGEDATASUS(Dataset):
         Directory("/dissemin/publicos/IBGE/projpop"),
     ]
 
+    group_definitions: dict[str, str] = {
+        "POP": "População",
+        "POPT": "População Total",
+        "ALF": "Alfabetização",
+        "ESCA": "Escolaridade A (Geral)",
+        "ESCB": "Escolaridade B (Níveis Específicos)",
+        "RENDA": "Rendimento e Renda",
+        "IDOSO": "População Idosa",
+        "PROJ": "Projeções Populacionais",
+    }
+
     @property
     def name(self) -> str:
         return "IBGE"
@@ -266,10 +275,20 @@ class IBGEDATASUS(Dataset):
     def formatter(self, filename: str) -> dict[str, Any]:
         try:
             name = filename.split(".")[0].upper()
-            year_short = name[-2:]
+            year = name[-2:]
+            group, _, year = name[:-4], name[-4:-2], name[-2:]
+
+            if group == "PROJ":
+                year = int("20" + str(year))
+            else:
+                year = int(zfill_year(year))
+
             return {
-                "group": {"name": "POP", "long_name": "População"},
-                "year": int(zfill_year(year_short)),
+                "group": {
+                    "name": group,
+                    "long_name": self.group_definitions.get(group, ""),
+                },
+                "year": year,
             }
         except (IndexError, ValueError):
             return {"group": None, "year": None}
@@ -411,6 +430,10 @@ class SINAN(Dataset):
 
             if name.startswith("SRC"):
                 group_code = name[:3]
+            elif name == "LEIBR22":
+                group_code = "LEIV"  # MISPELLED FILE NAME
+            elif name == "LERBR19":
+                group_code = "LERD"  # ANOTHER ONE
             else:
                 group_code = name[:4]
 
@@ -425,7 +448,7 @@ class SINAN(Dataset):
             return {"group": None, "year": None}
 
 
-AVAILABLE_DATABASES: list[type[Dataset]] = [
+AVAILABLE_DATABASES: list[Dataset] = [
     CIHA,
     CNES,
     IBGEDATASUS,
