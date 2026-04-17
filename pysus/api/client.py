@@ -2,7 +2,9 @@ import enum
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal
 
+import duckdb
 from pysus import CACHEPATH
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
@@ -11,7 +13,10 @@ from .dadosgov import DadosGovClient
 from .ducklake import DuckLakeClient
 from .extensions import Parquet
 from .ftp import FTPClient
-from .models import BaseLocalFile, BaseRemoteFile, BaseTabularFile
+from .models import BaseLocalFile, BaseRemoteFile
+
+if TYPE_CHECKING:
+    from duckdb import DuckDBPyConnection
 
 
 class Base(DeclarativeBase):
@@ -66,9 +71,19 @@ class PySUS:
         self._ducklake = DuckLakeClient()
         await self._ducklake._load_catalog()
         self._attach_client_catalog(
-            "ducklake", str(self._ducklake.catalog_path)
+            "ducklake",
+            str(self._ducklake.catalog_path),
         )
         return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._ducklake:
+            await self._ducklake.close()
+        if self._ftp:
+            await self._ftp.close()
+        if self._dadosgov:
+            await self._dadosgov.close()
+        self.engine.dispose()
 
     async def get_ducklake(self) -> DuckLakeClient:
         if self._ducklake is None:
@@ -133,15 +148,6 @@ class PySUS:
                     f"ATTACH '{abs_path}' AS {name} (READ_ONLY)",
                 )
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self._ducklake:
-            await self._ducklake.close()
-        if self._ftp:
-            await self._ftp.close()
-        if self._dadosgov:
-            await self._dadosgov.close()
-        self.engine.dispose()
-
     def _get_dest_path(self, file: BaseRemoteFile) -> Path:
         client_name = file.client.name.lower()
         dataset_name = file.dataset.name.lower()
@@ -197,7 +203,7 @@ class PySUS:
         file: BaseRemoteFile,
         token: str | None = None,
         callback: Callable | None = None,
-    ):
+    ) -> BaseLocalFile:
         from pysus.api.extensions import ExtensionFactory
 
         existing_local = await self.get_local_file(file)
@@ -247,8 +253,12 @@ class PySUS:
 
         except Exception as e:  # noqa: B902
             await self._update_state(
-                local_path, str(remote_path), client_name, DownloadStatus.FAILED
+                local_path,
+                str(remote_path),
+                client_name,
+                DownloadStatus.FAILED,
             )
+            local_path.unlink(missing_ok=True)
             raise RuntimeError(
                 f"Unexpected error downloading {file.basename}: {e}",
             ) from e
@@ -272,31 +282,30 @@ class PySUS:
             callback=callback,
         )
 
-        if not isinstance(local_file, BaseTabularFile):
-            raise NotImplementedError(
-                f"{local_file} can't be converted to Parquet",
+        if hasattr(local_file, "to_parquet"):
+            original_path = local_file.path
+            parquet_file = await local_file.to_parquet(callback=callback)
+
+            await self._update_state(
+                local_path=parquet_file.path,
+                remote_path=str(file.path),
+                client_name=file.client.name.lower(),
+                status=DownloadStatus.COMPLETED,
+                year=file.year,
+                month=file.month,
+                state=file.state,
+                group=getattr(file.group, "name", None),
             )
 
-        original_path = local_file.path
+            if original_path.exists() and original_path != parquet_file.path:
+                original_path.unlink()
+                await self._delete_record(str(original_path))
 
-        parquet_file = await local_file.to_parquet(callback=callback)
+            return parquet_file
 
-        await self._update_state(
-            local_path=parquet_file.path,
-            remote_path=str(file.path),
-            client_name=file.client.name.lower(),
-            status=DownloadStatus.COMPLETED,
-            year=file.year,
-            month=file.month,
-            state=file.state,
-            group=getattr(file.group, "name", None),
+        raise NotImplementedError(
+            f"{local_file} can't be converted to Parquet",
         )
-
-        if original_path.exists() and original_path != parquet_file.path:
-            original_path.unlink()
-            await self._delete_record(str(original_path))
-
-        return parquet_file
 
     def get_local_hierarchy(self):
         with self.Session() as session:
@@ -336,3 +345,70 @@ class PySUS:
                 .all()
             )
             return {str(r.remote_path) for r in records}
+
+    async def query(
+        self,
+        dataset: str | None = None,
+        group: str | None = None,
+        state: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
+    ):
+        if self._ducklake is None:
+            await self.get_ducklake()
+        return await self._ducklake.query(
+            dataset=dataset,
+            group=group,
+            state=state,
+            year=year,
+            month=month,
+        )
+
+    def read_parquet(
+        self,
+        paths: list[Path],
+        sql: str | None = None,
+        mode: Literal["union", "intersection", "strict"] = "union",
+    ) -> "DuckDBPyConnection":
+        if not paths:
+            raise ValueError("No paths provided")
+
+        def get_columns(path: Path) -> set[tuple[str, str]]:
+            result = duckdb.execute(f"SELECT * FROM '{path}' LIMIT 0")
+            return {(col[0], str(col[1])) for col in result.description}
+
+        if len(paths) == 1:
+            query = f"SELECT * FROM '{paths[0]}'"
+        else:
+            paths_str = ", ".join(f"'{p}'" for p in paths)
+            query = f"SELECT * FROM read_parquet([{paths_str}])"
+
+        schemas = [get_columns(p) for p in paths]
+        common_columns = set.intersection(*schemas) if schemas else set()
+
+        if mode == "strict":
+            for i, schema in enumerate(schemas):
+                if schema != schemas[0]:
+                    raise ValueError(
+                        f"Schema mismatch: file {i} has columns {
+                            [c[0] for c in schema]
+                        }, "
+                        f"expected {[c[0] for c in schemas[0]]}"
+                    )
+            query = f"SELECT * FROM read_parquet([{paths_str}])"
+
+        elif mode == "intersection":
+            if not common_columns:
+                return duckdb.execute("SELECT * WHERE 1=0")
+            cols = ", ".join(f'"{c[0]}"' for c in sorted(common_columns))
+            paths_str = ", ".join(f"'{p}'" for p in paths)
+            query = f"SELECT {cols} FROM read_parquet([{paths_str}])"
+
+        else:
+            paths_str = ", ".join(f"'{p}'" for p in paths)
+            query = f"SELECT * FROM read_parquet([{paths_str}])"
+
+        if sql:
+            query = f"({query}) AS t"
+
+        return duckdb.execute(query)

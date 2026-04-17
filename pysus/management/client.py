@@ -62,7 +62,8 @@ class CatalogManager:
 
         s3_key = (
             f"public/data/{file.client.name.lower()}"
-            f"/{file.dataset.name.lower()}/{file.basename}"
+            f"/{file.dataset.name.lower()}"
+            f"/{file.path.with_suffix('.parquet').name}"
         )
 
         with self.pysus._ducklake._Session() as session:
@@ -87,60 +88,72 @@ class CatalogManager:
                     .first()
                 )
 
-            if not existing:
-                existing = (
-                    session.query(CatalogFile)
-                    .filter(
-                        CatalogFile.path
-                        == str(Path(s3_key).with_suffix(".parquet")),
-                        CatalogFile.dataset_id == dataset.id,
-                    )
-                    .first()
-                )
-
-            if existing and self._should_upload(file, existing):
+            if existing and not self._should_upload(file, existing):
                 return
-
-            group = self._get_or_create_group(session, file, dataset)
-            cat_file = self._get_or_create_file(session, file, dataset, group)
 
         parquet_ext = await self.pysus.download_to_parquet(
             file=file, token=self.dadosgov_token, callback=callback
         )
 
-        with self.pysus._ducklake._Session() as session:
-            dataset = self._get_or_create_dataset(session, file)
-            group = self._get_or_create_group(session, file, dataset)
-            cat_file = self._get_or_create_file(session, file, dataset, group)
+        await self._upload_to_s3(parquet_ext.path, s3_key)
 
-            existing_conflict = (
-                session.query(CatalogFile)
-                .filter(
-                    CatalogFile.path == s3_key,
-                    CatalogFile.dataset_id == dataset.id,
+        engine = self.pysus._ducklake._engine
+        with engine.raw_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                dataset_name = file.dataset.name.lower()
+                cursor.execute(
+                    f"SELECT id FROM pysus.files WHERE dataset_id = "
+                    f"(SELECT id FROM pysus.datasets WHERE name = '{dataset_name}')"
+                    f" AND year = {file.year} AND month = {file.month}"
+                    f" AND state = '{file.state}'"
                 )
-                .first()
-            )
+                row = cursor.fetchone()
 
-            if existing_conflict:
-                cat_file = existing_conflict
-            else:
-                cat_file = session.merge(cat_file)
+                if row:
+                    file_id = row[0]
+                    cursor.execute(
+                        f"DELETE FROM pysus.file_columns WHERE file_id = {file_id}"
+                    )
+                    cursor.execute(
+                        f"DELETE FROM pysus.files WHERE id = {file_id}",
+                    )
+                else:
+                    cursor.execute("SELECT MAX(id) FROM pysus.files")
+                    max_id = cursor.fetchone()[0]
+                    file_id = (max_id or 0) + 1
 
-            await self._upload_to_s3(parquet_ext.path, s3_key)
+                cursor.execute(
+                    f"INSERT INTO pysus.files (id, dataset_id, path, size, rows, "
+                    f"modified, origin_modified, origin_path, year, month, state) "
+                    f"VALUES ({file_id}, (SELECT id FROM pysus.datasets WHERE name = "
+                    f"'{dataset_name}'), '{s3_key}', "
+                    f"{parquet_ext.size}, {parquet_ext.rows}, "
+                    f"CURRENT_TIMESTAMP, '{file.modify}', '{file.path}', "
+                    f"{file.year}, {file.month}, '{file.state}')"
+                )
 
-            cat_file.path = s3_key
-            cat_file.size = parquet_ext.size
-            cat_file.rows = parquet_ext.rows
-            cat_file.modified = datetime.utcnow()
-            cat_file.origin_modified = file.modify
-            cat_file.columns = self._get_or_create_columns(
-                session, dataset, parquet_ext
-            )
+                new_columns = self._get_or_create_columns_raw(
+                    cursor, parquet_ext, dataset_name
+                )
 
-            session.commit()
+                for col in new_columns:
+                    cursor.execute(
+                        "INSERT INTO pysus.file_columns "
+                        f"(file_id, column_id) VALUES ({file_id}, {col})"
+                    )
 
-        parquet_ext.path.unlink()
+                conn.commit()
+            except Exception as e:  # noqa
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                raise
+
+        if parquet_ext.path.exists():
+            parquet_ext.path.unlink()
+
         await self.pysus._delete_record(str(parquet_ext.path))
 
     async def _upload_to_s3(
@@ -186,11 +199,6 @@ class CatalogManager:
 
         if file_mod > catalog_file.origin_modified:
             print(f"{catalog_file.origin_modified} newer than ({file_mod})")
-            return True
-
-        file_size = getattr(file, "size", None)
-        if file_size and file_size != catalog_file.size:
-            print(f"size differs: {file_size} != {catalog_file.size}")
             return True
 
         print(f"skipping {file.basename} - already up to date")
@@ -311,5 +319,53 @@ class CatalogManager:
                     existing_cols[col_name].type = sql_type
 
             result.append(existing_cols[col_name])
+
+        return result
+
+    def _get_or_create_columns_raw(
+        self, cursor, file: Parquet, dataset_name: str
+    ) -> list[int]:
+        schema = file.schema
+
+        type_map = {
+            "int64": "BIGINT",
+            "int32": "INTEGER",
+            "double": "DOUBLE",
+            "float": "FLOAT",
+            "bool": "BOOLEAN",
+            "timestamp[us]": "TIMESTAMP",
+            "string": "VARCHAR",
+            "binary": "BLOB",
+        }
+
+        result = []
+
+        for col_name in schema.names:
+            field = schema.field(col_name)
+            arrow_type = str(field.type)
+            sql_type = type_map.get(arrow_type, "VARCHAR")
+
+            cursor.execute(
+                "SELECT id FROM pysus.dataset_columns"
+                f" WHERE name = '{col_name}' AND dataset_id = "
+                "(SELECT id FROM pysus.datasets WHERE name = "
+                f"'{dataset_name}')"
+            )
+            existing = cursor.fetchone()
+
+            if existing:
+                result.append(existing[0])
+            else:
+                cursor.execute("SELECT MAX(id) FROM pysus.dataset_columns")
+                max_id = cursor.fetchone()[0]
+                new_id = (max_id or 0) + 1
+                cursor.execute(
+                    f"INSERT INTO pysus.dataset_columns "
+                    "(id, dataset_id, name, type, nullable) "
+                    f"VALUES ({new_id}, (SELECT id FROM pysus.datasets "
+                    f"WHERE name = '{dataset_name}'), '{col_name}', "
+                    f"'{sql_type}', true)"
+                )
+                result.append(new_id)
 
         return result

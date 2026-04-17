@@ -35,6 +35,7 @@ class File(BaseRemoteFile):
         if group_data:
             self.group = Group(
                 path=str(self.path.parent),
+                name=group_data.get("name", ""),
                 dataset=self.dataset,
                 long_name=group_data.get("long_name", ""),
                 description=group_data.get("description", ""),
@@ -151,12 +152,14 @@ class Directory:
 
 class Group(BaseRemoteGroup):
     path: str
+    _name: str = PrivateAttr()
     _long_name: str = PrivateAttr()
     _description: str = PrivateAttr()
     _dir: Directory = PrivateAttr()
 
     def __init__(
         self,
+        name: str,
         path: str,
         dataset: Dataset,
         long_name: str,
@@ -166,6 +169,7 @@ class Group(BaseRemoteGroup):
         data.update({"dataset": dataset, "path": path})
         super().__init__(**data)
 
+        self._name = name
         self._long_name = long_name
         self._description = description
         self._dir = Directory(
@@ -178,7 +182,7 @@ class Group(BaseRemoteGroup):
 
     @property
     def name(self) -> str:
-        return os.path.basename(self.path)
+        return self._name
 
     @property
     def long_name(self) -> str:
@@ -240,6 +244,7 @@ class Dataset(BaseRemoteDataset, ABC):
                     if item.name in self.group_definitions:
                         group = Group(
                             path=item.path,
+                            name=item.name,
                             dataset=self,
                             long_name=self.group_definitions[item.name],
                         )

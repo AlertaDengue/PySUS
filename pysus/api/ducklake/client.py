@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from .catalog import CatalogDataset, DatasetGroup
+from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 from .models import Dataset, File
 
 
@@ -246,3 +246,48 @@ class DuckLake(BaseRemoteClient):
             )
 
         await to_thread.run_sync(_upload)
+
+    async def query(
+        self,
+        dataset: str | None = None,
+        group: str | None = None,
+        state: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
+    ) -> list[File]:
+        if not self._Session:
+            await self.connect()
+
+        def _query():
+            with self._Session() as session:
+                q = session.query(CatalogFile).options(
+                    joinedload(CatalogFile.dataset),
+                    joinedload(CatalogFile.group),
+                )
+
+                if dataset:
+                    q = q.join(CatalogDataset).filter(
+                        CatalogDataset.name == dataset.lower()
+                    )
+
+                if group:
+                    q = q.join(DatasetGroup).filter(DatasetGroup.name == group)
+
+                if state:
+                    q = q.filter(CatalogFile.state == state.upper())
+
+                if year:
+                    q = q.filter(CatalogFile.year == year)
+
+                if month:
+                    q = q.filter(CatalogFile.month == month)
+
+                results = q.all()
+                session.expunge_all()
+                return results
+
+        records = await to_thread.run_sync(_query)
+        return [
+            File(path=r.path, record=r, dataset=r.dataset, group=r.group)
+            for r in records
+        ]
