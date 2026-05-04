@@ -4,7 +4,7 @@ from typing import Any
 
 import boto3
 import httpx
-from anyio import to_thread
+from anyio import to_thread, sleep
 from botocore.config import Config
 from pydantic import BaseModel, PrivateAttr, SecretStr
 from pysus import CACHEPATH
@@ -195,11 +195,25 @@ class DuckLake(BaseRemoteClient):
         return output
 
     async def _download_catalog(self, client: httpx.AsyncClient):
-        async with client.stream("GET", self._catalog_url) as r:
-            r.raise_for_status()
-            with open(self._catalog_local, "wb") as f:
-                async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
-                    await to_thread.run_sync(f.write, chunk)
+        max_retries = 5
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                async with client.stream("GET", self._catalog_url) as r:
+                    r.raise_for_status()
+                    with open(self._catalog_local, "wb") as f:
+                        async for chunk in r.aiter_bytes(
+                            chunk_size=1024 * 1024,
+                        ):
+                            await to_thread.run_sync(f.write, chunk)
+                return
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    await sleep(1)
+
+        raise last_error
 
     def _get_s3_client(self):
         if not self.credentials:
@@ -208,9 +222,7 @@ class DuckLake(BaseRemoteClient):
             "s3",
             endpoint_url=f"https://{self.endpoint}",
             aws_access_key_id=self.credentials.access_key.get_secret_value(),
-            aws_secret_access_key=(
-                self.credentials.secret_key.get_secret_value()
-            ),
+            aws_secret_access_key=(self.credentials.secret_key.get_secret_value()),
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )

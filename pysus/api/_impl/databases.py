@@ -11,6 +11,8 @@ __all__ = [
     "list_files",
 ]
 
+from typing import Literal
+
 import asyncio
 import pandas as pd
 
@@ -203,7 +205,17 @@ def ciha(
 
 
 def list_files(
-    dataset: str,
+    dataset: Literal[
+        "SINAN",
+        "SINASC",
+        "SIM",
+        "SIH",
+        "SIA",
+        "PNI",
+        "IBGE",
+        "CNES",
+        "CIHA",
+    ],
     group: str | None = None,
     state: str | None = None,
     year: int | list[int] | None = None,
@@ -229,23 +241,13 @@ def list_files(
                         )
 
                     if group:
-                        q = q.join(DatasetGroup).filter(
-                            DatasetGroup.name == group
-                        )
+                        q = q.join(DatasetGroup).filter(DatasetGroup.name == group)
 
                     if state:
                         q = q.filter(CatalogFile.state == state.upper())
 
-                    years = (
-                        [year]
-                        if isinstance(year, int)
-                        else (year or [])
-                    )
-                    months = (
-                        [month]
-                        if isinstance(month, int)
-                        else (month or [])
-                    )
+                    years = [year] if isinstance(year, int) else (year or [])
+                    months = [month] if isinstance(month, int) else (month or [])
 
                     if years:
                         q = q.filter(CatalogFile.year.in_(years))
