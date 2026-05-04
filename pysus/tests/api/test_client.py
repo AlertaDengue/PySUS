@@ -1,5 +1,5 @@
 import pathlib
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pysus.api.client import DownloadStatus, LocalFileState, PySUS
@@ -270,6 +270,7 @@ class TestPySUSQuery:
     async def test_query_initializes_ducklake(self, test_db_path):
         from unittest.mock import AsyncMock, MagicMock, patch
 
+        import duckdb
         from pysus.api.ducklake.client import DuckLake
 
         client = PySUS(db_path=test_db_path)
@@ -279,6 +280,10 @@ class TestPySUSQuery:
         mock_ducklake_instance.query = AsyncMock(return_value=[])
         tmp_catalog_path = test_db_path.parent / "catalog.db"
         mock_ducklake_instance.catalog_path = tmp_catalog_path
+
+        # Create the catalog database
+        conn = duckdb.connect(str(tmp_catalog_path))
+        conn.close()
 
         with patch.object(
             DuckLake, "__new__", return_value=mock_ducklake_instance
@@ -401,3 +406,58 @@ class TestReadParquet:
 
         with pytest.raises(ValueError, match="No paths provided"):
             client.read_parquet([])
+
+
+class TestPySUSGetMethods:
+    @pytest.mark.asyncio
+    async def test_get_dadosgov(self, test_db_path):
+        from pysus.api.dadosgov import DadosGovClient
+
+        client = PySUS(db_path=test_db_path)
+        assert client._dadosgov is None
+
+        with patch.object(
+            DadosGovClient, "connect", new_callable=AsyncMock
+        ) as mock_connect:
+            result = await client.get_dadosgov("test_token")
+            assert result is not None
+            assert client._dadosgov is not None
+            mock_connect.assert_called_once()
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_get_ftp(self, test_db_path):
+        from pysus.api.ftp import FTPClient
+
+        client = PySUS(db_path=test_db_path)
+        assert client._ftp is None
+
+        with patch.object(
+            FTPClient, "connect", new_callable=AsyncMock
+        ) as mock_connect:
+            result = await client.get_ftp()
+            assert result is not None
+            assert client._ftp is not None
+            mock_connect.assert_called_once()
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_aenter(self, test_db_path):
+        from pysus.api.ducklake.client import DuckLake
+
+        client = PySUS(db_path=test_db_path)
+
+        with (
+            patch.object(
+                DuckLake, "_load_catalog", new_callable=AsyncMock
+            ) as mock_load,
+            patch.object(PySUS, "_attach_client_catalog") as mock_attach,
+        ):
+            await client.__aenter__()
+            assert client._ducklake is not None
+            mock_load.assert_called_once()
+            mock_attach.assert_called_once()
+
+        await client.__aexit__(None, None, None)

@@ -88,9 +88,7 @@ class CatalogManager:
             if existing and not self._should_upload(file, existing):
                 return
 
-        parquet_ext = await self._download_with_retry(
-            file, callback
-        )
+        parquet_ext = await self._download_with_retry(file, callback)
 
         await self._upload_to_s3(parquet_ext.path, s3_key)
 
@@ -102,7 +100,7 @@ class CatalogManager:
                 is_ftp = file.client.name.lower() == "ftp"
 
                 cursor.execute(
-                    f"SELECT id FROM pysus.datasets WHERE name = '{dataset_name}'"
+                    f"SELECT id FROM pysus.datasets WHERE name = '{dataset_name}'"  # noqa
                 )
                 row = cursor.fetchone()
 
@@ -114,27 +112,29 @@ class CatalogManager:
                     dataset_id = (max_id or 0) + 1
                     origin_val = "'FTP'" if is_ftp else "'API'"
                     cursor.execute(
-                        f"INSERT INTO pysus.datasets (id, name, long_name, origin) "
+                        f"INSERT INTO pysus.datasets (id, name, "
+                        f"long_name, origin) "
                         f"VALUES ({dataset_id}, '{dataset_name}', "
                         f"'{file.dataset.long_name}', {origin_val})"
                     )
 
+                year_null = file.year is None
                 month_null = file.month is None
                 state_null = file.state is None
                 state_quoted = f"'{file.state}'" if not state_null else "NULL"
 
                 cursor.execute(
                     f"SELECT id FROM pysus.files WHERE dataset_id = "
-                    f"{dataset_id} AND year = {file.year} "
-                    f"AND month {'IS NULL' if month_null else '= ' + str(file.month)} "
-                    f"AND state {'IS NULL' if state_null else '= ' + state_quoted}"
+                    f"{dataset_id} AND year = {file.year} "  # noqa: E501
+                    f"AND month {'IS NULL' if month_null else '= ' + str(file.month)} "  # noqa: E501
+                    f"AND state {'IS NULL' if state_null else '= ' + state_quoted}"  # noqa: E501
                 )
                 row = cursor.fetchone()
 
                 if row:
                     file_id = row[0]
                     cursor.execute(
-                        f"DELETE FROM pysus.file_columns WHERE file_id = {file_id}"
+                        f"DELETE FROM pysus.file_columns WHERE file_id = {file_id}"  # noqa
                     )
                     cursor.execute(
                         f"DELETE FROM pysus.files WHERE id = {file_id}",
@@ -144,16 +144,19 @@ class CatalogManager:
                     max_id = cursor.fetchone()[0]
                     file_id = (max_id or 0) + 1
 
+                year_val = "NULL" if year_null else file.year
                 month_val = "NULL" if month_null else file.month
                 state_val = "NULL" if state_null else f"'{file.state}'"
 
                 cursor.execute(
-                    f"INSERT INTO pysus.files (id, dataset_id, path, size, rows, "
-                    f"modified, origin_modified, origin_path, year, month, state) "
+                    f"INSERT INTO pysus.files (id, dataset_id, "
+                    f"path, size, rows, "
+                    f"modified, origin_modified, origin_path, year, "
+                    f"month, state) "
                     f"VALUES ({file_id}, {dataset_id}, '{s3_key}', "
                     f"{parquet_ext.size}, {parquet_ext.rows}, "
                     f"CURRENT_TIMESTAMP, '{file.modify}', '{file.path}', "
-                    f"{file.year}, {month_val}, {state_val})"
+                    f"{year_val}, {month_val}, {state_val})"
                 )
 
                 new_columns = self._get_or_create_columns_raw(
@@ -169,10 +172,10 @@ class CatalogManager:
                 conn.commit()
 
                 cursor.execute("CHECKPOINT")
-            except Exception:
+            except Exception:  # noqa
                 try:
                     conn.rollback()
-                except Exception:
+                except Exception:  # noqa
                     pass
                 raise
 

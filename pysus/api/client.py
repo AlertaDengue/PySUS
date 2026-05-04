@@ -10,7 +10,7 @@ from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from .dadosgov import DadosGovClient
-from .ducklake import DuckLakeClient
+from .ducklake.client import DuckLake
 from .extensions import Parquet
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
@@ -63,12 +63,12 @@ class PySUS:
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
-        self._ducklake: DuckLakeClient | None = None
+        self._ducklake: DuckLake | None = None
         self._ftp: FTPClient | None = None
         self._dadosgov: DadosGovClient | None = None
 
     async def __aenter__(self):
-        self._ducklake = DuckLakeClient()
+        self._ducklake = DuckLake()
         await self._ducklake._load_catalog()
         self._attach_client_catalog(
             "ducklake",
@@ -85,9 +85,9 @@ class PySUS:
             await self._dadosgov.close()
         self.engine.dispose()
 
-    async def get_ducklake(self) -> DuckLakeClient:
+    async def get_ducklake(self) -> DuckLake:
         if self._ducklake is None:
-            self._ducklake = DuckLakeClient()
+            self._ducklake = DuckLake()
             await self._ducklake._load_catalog()
             self._attach_client_catalog(
                 "ducklake",
@@ -223,7 +223,7 @@ class PySUS:
             DownloadStatus.DOWNLOADING,
         )
 
-        client: DuckLakeClient | FTPClient | DadosGovClient
+        client: DuckLake | FTPClient | DadosGovClient
 
         try:
             if client_name == "ducklake":
@@ -356,13 +356,14 @@ class PySUS:
     ):
         if self._ducklake is None:
             await self.get_ducklake()
-        return await self._ducklake.query(
-            dataset=dataset,
-            group=group,
-            state=state,
-            year=year,
-            month=month,
-        )
+        if self._ducklake is not None:
+            return await self._ducklake.query(
+                dataset=dataset,
+                group=group,
+                state=state,
+                year=year,
+                month=month,
+            )
 
     def read_parquet(
         self,
@@ -390,12 +391,10 @@ class PySUS:
             for i, schema in enumerate(schemas):
                 if schema != schemas[0]:
                     raise ValueError(
-                        f"Schema mismatch: file {i} has columns {
-                            [c[0] for c in schema]
-                        }, "
+                        f"Schema mismatch: file {i} has columns "
+                        f"{[c[0] for c in schema]}, "
                         f"expected {[c[0] for c in schemas[0]]}"
                     )
-            query = f"SELECT * FROM read_parquet([{paths_str}])"
 
         elif mode == "intersection":
             if not common_columns:
@@ -406,9 +405,15 @@ class PySUS:
 
         else:
             paths_str = ", ".join(f"'{p}'" for p in paths)
-            query = f"SELECT * FROM read_parquet([{paths_str}])"
+            query = (
+                f"SELECT * FROM read_parquet([{paths_str}], "
+                "union_by_name=True)"
+            )
 
         if sql:
-            query = f"({query}) AS t"
+            if sql.upper().startswith("SELECT"):
+                query = sql.replace("FROM t", f"FROM ({query}) AS t")
+            else:
+                query = f"SELECT {sql} FROM ({query}) AS t"
 
         return duckdb.execute(query)

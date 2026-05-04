@@ -11,18 +11,16 @@ __all__ = [
     "list_files",
 ]
 
+import asyncio
 from typing import Literal
 
-import asyncio
 import pandas as pd
-
 from anyio import to_thread
-from tqdm import tqdm
 from pysus.api.client import PySUS
-from pysus.api.ducklake.catalog import CatalogDataset, DatasetGroup
-from pysus.api.ducklake.catalog import CatalogFile
+from pysus.api.ducklake.catalog import CatalogDataset, CatalogFile, DatasetGroup
 from pysus.api.types import State
 from sqlalchemy.orm import joinedload
+from tqdm import tqdm
 
 
 def _fetch_data(
@@ -241,13 +239,17 @@ def list_files(
                         )
 
                     if group:
-                        q = q.join(DatasetGroup).filter(DatasetGroup.name == group)
+                        q = q.join(DatasetGroup).filter(
+                            DatasetGroup.name == group
+                        )
 
                     if state:
                         q = q.filter(CatalogFile.state == state.upper())
 
                     years = [year] if isinstance(year, int) else (year or [])
-                    months = [month] if isinstance(month, int) else (month or [])
+                    months = (
+                        [month] if isinstance(month, int) else (month or [])
+                    )
 
                     if years:
                         q = q.filter(CatalogFile.year.in_(years))

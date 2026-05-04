@@ -181,7 +181,7 @@ class SIM(Dataset):
 
     @property
     def description(self) -> str:
-        return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."
+        return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."  # noqa
 
     def formatter(self, filename: str) -> dict[str, Any]:
         try:
@@ -279,16 +279,16 @@ class IBGEDATASUS(Dataset):
             group, _, year = name[:-4], name[-4:-2], name[-2:]
 
             if group == "PROJ":
-                year = int("20" + str(year))
+                year = "20" + str(year)
             else:
-                year = int(zfill_year(year))
+                year = str(zfill_year(year))
 
             return {
                 "group": {
                     "name": group,
                     "long_name": self.group_definitions.get(group, ""),
                 },
-                "year": year,
+                "year": int(year),
             }
         except (IndexError, ValueError):
             return {"group": None, "year": None}
@@ -448,7 +448,7 @@ class SINAN(Dataset):
             return {"group": None, "year": None}
 
 
-AVAILABLE_DATABASES: list[Dataset] = [
+AVAILABLE_DATABASES: list[type[Dataset]] = [
     CIHA,
     CNES,
     IBGEDATASUS,

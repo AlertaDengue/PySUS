@@ -7,7 +7,12 @@ app = typer.Typer(help="PySUS CLI")
 
 @app.command()
 def tui(
-    lang: str = typer.Option("en", "-l", "--lang", help="Language (en, pt)"),
+    lang: str = typer.Option(  # noqa
+        "en",
+        "-l",
+        "--lang",
+        help="Language (en, pt)",
+    ),
 ):
     app = PySUS(lang=lang)
     app.run()

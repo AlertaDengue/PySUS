@@ -78,6 +78,7 @@ async def test_directory_load(mock_client, mock_dataset):
 @pytest.mark.asyncio
 async def test_group_instantiation(mock_dataset):
     group = Group(
+        name="DC",
         path="/root/DC",
         dataset=mock_dataset,
         long_name="Dados Complementares",
