@@ -1,3 +1,4 @@
+import asyncio
 import os
 from collections.abc import Callable
 from datetime import datetime
@@ -67,18 +68,14 @@ class CatalogManager:
         )
 
         with self.pysus._ducklake._Session() as session:
-            dataset = self._get_or_create_dataset(session, file)
-
             existing = (
                 session.query(CatalogFile)
-                .filter(
-                    CatalogFile.dataset_id == dataset.id,
-                    CatalogFile.origin_path == str(file.path),
-                )
+                .filter(CatalogFile.origin_path == str(file.path))
                 .first()
             )
 
             if not existing:
+                dataset = self._get_or_create_dataset(session, file)
                 existing = (
                     session.query(CatalogFile)
                     .filter(
@@ -91,8 +88,8 @@ class CatalogManager:
             if existing and not self._should_upload(file, existing):
                 return
 
-        parquet_ext = await self.pysus.download_to_parquet(
-            file=file, token=self.dadosgov_token, callback=callback
+        parquet_ext = await self._download_with_retry(
+            file, callback
         )
 
         await self._upload_to_s3(parquet_ext.path, s3_key)
@@ -102,11 +99,35 @@ class CatalogManager:
             cursor = conn.cursor()
             try:
                 dataset_name = file.dataset.name.lower()
+                is_ftp = file.client.name.lower() == "ftp"
+
+                cursor.execute(
+                    f"SELECT id FROM pysus.datasets WHERE name = '{dataset_name}'"
+                )
+                row = cursor.fetchone()
+
+                if row:
+                    dataset_id = row[0]
+                else:
+                    cursor.execute("SELECT MAX(id) FROM pysus.datasets")
+                    max_id = cursor.fetchone()[0]
+                    dataset_id = (max_id or 0) + 1
+                    origin_val = "'FTP'" if is_ftp else "'API'"
+                    cursor.execute(
+                        f"INSERT INTO pysus.datasets (id, name, long_name, origin) "
+                        f"VALUES ({dataset_id}, '{dataset_name}', "
+                        f"'{file.dataset.long_name}', {origin_val})"
+                    )
+
+                month_null = file.month is None
+                state_null = file.state is None
+                state_quoted = f"'{file.state}'" if not state_null else "NULL"
+
                 cursor.execute(
                     f"SELECT id FROM pysus.files WHERE dataset_id = "
-                    f"(SELECT id FROM pysus.datasets WHERE name = '{dataset_name}')"
-                    f" AND year = {file.year} AND month = {file.month}"
-                    f" AND state = '{file.state}'"
+                    f"{dataset_id} AND year = {file.year} "
+                    f"AND month {'IS NULL' if month_null else '= ' + str(file.month)} "
+                    f"AND state {'IS NULL' if state_null else '= ' + state_quoted}"
                 )
                 row = cursor.fetchone()
 
@@ -123,18 +144,20 @@ class CatalogManager:
                     max_id = cursor.fetchone()[0]
                     file_id = (max_id or 0) + 1
 
+                month_val = "NULL" if month_null else file.month
+                state_val = "NULL" if state_null else f"'{file.state}'"
+
                 cursor.execute(
                     f"INSERT INTO pysus.files (id, dataset_id, path, size, rows, "
                     f"modified, origin_modified, origin_path, year, month, state) "
-                    f"VALUES ({file_id}, (SELECT id FROM pysus.datasets WHERE name = "
-                    f"'{dataset_name}'), '{s3_key}', "
+                    f"VALUES ({file_id}, {dataset_id}, '{s3_key}', "
                     f"{parquet_ext.size}, {parquet_ext.rows}, "
                     f"CURRENT_TIMESTAMP, '{file.modify}', '{file.path}', "
-                    f"{file.year}, {file.month}, '{file.state}')"
+                    f"{file.year}, {month_val}, {state_val})"
                 )
 
                 new_columns = self._get_or_create_columns_raw(
-                    cursor, parquet_ext, dataset_name
+                    cursor, parquet_ext, dataset_id
                 )
 
                 for col in new_columns:
@@ -144,7 +167,9 @@ class CatalogManager:
                     )
 
                 conn.commit()
-            except Exception as e:  # noqa
+
+                cursor.execute("CHECKPOINT")
+            except Exception:
                 try:
                     conn.rollback()
                 except Exception:
@@ -173,6 +198,36 @@ class CatalogManager:
             )
 
         await to_thread.run_sync(_do_upload)
+
+    async def _download_with_retry(
+        self,
+        file: FTPFile | APIFile,
+        callback: Callable[[int, int], None] | None = None,
+        max_retries: int = 3,
+    ) -> Parquet:
+        errors = (ConnectionResetError, ConnectionRefusedError, TimeoutError)
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self.pysus.download_to_parquet(
+                    file=file,
+                    token=self.dadosgov_token,
+                    callback=callback,
+                )
+            except errors as e:
+                last_error = e
+                wait_time = 2**attempt
+                error(
+                    f"Download attempt {attempt + 1}/{max_retries} failed "
+                    f"for {file.basename}: {e}. Retrying in {wait_time}s..."
+                )
+                await asyncio.sleep(wait_time)
+
+        raise RuntimeError(
+            f"Failed to download {file.basename} after {max_retries} "
+            f"attempts: {last_error}"
+        ) from last_error
 
     def _should_upload(
         self,
@@ -323,7 +378,7 @@ class CatalogManager:
         return result
 
     def _get_or_create_columns_raw(
-        self, cursor, file: Parquet, dataset_name: str
+        self, cursor, file: Parquet, dataset_id: int
     ) -> list[int]:
         schema = file.schema
 
@@ -346,10 +401,8 @@ class CatalogManager:
             sql_type = type_map.get(arrow_type, "VARCHAR")
 
             cursor.execute(
-                "SELECT id FROM pysus.dataset_columns"
-                f" WHERE name = '{col_name}' AND dataset_id = "
-                "(SELECT id FROM pysus.datasets WHERE name = "
-                f"'{dataset_name}')"
+                "SELECT id FROM pysus.dataset_columns "
+                f"WHERE name = '{col_name}' AND dataset_id = {dataset_id}"
             )
             existing = cursor.fetchone()
 
@@ -360,10 +413,9 @@ class CatalogManager:
                 max_id = cursor.fetchone()[0]
                 new_id = (max_id or 0) + 1
                 cursor.execute(
-                    f"INSERT INTO pysus.dataset_columns "
+                    "INSERT INTO pysus.dataset_columns "
                     "(id, dataset_id, name, type, nullable) "
-                    f"VALUES ({new_id}, (SELECT id FROM pysus.datasets "
-                    f"WHERE name = '{dataset_name}'), '{col_name}', "
+                    f"VALUES ({new_id}, {dataset_id}, '{col_name}', "
                     f"'{sql_type}', true)"
                 )
                 result.append(new_id)

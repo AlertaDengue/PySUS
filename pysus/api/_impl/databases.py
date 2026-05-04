@@ -8,14 +8,19 @@ __all__ = [
     "ibge",
     "cnes",
     "ciha",
+    "list_files",
 ]
 
 import asyncio
 import pandas as pd
 
+from anyio import to_thread
 from tqdm import tqdm
 from pysus.api.client import PySUS
+from pysus.api.ducklake.catalog import CatalogDataset, DatasetGroup
+from pysus.api.ducklake.catalog import CatalogFile
 from pysus.api.types import State
+from sqlalchemy.orm import joinedload
 
 
 def _fetch_data(
@@ -24,7 +29,6 @@ def _fetch_data(
     state: str | None = None,
     year: int | list[int] | None = None,
     month: int | list[int] | None = None,
-    group_filter: str | None = None,
     show_progress: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
@@ -39,7 +43,7 @@ def _fetch_data(
                     files.extend(
                         await pysus.query(
                             dataset=dataset,
-                            group=group_filter or group,
+                            group=group,
                             state=state,
                             year=y,
                             month=m,
@@ -79,7 +83,7 @@ def sinan(
 ) -> pd.DataFrame:
     return _fetch_data(
         dataset="sinan",
-        group_filter=disease.upper(),
+        group=disease.upper(),
         year=year,
     )
 
@@ -197,3 +201,74 @@ def ciha(
         month=month,
     )
 
+
+def list_files(
+    dataset: str,
+    group: str | None = None,
+    state: str | None = None,
+    year: int | list[int] | None = None,
+    month: int | list[int] | None = None,
+    **kwargs,
+) -> pd.DataFrame:
+    async def _list():
+        async with PySUS() as pysus:
+            ducklake = await pysus.get_ducklake()
+            if ducklake._Session is None:
+                await ducklake.connect()
+
+            def _query():
+                with ducklake._Session() as session:
+                    q = session.query(CatalogFile).options(
+                        joinedload(CatalogFile.dataset),
+                        joinedload(CatalogFile.group),
+                    )
+
+                    if dataset:
+                        q = q.join(CatalogDataset).filter(
+                            CatalogDataset.name == dataset.lower()
+                        )
+
+                    if group:
+                        q = q.join(DatasetGroup).filter(
+                            DatasetGroup.name == group
+                        )
+
+                    if state:
+                        q = q.filter(CatalogFile.state == state.upper())
+
+                    years = (
+                        [year]
+                        if isinstance(year, int)
+                        else (year or [])
+                    )
+                    months = (
+                        [month]
+                        if isinstance(month, int)
+                        else (month or [])
+                    )
+
+                    if years:
+                        q = q.filter(CatalogFile.year.in_(years))
+                    if months:
+                        q = q.filter(CatalogFile.month.in_(months))
+
+                    results = q.all()
+                    session.expunge_all()
+                    return results
+
+            records = await to_thread.run_sync(_query)
+
+            return [
+                {
+                    "name": r.path.split("/")[-1],
+                    "path": r.path,
+                    "dataset": r.dataset.name if r.dataset else None,
+                    "year": r.year,
+                    "month": r.month,
+                    "state": r.state,
+                    "modify": r.origin_modified,
+                }
+                for r in records
+            ]
+
+    return pd.DataFrame(asyncio.run(_list()))

@@ -191,6 +191,9 @@ class Parquet(BaseTabularFile):
     ) -> AsyncGenerator[pd.DataFrame, None]:
         parquet_file = await to_thread.run_sync(pq.ParquetFile, self.path)
 
+        if parquet_file.metadata.num_row_groups == 0:
+            return
+
         for batch in parquet_file.iter_batches(batch_size=chunk_size):
             df = batch.to_pandas()
             if parse:
