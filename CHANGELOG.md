@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.0.1](https://github.com/AlertaDengue/PySUS/compare/2.0.0...2.0.1) (2026-05-05)
+
+### Bug Fixes
+
+* include group on sinan listing ([#259](https://github.com/AlertaDengue/PySUS/issues/259)) ([e7d2117](https://github.com/AlertaDengue/PySUS/commit/e7d211734ab5c40812f98ad1659a36822f5874ae))
+
 ## [2.0.0](https://github.com/AlertaDengue/PySUS/compare/1.0.1...2.0.0) (2026-05-05)
 
 ### ⚠ BREAKING CHANGES
