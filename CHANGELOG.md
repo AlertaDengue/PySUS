@@ -1,6 +1,61 @@
 Release Notes
 ---
 
+## [2.0.0](https://github.com/AlertaDengue/PySUS/compare/1.0.1...2.0.0) (2026-05-05)
+
+### ⚠ BREAKING CHANGES
+
+* v2
+
+* chore: include a file listing on _impl
+
+* chore: retry downloading catalog if it fail
+
+* tests: include more tests
+* version 2.0.0
+
+* remove circular imports
+
+* move individual database files to databases.py
+
+* normalize FileDescription to prepare for ducklake implementation
+
+* start building the dadosgov models to extract & describe the files within the datasets
+* refactor local data files; implement groups for pysus dep; async everything
+
+* refactor(ducklake): implement abstract classes on the ducklake api classes
+
+* refactor(ducklake): implement abstract classes on the ducklake api classes
+
+* refactor(ftp): implement base models to ftp api
+
+* finish implementing it on all ftp databases
+
+* include some tests
+
+* update tqdm
+
+* implement interfaces on dadosgov modules
+
+* create a PySUS orchestrator that will be a bridge between remote clients and local files
+
+* clean package/prepare to v2 release; start refining tui
+
+* restric dependency import error only to DBC
+
+* start testing the programatically upload of the files on s3
+
+* fix all the mypy linting errors
+
+* include more tests now that catalog.db is filled
+
+* fix tests
+
+### Features
+
+* include a python API to dados.gov.br API ([#241](https://github.com/AlertaDengue/PySUS/issues/241)) ([f20a1c9](https://github.com/AlertaDengue/PySUS/commit/f20a1c99ef3ad7962ba5366d657a1638b24e3d8d))
+* include the simple implementation & update docs ([#256](https://github.com/AlertaDengue/PySUS/issues/256)) ([711af95](https://github.com/AlertaDengue/PySUS/commit/711af95e915b9066ab2b87755657ba7f3be3336e))
+
 ## [1.0.1](https://github.com/AlertaDengue/PySUS/compare/1.0.0...1.0.1) (2026-02-19)
 
 ### Bug Fixes
