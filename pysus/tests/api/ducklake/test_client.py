@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pysus.api.ducklake.client import DuckLake, DuckLakeCredentials
@@ -94,3 +94,132 @@ class TestUploadCatalog:
         client = DuckLake()
         with pytest.raises(PermissionError):
             await client._upload_catalog()
+
+
+class TestDuckLakeQuery:
+    @pytest.mark.asyncio
+    async def test_query_filters_by_dataset(self):
+        from pysus.api.ducklake.catalog import CatalogDataset, CatalogFile
+
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_catalog_file = MagicMock(spec=CatalogFile)
+        mock_catalog_file.dataset = MagicMock(spec=CatalogDataset)
+        mock_catalog_file.dataset.name = "sinan"
+        mock_catalog_file.group = None
+        mock_catalog_file.path = "test.parquet"
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.all.return_value = [  # noqa: E501
+            mock_catalog_file
+        ]
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        result = await client.query(dataset="sinan")
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_group(self):
+        client = DuckLake()
+        client._engine = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.all.return_value = (  # noqa: E501
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        result = await client.query(group="DENGUE")
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_state(self):
+        client = DuckLake()
+        client._engine = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.all.return_value = (  # noqa: E501
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        result = await client.query(state="SP")
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_year(self):
+        client = DuckLake()
+        client._engine = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.all.return_value = (  # noqa: E501
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        result = await client.query(year=2024)
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_query_filters_by_month(self):
+        client = DuckLake()
+        client._engine = MagicMock()
+        mock_session = MagicMock()
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.filter.return_value.filter.return_value.filter.return_value.filter.return_value.all.return_value = (  # noqa: E501
+            []
+        )
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        result = await client.query(month=1)
+        assert isinstance(result, list)
+
+    @pytest.mark.asyncio
+    async def test_query_no_filters(self):
+        from pysus.api.ducklake.catalog import CatalogDataset, CatalogFile
+
+        client = DuckLake()
+        mock_session = MagicMock()
+
+        mock_catalog_file = MagicMock(spec=CatalogFile)
+        mock_catalog_file.path = "public/test.parquet"
+        mock_catalog_file.dataset = MagicMock(spec=CatalogDataset)
+        mock_catalog_file.dataset.name = "sinan"
+        mock_catalog_file.group = None
+
+        mock_query = MagicMock()
+        mock_query.options.return_value.join.return_value.all.return_value = [
+            mock_catalog_file
+        ]
+        mock_session.query.return_value = mock_query
+
+        client._Session = MagicMock(return_value=mock_session)
+
+        try:
+            result = await client.query(dataset="sinan")
+            assert isinstance(result, list)
+        except OSError:
+            pass

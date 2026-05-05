@@ -54,6 +54,14 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 test-pysus: ## run tests quickly with the default Python
 	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15
 
+.PHONY: test-pysus-with-coverage
+test-pysus-with-coverage: ## run tests with coverage report
+	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
+
+.PHONY: lint
+lint:
+	pre-commit run --all-files
+
 # RELEASE
 # =======
 
