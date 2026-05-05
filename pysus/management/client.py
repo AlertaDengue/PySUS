@@ -1,20 +1,12 @@
 import asyncio
 import os
 from collections.abc import Callable
-from datetime import datetime
 from logging import error
 from pathlib import Path
 
 from anyio import to_thread
 from pysus.api.client import PySUS
 from pysus.api.dadosgov.models import File as APIFile
-from pysus.api.ducklake.catalog import (
-    CatalogDataset,
-    CatalogFile,
-    ColumnDefinition,
-    DatasetGroup,
-    Origin,
-)
 from pysus.api.extensions import Parquet
 from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
@@ -47,9 +39,6 @@ class CatalogManager:
                 ducklake = self.pysus._ducklake
                 if ducklake:
                     await ducklake._upload_catalog()
-        except Exception as e:  # noqa
-            error(e)
-            pass
         finally:
             await self.pysus.__aexit__(exc_type, exc_val, exc_tb)
 
@@ -67,30 +56,8 @@ class CatalogManager:
             f"/{file.path.with_suffix('.parquet').name}"
         )
 
-        with self.pysus._ducklake._Session() as session:
-            existing = (
-                session.query(CatalogFile)
-                .filter(CatalogFile.origin_path == str(file.path))
-                .first()
-            )
-
-            if not existing:
-                dataset = self._get_or_create_dataset(session, file)
-                existing = (
-                    session.query(CatalogFile)
-                    .filter(
-                        CatalogFile.path == s3_key,
-                        CatalogFile.dataset_id == dataset.id,
-                    )
-                    .first()
-                )
-
-            if existing and not self._should_upload(file, existing):
-                return
-
-        parquet_ext = await self._download_with_retry(file, callback)
-
-        await self._upload_to_s3(parquet_ext.path, s3_key)
+        dataset_id = None
+        group_id = None
 
         engine = self.pysus._ducklake._engine
         with engine.raw_connection() as conn:
@@ -118,21 +85,52 @@ class CatalogManager:
                         f"'{file.dataset.long_name}', {origin_val})"
                     )
 
-                year_null = file.year is None
-                month_null = file.month is None
-                state_null = file.state is None
-                state_quoted = f"'{file.state}'" if not state_null else "NULL"
+                if file.group:
+                    group_name = file.group.name
+                    cursor.execute(
+                        "SELECT id FROM pysus.dataset_groups "
+                        f"WHERE name = '{group_name}' AND "
+                        "dataset_id = {dataset_id}"
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        group_id = row[0]
+                    else:
+                        cursor.execute(
+                            "SELECT MAX(id) FROM pysus.dataset_groups",
+                        )
+                        max_id = cursor.fetchone()[0]
+                        group_id = (max_id or 0) + 1
+                        long_name = file.dataset.group_definitions.get(
+                            group_name.upper(), group_name
+                        )
+                        cursor.execute(
+                            f"INSERT INTO pysus.dataset_groups "
+                            f"(id, dataset_id, name, long_name) "
+                            f"VALUES ({group_id}, {dataset_id}, "
+                            f"'{group_name}', '{long_name}')"
+                        )
+
+                group_val = "NULL" if group_id is None else str(group_id)
 
                 cursor.execute(
-                    f"SELECT id FROM pysus.files WHERE dataset_id = "
-                    f"{dataset_id} AND year = {file.year} "  # noqa: E501
-                    f"AND month {'IS NULL' if month_null else '= ' + str(file.month)} "  # noqa: E501
-                    f"AND state {'IS NULL' if state_null else '= ' + state_quoted}"  # noqa: E501
+                    f"SELECT id, group_id FROM pysus.files WHERE path = '{s3_key}'"  # noqa
                 )
                 row = cursor.fetchone()
 
                 if row:
-                    file_id = row[0]
+                    file_id, db_group_id = row
+
+                    group_mismatch = db_group_id != group_id
+                    should_upload = self._should_upload_raw(
+                        cursor,
+                        file_id,
+                        file,
+                    )
+
+                    if not should_upload and not group_mismatch:
+                        return
+
                     cursor.execute(
                         f"DELETE FROM pysus.file_columns WHERE file_id = {file_id}"  # noqa
                     )
@@ -144,18 +142,22 @@ class CatalogManager:
                     max_id = cursor.fetchone()[0]
                     file_id = (max_id or 0) + 1
 
-                year_val = "NULL" if year_null else file.year
-                month_val = "NULL" if month_null else file.month
-                state_val = "NULL" if state_null else f"'{file.state}'"
+                parquet_ext = await self._download_with_retry(file, callback)
+                await self._upload_to_s3(parquet_ext.path, s3_key)
+
+                year_val = "NULL" if file.year is None else file.year
+                month_val = "NULL" if file.month is None else file.month
+                state_val = "NULL" if file.state is None else f"'{file.state}'"
 
                 cursor.execute(
                     f"INSERT INTO pysus.files (id, dataset_id, "
-                    f"path, size, rows, "
+                    f"group_id, path, size, rows, "
                     f"modified, origin_modified, origin_path, year, "
                     f"month, state) "
-                    f"VALUES ({file_id}, {dataset_id}, '{s3_key}', "
-                    f"{parquet_ext.size}, {parquet_ext.rows}, "
-                    f"CURRENT_TIMESTAMP, '{file.modify}', '{file.path}', "
+                    f"VALUES ({file_id}, {dataset_id}, {group_val}, "
+                    f"'{s3_key}', {parquet_ext.size}, "
+                    f"{parquet_ext.rows}, CURRENT_TIMESTAMP, "
+                    f"'{file.modify}', '{file.path}', "
                     f"{year_val}, {month_val}, {state_val})"
                 )
 
@@ -165,24 +167,23 @@ class CatalogManager:
 
                 for col in new_columns:
                     cursor.execute(
-                        "INSERT INTO pysus.file_columns "
+                        f"INSERT INTO pysus.file_columns "
                         f"(file_id, column_id) VALUES ({file_id}, {col})"
                     )
 
                 conn.commit()
-
                 cursor.execute("CHECKPOINT")
+
+                if parquet_ext.path.exists():
+                    parquet_ext.path.unlink()
+                await self.pysus._delete_record(str(parquet_ext.path))
+
             except Exception:  # noqa
                 try:
                     conn.rollback()
                 except Exception:  # noqa
                     pass
                 raise
-
-        if parquet_ext.path.exists():
-            parquet_ext.path.unlink()
-
-        await self.pysus._delete_record(str(parquet_ext.path))
 
     async def _upload_to_s3(
         self,
@@ -232,159 +233,37 @@ class CatalogManager:
             f"attempts: {last_error}"
         ) from last_error
 
-    def _should_upload(
+    def _should_upload_raw(
         self,
+        cursor,
+        file_id: int,
         file: BaseRemoteFile,
-        catalog_file: CatalogFile | None = None,
         force: bool = False,
     ) -> bool:
         if force:
-            print(f"force=True, uploading {file.basename}")
             return True
 
-        if catalog_file is None:
-            print(f"no catalog record, uploading {file.basename}")
+        cursor.execute(
+            f"SELECT origin_modified FROM pysus.files WHERE id = {file_id}",
+        )
+        row = cursor.fetchone()
+        if not row:
             return True
 
-        if catalog_file.origin_modified is None:
-            print(f"no origin_modified, uploading {file.basename}")
+        origin_modified = row[0]
+        if origin_modified is None:
             return True
 
         file_mod = getattr(file, "modify", None)
         if file_mod is None:
-            print(f"no file modify date, uploading {file.basename}")
             return True
 
-        if file_mod > catalog_file.origin_modified:
-            print(f"{catalog_file.origin_modified} newer than ({file_mod})")
-            return True
-
-        print(f"skipping {file.basename} - already up to date")
-        return False
-
-    def _get_or_create_dataset(
-        self,
-        session,
-        file: BaseRemoteFile,
-    ) -> CatalogDataset:
-        ds_name = file.dataset.name.lower()
-        ds = session.query(CatalogDataset).filter_by(name=ds_name).first()
-        if not ds:
-            is_ftp = file.client.name.lower() == "ftp"
-            origin = Origin.FTP if is_ftp else Origin.API
-            ds = CatalogDataset(
-                name=ds_name, long_name=file.dataset.long_name, origin=origin
-            )
-            session.add(ds)
-            session.flush()
-        return ds
-
-    def _get_or_create_group(
-        self,
-        session,
-        file: BaseRemoteFile,
-        dataset: CatalogDataset,
-    ) -> DatasetGroup | None:
-        if file.group is None:
-            return None
-
-        group_name = file.group.name
-        group = (
-            session.query(DatasetGroup)
-            .filter_by(name=group_name, dataset_id=dataset.id)
-            .first()
-        )
-
-        if not group:
-            group = DatasetGroup(
-                name=group_name,
-                dataset=dataset,
-                long_name=file.group.long_name,
-            )
-            session.add(group)
-            session.flush()
-        return group
-
-    def _get_or_create_file(
-        self,
-        session,
-        file: BaseRemoteFile,
-        dataset: CatalogDataset,
-        group: DatasetGroup | None = None,
-    ) -> CatalogFile:
-        query = session.query(CatalogFile).filter(
-            CatalogFile.dataset_id == dataset.id,
-            CatalogFile.group_id == (group.id if group else None),
-            CatalogFile.year == file.year,
-            CatalogFile.month == file.month,
-            CatalogFile.state == file.state,
-        )
-
-        cat_file = query.first()
-
-        if not cat_file:
-            cat_file = CatalogFile(
-                dataset=dataset,
-                group=group,
-                path=f"pending/{file.basename}",
-                size=0,
-                rows=0,
-                modified=datetime.min,
-                origin_path=str(file.path),
-                year=file.year,
-                month=file.month,
-                state=file.state,
-            )
-            session.add(cat_file)
-            session.flush()
-
-        return cat_file
-
-    def _get_or_create_columns(
-        self, session, dataset: CatalogDataset, file: Parquet
-    ) -> list[ColumnDefinition]:
-        existing_cols = {c.name: c for c in dataset.columns}
-        result = []
-
-        schema = file.schema
-
-        type_map = {
-            "int64": "BIGINT",
-            "int32": "INTEGER",
-            "double": "DOUBLE",
-            "float": "FLOAT",
-            "bool": "BOOLEAN",
-            "timestamp[us]": "TIMESTAMP",
-            "string": "VARCHAR",
-            "binary": "BLOB",
-        }
-
-        for col_name in schema.names:
-            field = schema.field(col_name)
-            arrow_type = str(field.type)
-            sql_type = type_map.get(arrow_type, "VARCHAR")
-
-            if col_name not in existing_cols:
-                new_col = ColumnDefinition(
-                    name=col_name,
-                    dataset=dataset,
-                    type=sql_type,
-                )
-                session.add(new_col)
-                existing_cols[col_name] = new_col
-            else:
-                if existing_cols[col_name].type != sql_type:
-                    existing_cols[col_name].type = sql_type
-
-            result.append(existing_cols[col_name])
-
-        return result
+        return file_mod > origin_modified
 
     def _get_or_create_columns_raw(
         self, cursor, file: Parquet, dataset_id: int
     ) -> list[int]:
         schema = file.schema
-
         type_map = {
             "int64": "BIGINT",
             "int32": "INTEGER",
@@ -397,7 +276,6 @@ class CatalogManager:
         }
 
         result = []
-
         for col_name in schema.names:
             field = schema.field(col_name)
             arrow_type = str(field.type)

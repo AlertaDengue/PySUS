@@ -14,7 +14,42 @@ from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from .catalog import CatalogDataset, CatalogFile, DatasetGroup
-from .models import Dataset, File
+from .models import DuckDataset, File
+
+
+class CatalogDatasetAdapter:
+    def __init__(self, catalog_dataset: CatalogDataset, ducklake):
+        self.name = catalog_dataset.name
+        self.long_name = catalog_dataset.long_name or ""
+        self.description = catalog_dataset.description or ""
+        self.group_definitions: dict[str, str] = {}
+        self.ducklake = ducklake
+        self.client = ducklake
+
+    @property
+    def content(self):
+        return self.ducklake.query(dataset=self.name.upper())
+
+
+class DatasetGroupAdapter:
+    def __init__(self, dataset_group: DatasetGroup, dataset):
+        self.name = dataset_group.name
+        self.long_name = dataset_group.long_name or ""
+        self.description = dataset_group.description or ""
+        self.dataset = dataset
+
+    def __str__(self):
+        return self.name
+
+    @property
+    async def files(self):
+        return []
+
+    async def _fetch_files(self):
+        return []
+
+    async def search(self, **kwargs):
+        return []
 
 
 class DuckLakeCredentials(BaseModel):
@@ -66,7 +101,7 @@ class DuckLake(BaseRemoteClient):
     def _is_authenticated(self) -> bool:
         return self.credentials is not None
 
-    async def datasets(self, **kwargs) -> list[Dataset]:
+    async def datasets(self, **kwargs) -> list[DuckDataset]:
         if not self._Session:
             await self.connect()
 
@@ -86,7 +121,7 @@ class DuckLake(BaseRemoteClient):
                 return results
 
         records = await to_thread.run_sync(_fetch)
-        return [Dataset(record=rec, client=self) for rec in records]
+        return [DuckDataset(record=rec, client=self) for rec in records]
 
     async def login(
         self,
@@ -300,6 +335,13 @@ class DuckLake(BaseRemoteClient):
 
         records = await to_thread.run_sync(_query)
         return [
-            File(path=r.path, record=r, dataset=r.dataset, group=r.group)
+            File(
+                path=r.path,
+                record=r,
+                dataset=CatalogDatasetAdapter(r.dataset, self),
+                group=(
+                    DatasetGroupAdapter(r.group, r.dataset) if r.group else None
+                ),
+            )
             for r in records
         ]

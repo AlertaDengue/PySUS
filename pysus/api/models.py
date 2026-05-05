@@ -327,6 +327,7 @@ class BaseRemoteGroup(BaseRemoteObject, SearchableMixin, ABC):
 
 class BaseRemoteDataset(BaseRemoteObject, SearchableMixin, ABC):
     client: BaseRemoteClient = Field(exclude=True)
+    group_definitions: dict[str, str] = {}
     _content: Sequence[BaseRemoteGroup | BaseRemoteFile] | None = PrivateAttr(
         default=None
     )

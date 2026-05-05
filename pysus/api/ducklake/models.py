@@ -2,6 +2,7 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Union
 
 import anyio
 from pydantic import Field
@@ -19,6 +20,8 @@ from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 class File(BaseRemoteFile):
     record: CatalogFile = Field(exclude=True)
     type: str = "remote"
+    dataset: Any
+    group: Any = None
 
     @property
     def basename(self) -> str:
@@ -51,6 +54,7 @@ class File(BaseRemoteFile):
     ) -> Path:
         if not output:
             output = CACHEPATH / self.name
+
         return await self.client._download_file(
             self,
             output,
@@ -72,41 +76,7 @@ class File(BaseRemoteFile):
         return actual_hash == self.sha256
 
 
-class Group(BaseRemoteGroup):
-    record: DatasetGroup = Field(exclude=True)
-    dataset: "Dataset" = Field(exclude=True)
-
-    @property
-    def name(self) -> str:
-        return self.record.name
-
-    @property
-    def long_name(self) -> str:
-        return (
-            self.record.group_metadata.long_name
-            if self.record.group_metadata
-            else self.name
-        )
-
-    @property
-    def description(self) -> str:
-        if self.record.group_metadata:
-            return self.record.group_metadata.description
-        return ""
-
-    async def _fetch_files(self) -> list[BaseRemoteFile]:
-        return [
-            File(
-                path=f.path,
-                record=f,
-                group=self,
-                dataset=self.dataset,
-            )
-            for f in self.record.files
-        ]
-
-
-class Dataset(BaseRemoteDataset):
+class DuckDataset(BaseRemoteDataset):
     record: CatalogDataset = Field(exclude=True)
     client: BaseRemoteClient = Field(exclude=True)
 
@@ -133,14 +103,12 @@ class Dataset(BaseRemoteDataset):
             else ""
         )
 
-    async def _fetch_content(
-        self,
-    ) -> list[Group | File]:
-        items: list[Group | File] = []
+    async def _fetch_content(self) -> list[Union["DuckGroup", File]]:
+        items: list[Union["DuckGroup", File]] = []
 
         if self.record.groups:
             items.extend(
-                [Group(record=g, dataset=self) for g in self.record.groups],
+                [DuckGroup(record=g, dataset=self) for g in self.record.groups]
             )
 
         if self.record.files:
@@ -152,7 +120,42 @@ class Dataset(BaseRemoteDataset):
                         dataset=self,
                     )
                     for f in self.record.files
-                ],
+                ]
             )
 
         return items
+
+
+class DuckGroup(BaseRemoteGroup):
+    record: DatasetGroup = Field(exclude=True)
+    dataset: DuckDataset = Field(exclude=True)
+
+    @property
+    def name(self) -> str:
+        return self.record.name
+
+    @property
+    def long_name(self) -> str:
+        return (
+            self.record.group_metadata.long_name
+            if self.record.group_metadata
+            else self.name
+        )
+
+    @property
+    def description(self) -> str:
+        if self.record.group_metadata:
+            return self.record.group_metadata.description
+        return ""
+
+    async def _fetch_files(self) -> list[BaseRemoteFile]:
+        files: list[BaseRemoteFile] = [
+            File(
+                path=f.path,
+                record=f,
+                group=self,
+                dataset=self.dataset,
+            )
+            for f in self.record.files
+        ]
+        return files
