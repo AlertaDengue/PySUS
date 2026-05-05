@@ -267,6 +267,7 @@ def list_files(
                     "name": r.path.split("/")[-1],
                     "path": r.path,
                     "dataset": r.dataset.name if r.dataset else None,
+                    "group": r.group.name if r.group else None,
                     "year": r.year,
                     "month": r.month,
                     "state": r.state,

@@ -37,7 +37,7 @@ The easiest way to get data as a pandas DataFrame:
 from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
 
 # Download SINAN Dengue data for 2024
-df = sinan(disease="deng", year=2024)
+df = sinan(disease="deng", year=2000)
 
 # Multiple years
 df = sinan(disease="deng", year=[2023, 2024])
@@ -81,7 +81,7 @@ async def main():
         df = pysus.read_parquet(paths, mode="union").df()
 ```
 
-### Using the TUI
+### Using the TUI (unstable/under testing)
 
 Launch the interactive text-based interface:
 
