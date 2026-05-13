@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.0.2](https://github.com/AlertaDengue/PySUS/compare/2.0.1...2.0.2) (2026-05-13)
+
+### Bug Fixes
+
+* **sinan:** fix group on ducklake query ([#263](https://github.com/AlertaDengue/PySUS/issues/263)) ([a3baa7b](https://github.com/AlertaDengue/PySUS/commit/a3baa7bfda1424cdba0d92e39626465ef2c72f5f))
+
 ## [2.0.1](https://github.com/AlertaDengue/PySUS/compare/2.0.0...2.0.1) (2026-05-05)
 
 ### Bug Fixes
