@@ -1,3 +1,9 @@
+"""SQLAlchemy ORM models for the DuckLake catalog schema.
+
+Defines tables for datasets, groups, files, and columns stored
+in the pysus schema of the local DuckDB catalog.
+"""
+
 import enum
 from datetime import datetime
 from typing import Optional
@@ -18,6 +24,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
+    """Base class for all DuckLake catalog ORM models."""
+
     pass
 
 
@@ -41,16 +49,22 @@ file_columns = Table(
 
 
 class CatalogTable(Base):
+    """Abstract base for catalog tables sharing the pysus schema."""
+
     __abstract__ = True
     __table_args__: tuple = ({"schema": "pysus"},)
 
 
 class Origin(enum.Enum):
+    """Origin type for a dataset: FTP or API."""
+
     FTP = "ftp"
     API = "api"
 
 
 class CatalogDataset(CatalogTable):
+    """ORM model for the datasets table, representing a dataset collection."""
+
     __tablename__ = "datasets"
 
     id = Column(
@@ -81,6 +95,8 @@ class CatalogDataset(CatalogTable):
 
 
 class ColumnDefinition(CatalogTable):
+    """ORM model for dataset column metadata (name, type, description)."""
+
     __tablename__ = "dataset_columns"
 
     id = Column(
@@ -113,6 +129,8 @@ class ColumnDefinition(CatalogTable):
 
 
 class DatasetGroup(CatalogTable):
+    """ORM model for dataset groups, grouping related files within a dataset."""
+
     __tablename__ = "dataset_groups"
 
     id = Column(
@@ -144,6 +162,8 @@ class DatasetGroup(CatalogTable):
 
 
 class CatalogFile(CatalogTable):
+    """ORM model for the files table, representing individual data files."""
+
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(

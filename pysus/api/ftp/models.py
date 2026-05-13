@@ -1,3 +1,5 @@
+"""Data model classes for FTP directories, files, groups and datasets."""
+
 from __future__ import annotations
 
 import os
@@ -21,9 +23,12 @@ from .client import FTP, FTPFileInfo
 
 
 class File(BaseRemoteFile):
+    """A single file on the DATASUS FTP server with parsed metadata."""
+
     _info: FTPFileInfo = PrivateAttr()
 
     def __init__(self, **data):
+        """Initialise the File with raw FTP metadata."""
         info = data.pop("_info", None)
         if "path" not in data and info and "path" in info:
             data["path"] = info["path"]
@@ -42,18 +47,22 @@ class File(BaseRemoteFile):
             )
 
     def __repr__(self) -> str:
+        """Return the file name as its string representation."""
         return self.name
 
     @property
     def extension(self) -> str:
+        """Return the file extension (e.g. .dbc, .dbf)."""
         return Path(self.path).suffix
 
     @property
     def size(self) -> int:
+        """Return the file size in bytes."""
         return self._info.get("size", 0)
 
     @property
     def modify(self) -> datetime:
+        """Return the last modification timestamp."""
         m = self._info.get("modify")
         if not m:
             raise ValueError("File requires a modify date")
@@ -61,14 +70,17 @@ class File(BaseRemoteFile):
 
     @property
     def year(self) -> int | None:
+        """Return the data year extracted from the filename, if available."""
         return self._info.get("year")
 
     @property
     def month(self) -> int | None:
+        """Return the data month extracted from the filename, if available."""
         return self._info.get("month")
 
     @property
     def state(self) -> State | None:
+        """Return the state code extracted from the filename, if available."""
         return self._info.get("state", None)
 
     async def _download(
@@ -76,6 +88,7 @@ class File(BaseRemoteFile):
         output: Path | None = None,
         callback: Callable[[int], None] | None = None,
     ) -> Path:
+        """Download this file to a local path, optionally reporting progress."""
         if output is None:
             cache_dir = Path(CACHEPATH)
             cache_dir.mkdir(parents=True, exist_ok=True)
@@ -85,6 +98,8 @@ class File(BaseRemoteFile):
 
 
 class Directory:
+    """A remote FTP directory lazily loaded into files and subdirectories."""
+
     def __init__(
         self,
         path: str,
@@ -93,6 +108,7 @@ class Directory:
         formatter: Callable | None = None,
         dataset: Dataset | None = None,
     ):
+        """Initialise the Directory with a remote path and optional context."""
         self.path = os.path.normpath(path)
         self.parent = parent
         self.dataset = dataset or getattr(parent, "dataset", None)
@@ -104,11 +120,13 @@ class Directory:
 
     @property
     async def content(self) -> list[Directory | File]:
+        """Return the directory contents, loading from FTP if not yet cached."""
         if not self.loaded:
             await self.load()
         return self._content
 
     async def load(self) -> None:
+        """Fetch and parse the directory listing from the FTP server."""
         if not isinstance(self.client, FTP):
             raise ValueError("no ftp client found")
         raw_infos = await self.client._list_directory(
@@ -144,13 +162,17 @@ class Directory:
         self.loaded = True
 
     def __str__(self) -> str:
+        """Return the normalised directory path."""
         return self.path
 
     def __repr__(self) -> str:
+        """Return a debug representation of this directory."""
         return f"<Directory: {self.path}>"
 
 
 class Group(BaseRemoteGroup):
+    """A group of related files within a dataset (e.g. all files of a type)."""
+
     path: str
     _name: str = PrivateAttr()
     _long_name: str = PrivateAttr()
@@ -166,6 +188,7 @@ class Group(BaseRemoteGroup):
         description: str = "",
         **data: Any,
     ):
+        """Initialise the Group with metadata and a directory reference."""
         data.update({"dataset": dataset, "path": path})
         super().__init__(**data)
 
@@ -182,51 +205,59 @@ class Group(BaseRemoteGroup):
 
     @property
     def name(self) -> str:
+        """Return the group short code (e.g. 'RD', 'PA')."""
         return self._name
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable group name."""
         return self._long_name
 
     @property
     def description(self) -> str:
+        """Return the group description."""
         return self._description
 
     @property
     async def content(self) -> list[Directory | File]:
+        """Return the contents of the underlying directory."""
         return await self._dir.content
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
+        """Return only the file entries from this group's directory."""
         items = await self.content
         return [item for item in items if isinstance(item, BaseRemoteFile)]
 
 
 class Dataset(BaseRemoteDataset, ABC):
+    """Abstract base for a DATASUS dataset, providing file discovery via FTP."""
+
     paths: list[Directory] = []
     group_definitions: dict[str, str] = {}
 
     @property
     @abstractmethod
     def name(self) -> str:
-        pass
+        """Return the dataset short name."""
 
     @property
     @abstractmethod
     def long_name(self) -> str:
-        pass
+        """Return the dataset full name in Portuguese."""
 
     @property
     @abstractmethod
     def description(self) -> str:
-        pass
+        """Return a description of the dataset's purpose."""
 
     @abstractmethod
     def formatter(self, filename: str) -> dict[str, Any]:
-        pass
+        """Parse a filename into metadata (group, state, year, etc.)."""
 
     async def _fetch_content(
         self,
     ) -> Sequence[BaseRemoteGroup | BaseRemoteFile]:
+        """Walk the dataset's root directories and return groups and files."""
         results: list[BaseRemoteGroup | BaseRemoteFile] = []
 
         for root_dir in self.paths:
@@ -258,4 +289,5 @@ class Dataset(BaseRemoteDataset, ABC):
         return results
 
     def __repr__(self) -> str:
+        """Return the dataset short name as its string representation."""
         return self.name

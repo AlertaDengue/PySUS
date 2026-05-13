@@ -1,3 +1,9 @@
+"""Main orchestrator for the PySUS data pipeline.
+
+Manages file downloads, local state tracking, catalog attachment,
+Parquet conversion, and query execution across multiple backends.
+"""
+
 import enum
 from collections.abc import Callable
 from datetime import datetime
@@ -20,10 +26,12 @@ if TYPE_CHECKING:
 
 
 class Base(DeclarativeBase):
-    pass
+    """Base declarative class for SQLAlchemy ORM models."""
 
 
 class DownloadStatus(enum.Enum):
+    """Download status values tracked for each local file."""
+
     PENDING = "pending"
     DOWNLOADING = "downloading"
     COMPLETED = "completed"
@@ -32,6 +40,8 @@ class DownloadStatus(enum.Enum):
 
 
 class LocalFileState(Base):
+    """ORM model tracking the state of a downloaded local file."""
+
     __tablename__ = "local_file_state"
     path: Mapped[str] = mapped_column(String, primary_key=True)
     remote_path: Mapped[str] = mapped_column(String, nullable=False)
@@ -54,7 +64,11 @@ class LocalFileState(Base):
 
 
 class PySUS:
+    """Central orchestrator for downloading and querying PySUS datasets."""
+
     def __init__(self, db_path: Path = CACHEPATH / "config.db"):
+        """Initialize PySUS with a DuckDB-backed SQLAlchemy engine."""
+
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -68,6 +82,8 @@ class PySUS:
         self._dadosgov: DadosGovClient | None = None
 
     async def __aenter__(self):
+        """Set up DuckLake catalog and return self as async context manager."""
+
         self._ducklake = DuckLake()
         await self._ducklake._load_catalog()
         self._attach_client_catalog(
@@ -77,6 +93,8 @@ class PySUS:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Clean up all client connections and dispose of the engine."""
+
         if self._ducklake:
             await self._ducklake.close()
         if self._ftp:
@@ -86,6 +104,8 @@ class PySUS:
         self.engine.dispose()
 
     async def get_ducklake(self) -> DuckLake:
+        """Return the DuckLake client, initializing it lazily if needed."""
+
         if self._ducklake is None:
             self._ducklake = DuckLake()
             await self._ducklake._load_catalog()
@@ -96,12 +116,16 @@ class PySUS:
         return self._ducklake
 
     async def get_dadosgov(self, access_token: str | None) -> DadosGovClient:
+        """Return the DadosGov client, connecting lazily if needed."""
+
         if self._dadosgov is None:
             self._dadosgov = DadosGovClient()
             await self._dadosgov.connect(token=access_token)
         return self._dadosgov
 
     async def get_ftp(self) -> FTPClient:
+        """Return the FTP client, connecting lazily if needed."""
+
         if self._ftp is None:
             self._ftp = FTPClient()
             await self._ftp.connect()
@@ -111,6 +135,8 @@ class PySUS:
         self,
         file: BaseRemoteFile,
     ) -> BaseLocalFile | None:
+        """Look up a previously downloaded file by its remote path."""
+
         from pysus.api.extensions import ExtensionFactory
 
         client_name = file.client.name.lower()
@@ -138,6 +164,8 @@ class PySUS:
             return await ExtensionFactory.instantiate(str(record.path))
 
     def _attach_client_catalog(self, name: str, path: str):
+        """Attach an external DuckDB catalog to the engine if not attached."""
+
         abs_path = str(Path(path).absolute())
         with self.engine.connect() as conn:
             q = "SELECT database_name FROM duckdb_databases() WHERE path = ?"
@@ -149,6 +177,8 @@ class PySUS:
                 )
 
     def _get_dest_path(self, file: BaseRemoteFile) -> Path:
+        """Build the local filesystem path for a given remote file."""
+
         client_name = file.client.name.lower()
         dataset_name = file.dataset.name.lower()
 
@@ -174,6 +204,8 @@ class PySUS:
         state: str | None = None,
         group: str | None = None,
     ):
+        """Create or update the LocalFileState record for a file."""
+
         with self.Session() as session:
             record = (
                 session.query(LocalFileState)
@@ -204,6 +236,8 @@ class PySUS:
         token: str | None = None,
         callback: Callable | None = None,
     ) -> BaseLocalFile:
+        """Download a remote file and return a local file handle."""
+
         from pysus.api.extensions import ExtensionFactory
 
         existing_local = await self.get_local_file(file)
@@ -264,6 +298,8 @@ class PySUS:
             ) from e
 
     async def _delete_record(self, path: str):
+        """Delete a LocalFileState record from the database."""
+
         with self.Session() as session:
             record = session.query(LocalFileState).filter_by(path=path).first()
             if record:
@@ -276,6 +312,8 @@ class PySUS:
         token: str | None = None,
         callback: Callable[[int, int], None] | None = None,
     ) -> Parquet:
+        """Download a file and convert it to Parquet format."""
+
         local_file = await self.download(
             file=file,
             token=token,
@@ -308,6 +346,8 @@ class PySUS:
         )
 
     def get_local_hierarchy(self):
+        """Build a nested dict of cached files grouped by client and dataset."""
+
         with self.Session() as session:
             records = session.query(LocalFileState).all()
 
@@ -338,6 +378,8 @@ class PySUS:
         return hierarchy
 
     def get_completed_remote_paths(self) -> set[str]:
+        """Return remote paths for all successfully downloaded files."""
+
         with self.Session() as session:
             records = (
                 session.query(LocalFileState.remote_path)
@@ -354,6 +396,8 @@ class PySUS:
         year: int | None = None,
         month: int | None = None,
     ):
+        """Query available datasets through the DuckLake catalog."""
+
         if self._ducklake is None:
             await self.get_ducklake()
         if self._ducklake is not None:
@@ -371,6 +415,8 @@ class PySUS:
         sql: str | None = None,
         mode: Literal["union", "intersection", "strict"] = "union",
     ) -> "DuckDBPyConnection":
+        """Read Parquet files with optional schema handling and SQL filter."""
+
         if not paths:
             raise ValueError("No paths provided")
 

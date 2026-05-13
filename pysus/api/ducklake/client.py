@@ -1,3 +1,9 @@
+"""High-level client for DuckLake S3-based dataset catalog.
+
+Provides authentication, catalog synchronization, dataset querying,
+and file download capabilities backed by a local DuckDB engine.
+"""
+
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -18,6 +24,8 @@ from .models import DuckDataset, File
 
 
 class CatalogDatasetAdapter:
+    """Adapter wrapping a CatalogDataset ORM record for use by File objects."""
+
     def __init__(self, catalog_dataset: CatalogDataset, ducklake):
         self.name = catalog_dataset.name
         self.long_name = catalog_dataset.long_name or ""
@@ -28,10 +36,13 @@ class CatalogDatasetAdapter:
 
     @property
     def content(self):
+        """Query the DuckLake client for files in this dataset."""
         return self.ducklake.query(dataset=self.name.upper())
 
 
 class DatasetGroupAdapter:
+    """Adapter wrapping a DatasetGroup ORM record for use by File objects."""
+
     def __init__(self, dataset_group: DatasetGroup, dataset):
         self.name = dataset_group.name
         self.long_name = dataset_group.long_name or ""
@@ -43,21 +54,28 @@ class DatasetGroupAdapter:
 
     @property
     async def files(self):
+        """Return the list of files in this group."""
         return []
 
     async def _fetch_files(self):
+        """Fetch files from the remote source for this group."""
         return []
 
     async def search(self, **kwargs):
+        """Search for files within this group matching the given criteria."""
         return []
 
 
 class DuckLakeCredentials(BaseModel):
+    """Credentials for authenticating with the S3-compatible object storage."""
+
     access_key: SecretStr
     secret_key: SecretStr
 
 
 class DuckLake(BaseRemoteClient):
+    """Client for the DuckLake S3-based public health dataset catalog."""
+
     endpoint: str = "nbg1.your-objectstorage.com"
     region: str = "nbg1"
     bucket: str = "pysus"
@@ -71,6 +89,7 @@ class DuckLake(BaseRemoteClient):
     _Session: Any = PrivateAttr(default=None)
 
     def __init__(self, engine=None, **data):
+        """Initialize the DuckLake client with an optional existing engine."""
         super().__init__(**data)
         self._engine = engine
         self._cache_dir = Path(CACHEPATH) / "ducklake"
@@ -79,29 +98,36 @@ class DuckLake(BaseRemoteClient):
 
     @property
     def name(self) -> str:
+        """Return the short name of this client."""
         return "DuckLake"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name of this client."""
         return "PySUS s3 Client"
 
     @property
     def description(self) -> str:
+        """Return a description of this client."""
         return ""  # TODO:
 
     @property
     def catalog_path(self) -> Path:
+        """Return the local path to the downloaded catalog database."""
         return self._catalog_local
 
     @property
     def _catalog_url(self) -> str:
+        """Return the remote URL of the catalog database file."""
         return f"https://{self.endpoint}/{self.bucket}/{self._catalog_remote}"
 
     @property
     def _is_authenticated(self) -> bool:
+        """Return whether the client has credentials configured."""
         return self.credentials is not None
 
     async def datasets(self, **kwargs) -> list[DuckDataset]:
+        """Return all datasets from the catalog as DuckDataset instances."""
         if not self._Session:
             await self.connect()
 
@@ -129,6 +155,7 @@ class DuckLake(BaseRemoteClient):
         secret_key: str | None = None,
         **kwargs,
     ) -> None:
+        """Authenticate with S3 credentials and reconnect to the catalog."""
         if access_key and secret_key:
             self.credentials = DuckLakeCredentials(
                 access_key=SecretStr(access_key),
@@ -145,6 +172,7 @@ class DuckLake(BaseRemoteClient):
             )
 
     def _setup_engine(self):
+        """Create and configure the DuckDB engine with S3 settings."""
         engine = create_engine(
             f"duckdb:///{self._catalog_local}",
             poolclass=StaticPool,
@@ -188,6 +216,7 @@ class DuckLake(BaseRemoteClient):
         return engine
 
     async def connect(self, force: bool = False):
+        """Connect to the catalog, downloading it first if necessary."""
         if self._engine and not force:
             if not self._Session:
                 self._Session = sessionmaker(bind=self._engine)
@@ -198,6 +227,7 @@ class DuckLake(BaseRemoteClient):
         self._Session = sessionmaker(bind=self._engine)
 
     async def close(self):
+        """Dispose the engine, then upload the catalog if authenticated."""
         if self._engine:
             await to_thread.run_sync(self._engine.dispose)
 
@@ -215,6 +245,7 @@ class DuckLake(BaseRemoteClient):
         output: Path,
         callback: Callable[[int], None] | None = None,
     ) -> Path:
+        """Download a single file from object storage to the local path."""
         if not isinstance(file, File):
             raise ValueError("FTP File was not properly instantiated")
 
@@ -230,6 +261,7 @@ class DuckLake(BaseRemoteClient):
         return output
 
     async def _download_catalog(self, client: httpx.AsyncClient):
+        """Download the catalog database from remote storage with retries."""
         max_retries = 5
 
         for attempt in range(max_retries):
@@ -249,6 +281,7 @@ class DuckLake(BaseRemoteClient):
                     raise e
 
     def _get_s3_client(self):
+        """Create and return a boto3 S3 client for the configured endpoint."""
         if not self.credentials:
             raise ConnectionError("S3 Credentials not found")
         return boto3.client(
@@ -263,6 +296,7 @@ class DuckLake(BaseRemoteClient):
         )
 
     async def _load_catalog(self):
+        """Download remote catalog if the local copy is outdated or missing."""
         async with httpx.AsyncClient(follow_redirects=True) as client:
             local_size = -1
             if self._catalog_local.exists():
@@ -280,6 +314,7 @@ class DuckLake(BaseRemoteClient):
                 await self._download_catalog(client)
 
     async def _upload_catalog(self):
+        """Upload the local catalog database to remote storage."""
         if not self._is_authenticated:
             raise PermissionError(
                 "Admin credentials required to upload catalog.",
@@ -302,6 +337,7 @@ class DuckLake(BaseRemoteClient):
         year: int | None = None,
         month: int | None = None,
     ) -> list[File]:
+        """Query catalog files by dataset, group, state, year, and/or month."""
         if not self._Session:
             await self.connect()
 

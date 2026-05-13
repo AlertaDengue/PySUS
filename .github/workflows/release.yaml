@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,3 +43,55 @@ jobs:
       run: |
         poetry config pypi-token.pypi ${PYPI_TOKEN}
         make release
+
+  docs:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        environment-file: conda/dev.yaml
+        channels: conda-forge,nodefaults
+        activate-environment: pysus
+        auto-update-conda: true
+        conda-solver: libmamba
+
+    - name: Install dependencies
+      run: |
+        pip install poetry poetry-plugin-export
+        poetry config virtualenvs.create false
+        poetry install --with docs --extras dbc
+
+    - name: Build docs
+      run: |
+        cd docs
+        make html
+
+    - name: Configure GitHub Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/build/html
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      id: deployment
+      uses: actions/deploy-pages@v4

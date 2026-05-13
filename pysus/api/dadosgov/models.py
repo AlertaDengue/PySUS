@@ -1,3 +1,5 @@
+"""Internal domain models for datasets, groups, and files from dados.gov.br."""
+
 import asyncio
 import pathlib
 from abc import abstractmethod
@@ -19,11 +21,14 @@ if TYPE_CHECKING:
 
 
 class File(BaseRemoteFile):
+    """A downloadable file from a dados.gov.br dataset."""
+
     record: Recurso
     type: str = "File"
     _metadata: dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __init__(self, **data):
+        """Initialize the File with optional metadata."""
         metadata = data.pop("_metadata", {})
         super().__init__(**data)
         self._metadata = metadata
@@ -33,6 +38,7 @@ class File(BaseRemoteFile):
         return self.basename
 
     def model_post_init(self, __context: Any) -> None:
+        """Fetch remote metadata if size or modify date is missing."""
         if not self.record.api_size or not self.record.last_modified:
             try:
                 loop = asyncio.get_running_loop()
@@ -44,16 +50,19 @@ class File(BaseRemoteFile):
 
     @property
     def extension(self) -> str:
+        """Return the file extension."""
         if self.record.file_name:
             return pathlib.Path(self.record.file_name).suffix
         return pathlib.Path(self.record.url.split("/")[-1].split("?")[0]).suffix
 
     @property
     def size(self) -> int:
+        """Return the file size in bytes."""
         return self.record.api_size or 0
 
     @property
     def modify(self) -> datetime:
+        """Return the last modification date."""
         m = self.record.last_modified
         if not m:
             raise ValueError("File requires a modify date")
@@ -61,17 +70,21 @@ class File(BaseRemoteFile):
 
     @property
     def year(self) -> int | None:
+        """Return the inferred year from metadata."""
         return self._metadata.get("year")
 
     @property
     def month(self) -> int | None:
+        """Return the inferred month from metadata."""
         return self._metadata.get("month")
 
     @property
     def state(self) -> State | None:
+        """Return the inferred state from metadata."""
         return self._metadata.get("state")
 
     async def fetch_metadata(self) -> None:
+        """Fetch file size and last-modified from the remote server."""
         try:
             async with httpx.AsyncClient(
                 follow_redirects=True,
@@ -102,11 +115,13 @@ class File(BaseRemoteFile):
         output: pathlib.Path | None = None,
         callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
+        """Download the file to a local path."""
         if not output:
             output = CACHEPATH / self.name
         return await self.client._download_file(self, output, callback=callback)
 
     async def fetch_size(self) -> int:
+        """Fetch the remote file size and update the local record."""
         try:
             async with httpx.AsyncClient(
                 follow_redirects=True,
@@ -130,6 +145,8 @@ class File(BaseRemoteFile):
 
 
 class Group(BaseRemoteGroup):
+    """A group of files within a dataset."""
+
     record: ConjuntoDados
     _formatter: (
         Callable[
@@ -145,6 +162,7 @@ class Group(BaseRemoteGroup):
         dataset: BaseRemoteDataset,
         formatter: Callable | None = None,
     ):
+        """Initialize the Group with a dataset record and optional formatter."""
         super().__init__(dataset=dataset)
         self.record = record
         self._formatter = formatter
@@ -154,17 +172,21 @@ class Group(BaseRemoteGroup):
 
     @property
     def name(self) -> str:
+        """Return the group slug name."""
         return self.record.slug
 
     @property
     def long_name(self) -> str:
+        """Return the group title."""
         return self.record.title
 
     @property
     def description(self) -> str:
+        """Return an empty description."""
         return ""
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
+        """Build File objects from the underlying resources."""
         files: list[BaseRemoteFile] = []
         for recurso in self.record.resources:
             metadata = self._formatter(recurso, self) if self._formatter else {}
@@ -179,6 +201,8 @@ class Group(BaseRemoteGroup):
 
 
 class Dataset(BaseRemoteDataset):
+    """A health dataset available through dados.gov.br."""
+
     ids: list[str] = []
     client: "DadosGov"
 
@@ -187,9 +211,11 @@ class Dataset(BaseRemoteDataset):
 
     @abstractmethod
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract structured metadata from a filename."""
         pass
 
     async def _fetch_content(self) -> list[Group]:
+        """Fetch all groups belonging to this dataset."""
         items: list[Group] = []
         client: "DadosGov" = self.client
         if self.ids:

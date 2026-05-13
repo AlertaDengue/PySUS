@@ -1,3 +1,5 @@
+"""HTTP client and data models for the dados.gov.br API."""
+
 from __future__ import annotations
 
 import pathlib
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
 
 
 def to_datetime(value: Any) -> datetime | None:
+    """Parse a Brazilian date string into a datetime object."""
     if not value or not isinstance(value, str) or "Indisponível" in value:
         return None
     for fmt in ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y"):
@@ -26,6 +29,7 @@ def to_datetime(value: Any) -> datetime | None:
 
 
 def to_bool(value: Any) -> bool:
+    """Parse a Brazilian Portuguese boolean value ("sim"/"não") into a bool."""
     if isinstance(value, bool):
         return value
     return str(value).lower() in ("sim", "true", "1")
@@ -36,27 +40,34 @@ Bool = Annotated[bool, BeforeValidator(to_bool)]
 
 
 class DadosGov(BaseRemoteClient):
+    """Client for the dados.gov.br open data portal API."""
+
     base_url: str = "https://dados.gov.br/dados/api"
 
     _token: str | None = PrivateAttr(default=None)
     _client: httpx.AsyncClient | None = PrivateAttr(default=None)
 
     def __init__(self, **data):
+        """Initialize the DadosGov client."""
         super().__init__(**data)
 
     @property
     def name(self) -> str:
+        """Return the short client name."""
         return "DadosGov"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable client name."""
         return "Portal Brasileiro de Dados Abertos"
 
     @property
     def description(self) -> str:
+        """Return a description of the client."""
         return "Interface de acesso ao API do Portal de Dados Abertos"
 
     async def connect(self, token: str | None = None) -> None:
+        """Connect to the dados.gov.br API with the given token."""
         _token = token or self._token
 
         if not _token:
@@ -84,19 +95,23 @@ class DadosGov(BaseRemoteClient):
         )
 
     async def login(self, token: str | None = None, **kwargs) -> None:
+        """Authenticate with the API (delegates to connect)."""
         await self.connect(token=token)
 
     async def close(self) -> None:
+        """Close the underlying HTTP client."""
         if self._client:
             await self._client.aclose()
             self._client = None
 
     async def datasets(self, **kwargs) -> list[Dataset]:
+        """Return a list of pre-configured health datasets."""
         from .databases import AVAILABLE_DATABASES
 
         return [db_class(client=self) for db_class in AVAILABLE_DATABASES]
 
     async def list_datasets(self, **kwargs) -> list[ConjuntoDados]:
+        """Search and list available datasets from the portal."""
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -121,6 +136,7 @@ class DadosGov(BaseRemoteClient):
         return [ConjuntoDados(**item, client=self) for item in data]
 
     async def get_dataset(self, id: str) -> ConjuntoDados:
+        """Fetch a single dataset by its ID."""
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -140,6 +156,7 @@ class DadosGov(BaseRemoteClient):
         output: pathlib.Path,
         callback: Callable[[int], None] | None = None,
     ) -> pathlib.Path:
+        """Download a remote file to a local path."""
         if self._client is None:
             raise ConnectionError(
                 "Client not connected. Call login(token=...) first.",
@@ -156,6 +173,8 @@ class DadosGov(BaseRemoteClient):
 
 
 class Recurso(BaseModel):
+    """A single resource (file) within a dataset on dados.gov.br."""
+
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
@@ -168,6 +187,7 @@ class Recurso(BaseModel):
     file_name: str | None = Field(None, alias="nomeArquivo")
 
     async def get_size(self) -> int:
+        """Retrieve the file size from the remote server."""
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.head(self.url)
 
@@ -182,6 +202,8 @@ class Recurso(BaseModel):
 
 
 class ConjuntoDados(BaseModel):
+    """A dataset group as returned by the dados.gov.br API."""
+
     model_config = ConfigDict(populate_by_name=True)
     client: BaseRemoteClient | None = None
 
