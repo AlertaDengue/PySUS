@@ -14,7 +14,7 @@ Contents:
    :maxdepth: 2
 
    Data Sources <databases/data-sources>
-   Tutorials <tutorials/tutorials>
+   API Reference <api>
 
 
 Indices and tables

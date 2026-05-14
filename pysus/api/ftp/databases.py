@@ -1,3 +1,5 @@
+"""DATASUS FTP dataset definitions with filename parsers for each database."""
+
 from typing import Any
 
 from pysus.api.ftp.models import Dataset, Directory
@@ -5,6 +7,8 @@ from pysus.utils import zfill_year
 
 
 class CIHA(Dataset):
+    """Comunicação de Internação Hospitalar e Ambulatorial (CIHA)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/CIHA/201101_/Dados"),
     ]
@@ -15,14 +19,17 @@ class CIHA(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "CIHA"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Comunicação de Internação Hospitalar e Ambulatorial"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return (
             "A CIHA foi criada para ampliar o processo de planejamento, "
             "programação, controle, avaliação e regulação da assistência à "
@@ -31,6 +38,7 @@ class CIHA(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a CIHA filename into group, state, year and month metadata."""
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:4]
@@ -57,6 +65,8 @@ class CIHA(Dataset):
 
 
 class CNES(Dataset):
+    """Cadastro Nacional de Estabelecimentos de Saúde (CNES)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/CNES/200508_/Dados"),
     ]
@@ -78,14 +88,17 @@ class CNES(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "CNES"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Cadastro Nacional de Estabelecimentos de Saúde"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return (
             "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
             "sistema de informação oficial de cadastramento de informações "
@@ -93,6 +106,7 @@ class CNES(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a CNES filename into group, state, year and month metadata."""
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -118,6 +132,8 @@ class CNES(Dataset):
 
 
 class SINASC(Dataset):
+    """Sistema de Informações sobre Nascidos Vivos (SINASC)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
         Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
@@ -129,20 +145,24 @@ class SINASC(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "SINASC"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Sistema de Informações sobre Nascidos Vivos"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return """
             O SINASC fornece subsídios para o diagnóstico de saúde e
             planejamento de políticas.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SINASC filename into group, state and year metadata."""
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]
@@ -162,6 +182,8 @@ class SINASC(Dataset):
 
 
 class SIM(Dataset):
+    """Sistema de Informação sobre Mortalidade (SIM)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/SIM/CID10/DORES"),
         Directory("/dissemin/publicos/SIM/CID9/DORES"),
@@ -173,17 +195,21 @@ class SIM(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "SIM"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Sistema de Informação sobre Mortalidade"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."  # noqa
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SIM filename into group, state and year metadata."""
         try:
             name = filename.split(".")[0].upper()
             if "CID9" in filename:
@@ -204,6 +230,8 @@ class SIM(Dataset):
 
 
 class PNI(Dataset):
+    """Programa Nacional de Imunizações (PNI)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/PNI/DADOS"),
     ]
@@ -214,17 +242,21 @@ class PNI(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "PNI"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Programa Nacional de Imunizações"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return "O SI-PNI monitora a cobertura vacinal e doses aplicadas."
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a PNI filename into group, state and year metadata."""
         try:
             name = filename.split(".")[0].upper()
             group_code, state, year_short = name[:4], name[4:6], name[-2:]
@@ -242,6 +274,8 @@ class PNI(Dataset):
 
 
 class IBGEDATASUS(Dataset):
+    """População Residente e Projeções (IBGE)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/IBGE/POP"),
         Directory("/dissemin/publicos/IBGE/censo"),
@@ -262,17 +296,21 @@ class IBGEDATASUS(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "IBGE"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "População Residente e Projeções (IBGE)"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return "Informações sobre a população residente obtidas de Censos."
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an IBGE filename into group and year metadata."""
         try:
             name = filename.split(".")[0].upper()
             year = name[-2:]
@@ -295,6 +333,8 @@ class IBGEDATASUS(Dataset):
 
 
 class SIA(Dataset):
+    """Sistema de Informações Ambulatoriais — outpatient information system."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
         Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
@@ -311,17 +351,21 @@ class SIA(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "SIA"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Sistema de Informações Ambulatoriais"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return "O SIA acompanha as ações de saúde produzidas."
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an SIA filename into group, state, year and month metadata."""
         try:
             name = filename.split(".")[0].upper()
             digits = "".join([d for d in name if d.isdigit()])
@@ -350,6 +394,8 @@ class SIA(Dataset):
 
 
 class SIH(Dataset):
+    """Sistema de Informações Hospitalares (SIH)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/SIHSUS/199201_200712/Dados"),
         Directory("/dissemin/publicos/SIHSUS/200801_/Dados"),
@@ -363,19 +409,23 @@ class SIH(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "SIH"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Sistema de Informações Hospitalares"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return """
             O SIH processa as internações hospitalares financiadas pelo SUS.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an SIH filename into group, state, year and month metadata."""
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -397,6 +447,8 @@ class SIH(Dataset):
 
 
 class SINAN(Dataset):
+    """Sistema de Informação de Agravos de Notificação (SINAN)."""
+
     paths: list[Directory] = [
         Directory("/dissemin/publicos/SINAN/DADOS/FINAIS"),
         Directory("/dissemin/publicos/SINAN/DADOS/PRELIM"),
@@ -456,17 +508,21 @@ class SINAN(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the dataset short name."""
         return "SINAN"
 
     @property
     def long_name(self) -> str:
+        """Return the dataset full name in Portuguese."""
         return "Sistema de Informação de Agravos de Notificação"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset's purpose."""
         return "O SINAN é alimentado pela notificação de doenças compulsórias."
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SINAN filename into group and year metadata."""
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]

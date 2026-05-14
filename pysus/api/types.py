@@ -1,3 +1,13 @@
+"""Type aliases used across the PySUS API.
+
+FileType:
+    Discriminated union of supported local file types
+    (FILE, DIR, PARQUET, CSV, JSON, PDF, DBC, DBF, ZIP).
+
+State:
+    Brazilian state abbreviations (AC, AL, AP, ..., DF).
+"""
+
 from typing import Literal
 
 FileType = Literal[

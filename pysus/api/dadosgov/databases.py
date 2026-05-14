@@ -1,9 +1,13 @@
+"""Pre-configured health database definitions accessible via dados.gov.br."""
+
 from typing import Any
 
 from .models import Dataset
 
 
 class CNES(Dataset):
+    """Cadastro Nacional de Estabelecimentos de Saúde (CNES)."""
+
     ids: list[str] = [
         "40a0d093-b12f-44a4-bdc7-bae8eb54dd04",
         "9455b341-b06e-408e-8e10-54b32b3d74ec",
@@ -11,10 +15,12 @@ class CNES(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "CNES"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Cadastro Nacional de Estabelecimentos de Saúde"
 
     @property
@@ -26,10 +32,13 @@ class CNES(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 
 class PNI(Dataset):
+    """Programa Nacional de Imunizações (PNI)."""
+
     ids: list[str] = [
         "2989d396-cb09-47e7-a3b8-a4b951ca0200",
         "543aa08a-46c4-44e8-802e-198daa30753d",
@@ -42,10 +51,12 @@ class PNI(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "PNI"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Programa Nacional de Imunizações"
 
     @property
@@ -53,20 +64,25 @@ class PNI(Dataset):
         return "O PNI monitora a cobertura vacinal e doses aplicadas no Brasil."
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 
 class SIA(Dataset):
+    """Sistema de Informações Ambulatoriais (SIA)."""
+
     ids: list[str] = [
         "9a335cb7-2b4f-4fce-8947-e8441b4a90af",
     ]
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "SIA"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Sistema de Informações Ambulatoriais"
 
     @property
@@ -76,10 +92,13 @@ class SIA(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 
 class SINAN(Dataset):
+    """Sistema de Informação de Agravos de Notificação (SINAN)."""
+
     ids: list[str] = [
         "4d5e5d44-58a8-4d67-b8aa-4ef1e4b00a1c",
         "5699abe0-0510-4da8-b47d-209b3bb32b34",
@@ -89,10 +108,12 @@ class SINAN(Dataset):
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "SINAN"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Sistema de Informação de Agravos de Notificação"
 
     @property
@@ -103,20 +124,25 @@ class SINAN(Dataset):
             """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 
 class SIM(Dataset):
+    """Sistema de Informação sobre Mortalidade (SIM)."""
+
     ids: list[str] = [
         "5f121f4d-47c6-428e-8ec6-e8ec56417172",
     ]
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "SIM"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Sistema de Informação sobre Mortalidade"
 
     @property
@@ -126,20 +152,25 @@ class SIM(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 
 class SINASC(Dataset):
+    """Sistema de Informações sobre Nascidos Vivos (SINASC)."""
+
     ids: list[str] = [
         "441cc6bd-684a-4afd-a88b-ba4734c9e83e",
     ]
 
     @property
     def name(self) -> str:
+        """Return the short name."""
         return "SINASC"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name."""
         return "Sistema de Informações sobre Nascidos Vivos"
 
     @property
@@ -150,6 +181,7 @@ class SINASC(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
+        """Extract metadata from a filename (not yet implemented)."""
         raise NotImplementedError()
 
 

@@ -1,3 +1,12 @@
+"""High-level convenience functions for fetching Brazilian health data.
+
+Each function wraps an asynchronous query/download pipeline and returns a
+pandas DataFrame.  The available datasets cover disease notification (SINAN),
+vital statistics (SINASC, SIM), hospital admissions (SIH), ambulatory care
+(SIA), immunisation (PNI), census data (IBGE), health facilities (CNES),
+and hospitalisation records (CIHA).
+"""
+
 __all__ = [
     "sinan",
     "sinasc",
@@ -32,6 +41,8 @@ def _fetch_data(
     show_progress: bool = True,
     **kwargs,
 ) -> pd.DataFrame:
+    """Query, download, and concatenate Parquet files for a given dataset."""
+
     async def _fetch():
         async with PySUS() as pysus:
             years = [year] if isinstance(year, int) else (year or [None])
@@ -77,10 +88,61 @@ def _fetch_data(
 
 
 def sinan(
-    disease: str,
+    disease: Literal[
+        "ACBI",
+        "ACGR",
+        "ANIM",
+        "ANTR",
+        "BOTU",
+        "CANC",
+        "CHAG",
+        "CHIK",
+        "COLE",
+        "COQU",
+        "DENG",
+        "DERM",
+        "DIFT",
+        "ESQU",
+        "EXAN",
+        "FMAC",
+        "FTIF",
+        "HANS",
+        "HANT",
+        "HEPA",
+        "IEXO",
+        "INFL",
+        "LEIV",
+        "LEPT",
+        "LERD",
+        "LTAN",
+        "MALA",
+        "MENI",
+        "MENT",
+        "NTRA",
+        "PAIR",
+        "PEST",
+        "PFAN",
+        "PNEU",
+        "RAIV",
+        "SDTA",
+        "SIFA",
+        "SIFC",
+        "SIFG",
+        "SRC",
+        "TETA",
+        "TETN",
+        "TOXC",
+        "TOXG",
+        "TRAC",
+        "TUBE",
+        "VARC",
+        "VIOL",
+        "ZIKA",
+    ],
     year: int | list[int],
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch SINAN records for a given disease and year(s)."""
     return _fetch_data(
         dataset="sinan",
         group=disease.upper(),
@@ -94,6 +156,7 @@ def sinasc(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch SINASC birth certificates for a given state, year(s), and group."""
     return _fetch_data(
         dataset="sinasc",
         state=state.upper(),
@@ -108,6 +171,7 @@ def sim(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch SIM mortality records for a given state, year(s), and group."""
     return _fetch_data(
         dataset="sim",
         state=state.upper(),
@@ -123,6 +187,7 @@ def sih(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch SIH hospital admissions for a state, year, month, and group."""
     return _fetch_data(
         dataset="sih",
         state=state.upper(),
@@ -139,6 +204,7 @@ def sia(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch SIA ambulatory care for a state, year, month, and group."""
     return _fetch_data(
         dataset="sia",
         state=state.upper(),
@@ -154,6 +220,7 @@ def pni(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch PNI immunisation records for a given state, year(s), and group."""
     return _fetch_data(
         dataset="pni",
         state=state.upper(),
@@ -167,6 +234,7 @@ def ibge(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch IBGE census data for given year(s) and optional group."""
     return _fetch_data(dataset="ibge", group=group, year=year)
 
 
@@ -177,6 +245,7 @@ def cnes(
     group: str | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch CNES health facilities for a state, year, month, and group."""
     return _fetch_data(
         dataset="cnes",
         state=state.upper(),
@@ -193,6 +262,7 @@ def ciha(
     group: str | None = "CIHA",
     **kwargs,
 ) -> pd.DataFrame:
+    """Fetch CIHA hospitalisation records for state, year, month, and group."""
     return _fetch_data(
         dataset="ciha",
         state=state.upper(),
@@ -220,6 +290,8 @@ def list_files(
     month: int | list[int] | None = None,
     **kwargs,
 ) -> pd.DataFrame:
+    """List catalog files for a dataset, filtered by group/state/year/month."""
+
     async def _list():
         async with PySUS() as pysus:
             ducklake = await pysus.get_ducklake()

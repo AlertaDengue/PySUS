@@ -1,3 +1,5 @@
+"""Map file extensions and MIME types to their handler classes."""
+
 import asyncio
 import csv
 import ctypes.util
@@ -40,15 +42,20 @@ except ImportError:
 
 
 class File(BaseLocalFile):
+    """Represents a generic local file with no special handling."""
+
     type: FileType = Field("FILE")
 
     async def load(self) -> bytes:
+        """Read the entire file contents into memory as bytes."""
         return await to_thread.run_sync(self.path.read_bytes)
 
     async def stream(
         self,
         chunk_size: int = 1024 * 1024,
     ) -> AsyncGenerator[bytes, None]:
+        """Yield the file contents in chunks of the given size."""
+
         def _read_sync():
             with open(self.path, "rb") as f:
                 while chunk := f.read(chunk_size):
@@ -60,12 +67,16 @@ class File(BaseLocalFile):
 
 
 class Directory(BaseLocalFile):
+    """Represents a directory on the local filesystem."""
+
     type: FileType = Field("DIR")
 
     def __repr__(self) -> str:
+        """Return the directory name with a trailing slash."""
         return f"{self.basename}/"
 
     async def load(self) -> list[BaseLocalFile]:
+        """Load all entries inside the directory as file objects."""
         from pysus.api.extensions import ExtensionFactory
 
         if not self.path.exists():
@@ -79,6 +90,7 @@ class Directory(BaseLocalFile):
         self,
         chunksize: int = 10000,
     ) -> AsyncGenerator[BaseLocalFile, None]:
+        """Yield each entry inside the directory as a file object."""
         from pysus.api.extensions import ExtensionFactory
 
         for p in self.path.iterdir():
@@ -86,17 +98,21 @@ class Directory(BaseLocalFile):
 
 
 class CSV(BaseTabularFile):
+    """Represents a CSV file with automatic encoding and separator detection."""
+
     type: FileType = Field("CSV")
     _encoding: str | None = PrivateAttr(default=None)
     _sep: str | None = PrivateAttr(default=None)
 
     @property
     def columns(self) -> list[str]:
+        """Return the column names from the CSV header row."""
         df = pd.read_csv(self.path, sep=",", nrows=0)
         return df.columns.tolist()
 
     @property
     def rows(self) -> int:
+        """Return the number of data rows in the file."""
         count = 0
         with open(self.path, "rb") as f:
             for _ in f:
@@ -104,6 +120,7 @@ class CSV(BaseTabularFile):
         return max(0, count - 1)
 
     async def _get_encoding(self) -> str:
+        """Detect and cache the file's character encoding."""
         if self._encoding is None:
 
             def detect():
@@ -115,6 +132,7 @@ class CSV(BaseTabularFile):
         return self._encoding
 
     async def _get_sep(self) -> str:
+        """Sniff and cache the CSV delimiter."""
         if self._sep is None:
             encoding = await self._get_encoding()
 
@@ -131,6 +149,7 @@ class CSV(BaseTabularFile):
         return self._sep
 
     async def load(self) -> pd.DataFrame:
+        """Read the entire CSV into a DataFrame."""
         encoding = await self._get_encoding()
         separator = await self._get_sep()
 
@@ -145,6 +164,7 @@ class CSV(BaseTabularFile):
         self,
         chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Yield the CSV in chunks of the given number of rows."""
         encoding = await self._get_encoding()
         separator = await self._get_sep()
 
@@ -165,21 +185,28 @@ class CSV(BaseTabularFile):
 
 
 class Parquet(BaseTabularFile):
+    """Represents a Parquet file with optional date and integer type parsing."""
+
     type: FileType = Field("PARQUET")
 
     @property
     def schema(self) -> pa.Schema:
+        """Return the Parquet schema as a PyArrow Schema object."""
         return pq.read_schema(self.path)
 
     @property
     def columns(self) -> list[str]:
+        """Return the column names from the Parquet schema."""
         return pq.read_schema(self.path).names
 
     @property
     def rows(self) -> int:
+        """Return the number of rows from the Parquet metadata."""
         return pq.read_metadata(self.path).num_rows
 
     async def load(self, parse: bool = True) -> pd.DataFrame:
+        """Read the entire Parquet file into a DataFrame."""
+
         def _load():
             df = pd.read_parquet(self.path, engine="pyarrow")
             return self.parse_dftypes(df) if parse else df
@@ -189,6 +216,7 @@ class Parquet(BaseTabularFile):
     async def stream(
         self, chunk_size: int = 10000, parse: bool = False
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Yield the Parquet file in batches of the given size."""
         parquet_file = await to_thread.run_sync(pq.ParquetFile, self.path)
 
         if parquet_file.metadata.num_row_groups == 0:
@@ -203,6 +231,8 @@ class Parquet(BaseTabularFile):
 
     @staticmethod
     def parse_dftypes(df: pd.DataFrame) -> pd.DataFrame:
+        """Convert known date and integer columns to their proper types."""
+
         def str_to_int(string):
             if pd.isna(string):
                 return string
@@ -232,17 +262,22 @@ class Parquet(BaseTabularFile):
 
 
 class DBF(BaseTabularFile):
+    """Represents a dBASE (DBF) file."""
+
     type: FileType = Field("DBF")
 
     @property
     def columns(self) -> list[str]:
+        """Return the field names from the DBF file."""
         return DBFReader(self.path, load=False).field_names
 
     @property
     def rows(self) -> int:
+        """Return the number of records in the DBF file."""
         return len(DBFReader(self.path, load=False))
 
     def decode_column(self, value):
+        """Decode a byte string value using cp1252 encoding."""
         if isinstance(value, bytes):
             return (
                 value.decode(encoding="cp1252", errors="replace")
@@ -254,6 +289,8 @@ class DBF(BaseTabularFile):
         return value
 
     async def load(self) -> pd.DataFrame:
+        """Read the entire DBF file into a DataFrame."""
+
         def _load():
             dbf = DBFReader(self.path, encoding="cp1252", raw=True)
             df = pd.DataFrame(iter(dbf))
@@ -265,6 +302,8 @@ class DBF(BaseTabularFile):
         self,
         chunk_size: int = 30000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Yield the DBF records in chunks of the given size."""
+
         def _get_db():
             return DBFReader(self.path, encoding="cp1252", raw=True)
 
@@ -286,6 +325,7 @@ class DBF(BaseTabularFile):
         chunk_size: int = 30000,
         callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
+        """Convert the DBF file to Parquet format."""
         from pysus.api.extensions import ExtensionFactory
 
         out = (
@@ -349,21 +389,26 @@ class DBF(BaseTabularFile):
 
 
 class DBC(BaseTabularFile):
+    """Represents a compressed DBC file, convertible to DBF then Parquet."""
+
     type: FileType = Field("DBC")
 
     @property
     def columns(self) -> list[str]:
+        """Not supported for DBC files. Convert to Parquet first."""
         raise NotImplementedError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
         )
 
     @property
     def rows(self) -> int:
+        """Not supported for DBC files. Convert to Parquet first."""
         raise NotImplementedError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
         )
 
     async def load(self) -> pd.DataFrame:
+        """Convert to Parquet and load the result as a DataFrame."""
         parquet = await self.to_parquet()
         return await parquet.load()
 
@@ -371,6 +416,7 @@ class DBC(BaseTabularFile):
         self,
         chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Convert to Parquet and stream its chunks."""
         parquet = await self.to_parquet()
         async for chunk in parquet.stream(chunk_size=chunk_size):
             yield chunk
@@ -381,6 +427,7 @@ class DBC(BaseTabularFile):
         chunk_size: int = 30000,
         callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
+        """Decompress DBC to DBF, then convert to Parquet."""
         from pysus.api.extensions import ExtensionFactory
 
         if output_path is None:
@@ -414,10 +461,13 @@ class DBC(BaseTabularFile):
 
 
 class JSON(BaseTabularFile):
+    """Represents a JSON file with tabular data."""
+
     type: FileType = Field("JSON")
 
     @property
     def columns(self) -> list[str]:
+        """Return the column names from the JSON file."""
         df = (
             pd.read_json(self.path, nrows=0)
             if self.path.stat().st_size > 0
@@ -427,27 +477,35 @@ class JSON(BaseTabularFile):
 
     @property
     def rows(self) -> int:
+        """Return the number of rows in the JSON file."""
         return len(pd.read_json(self.path))
 
     async def load(self) -> pd.DataFrame:
+        """Read the entire JSON file into a DataFrame."""
         return await to_thread.run_sync(pd.read_json, self.path)
 
     async def stream(
         self,
         chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Yield the entire JSON file as a single DataFrame."""
         yield await self.load()
 
 
 class PDF(BaseLocalFile):
+    """Represents a PDF file."""
+
     type: FileType = Field("PDF")
 
     async def load(self) -> bytes:
+        """Read the entire PDF file contents into memory as bytes."""
         return await to_thread.run_sync(self.path.read_bytes)
 
     async def stream(
         self, chunk_size: int | None = None
     ) -> AsyncGenerator[bytes, None]:
+        """Yield the PDF file contents in chunks of the given size."""
+
         def _read():
             with open(self.path, "rb") as f:
                 if chunk_size:
@@ -462,12 +520,17 @@ class PDF(BaseLocalFile):
 
 
 class Zip(BaseCompressedFile):
+    """Represents a ZIP archive file."""
+
     type: FileType = Field("ZIP")
 
     async def load(self) -> zipfile.ZipFile:
+        """Open and return the ZIP archive."""
         return await to_thread.run_sync(zipfile.ZipFile, self.path)
 
     async def list_members(self) -> list[str]:
+        """Return the list of member names inside the archive."""
+
         def _list():
             with zipfile.ZipFile(self.path) as z:
                 return z.namelist()
@@ -475,6 +538,8 @@ class Zip(BaseCompressedFile):
         return await to_thread.run_sync(_list)
 
     async def open_member(self, member_name: str) -> bytes:
+        """Read and return the contents of a named archive member."""
+
         def _read():
             with zipfile.ZipFile(self.path) as z:
                 return z.read(member_name)
@@ -485,6 +550,7 @@ class Zip(BaseCompressedFile):
         self,
         target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
+        """Extract members to a target directory and return as file objects."""
         from pysus.api.extensions import ExtensionFactory
 
         target_dir = Path(target_dir).expanduser().resolve()
@@ -506,6 +572,7 @@ class Zip(BaseCompressedFile):
         chunk_size: int = 30000,
         callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
+        """Extract the archive and convert the first tabular file to Parquet."""
         final_output = (
             Path(output_path or self.path.with_suffix(".parquet"))
             .expanduser()
@@ -535,6 +602,8 @@ class Zip(BaseCompressedFile):
             await self._safe_cleanup(temp_dir)
 
     async def _safe_cleanup(self, directory: Path):
+        """Remove a temporary directory and its contents."""
+
         def _cleanup():
             if not directory.exists():
                 return
@@ -555,9 +624,13 @@ class Zip(BaseCompressedFile):
 
 
 class GZip(BaseCompressedFile):
+    """Represents a GZip-compressed file."""
+
     type: FileType = Field("ZIP")
 
     async def load(self) -> bytes:
+        """Decompress and read the entire file contents into memory."""
+
         def _read():
             with gzip.open(self.path, "rb") as f:
                 return f.read()
@@ -565,15 +638,19 @@ class GZip(BaseCompressedFile):
         return await to_thread.run_sync(_read)
 
     async def list_members(self) -> list[str]:
+        """Return a list containing the single decompressed file name."""
         return [self.path.stem]
 
     async def open_member(self, member_name: str) -> bytes:
+        """Read and return the decompressed file contents."""
         return await self.load()
 
     async def extract(
         self,
         target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
+        """Decompress the file to a target directory
+        and return it as a file object."""
         from pysus.api.extensions import ExtensionFactory
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -594,12 +671,17 @@ class GZip(BaseCompressedFile):
 
 
 class Tar(BaseCompressedFile):
+    """Represents a Tar archive file."""
+
     type: FileType = Field("ZIP")
 
     async def load(self) -> tarfile.TarFile:
+        """Open and return the tar archive."""
         return await to_thread.run_sync(tarfile.open, self.path)
 
     async def list_members(self) -> list[str]:
+        """Return the list of member names inside the archive."""
+
         def _list():
             with tarfile.open(self.path) as t:
                 return t.getnames()
@@ -607,6 +689,8 @@ class Tar(BaseCompressedFile):
         return await to_thread.run_sync(_list)
 
     async def open_member(self, member_name: str) -> bytes:
+        """Read and return the contents of a named archive member."""
+
         def _read():
             with tarfile.open(self.path) as t:
                 f = t.extractfile(member_name)
@@ -618,6 +702,7 @@ class Tar(BaseCompressedFile):
         self,
         target_dir: Path = CACHEPATH,
     ) -> list[BaseLocalFile]:
+        """Extract members to a target directory and return as file objects."""
         from pysus.api.extensions import ExtensionFactory
 
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -633,6 +718,8 @@ class Tar(BaseCompressedFile):
 
 
 class FTPNotImported(BaseTabularFile):
+    """Placeholder for DBC files when optional dependency is not installed."""
+
     path: Path = Field(default_factory=lambda: Path("..."))
     type: str | FileType = Field(default="remote")
     import_err: ClassVar[
@@ -645,35 +732,44 @@ class FTPNotImported(BaseTabularFile):
 
     @property
     def name(self) -> str:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     @property
     def extension(self) -> str:
+        """Return the .dbc extension."""
         return ".dbc"
 
     @property
     def size(self) -> int:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     @property
     def modify(self) -> datetime:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     @property
     def columns(self) -> list[str]:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     @property
     def rows(self) -> int:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     async def load(self) -> pd.DataFrame:
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
     def stream(
         self,
         chunk_size: int = 10000,
     ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Raise ImportError indicating the missing DBC dependency."""
+
         async def _internal_gen():
             raise ImportError(self.import_err)
             yield pd.DataFrame()
@@ -686,11 +782,13 @@ class FTPNotImported(BaseTabularFile):
         chunk_size: int = 10000,
         callback: Callable[[int, int], None] | None = None,
     ) -> Parquet:
-
+        """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 
 
 class ExtensionFactory:
+    """Factory that maps file extensions and MIME types to handler classes."""
+
     _mime: dict[str, type[BaseLocalFile]] = {
         "application/zip": Zip,
         "application/x-gzip": GZip,
@@ -716,6 +814,7 @@ class ExtensionFactory:
 
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
+        """Identify the file class by its MIME type."""
         try:
             mime = await to_thread.run_sync(
                 magic.from_file,
@@ -728,6 +827,7 @@ class ExtensionFactory:
 
     @classmethod
     async def get_file_class(cls, path: Path) -> type[BaseLocalFile]:
+        """Return handler class for path, falling back to extension matching."""
         mime_class = await cls._identify(path)
         if mime_class:
             return mime_class
@@ -738,6 +838,7 @@ class ExtensionFactory:
 
     @classmethod
     async def instantiate(cls, path: str | Path) -> BaseLocalFile:
+        """Create and return the appropriate file handler for a given path."""
         path = Path(path).expanduser().resolve()
         if await to_thread.run_sync(path.is_dir):
             return Directory(path=path, type="DIR")

@@ -1,3 +1,5 @@
+"""Async FTP client wrapping the standard ftplib for DATASUS data access."""
+
 from __future__ import annotations
 
 import pathlib
@@ -17,12 +19,16 @@ if TYPE_CHECKING:
 
 
 class FTPGroupInfo(TypedDict):
+    """Metadata describing a file group within a dataset."""
+
     name: str
     long_name: str | None
     description: str | None
 
 
 class FTPFileInfo(TypedDict):
+    """Parsed metadata for a file or directory entry from an FTP listing."""
+
     name: str
     size: int
     type: str
@@ -34,20 +40,25 @@ class FTPFileInfo(TypedDict):
 
 
 class FTP(BaseRemoteClient):
+    """Async FTP client for navigating and downloading DATASUS data."""
+
     host: str = "ftp.datasus.gov.br"
 
     _ftp: FTPLib | None = PrivateAttr(default=None)
 
     @property
     def name(self) -> str:
+        """Return the short name of this client."""
         return "FTP"
 
     @property
     def long_name(self) -> str:
+        """Return the human-readable name of this client."""
         return "Pysus FTP Client"
 
     @property
     def description(self) -> str:
+        """Return a description of this client's purpose."""
         return """
             O cliente FTP do pysus foi desenvolvido para fornecer uma interface
             assíncrona e moderna para navegação e extração de dados diretamente
@@ -58,9 +69,12 @@ class FTP(BaseRemoteClient):
 
     @property
     def ftp(self) -> FTPLib | None:
+        """Return the underlying ftplib.FTP, or None if not connected."""
         return self._ftp
 
     async def connect(self) -> None:
+        """Establish the FTP connection to the remote host."""
+
         def _connect():
             if self.ftp is None:
                 self._ftp = FTPLib(self.host)
@@ -69,9 +83,12 @@ class FTP(BaseRemoteClient):
         await to_thread.run_sync(_connect)
 
     async def login(self, **kwargs) -> None:
+        """Authenticate and connect to the FTP server (alias for connect)."""
         await self.connect()
 
     async def close(self) -> None:
+        """Close the FTP connection and reset the internal client state."""
+
         def _close():
             if self.ftp:
                 try:
@@ -84,6 +101,7 @@ class FTP(BaseRemoteClient):
         await to_thread.run_sync(_close)
 
     async def datasets(self, **kwargs) -> list[Dataset]:
+        """Return a list of all available dataset instances for this client."""
         from .databases import AVAILABLE_DATABASES
 
         if self.ftp is None:
@@ -100,6 +118,8 @@ class FTP(BaseRemoteClient):
         output: pathlib.Path,
         callback: Callable[..., None] | None = None,
     ) -> pathlib.Path:
+        """Download a remote file locally, optionally reporting progress."""
+
         async def _fetch():
             try:
                 self.ftp.voidcmd("NOOP")
@@ -128,6 +148,7 @@ class FTP(BaseRemoteClient):
         file_line: str,
         formatter: Callable[[str], dict[str, Any]] | None = None,
     ) -> FTPFileInfo:
+        """Parse a line from a DATASUS FTP LIST response into FTPFileInfo."""
         parts = file_line.strip().split()
         if len(parts) < 4:
             raise ValueError(f"Invalid FTP line: {file_line}")
@@ -165,6 +186,8 @@ class FTP(BaseRemoteClient):
         path: str,
         formatter: Callable[[str], dict[str, Any]] | None = None,
     ) -> list[FTPFileInfo]:
+        """List the contents of a remote directory and parse each entry."""
+
         def _list():
             self.ftp.cwd(path)
             lines = []

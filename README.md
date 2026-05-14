@@ -55,6 +55,16 @@ df = sih(state="SP", year=2024, month=[1, 2, 3])
 df = cnes(state="SP", year=2024, month=1)
 ```
 
+### Listing the files
+
+You can also list the files within the dataset to check which files are available to download
+
+```python
+from pysus import list_files
+
+list_files("SINAN")
+```
+
 ### Using the PySUS Client
 
 ```python
