@@ -188,6 +188,7 @@ class Parquet(BaseTabularFile):
     """Represents a Parquet file with optional date and integer type parsing."""
 
     type: FileType = Field("PARQUET")
+    add_dv: bool = True
 
     @property
     def schema(self) -> pa.Schema:
@@ -204,12 +205,26 @@ class Parquet(BaseTabularFile):
         """Return the number of rows from the Parquet metadata."""
         return pq.read_metadata(self.path).num_rows
 
+    @staticmethod
+    def _apply_add_dv(df: pd.DataFrame) -> pd.DataFrame:
+        """Apply the IBGE verification digit to geocode columns in-place."""
+        from pysus.api.utils import add_dv, is_geocode_column
+
+        geocode_cols = [c for c in df.columns if is_geocode_column(c)]
+        for col in geocode_cols:
+            df[col] = df[col].astype(str).apply(add_dv)
+        return df
+
     async def load(self, parse: bool = True) -> pd.DataFrame:
         """Read the entire Parquet file into a DataFrame."""
 
         def _load():
             df = pd.read_parquet(self.path, engine="pyarrow")
-            return self.parse_dftypes(df) if parse else df
+            if parse:
+                df = self.parse_dftypes(df)
+                if self.add_dv:
+                    df = self._apply_add_dv(df)
+            return df
 
         return await to_thread.run_sync(_load)
 
@@ -226,6 +241,8 @@ class Parquet(BaseTabularFile):
             df = batch.to_pandas()
             if parse:
                 df = self.parse_dftypes(df)
+                if self.add_dv:
+                    df = self._apply_add_dv(df)
             yield df
             await asyncio.sleep(0)
 

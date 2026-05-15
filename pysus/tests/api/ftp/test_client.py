@@ -48,7 +48,9 @@ async def test_connect_and_login(ftp_client):
         mock_instance = mock_ftplib.return_value
         await ftp_client.login()
 
-        mock_ftplib.assert_called_once_with(ftp_client.host)
+        mock_ftplib.assert_called_once_with(
+            ftp_client.host, timeout=ftp_client.timeout
+        )
         mock_instance.login.assert_called_once()
 
 

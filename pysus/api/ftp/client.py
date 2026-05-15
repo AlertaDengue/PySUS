@@ -43,6 +43,7 @@ class FTP(BaseRemoteClient):
     """Async FTP client for navigating and downloading DATASUS data."""
 
     host: str = "ftp.datasus.gov.br"
+    timeout: int = 60
 
     _ftp: FTPLib | None = PrivateAttr(default=None)
 
@@ -77,7 +78,7 @@ class FTP(BaseRemoteClient):
 
         def _connect():
             if self.ftp is None:
-                self._ftp = FTPLib(self.host)
+                self._ftp = FTPLib(self.host, timeout=self.timeout)
                 self.ftp.login()
 
         await to_thread.run_sync(_connect)
