@@ -253,7 +253,10 @@ class PySUS:
 
         existing_local = await self.get_local_file(file)
         if existing_local and existing_local.path.exists():
-            return existing_local
+            if existing_local.size == file.size:
+                return existing_local
+            await self._delete_record(str(existing_local.path))
+            existing_local.path.unlink(missing_ok=True)
 
         client_name = file.client.name.lower()
         remote_path = file.path
