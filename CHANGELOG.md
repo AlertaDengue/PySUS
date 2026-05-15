@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.0.3](https://github.com/AlertaDengue/PySUS/compare/2.0.2...2.0.3) (2026-05-15)
+
+### Bug Fixes
+
+* **parquet:** include parsings to parquet reading ([#265](https://github.com/AlertaDengue/PySUS/issues/265)) ([790c387](https://github.com/AlertaDengue/PySUS/commit/790c3870d2fa815e99e7e3b8583226bbc7bc4ce5))
+
 ## [2.0.2](https://github.com/AlertaDengue/PySUS/compare/2.0.1...2.0.2) (2026-05-13)
 
 ### Bug Fixes
