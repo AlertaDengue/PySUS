@@ -102,6 +102,12 @@ testpaths = [
 
 exclude = ["*.git", "docs/"]
 
+[tool.coverage.run]
+omit = [
+    "pysus/management/client.py",
+    "pysus/tui/*",
+]
+
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false

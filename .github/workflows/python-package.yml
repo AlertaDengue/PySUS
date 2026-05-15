@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: ${{ (matrix.os == 'windows-latest' && 30) || 15 }}
 
     defaults:
       run:
@@ -36,9 +36,13 @@ jobs:
       run: |
         pip install poetry poetry-plugin-export
         poetry config virtualenvs.create false
-        poetry export --with dev --extras dbc --format requirements.txt --output reqs.txt --without-hashes
-        pip install -r reqs.txt
-        pip install -e ".[dbc]"
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          poetry install --without dev --extras dbc
+          pip install pre-commit
+        else
+          poetry install --without dev
+        fi
+        pip install pytest pytest-timeout pytest-retry pytest-asyncio pytest-cov
 
     - name: Linting
       if: matrix.os == 'ubuntu-latest'
