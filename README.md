@@ -27,6 +27,11 @@ sudo apt install libffi-dev
 pip install pysus[dbc]
 ```
 
+For the terminal user interface (TUI):
+```bash
+pip install pysus[tui]
+```
+
 ## Quick Start
 
 ### Simplified Database Functions (New in 2.0)

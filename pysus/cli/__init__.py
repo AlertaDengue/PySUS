@@ -1,6 +1,5 @@
 import typer
 from pysus import __version__
-from pysus.tui.app import PySUS
 
 app = typer.Typer(help="PySUS CLI")
 
@@ -14,6 +13,13 @@ def tui(
         help="Language (en, pt)",
     ),
 ):
+    try:
+        from pysus.tui.app import PySUS
+    except ImportError:
+        raise ImportError(
+            "The TUI requires extra dependencies. "
+            "Install them with: pip install pysus[tui]"
+        )
     app = PySUS(lang=lang)
     app.run()
 

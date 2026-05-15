@@ -10,7 +10,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+import anyio
 import duckdb
+import pandas as pd
 from pysus import CACHEPATH
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
@@ -235,14 +237,26 @@ class PySUS:
         file: BaseRemoteFile,
         token: str | None = None,
         callback: Callable | None = None,
+        timeout: float | None = None,
     ) -> BaseLocalFile:
-        """Download a remote file and return a local file handle."""
+        """Download a remote file and return a local file handle.
+
+        Parameters
+        ----------
+        timeout : float | None
+            Maximum seconds to wait for the download. ``None`` (default) means
+            no timeout – use this when the socket-level timeout on the
+            underlying client is sufficient.
+        """
 
         from pysus.api.extensions import ExtensionFactory
 
         existing_local = await self.get_local_file(file)
         if existing_local and existing_local.path.exists():
-            return existing_local
+            if existing_local.size == file.size:
+                return existing_local
+            await self._delete_record(str(existing_local.path))
+            existing_local.path.unlink(missing_ok=True)
 
         client_name = file.client.name.lower()
         remote_path = file.path
@@ -271,7 +285,11 @@ class PySUS:
                     f"No download logic for client: {client_name}",
                 )
 
-            await client._download_file(file, local_path, callback)
+            if timeout is not None:
+                with anyio.fail_after(timeout):
+                    await client._download_file(file, local_path, callback)
+            else:
+                await client._download_file(file, local_path, callback)
 
             await self._update_state(
                 local_path=local_path,
@@ -311,6 +329,8 @@ class PySUS:
         file: BaseRemoteFile,
         token: str | None = None,
         callback: Callable[[int, int], None] | None = None,
+        timeout: float | None = None,
+        add_dv: bool = True,
     ) -> Parquet:
         """Download a file and convert it to Parquet format."""
 
@@ -318,11 +338,13 @@ class PySUS:
             file=file,
             token=token,
             callback=callback,
+            timeout=timeout,
         )
 
         if hasattr(local_file, "to_parquet"):
             original_path = local_file.path
             parquet_file = await local_file.to_parquet(callback=callback)
+            parquet_file.add_dv = add_dv
 
             await self._update_state(
                 local_path=parquet_file.path,
@@ -346,7 +368,9 @@ class PySUS:
         )
 
     def get_local_hierarchy(self):
-        """Build a nested dict of cached files grouped by client and dataset."""
+        """
+        Build a nested dict of cached files grouped by client and dataset.
+        """
 
         with self.Session() as session:
             records = session.query(LocalFileState).all()
@@ -414,8 +438,20 @@ class PySUS:
         paths: list[Path],
         sql: str | None = None,
         mode: Literal["union", "intersection", "strict"] = "union",
-    ) -> "DuckDBPyConnection":
-        """Read Parquet files with optional schema handling and SQL filter."""
+        add_dv: bool = True,
+    ) -> "DuckDBPyConnection | pd.DataFrame":
+        """Read Parquet files with optional schema handling and SQL filter.
+
+        Parameters
+        ----------
+        add_dv : bool
+            When True, automatically applies the IBGE verification digit to
+            municipality code columns. If there are matching columns, a
+            DataFrame is returned instead of a DuckDBPyConnection.
+        """
+
+        from pysus.api.utils import add_dv as _add_dv_fn
+        from pysus.api.utils import is_geocode_column
 
         if not paths:
             raise ValueError("No paths provided")
@@ -452,8 +488,7 @@ class PySUS:
         else:
             paths_str = ", ".join(f"'{p}'" for p in paths)
             query = (
-                f"SELECT * FROM read_parquet([{paths_str}], "
-                "union_by_name=True)"
+                f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
             )
 
         if sql:
@@ -462,4 +497,29 @@ class PySUS:
             else:
                 query = f"SELECT {sql} FROM ({query}) AS t"
 
+        base = duckdb.execute(query)
+
+        if not add_dv:
+            return base
+
+        geocode_cols = [
+            col[0] for col in base.description if is_geocode_column(col[0])
+        ]
+        if not geocode_cols:
+            return base
+
+        duckdb.create_function(
+            "__pysus_add_dv",
+            _add_dv_fn,
+            null_handling="special",
+        )
+        selects = [
+            (
+                f'__pysus_add_dv("{c[0]}") AS "{c[0]}"'
+                if c[0] in geocode_cols
+                else f'"{c[0]}"'
+            )
+            for c in base.description
+        ]
+        query = f"SELECT {', '.join(selects)} FROM ({query}) AS _t"
         return duckdb.execute(query)

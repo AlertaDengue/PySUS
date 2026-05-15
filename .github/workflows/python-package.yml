@@ -4,8 +4,8 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ (matrix.os == 'windows-latest' && 30) || 15 }}
 
     defaults:
       run:
@@ -13,10 +13,11 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
 
     concurrency:
-      group: ci-tests-${{ matrix.python-version }}-${{ github.ref }}
+      group: ci-tests-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.ref }}
       cancel-in-progress: true
 
     steps:
@@ -31,22 +32,28 @@ jobs:
         auto-update-conda: true
         conda-solver: libmamba
 
-    - name: Linting & Tests
+    - name: Install dependencies
       run: |
         pip install poetry poetry-plugin-export
-
         poetry config virtualenvs.create false
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          poetry install --without dev --extras dbc
+          pip install pre-commit
+        else
+          poetry install --without dev
+        fi
+        pip install pytest pytest-timeout pytest-retry pytest-asyncio pytest-cov
 
-        poetry export --with dev --extras dbc --format requirements.txt --output reqs.txt --without-hashes
+    - name: Linting
+      if: matrix.os == 'ubuntu-latest'
+      run: pre-commit run --files pysus/**/*
 
-        pip install -r reqs.txt
-        pip install -e ".[dbc]"
-
-        pre-commit run --files pysus/**/*
-
-        make test-pysus-with-coverage
+    - name: Tests
+      run: |
+        poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v5
       with:
         files: ./coverage.xml

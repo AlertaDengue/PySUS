@@ -19,7 +19,7 @@ python = ">=3.10,<3.14"
 python-dateutil = "2.8.2"
 fastparquet = ">=2023.10.1,<=2024.11.0"
 pyarrow = ">=11.0.0"
-numpy = ">1,<3"
+numpy = ">=1.22,<2"
 tqdm = ">=4.67.0"
 wget = "^3.2"
 loguru = "^0.6.0"
@@ -31,23 +31,25 @@ pydantic = "^2.12.5"
 duckdb = "^1.4.4"
 duckdb-engine = "^0.17.0"
 sqlalchemy = "^2.0.48"
-textual = {extras = ["syntax"], version = "^8.2.1"}
 python-magic = "^0.4.27"
 chardet = "^7.4.0.post2"
 anyio = "^4.13.0"
-humanize = "^4.8.0"
+httpx = ">=0.28.0"
 aioftp = "^0.21.4"
 dbfread = "2.0.7"
 bigtree = "^0.12.2"
 
 pyreaddbc = { version = ">=1.1.0", optional = true }
 pycparser = { version = "2.21", optional = true }
+textual = { extras = ["syntax"], version = "^8.2.1", optional = true }
+humanize = { version = "^4.8.0", optional = true }
 dotenv = "^0.9.9"
 boto3 = "^1.42.89"
 typer = "^0.24.1"
 
 [tool.poetry.extras]
 dbc = ["pyreaddbc", "pycparser"]
+tui = ["textual", "humanize"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"
@@ -64,6 +66,7 @@ pytest-cov = "^7.1.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.1.1"
+standard-imghdr = "*"
 nbmake = "^1.4.1"
 matplotlib = "^3.7.1"
 jupyterlab = "^4.0.5"
@@ -100,6 +103,12 @@ testpaths = [
 ]
 
 exclude = ["*.git", "docs/"]
+
+[tool.coverage.run]
+omit = [
+    "pysus/management/client.py",
+    "pysus/tui/*",
+]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
