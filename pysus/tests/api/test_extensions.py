@@ -125,6 +125,37 @@ async def test_parquet_parse_and_stream(tmp_dir):
 
 
 @pytest.mark.asyncio
+async def test_parquet_load_applies_add_dv_to_geocode_columns(tmp_dir):
+    df = pd.DataFrame(
+        {
+            "ID_MUNICIP": ["261160", "530010"],
+            "DT_NOTIFIC": ["20230101", "20230102"],
+        }
+    )
+    path = tmp_dir / "test.parquet"
+    df.to_parquet(path)
+
+    pq_obj = Parquet(path=path, add_dv=True)
+    parsed = await pq_obj.load(parse=True)
+
+    assert parsed["ID_MUNICIP"].iloc[0] == "2611606"
+    assert parsed["ID_MUNICIP"].iloc[1] == "5300108"
+    assert str(parsed["DT_NOTIFIC"].iloc[0]) == "2023-01-01"
+
+
+@pytest.mark.asyncio
+async def test_parquet_load_skips_add_dv_when_disabled(tmp_dir):
+    df = pd.DataFrame({"ID_MUNICIP": ["261160"]})
+    path = tmp_dir / "test.parquet"
+    df.to_parquet(path)
+
+    pq_obj = Parquet(path=path, add_dv=False)
+    parsed = await pq_obj.load(parse=True)
+
+    assert parsed["ID_MUNICIP"].iloc[0] == "261160"
+
+
+@pytest.mark.asyncio
 async def test_dbf_decode_and_failure(tmp_dir):
     pytest.importorskip("dbfread")
 

@@ -294,6 +294,123 @@ class TestPySUSQuery:
         await client.__aexit__(None, None, None)
 
 
+class TestDownload:
+    @pytest.mark.asyncio
+    async def test_download_returns_existing_when_size_matches(
+        self, test_db_path
+    ):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        client = PySUS(db_path=test_db_path)
+        mock_local = MagicMock()
+        mock_local.path.exists.return_value = True
+        mock_local.size = 1000
+        mock_file = MagicMock()
+        mock_file.size = 1000
+        mock_file.client.name = "ftp"
+
+        with patch.object(
+            client, "get_local_file", new=AsyncMock(return_value=mock_local)
+        ):
+            result = await client.download(mock_file)
+
+        assert result == mock_local
+
+    @pytest.mark.asyncio
+    async def test_download_re_fetches_when_size_differs(self, test_db_path):
+        import pathlib
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from pysus.api.extensions import ExtensionFactory
+
+        mock_local = MagicMock()
+        mock_local.path.exists.return_value = True
+        mock_local.size = 500
+        mock_file = MagicMock()
+        mock_file.size = 1000
+        mock_file.client.name = "ftp"
+        mock_file.path = pathlib.Path("/remote/test.dbc")
+        mock_file.basename = "test.dbc"
+
+        client = PySUS(db_path=test_db_path)
+        get_local_file_patch = patch.object(
+            client, "get_local_file", new=AsyncMock(return_value=mock_local)
+        )
+        delete_record_patch = patch.object(
+            client, "_delete_record", new=AsyncMock()
+        )
+        get_dest_patch = patch.object(
+            client,
+            "_get_dest_path",
+            return_value=test_db_path.parent / "test.dbc",
+        )
+        update_state_patch = patch.object(
+            client, "_update_state", new=AsyncMock()
+        )
+        get_ftp_patch = patch.object(client, "get_ftp", new=AsyncMock())
+
+        with (
+            get_local_file_patch,
+            delete_record_patch as mock_delete,
+            get_dest_patch,
+            update_state_patch,
+            get_ftp_patch,
+        ):
+            with patch.object(
+                ExtensionFactory, "instantiate", return_value=mock_local
+            ):
+                mock_client = AsyncMock()
+                mock_client._download_file = AsyncMock()
+                client._ftp = mock_client
+                await client.download(mock_file)
+
+        mock_delete.assert_awaited_once()
+        assert mock_local.path.unlink.called
+
+    @pytest.mark.asyncio
+    async def test_download_passes_timeout(self, test_db_path):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        import anyio
+        from pysus.api.extensions import ExtensionFactory
+
+        mock_local = MagicMock()
+        mock_local.path.exists.return_value = False
+        mock_file = MagicMock()
+        mock_file.size = 1000
+        mock_file.client.name = "ftp"
+        mock_file.path = test_db_path.parent / "remote.dbc"
+        mock_file.basename = "remote.dbc"
+
+        client = PySUS(db_path=test_db_path)
+
+        async def _slow_download(*args, **kwargs):
+            await anyio.sleep(10)
+
+        with (
+            patch.object(
+                client, "get_local_file", new=AsyncMock(return_value=mock_local)
+            ),
+            patch.object(
+                client,
+                "_get_dest_path",
+                return_value=test_db_path.parent / "test.dbc",
+            ),
+            patch.object(client, "_update_state", new=AsyncMock()),
+            patch.object(
+                ExtensionFactory, "instantiate", return_value=mock_local
+            ),
+        ):
+            mock_client = AsyncMock()
+            mock_client._download_file = _slow_download
+            client._ftp = mock_client
+
+            with pytest.raises(
+                RuntimeError, match="Unexpected error downloading"
+            ):
+                await client.download(mock_file, timeout=0.001)
+
+
 class TestReadParquet:
     def test_read_parquet_single_path(self, tmp_path):
         import pandas as pd
@@ -406,6 +523,55 @@ class TestReadParquet:
 
         with pytest.raises(ValueError, match="No paths provided"):
             client.read_parquet([])
+
+    def test_read_parquet_add_dv_applies_verification_digit(self, tmp_path):
+        import pandas as pd
+
+        parquet_file = tmp_path / "test.parquet"
+        df = pd.DataFrame({"ID_MUNICIP": ["261160", "530010"], "value": [1, 2]})
+        df.to_parquet(parquet_file)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet_file], add_dv=True)
+        out = result.df()
+
+        assert out["ID_MUNICIP"].iloc[0] == "2611606"
+        assert out["ID_MUNICIP"].iloc[1] == "5300108"
+
+    def test_read_parquet_add_dv_skips_no_geocode_columns(self, tmp_path):
+        import pandas as pd
+
+        parquet_file = tmp_path / "test.parquet"
+        df = pd.DataFrame({"DT_NOTIFIC": ["20230101"], "value": [1]})
+        df.to_parquet(parquet_file)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet_file], add_dv=True)
+        out = result.df()
+
+        assert list(out.columns) == ["DT_NOTIFIC", "value"]
+
+    def test_read_parquet_add_dv_false_returns_raw(self, tmp_path):
+        import pandas as pd
+
+        parquet_file = tmp_path / "test.parquet"
+        df = pd.DataFrame({"ID_MUNICIP": ["261160"], "value": [1]})
+        df.to_parquet(parquet_file)
+
+        from pysus.api.client import PySUS
+
+        client = PySUS(db_path=tmp_path / "config.db")
+        result = client.read_parquet([parquet_file], add_dv=False)
+
+        from duckdb import DuckDBPyConnection
+
+        assert isinstance(result, DuckDBPyConnection)
+        out = result.df()
+        assert out["ID_MUNICIP"].iloc[0] == "261160"
 
 
 class TestPySUSGetMethods:
