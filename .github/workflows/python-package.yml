@@ -7,10 +7,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ (matrix.os == 'windows-latest' && 30) || 15 }}
 
-    defaults:
-      run:
-        shell: bash -l {0}
-
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -33,6 +29,7 @@ jobs:
         conda-solver: libmamba
 
     - name: Install dependencies
+      shell: bash -l {0}
       run: |
         pip install poetry poetry-plugin-export
         poetry config virtualenvs.create false
@@ -46,10 +43,12 @@ jobs:
 
     - name: Linting
       if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
       run: pre-commit run --files pysus/**/*
 
     - name: Tests (Linux)
       if: matrix.os != 'windows-latest'
+      shell: bash -l {0}
       run: |
         poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
 
@@ -57,25 +56,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: bash -l {0}
       run: |
-        for i in 1 2 3; do
-          echo "Attempt $i..."
-          poetry run python -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -p no:cacheprovider &
-          PID=$!
-          for j in $(seq 1 480); do
-            if ! kill -0 $PID 2>/dev/null; then
-              wait $PID
-              EXIT_CODE=$?
-              if [ $EXIT_CODE -eq 0 ]; then
-                exit 0
-              fi
-              break
-            fi
-            sleep 1
-          done
-          kill $PID 2>/dev/null || true
-          echo "Attempt $i failed"
-        done
-        exit 1
+        export DUCKDB_NO_THREADS=1
+        poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --timeout=480 -p no:cacheprovider -p no:asyncio
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest'

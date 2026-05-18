@@ -1,6 +1,8 @@
 FROM python:3.12-slim
 
 LABEL maintainer="luabidaa@gmail.com"
+LABEL org.opencontainers.image.source="https://github.com/AlertaDengue/PySUS"
+LABEL org.opencontainers.image.description="PySUS - Data extraction from Brazilian public health systems"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV HOME "/home/pysus"

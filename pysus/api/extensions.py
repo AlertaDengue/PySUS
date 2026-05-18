@@ -14,12 +14,6 @@ from pathlib import Path
 from typing import ClassVar
 
 import chardet
-
-try:
-    import magic
-except (ImportError, OSError):
-    magic = None  # type: ignore[assignment]
-
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -837,7 +831,9 @@ class ExtensionFactory:
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
         """Identify the file class by its MIME type."""
-        if magic is None:
+        try:
+            import magic
+        except (ImportError, OSError):
             return None
         try:
             mime = await to_thread.run_sync(

@@ -34,7 +34,14 @@ pip install pysus[tui]
 
 ### Docker
 
-Build and start a JupyterLab container with PySUS pre-installed:
+A pre-built JupyterLab image is available on Docker Hub:
+
+```bash
+docker pull alertadengue/pysus
+docker run -p 8888:8888 alertadengue/pysus
+```
+
+Or build locally and start the container:
 
 ```bash
 docker compose -f docker/docker-compose.yaml up --build
