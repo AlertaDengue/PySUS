@@ -508,11 +508,14 @@ class PySUS:
         if not geocode_cols:
             return base
 
-        duckdb.create_function(
-            "__pysus_add_dv",
-            _add_dv_fn,
-            null_handling="special",
-        )
+        try:
+            duckdb.create_function(
+                "__pysus_add_dv",
+                _add_dv_fn,
+                null_handling="special",
+            )
+        except duckdb.NotImplementedException:
+            pass
         selects = [
             (
                 f'__pysus_add_dv("{c[0]}") AS "{c[0]}"'

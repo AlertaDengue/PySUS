@@ -1,21 +1,17 @@
-FROM condaforge/mambaforge
+FROM python:3.12-slim
 
-LABEL maintainer="es.loch@gmail.com"
-
-USER root
+LABEL maintainer="luabidaa@gmail.com"
+LABEL org.opencontainers.image.source="https://github.com/AlertaDengue/PySUS"
+LABEL org.opencontainers.image.description="PySUS - Data extraction from Brazilian public health systems"
 
 ENV DEBIAN_FRONTEND=noninteractive
-
 ENV HOME "/home/pysus"
 ENV PATH "$PATH:/home/pysus/.local/bin"
-ENV ENV_NAME pysus
-ENV PATH "/opt/conda/envs/$ENV_NAME/bin:$PATH"
-ENV PATH "/opt/poetry/bin:$PATH"
 
 RUN apt-get -qq update --yes \
   && apt-get -qq install --yes --no-install-recommends \
+  libffi-dev \
   build-essential \
-  firefox \
   ca-certificates \
   sudo \
   curl \
@@ -23,30 +19,21 @@ RUN apt-get -qq update --yes \
 
 RUN useradd -ms /bin/bash pysus \
   && echo "pysus ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/pysus \
-  && chmod 0440 /etc/sudoers.d/ \
-  && echo 'source /opt/conda/bin/activate "$ENV_NAME" && exec "$@"' > /activate.sh \
-  && echo 'source activate "$ENV_NAME"' >  /home/pysus/.bashrc \
-  && chmod +x /activate.sh \
-  && chmod -R a+rwx /opt/conda /tmp \
-  && sudo chown -R pysus:pysus /usr/src
+  && chmod 0440 /etc/sudoers.d/pysus \
+  && mkdir -p /home/pysus/Notebooks \
+  && chown -R pysus:pysus /home/pysus
+
+COPY pyproject.toml poetry.lock LICENSE README.md /usr/src/
+COPY pysus /usr/src/pysus
+COPY docker/scripts/entrypoint.sh /entrypoint.sh
+COPY docker/notebooks/ /home/pysus/Notebooks/
+
+RUN pip install poetry \
+  && cd /usr/src && poetry config virtualenvs.create false && poetry install --with docs --extras dbc \
+  && pip install 'httpx<0.28' \
+  && chown -R pysus:pysus /home/pysus
 
 USER pysus
-
-RUN mkdir -p /home/pysus/Notebooks/
-
-COPY --chown=pysus:pysus conda/dev.yaml /tmp/dev.yaml
-COPY --chown=pysus:pysus docker/scripts/entrypoint.sh /entrypoint.sh
-COPY --chown=pysus:pysus docker/scripts/poetry-install.sh /tmp/poetry-install.sh
-COPY --chown=pysus:pysus pyproject.toml poetry.lock LICENSE README.md /usr/src/
-COPY --chown=pysus:pysus pysus /usr/src/pysus
-COPY --chown=pysus:pysus docs/source/**/*.ipynb /home/pysus/Notebooks/
-COPY --chown=pysus:pysus docs/source/data /home/pysus/Notebooks/
-
-RUN mamba env create -n $ENV_NAME --file /tmp/dev.yaml \
-  && mamba clean -afy
-
-RUN cd /usr/src/ && bash /tmp/poetry-install.sh
-
 WORKDIR /home/pysus/Notebooks
 
-ENTRYPOINT ["bash", "/activate.sh", "jupyter", "notebook", "--port=8888", "--ip=0.0.0.0"]
+ENTRYPOINT ["/entrypoint.sh"]

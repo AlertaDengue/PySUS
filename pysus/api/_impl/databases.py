@@ -84,7 +84,25 @@ def _fetch_data(
                 else pd.DataFrame()
             )
 
-    return asyncio.run(_fetch())
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        try:
+            import nest_asyncio  # noqa: PLC0415
+
+            nest_asyncio.apply()
+        except ImportError:
+            msg = (
+                "nest_asyncio is required when running inside Jupyter. "
+                "Install it with: pip install nest_asyncio"
+            )
+            raise RuntimeError(msg) from None
+        return loop.run_until_complete(_fetch())
+    else:
+        return asyncio.run(_fetch())
 
 
 def sinan(

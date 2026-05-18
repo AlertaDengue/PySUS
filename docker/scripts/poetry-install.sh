@@ -3,4 +3,4 @@
 set -ex
 
 poetry config virtualenvs.create false
-poetry install --without geo
+poetry install --with docs

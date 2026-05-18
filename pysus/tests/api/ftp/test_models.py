@@ -71,8 +71,8 @@ async def test_directory_load(mock_client, mock_dataset):
     assert len(content) == 2
     assert isinstance(content[0], Directory)
     assert isinstance(content[1], File)
-    assert str(content[0].path) == "/root/subdir"
-    assert str(content[1].path) == "/root/file.dbc"
+    assert Path(content[0].path) == Path("/root/subdir")
+    assert Path(content[1].path) == Path("/root/file.dbc")
 
 
 @pytest.mark.asyncio
