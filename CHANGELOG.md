@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.0.4](https://github.com/AlertaDengue/PySUS/compare/2.0.3...2.0.4) (2026-05-18)
+
+### Bug Fixes
+
+* **docker:** simplify docker instalation & some fixes ([#266](https://github.com/AlertaDengue/PySUS/issues/266)) ([8eb7d9f](https://github.com/AlertaDengue/PySUS/commit/8eb7d9f9151a6383fb25b572643ef9f72765b586))
+
 ## [2.0.3](https://github.com/AlertaDengue/PySUS/compare/2.0.2...2.0.3) (2026-05-15)
 
 ### Bug Fixes
