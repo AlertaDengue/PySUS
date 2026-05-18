@@ -32,6 +32,22 @@ For the terminal user interface (TUI):
 pip install pysus[tui]
 ```
 
+### Docker
+
+Build and start a JupyterLab container with PySUS pre-installed:
+
+```bash
+docker compose -f docker/docker-compose.yaml up --build
+```
+
+Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser.
+
+Stop the container:
+
+```bash
+docker compose -f docker/docker-compose.yaml down
+```
+
 ## Quick Start
 
 ### Simplified Database Functions (New in 2.0)
@@ -41,7 +57,7 @@ The easiest way to get data as a pandas DataFrame:
 ```python
 from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
 
-# Download SINAN Dengue data for 2024
+# Download SINAN Dengue data for 2000
 df = sinan(disease="deng", year=2000)
 
 # Multiple years
@@ -236,6 +252,12 @@ pre-commit run --all-files
 Run tests:
 ```bash
 pytest tests/
+```
+
+Run tests inside the Docker container:
+
+```bash
+docker compose -f docker/docker-compose.yaml exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
 ```
 
 ## License

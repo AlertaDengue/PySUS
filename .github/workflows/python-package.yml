@@ -48,9 +48,34 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: pre-commit run --files pysus/**/*
 
-    - name: Tests
+    - name: Tests (Linux)
+      if: matrix.os != 'windows-latest'
       run: |
         poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
+
+    - name: Tests (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash -l {0}
+      run: |
+        for i in 1 2 3; do
+          echo "Attempt $i..."
+          poetry run python -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -p no:cacheprovider &
+          PID=$!
+          for j in $(seq 1 480); do
+            if ! kill -0 $PID 2>/dev/null; then
+              wait $PID
+              EXIT_CODE=$?
+              if [ $EXIT_CODE -eq 0 ]; then
+                exit 0
+              fi
+              break
+            fi
+            sleep 1
+          done
+          kill $PID 2>/dev/null || true
+          echo "Attempt $i failed"
+        done
+        exit 1
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest'
@@ -58,3 +83,32 @@ jobs:
       with:
         files: ./coverage.xml
         fail_ci_if_error: false
+
+  docker-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker compose -f docker/docker-compose.yaml build
+
+    - name: Start container
+      run: docker compose -f docker/docker-compose.yaml up -d
+
+    - name: Wait for Jupyter
+      run: |
+        for i in $(seq 1 10); do
+          curl -s -o /dev/null http://127.0.0.1:8888 && break
+          sleep 2
+        done
+
+    - name: Run tests inside container
+      run: docker compose -f docker/docker-compose.yaml exec -T -w /usr/src jupyter python3 -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -x -o cache_dir=/tmp/.pytest_cache
+
+    - name: Cleanup
+      if: always()
+      run: docker compose -f docker/docker-compose.yaml down -v
