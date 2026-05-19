@@ -110,7 +110,7 @@ read_parquet Modes
 ---
 
 Dataset Descriptions
--------------------
+--------------------
 
 About SINAN
 ^^^^^^^^^^^
@@ -142,3 +142,13 @@ About SIA
 ^^^^^^^^^^
 
 The SIA (Sistema de Informação Ambulatorial) is the system that enables local managers to process information related to outpatient care (non-hospital) recorded in the data collection applications for such services provided by public and private providers, whether contracted or affiliated with SUS.
+
+About PNI
+^^^^^^^^^
+
+The PNI (Programa Nacional de Imunizações) information system manages vaccination data across Brazil, tracking immunization coverage, vaccine doses administered, and supporting the monitoring of the National Immunization Program's goals.
+
+About CIHA
+^^^^^^^^^^
+
+The CIHA (Comunicação de Informação Hospitalar e Ambulatorial) system manages hospital admission and outpatient information, complementing the SIH system with additional data on hospital care across Brazil.

@@ -111,9 +111,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install poetry poetry-plugin-export
-        poetry config virtualenvs.create false
-        poetry install --with docs --extras dbc
+        pip install poetry wget
+        poetry install --no-root --with docs
 
     - name: Build docs
       run: |

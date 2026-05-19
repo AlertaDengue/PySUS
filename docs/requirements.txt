@@ -1,4 +1,4 @@
-nbsphinx
-sphinx
-sphinx-rtd-theme
-standard-imghdr
+nbsphinx>=0.9,<1
+sphinx>=7,<9
+sphinx-rtd-theme>=2,<4
+standard-imghdr>=1,<2
