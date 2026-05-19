@@ -58,6 +58,13 @@ Types
    :members:
    :undoc-members:
 
+Utilities
+---------
+
+.. automodule:: pysus.api.utils
+   :members:
+   :undoc-members:
+
 File Format Handlers
 --------------------
 
