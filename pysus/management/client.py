@@ -90,7 +90,7 @@ class CatalogManager:
                     cursor.execute(
                         "SELECT id FROM pysus.dataset_groups "
                         f"WHERE name = '{group_name}' AND "
-                        "dataset_id = {dataset_id}"
+                        f"dataset_id = {dataset_id}"
                     )
                     row = cursor.fetchone()
                     if row:

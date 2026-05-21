@@ -154,7 +154,7 @@ class DadosGov(BaseRemoteClient):
         self,
         file: BaseRemoteFile,
         output: pathlib.Path,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> pathlib.Path:
         """Download a remote file to a local path."""
         if self._client is None:
@@ -162,13 +162,22 @@ class DadosGov(BaseRemoteClient):
                 "Client not connected. Call login(token=...) first.",
             )
 
-        async with self._client.stream("GET", str(file.path)) as response:
+        url = (
+            str(file.path)
+            .replace("https:/", "https://")
+            .replace("http:/", "http://")
+        )
+
+        async with self._client.stream("GET", url) as response:
             response.raise_for_status()
+            total = int(response.headers.get("Content-Length", 0))
+            downloaded = 0
             with open(output, "wb") as f:
                 async for chunk in response.aiter_bytes():
                     f.write(chunk)
+                    downloaded += len(chunk)
                     if callback:
-                        callback(len(chunk))
+                        callback(downloaded, total)
         return output
 
 
@@ -181,9 +190,7 @@ class Recurso(BaseModel):
     title: str = Field(alias="titulo")
     url: str = Field(alias="link")
     api_size: int = Field(alias="tamanho")
-    last_modified: datetime | None = Field(
-        None, alias="dataUltimaAtualizacaoArquivo"
-    )
+    last_modified: DateTime = Field(None, alias="dataUltimaAtualizacaoArquivo")
     file_name: str | None = Field(None, alias="nomeArquivo")
 
     async def get_size(self) -> int:

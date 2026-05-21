@@ -243,7 +243,7 @@ class DuckLake(BaseRemoteClient):
         self,
         file: BaseRemoteFile,
         output: Path,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         """Download a single file from object storage to the local path."""
         if not isinstance(file, File):
@@ -253,11 +253,14 @@ class DuckLake(BaseRemoteClient):
         async with httpx.AsyncClient(follow_redirects=True) as client:
             async with client.stream("GET", url) as r:
                 r.raise_for_status()
+                total = int(r.headers.get("Content-Length", 0))
+                downloaded = 0
                 with open(output, "wb") as f:
                     async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
                         await to_thread.run_sync(f.write, chunk)
+                        downloaded += len(chunk)
                         if callback:
-                            callback(len(chunk))
+                            callback(downloaded, total)
         return output
 
     async def _download_catalog(self, client: httpx.AsyncClient):

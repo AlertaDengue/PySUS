@@ -201,6 +201,18 @@ class BaseTabularFile(BaseLocalFile, ABC):
                     chunk,
                 )
 
+                schema = table.schema
+                if any(pa.types.is_null(f.type) for f in schema):
+                    new_fields = [
+                        (
+                            pa.field(f.name, pa.string(), nullable=True)
+                            if pa.types.is_null(f.type)
+                            else f
+                        )
+                        for f in schema
+                    ]
+                    table = table.cast(pa.schema(new_fields))
+
                 if writer is None:
                     writer = await to_thread.run_sync(
                         pq.ParquetWriter, output_path, table.schema
@@ -307,7 +319,7 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
     async def _download(
         self,
         output: Path | None = None,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         """Download the file to *output* and return the local path.
 
@@ -317,7 +329,7 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
     async def download(
         self,
         output: str | Path | None = None,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> BaseLocalFile:
         """Download the remote file to a local cache or *output* path.
 
@@ -481,6 +493,6 @@ class BaseRemoteClient(BaseRemoteObject, ABC):
         self,
         file: BaseRemoteFile,
         output: Path,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         """Download a single *file* to *output* and return the local path."""

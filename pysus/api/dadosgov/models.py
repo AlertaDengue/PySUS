@@ -2,10 +2,11 @@
 
 import asyncio
 import pathlib
+import re
 from abc import abstractmethod
 from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 from dateparser import parse  # type: ignore[import-untyped]
@@ -14,10 +15,40 @@ from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from pysus.api.types import State
 
-from .client import ConjuntoDados, Recurso
+from .client import ConjuntoDados, DadosGov, Recurso
 
-if TYPE_CHECKING:
-    from .client import DadosGov
+_FORMAT_RE = re.compile(r"[._](csv|json|xml)(\.zip)?$", re.IGNORECASE)
+
+
+def _dedup_entries(
+    entries: list[tuple[str, Any, dict]],
+) -> list[tuple[str, Any, dict]]:
+    """If the same file exists in CSV, JSON and XML, keep only CSV."""
+    grouped: dict[str, list[tuple[str, str, Any, dict]]] = {}
+    for filename, recurso, metadata in entries:
+        m = _FORMAT_RE.search(filename)
+        if m:
+            stem = filename[: m.start()]
+            fmt = m.group(1).lower()
+            grouped.setdefault(stem, []).append(
+                (fmt, filename, recurso, metadata)
+            )
+        else:
+            grouped.setdefault(filename, []).append(
+                ("", filename, recurso, metadata)
+            )
+
+    result: list[tuple[str, Any, dict]] = []
+    for _, items in grouped.items():
+        formats = {fmt for fmt, _, _, _ in items}
+        if "csv" in formats:
+            for fmt, filename, recurso, metadata in items:
+                if fmt == "csv":
+                    result.append((filename, recurso, metadata))
+        else:
+            for _, filename, recurso, metadata in items:
+                result.append((filename, recurso, metadata))
+    return result
 
 
 class File(BaseRemoteFile):
@@ -32,7 +63,6 @@ class File(BaseRemoteFile):
         metadata = data.pop("_metadata", {})
         super().__init__(**data)
         self._metadata = metadata
-        self._path = self.record.url
 
     def __repr__(self):
         return self.basename
@@ -113,7 +143,7 @@ class File(BaseRemoteFile):
     async def _download(
         self,
         output: pathlib.Path | None = None,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> pathlib.Path:
         """Download the file to a local path."""
         if not output:
@@ -148,13 +178,9 @@ class Group(BaseRemoteGroup):
     """A group of files within a dataset."""
 
     record: ConjuntoDados
-    _formatter: (
-        Callable[
-            [Recurso, "Group"],
-            dict[str, Any],
-        ]
-        | None
-    ) = PrivateAttr(default=None)
+    _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(
+        default=None
+    )
 
     def __init__(
         self,
@@ -163,8 +189,9 @@ class Group(BaseRemoteGroup):
         formatter: Callable | None = None,
     ):
         """Initialize the Group with a dataset record and optional formatter."""
-        super().__init__(dataset=dataset)
-        self.record = record
+        super().__init__(
+            record=record, dataset=dataset  # type: ignore[call-arg]
+        )
         self._formatter = formatter
 
     def __repr__(self):
@@ -172,8 +199,10 @@ class Group(BaseRemoteGroup):
 
     @property
     def name(self) -> str:
-        """Return the group slug name."""
-        return self.record.slug
+        """Return the group name, resolved through dataset aliases."""
+        slug = self.record.slug
+        aliases = getattr(self.dataset, "group_aliases", {})
+        return aliases.get(slug, slug)
 
     @property
     def long_name(self) -> str:
@@ -187,13 +216,30 @@ class Group(BaseRemoteGroup):
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
         """Build File objects from the underlying resources."""
-        files: list[BaseRemoteFile] = []
+        entries: list[tuple[str, Any, dict]] = []
         for recurso in self.record.resources:
-            metadata = self._formatter(recurso, self) if self._formatter else {}
+            filename = (
+                recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
+            )
+            if filename.lower().endswith(".pdf") or filename.startswith("get_"):
+                continue
+            metadata = {}
+            if self._formatter:
+                try:
+                    metadata = self._formatter(filename)
+                except NotImplementedError:
+                    pass
+            entries.append((filename, recurso, metadata))
+
+        entries = _dedup_entries(entries)
+
+        files: list[BaseRemoteFile] = []
+        for _, recurso, metadata in entries:
             file = File(
                 record=recurso,
                 dataset=self.dataset,
                 group=self,
+                path=recurso.url,
                 _metadata=metadata,
             )
             files.append(file)
@@ -205,6 +251,7 @@ class Dataset(BaseRemoteDataset):
 
     ids: list[str] = []
     client: "DadosGov"
+    group_aliases: dict[str, str] = {}
 
     def __repr__(self):
         return self.name

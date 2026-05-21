@@ -13,9 +13,8 @@ from pydantic import PrivateAttr
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 
 if TYPE_CHECKING:
-    from pysus.api.types import State
-
     from pysus.api.ftp.models import Dataset
+    from pysus.api.types import State
 
 
 class FTPGroupInfo(TypedDict):

@@ -42,7 +42,7 @@ class MockRemoteFile(BaseRemoteFile):
     async def _download(
         self,
         output: Path | None = None,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         if not output:
             raise ValueError()
