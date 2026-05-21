@@ -1,8 +1,38 @@
 """Pre-configured health database definitions accessible via dados.gov.br."""
 
+import re
 from typing import Any
 
+from pysus.utils import zfill_year
+
 from .models import Dataset
+
+MONTHS: dict[str, int] = {
+    "jan": 1,
+    "fev": 2,
+    "mar": 3,
+    "abr": 4,
+    "mai": 5,
+    "jun": 6,
+    "jul": 7,
+    "ago": 8,
+    "set": 9,
+    "out": 10,
+    "nov": 11,
+    "dez": 12,
+}
+
+
+def _parse_year(val: str) -> int | None:
+    try:
+        y = int(val)
+        return y if 1970 <= y <= 2100 else None
+    except ValueError:
+        return None
+
+
+def _skip(name: str) -> bool:
+    return name.startswith("get_") or name.lower().endswith(".pdf")
 
 
 class CNES(Dataset):
@@ -32,8 +62,23 @@ class CNES(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse a CNES filename and extract metadata."""
+        try:
+            name = filename.strip()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.search(r"_(\d{2})-(\d{4})\.csv$", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(2)),
+                    "month": int(m.group(1)),
+                }
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 class PNI(Dataset):
@@ -48,6 +93,18 @@ class PNI(Dataset):
         "c6c3c6f3-2026-48a2-84ac-d8039714a0ba",
         "9a25b796-80e3-444a-a4e7-405f5596d8ab",
     ]
+
+    _PNI_PREFIX = "doses-aplicadas-pelo-programa-de-nacional-de-imunizacoes-pni"
+
+    group_aliases: dict[str, str] = {
+        _PNI_PREFIX: "DPNI",
+        f"{_PNI_PREFIX}-2020": "DPNI",
+        f"{_PNI_PREFIX}-2021": "DPNI",
+        f"dataset-{_PNI_PREFIX}_2022": "DPNI",
+        f"{_PNI_PREFIX}-2023": "DPNI",
+        f"{_PNI_PREFIX}-2025": "DPNI",
+        f"{_PNI_PREFIX}-2026": "DPNI",
+    }
 
     @property
     def name(self) -> str:
@@ -64,8 +121,21 @@ class PNI(Dataset):
         return "O PNI monitora a cobertura vacinal e doses aplicadas no Brasil."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse a PNI vaccination filename into month and year."""
+        try:
+            name = filename.strip().lower()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.match(r"vacinacao_(\w{3})_(\d{4})_csv\.zip", name)
+            if m:
+                month = MONTHS.get(m.group(1))
+                year = _parse_year(m.group(2))
+                return {"state": None, "year": year, "month": month}
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 class SIA(Dataset):
@@ -92,8 +162,31 @@ class SIA(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse an SIA filename into year."""
+        try:
+            name = filename.strip().lower()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.search(r"_(\d{4})_\.csv$", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(1)),
+                    "month": None,
+                }
+
+            m = re.search(r"_(\w{3})-out_(\d{4})_\.csv$", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(2)),
+                    "month": None,
+                }
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 class SINAN(Dataset):
@@ -104,7 +197,20 @@ class SINAN(Dataset):
         "5699abe0-0510-4da8-b47d-209b3bb32b34",
         "4557ba96-7d52-4a56-bd6f-f99a5af09f77",
         "740ce8f4-7a5d-4351-aad4-7623f2490ada",
+        "cf044c1b-b966-4d0e-bab0-f3aa65897b7d",
+        "2d4997fb-cd11-4ce2-b217-09cd50e3151f",
+        "8a585222-4c2e-43b7-807d-59355ee79c48",
+        "527e8665-de64-4f81-b7c3-40b59c7d1d3c",
     ]
+
+    group_aliases: dict[str, str] = {
+        "arboviroses-dengue": "DENG",
+        "arboviroses-febre-de-chikungunya": "CHIK",
+        "arboviroses-zika-virus": "ZIKA",
+        "hanseniase": "HANS",
+        "dados-tuberculose": "TUBE",
+        "sifilis": "SIFA",
+    }
 
     @property
     def name(self) -> str:
@@ -124,8 +230,31 @@ class SINAN(Dataset):
             """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse a SINAN filename into state and year."""
+        try:
+            name = filename.strip().upper()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.match(r"(\w{4})(BR)(\d{2})\.CSV\.ZIP", name)
+            if m:
+                return {
+                    "state": m.group(2),
+                    "year": zfill_year(m.group(3)),
+                    "month": None,
+                }
+
+            m = re.match(r"MPX_(\d{4})_OPENDATASUS\.CSV\.ZIP", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(1)),
+                    "month": None,
+                }
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 class SIM(Dataset):
@@ -134,6 +263,10 @@ class SIM(Dataset):
     ids: list[str] = [
         "5f121f4d-47c6-428e-8ec6-e8ec56417172",
     ]
+
+    group_aliases: dict[str, str] = {
+        "sim-1979-2019": "DO",
+    }
 
     @property
     def name(self) -> str:
@@ -152,8 +285,31 @@ class SIM(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse a SIM filename into year."""
+        try:
+            name = filename.strip()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.search(r"Mortalidade_Geral_(\d{4})_csv\.zip", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(1)),
+                    "month": None,
+                }
+
+            m = re.match(r"DO(\d{2})OPEN", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": zfill_year(m.group(1)),
+                    "month": None,
+                }
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 class SINASC(Dataset):
@@ -162,6 +318,10 @@ class SINASC(Dataset):
     ids: list[str] = [
         "441cc6bd-684a-4afd-a88b-ba4734c9e83e",
     ]
+
+    group_aliases: dict[str, str] = {
+        "sistema-de-informacao-sobre-nascidos-vivos-sinasc-1996-a-20201": "DN",
+    }
 
     @property
     def name(self) -> str:
@@ -181,8 +341,67 @@ class SINASC(Dataset):
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Extract metadata from a filename (not yet implemented)."""
-        raise NotImplementedError()
+        """Parse a SINASC filename into year."""
+        try:
+            name = filename.strip()
+            if _skip(name):
+                return {"state": None, "year": None, "month": None}
+
+            m = re.search(r"SINASC_(\d{4})_csv\.zip", name)
+            if m:
+                return {
+                    "state": None,
+                    "year": _parse_year(m.group(1)),
+                    "month": None,
+                }
+
+            m = re.search(r"DNBR(\d{4})_csv\.zip", name)
+            if m:
+                return {
+                    "state": "BR",
+                    "year": _parse_year(m.group(1)),
+                    "month": None,
+                }
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
+
+
+class COVID19(Dataset):
+    """Casos Confirmados de COVID-19."""
+
+    ids: list[str] = [
+        "1ba1801e-aec0-4dba-ae2a-7732f0a0c9f7",
+    ]
+
+    @property
+    def name(self) -> str:
+        """Return the short name."""
+        return "COVID19"
+
+    @property
+    def long_name(self) -> str:
+        """Return the human-readable name."""
+        return "Casos Confirmados de COVID-19"
+
+    @property
+    def description(self) -> str:
+        return "Dados anonimizados de casos confirmados de COVID-19."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a COVID-19 filename."""
+        try:
+            name = filename.strip().lower()
+            if _skip(name) or name.endswith(".xlsx"):
+                return {"state": None, "year": None, "month": None}
+
+            if name.endswith(".csv"):
+                return {"state": None, "year": None, "month": None}
+
+            return {"state": None, "year": None, "month": None}
+        except (IndexError, ValueError):
+            return {"state": None, "year": None, "month": None}
 
 
 AVAILABLE_DATABASES: list[type[Dataset]] = [
@@ -192,4 +411,5 @@ AVAILABLE_DATABASES: list[type[Dataset]] = [
     SIM,
     SINAN,
     SINASC,
+    COVID19,
 ]

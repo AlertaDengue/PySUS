@@ -86,7 +86,7 @@ class File(BaseRemoteFile):
     async def _download(
         self,
         output: Path | None = None,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         """Download this file to a local path, optionally reporting progress."""
         if output is None:

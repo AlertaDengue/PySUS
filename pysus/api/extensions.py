@@ -106,7 +106,19 @@ class CSV(BaseTabularFile):
     @property
     def columns(self) -> list[str]:
         """Return the column names from the CSV header row."""
-        df = pd.read_csv(self.path, sep=",", nrows=0)
+        if self._encoding is not None:
+            enc = self._encoding
+        else:
+            with open(self.path, "rb") as f:
+                raw = f.read(1024 * 300)
+            raw_enc = chardet.detect(raw)["encoding"]
+            enc = (
+                "iso-8859-1"
+                if raw_enc is None or raw_enc.lower() == "ascii"
+                else raw_enc
+            )
+            self._encoding = enc
+        df = pd.read_csv(self.path, sep=",", nrows=0, encoding=enc)
         return df.columns.tolist()
 
     @property
@@ -127,7 +139,10 @@ class CSV(BaseTabularFile):
                     return chardet.detect(f.read(1024 * 300))
 
             result = await to_thread.run_sync(detect)
-            self._encoding = result["encoding"] or "utf-8"
+            enc = result["encoding"]
+            if enc is None or enc.lower() == "ascii":
+                enc = "iso-8859-1"
+            self._encoding = enc
         return self._encoding
 
     async def _get_sep(self) -> str:
