@@ -73,6 +73,11 @@ class CatalogManager:
 
                 if row:
                     dataset_id = row[0]
+                    origin_val = "'FTP'" if is_ftp else "'API'"
+                    cursor.execute(
+                        f"UPDATE pysus.datasets SET origin = {origin_val} "
+                        f"WHERE id = {dataset_id}"
+                    )
                 else:
                     cursor.execute("SELECT MAX(id) FROM pysus.datasets")
                     max_id = cursor.fetchone()[0]

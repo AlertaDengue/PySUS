@@ -6,7 +6,7 @@ and file download capabilities backed by a local DuckDB engine.
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import boto3
 import httpx
@@ -334,13 +334,14 @@ class DuckLake(BaseRemoteClient):
 
     async def query(
         self,
+        client: Literal["FTP", "DadosGov"] | None = None,
         dataset: str | None = None,
         group: str | None = None,
         state: str | None = None,
         year: int | None = None,
         month: int | None = None,
     ) -> list[File]:
-        """Query catalog files by dataset, group, state, year, and/or month."""
+        """Filter catalog files by client, dataset, group, state, year."""
         if not self._Session:
             await self.connect()
 
@@ -380,6 +381,30 @@ class DuckLake(BaseRemoteClient):
                 return results
 
         records = await to_thread.run_sync(_query)
+
+        if client:
+            prefix = f"public/data/{client.lower()}/"
+            records = [r for r in records if r.path.startswith(prefix)]
+        else:
+            ftp = [r for r in records if r.path.startswith("public/data/ftp/")]
+            dadosgov = [
+                r for r in records if r.path.startswith("public/data/dadosgov/")
+            ]
+            ftp_keys = set()
+            for r in ftp:
+                stem = Path(r.path).stem
+                key = (r.dataset_id, r.year, r.month, stem)
+                ftp_keys.add(key)
+
+            def has_ftp_match(r):
+                stem = Path(r.path).stem
+                if stem.endswith(".csv"):
+                    stem = stem[:-4]
+                key = (r.dataset_id, r.year, r.month, stem)
+                return key in ftp_keys
+
+            records = ftp + [r for r in dadosgov if not has_ftp_match(r)]
+
         return [
             File(
                 path=r.path,
