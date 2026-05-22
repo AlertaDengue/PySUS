@@ -42,20 +42,29 @@ class TestDuckLake:
 
     @pytest.mark.asyncio
     async def test_is_authenticated_with_credentials(self):
+        from unittest.mock import patch
+
         client = DuckLake()
-        await client.login(access_key="key", secret_key="secret")
+        with patch.object(client, "_load_catalog"):
+            await client.login(access_key="key", secret_key="secret")
         assert client._is_authenticated is True
 
     @pytest.mark.asyncio
     async def test_login_sets_credentials(self):
+        from unittest.mock import patch
+
         client = DuckLake()
-        await client.login(access_key="key", secret_key="secret")
+        with patch.object(client, "_load_catalog"):
+            await client.login(access_key="key", secret_key="secret")
         assert client.credentials is not None
 
     @pytest.mark.asyncio
     async def test_login_creates_s3_client(self):
+        from unittest.mock import patch
+
         client = DuckLake()
-        await client.login(access_key="key", secret_key="secret")
+        with patch.object(client, "_load_catalog"):
+            await client.login(access_key="key", secret_key="secret")
         assert client._s3_client is not None
         client._s3_client = None
 

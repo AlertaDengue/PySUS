@@ -414,6 +414,7 @@ class PySUS:
 
     async def query(
         self,
+        client: Literal["DadosGov", "FTP"] | None = None,
         dataset: str | None = None,
         group: str | None = None,
         state: str | None = None,
@@ -426,6 +427,7 @@ class PySUS:
             await self.get_ducklake()
         if self._ducklake is not None:
             return await self._ducklake.query(
+                client=client,
                 dataset=dataset,
                 group=group,
                 state=state,

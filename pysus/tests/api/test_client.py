@@ -201,6 +201,7 @@ class TestPySUSQuery:
         result = await client.query(dataset="sinan")
 
         mock_ducklake.query.assert_called_once_with(
+            client=None,
             dataset="sinan",
             group=None,
             state=None,
@@ -227,6 +228,7 @@ class TestPySUSQuery:
         await client.query(dataset="sinan", group="DENGUE")
 
         mock_ducklake.query.assert_called_once_with(
+            client=None,
             dataset="sinan",
             group="DENGUE",
             state=None,
@@ -258,6 +260,7 @@ class TestPySUSQuery:
         )
 
         mock_ducklake.query.assert_called_once_with(
+            client=None,
             dataset="sinasc",
             group="DC",
             state="SP",
