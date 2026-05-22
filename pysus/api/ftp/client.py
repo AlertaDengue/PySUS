@@ -48,17 +48,35 @@ class FTP(BaseRemoteClient):
 
     @property
     def name(self) -> str:
-        """Return the short name of this client."""
+        """Return the short name of this client.
+
+        Returns
+        -------
+        str
+            The client short name ("FTP").
+        """
         return "FTP"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of this client."""
+        """Return the human-readable name of this client.
+
+        Returns
+        -------
+        str
+            The human-readable client name.
+        """
         return "Pysus FTP Client"
 
     @property
     def description(self) -> str:
-        """Return a description of this client's purpose."""
+        """Return a description of this client's purpose.
+
+        Returns
+        -------
+        str
+            A description string explaining the FTP client's capabilities.
+        """
         return """
             O cliente FTP do pysus foi desenvolvido para fornecer uma interface
             assíncrona e moderna para navegação e extração de dados diretamente
@@ -69,11 +87,23 @@ class FTP(BaseRemoteClient):
 
     @property
     def ftp(self) -> FTPLib | None:
-        """Return the underlying ftplib.FTP, or None if not connected."""
+        """Return the underlying ftplib.FTP, or None if not connected.
+
+        Returns
+        -------
+        FTPLib | None
+            The ftplib.FTP instance, or None if not connected.
+        """
         return self._ftp
 
     async def connect(self) -> None:
-        """Establish the FTP connection to the remote host."""
+        """Establish the FTP connection to the remote host.
+
+        Raises
+        ------
+        Exception
+            Any exception raised by ftplib during connection.
+        """
 
         def _connect():
             if self.ftp is None:
@@ -83,11 +113,28 @@ class FTP(BaseRemoteClient):
         await to_thread.run_sync(_connect)
 
     async def login(self, **kwargs) -> None:
-        """Authenticate and connect to the FTP server (alias for connect)."""
+        """Authenticate and connect to the FTP server (alias for connect).
+
+        Parameters
+        ----------
+        ``**kwargs``
+            Forwarded to connect() (currently unused).
+
+        Raises
+        ------
+        Exception
+            Any exception raised by ftplib during authentication.
+        """
         await self.connect()
 
     async def close(self) -> None:
-        """Close the FTP connection and reset the internal client state."""
+        """Close the FTP connection and reset the internal client state.
+
+        Raises
+        ------
+        Exception
+            Any exception raised by ftplib during disconnection.
+        """
 
         def _close():
             if self.ftp:
@@ -101,7 +148,18 @@ class FTP(BaseRemoteClient):
         await to_thread.run_sync(_close)
 
     async def datasets(self, **kwargs) -> list[Dataset]:
-        """Return a list of all available dataset instances for this client."""
+        """Return a list of all available dataset instances for this client.
+
+        Returns
+        -------
+        list[:class:`~pysus.api.ftp.models.Dataset`]
+            A list of Dataset instances for all available databases.
+
+        Raises
+        ------
+        ConnectionError
+            If the FTP client is not connected.
+        """
         from .databases import AVAILABLE_DATABASES
 
         if self.ftp is None:

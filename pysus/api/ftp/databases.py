@@ -19,17 +19,35 @@ class CIHA(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "CIHA"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Comunicação de Internação Hospitalar e Ambulatorial"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return (
             "A CIHA foi criada para ampliar o processo de planejamento, "
             "programação, controle, avaliação e regulação da assistência à "
@@ -38,7 +56,19 @@ class CIHA(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a CIHA filename into group, state, year and month metadata."""
+        """Parse a CIHA filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw CIHA filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:4]
@@ -88,17 +118,35 @@ class CNES(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "CNES"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Cadastro Nacional de Estabelecimentos de Saúde"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return (
             "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
             "sistema de informação oficial de cadastramento de informações "
@@ -106,7 +154,19 @@ class CNES(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a CNES filename into group, state, year and month metadata."""
+        """Parse a CNES filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw CNES filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -145,24 +205,54 @@ class SINASC(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "SINASC"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informações sobre Nascidos Vivos"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return """
             O SINASC fornece subsídios para o diagnóstico de saúde e
             planejamento de políticas.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SINASC filename into group, state and year metadata."""
+        """Parse a SINASC filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SINASC filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]
@@ -195,21 +285,51 @@ class SIM(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "SIM"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informação sobre Mortalidade"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."  # noqa
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SIM filename into group, state and year metadata."""
+        """Parse a SIM filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIM filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             if "CID9" in filename:
@@ -242,21 +362,51 @@ class PNI(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "PNI"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Programa Nacional de Imunizações"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return "O SI-PNI monitora a cobertura vacinal e doses aplicadas."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a PNI filename into group, state and year metadata."""
+        """Parse a PNI filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw PNI filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             group_code, state, year_short = name[:4], name[4:6], name[-2:]
@@ -296,21 +446,51 @@ class IBGEDATASUS(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "IBGE"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "População Residente e Projeções (IBGE)"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return "Informações sobre a população residente obtidas de Censos."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse an IBGE filename into group and year metadata."""
+        """Parse an IBGE filename into group and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw IBGE filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``year``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             year = name[-2:]
@@ -351,21 +531,51 @@ class SIA(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "SIA"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informações Ambulatoriais"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return "O SIA acompanha as ações de saúde produzidas."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse an SIA filename into group, state, year and month metadata."""
+        """Parse an SIA filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIA filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             digits = "".join([d for d in name if d.isdigit()])
@@ -409,23 +619,53 @@ class SIH(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "SIH"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informações Hospitalares"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return """
             O SIH processa as internações hospitalares financiadas pelo SUS.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse an SIH filename into group, state, year and month metadata."""
+        """Parse an SIH filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIH filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             group_code = name[:2]
@@ -508,21 +748,51 @@ class SINAN(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the dataset short name."""
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
         return "SINAN"
 
     @property
     def long_name(self) -> str:
-        """Return the dataset full name in Portuguese."""
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informação de Agravos de Notificação"
 
     @property
     def description(self) -> str:
-        """Return a description of the dataset's purpose."""
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
         return "O SINAN é alimentado pela notificação de doenças compulsórias."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SINAN filename into group and year metadata."""
+        """Parse a SINAN filename into group and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SINAN filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``year``.
+            On parse failure values are set to None.
+        """
         try:
             name = filename.split(".")[0].upper()
             year_short = name[-2:]

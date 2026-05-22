@@ -24,6 +24,7 @@ MONTHS: dict[str, int] = {
 
 
 def _parse_year(val: str) -> int | None:
+    """Parse a year string into an integer within the valid range."""
     try:
         y = int(val)
         return y if 1970 <= y <= 2100 else None
@@ -32,6 +33,7 @@ def _parse_year(val: str) -> int | None:
 
 
 def _skip(name: str) -> bool:
+    """Check whether a filename should be skipped by naming conventions."""
     return name.startswith("get_") or name.lower().endswith(".pdf")
 
 
@@ -45,16 +47,35 @@ class CNES(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"CNES"``.
+        """
         return "CNES"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Cadastro Nacional de Estabelecimentos de Saúde"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the CNES information system.
+        """
         return (
             "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
             "sistema de informação oficial de cadastramento de informações "
@@ -62,7 +83,19 @@ class CNES(Dataset):
         )
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a CNES filename and extract metadata."""
+        """Parse a CNES filename and extract metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip()
             if _skip(name):
@@ -108,20 +141,51 @@ class PNI(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"PNI"``.
+        """
         return "PNI"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Programa Nacional de Imunizações"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the PNI vaccination monitoring system.
+        """
         return "O PNI monitora a cobertura vacinal e doses aplicadas no Brasil."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a PNI vaccination filename into month and year."""
+        """Parse a PNI vaccination filename into month and year.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip().lower()
             if _skip(name):
@@ -147,22 +211,53 @@ class SIA(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"SIA"``.
+        """
         return "SIA"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informações Ambulatoriais"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the SIA outpatient information system.
+        """
         return """
             O SIA acompanha as ações de saúde produzidas no âmbito ambulatorial.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse an SIA filename into year."""
+        """Parse an SIA filename into year.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip().lower()
             if _skip(name):
@@ -214,23 +309,54 @@ class SINAN(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"SINAN"``.
+        """
         return "SINAN"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informação de Agravos de Notificação"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the SINAN notifiable diseases system.
+        """
         return """
             O SINAN é alimentado pela notificação de doenças de notificação
             compulsória
             """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SINAN filename into state and year."""
+        """Parse a SINAN filename into state and year.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip().upper()
             if _skip(name):
@@ -270,22 +396,53 @@ class SIM(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"SIM"``.
+        """
         return "SIM"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informação sobre Mortalidade"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the SIM mortality information system.
+        """
         return """
             O SIM coleta dados sobre óbitos no país para análise epidemiológica.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SIM filename into year."""
+        """Parse a SIM filename into year.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip()
             if _skip(name):
@@ -325,23 +482,54 @@ class SINASC(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"SINASC"``.
+        """
         return "SINASC"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Sistema de Informações sobre Nascidos Vivos"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            Portuguese description of the SINASC live birth system.
+        """
         return """
             O SINASC fornece subsídios para o diagnóstico de saúde e
             planejamento de políticas de natalidade.
         """
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a SINASC filename into year."""
+        """Parse a SINASC filename into year.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip()
             if _skip(name):
@@ -377,20 +565,51 @@ class COVID19(Dataset):
 
     @property
     def name(self) -> str:
-        """Return the short name."""
+        """Return the short name.
+
+        Returns
+        -------
+        str
+            The abbreviated dataset name ``"COVID19"``.
+        """
         return "COVID19"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name."""
+        """Return the human-readable name.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
         return "Casos Confirmados de COVID-19"
 
     @property
     def description(self) -> str:
+        """Return a description of the dataset.
+
+        Returns
+        -------
+        str
+            A Portuguese description of the COVID-19 confirmed cases dataset.
+        """
         return "Dados anonimizados de casos confirmados de COVID-19."
 
     def formatter(self, filename: str) -> dict[str, Any]:
-        """Parse a COVID-19 filename."""
+        """Parse a COVID-19 filename and extract metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the file to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary with keys ``state``, ``year``, and ``month``.
+            Unrecognised files return ``None`` for all keys.
+        """
         try:
             name = filename.strip().lower()
             if _skip(name) or name.endswith(".xlsx"):

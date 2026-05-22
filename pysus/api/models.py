@@ -56,6 +56,7 @@ class BaseFile(BaseModel, ABC):
         return self.path.name
 
     def __str__(self) -> str:
+        """Return the file's basename as its string representation."""
         return self.basename
 
     @property
@@ -84,6 +85,7 @@ class BaseLocalFile(BaseFile, ABC):
 
     @property
     def name(self) -> str:
+        """Return the file name from the path."""
         return self.path.name
 
     async def get_hash(
@@ -91,12 +93,21 @@ class BaseLocalFile(BaseFile, ABC):
     ) -> str:
         """Compute the file's hash digest.
 
-        *algorithm* is the hash algorithm name (default "sha256").
-        *chunk_size* is the read chunk size in bytes.
-        Return the hex digest string.
+        Parameters
+        ----------
+        algorithm : str, optional
+            The hash algorithm name (default ``"sha256"``).
+        chunk_size : int, optional
+            Read chunk size in bytes (default 1 MiB).
+
+        Returns
+        -------
+        str
+            The hex digest string.
         """
 
         def _compute_hash():
+            """Compute the hash digest in a thread-safe manner."""
             hash_obj = hashlib.new(algorithm)
             with open(self.path, "rb") as f:
                 while chunk := f.read(chunk_size):
@@ -118,14 +129,17 @@ class BaseLocalFile(BaseFile, ABC):
 
     @property
     def extension(self) -> str:
+        """Return the file extension from the local path."""
         return self.path.suffix
 
     @property
     def size(self) -> int:
+        """Return the file size in bytes from the local filesystem."""
         return self.path.stat().st_size
 
     @property
     def modify(self) -> datetime:
+        """Return the last modification timestamp from the local filesystem."""
         return datetime.fromtimestamp(self.path.stat().st_mtime)
 
 
@@ -164,10 +178,21 @@ class BaseTabularFile(BaseLocalFile, ABC):
     ) -> Parquet:
         """Convert the file to Parquet format.
 
-        *output_path* is the destination path; defaults to the source path
-        with a .parquet extension.  *chunk_size* controls the streaming chunk
-        size.  *callback* receives (current_rows, total_rows) after each chunk.
-        Return the resulting Parquet wrapper object.
+        Parameters
+        ----------
+        output_path : str or Path, optional
+            Destination path for the Parquet file. Defaults to the source
+            path with a ``.parquet`` extension.
+        chunk_size : int, optional
+            Number of rows per streaming chunk (default 10 000).
+        callback : Callable[[int, int], None], optional
+            Function called after each chunk with
+            ``(current_rows, total_rows)``.
+
+        Returns
+        -------
+        Parquet
+            The resulting Parquet wrapper object.
         """
         from pysus.api.extensions import ExtensionFactory, Parquet
 
@@ -273,7 +298,7 @@ class SearchableMixin:
     """Mixin providing attribute-based filtering for remote objects."""
 
     def _matches(self, obj: Any, **kwargs) -> bool:
-        """Return True if all *kwargs* attributes match on *obj*."""
+        """Return True if all *kwargs* attributes equal those on *obj*."""
         for key, value in kwargs.items():
             obj_value = getattr(obj, key, None)
             if obj_value != value:
@@ -293,6 +318,7 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
 
     @property
     def name(self) -> str:
+        """Return the basename as the display name."""
         return self.basename
 
     @property
@@ -364,6 +390,7 @@ class BaseRemoteObject(BaseModel, ABC):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __str__(self) -> str:
+        """Return the short name as the string representation."""
         return self.name
 
     @property

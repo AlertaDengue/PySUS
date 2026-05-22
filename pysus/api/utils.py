@@ -17,6 +17,19 @@ def is_geocode_column(name: str) -> bool:
 
 
 def add_dv(geocode: str) -> str:
+    """Add the IBGE verification digit to a municipality code.
+
+    Parameters
+    ----------
+    geocode : str
+        The municipality code (6 or 7 digits).
+
+    Returns
+    -------
+    str
+        The code with the verification digit appended, or the original
+        string if it cannot be processed.
+    """
     if not geocode or not str(geocode).isdigit():
         return geocode
 

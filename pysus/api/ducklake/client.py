@@ -24,7 +24,15 @@ from .models import DuckDataset, File
 
 
 class CatalogDatasetAdapter:
-    """Adapter wrapping a CatalogDataset ORM record for use by File objects."""
+    """Adapter wrapping a CatalogDataset ORM record for use by File objects.
+
+    Parameters
+    ----------
+    catalog_dataset : CatalogDataset
+        The ORM record to wrap.
+    ducklake : DuckLake
+        The parent DuckLake client instance.
+    """
 
     def __init__(self, catalog_dataset: CatalogDataset, ducklake):
         self.name = catalog_dataset.name
@@ -36,12 +44,26 @@ class CatalogDatasetAdapter:
 
     @property
     def content(self):
-        """Query the DuckLake client for files in this dataset."""
+        """Query the DuckLake client for files in this dataset.
+
+        Returns
+        -------
+        list
+            List of files belonging to this dataset.
+        """
         return self.ducklake.query(dataset=self.name.upper())
 
 
 class DatasetGroupAdapter:
-    """Adapter wrapping a DatasetGroup ORM record for use by File objects."""
+    """Adapter wrapping a DatasetGroup ORM record for use by File objects.
+
+    Parameters
+    ----------
+    dataset_group : DatasetGroup
+        The ORM record to wrap.
+    dataset : CatalogDataset
+        The parent dataset.
+    """
 
     def __init__(self, dataset_group: DatasetGroup, dataset):
         self.name = dataset_group.name
@@ -50,11 +72,24 @@ class DatasetGroupAdapter:
         self.dataset = dataset
 
     def __str__(self):
+        """Return the group name as its string representation.
+
+        Returns
+        -------
+        str
+            The short name of the group.
+        """
         return self.name
 
     @property
     async def files(self):
-        """Return the list of files in this group."""
+        """Return the list of files in this group.
+
+        Returns
+        -------
+        list
+            List of file objects in this group.
+        """
         return []
 
     async def _fetch_files(self):
@@ -62,19 +97,52 @@ class DatasetGroupAdapter:
         return []
 
     async def search(self, **kwargs):
-        """Search for files within this group matching the given criteria."""
+        """Search for files within this group matching the given criteria.
+
+        Parameters
+        ----------
+        ``**kwargs``
+            Arbitrary filter criteria.
+
+        Returns
+        -------
+        list
+            List of matching file objects.
+        """
         return []
 
 
 class DuckLakeCredentials(BaseModel):
-    """Credentials for authenticating with the S3-compatible object storage."""
+    """Credentials for authenticating with the S3-compatible object storage.
+
+    Parameters
+    ----------
+    access_key : SecretStr
+        The S3 access key ID.
+    secret_key : SecretStr
+        The S3 secret access key.
+    """
 
     access_key: SecretStr
     secret_key: SecretStr
 
 
 class DuckLake(BaseRemoteClient):
-    """Client for the DuckLake S3-based public health dataset catalog."""
+    """Client for the DuckLake S3-based public health dataset catalog.
+
+    Parameters
+    ----------
+    endpoint : str, optional
+        S3-compatible object storage endpoint.
+    region : str, optional
+        Storage region name.
+    bucket : str, optional
+        Bucket name containing the catalog.
+    credentials : DuckLakeCredentials, optional
+        Credentials for authenticated S3 operations.
+    engine : object, optional
+        Pre-configured SQLAlchemy engine to reuse.
+    """
 
     endpoint: str = "nbg1.your-objectstorage.com"
     region: str = "nbg1"
@@ -89,7 +157,15 @@ class DuckLake(BaseRemoteClient):
     _Session: Any = PrivateAttr(default=None)
 
     def __init__(self, engine=None, **data):
-        """Initialize the DuckLake client with an optional existing engine."""
+        """Initialize the DuckLake client with an optional existing engine.
+
+        Parameters
+        ----------
+        engine : object, optional
+            Pre-configured SQLAlchemy engine instead of creating a new one.
+        ``**data``
+            Additional fields passed to the Pydantic base model.
+        """
         super().__init__(**data)
         self._engine = engine
         self._cache_dir = Path(CACHEPATH) / "ducklake"
@@ -98,22 +174,46 @@ class DuckLake(BaseRemoteClient):
 
     @property
     def name(self) -> str:
-        """Return the short name of this client."""
+        """Return the short name of this client.
+
+        Returns
+        -------
+        str
+            The client short name.
+        """
         return "DuckLake"
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of this client."""
+        """Return the human-readable name of this client.
+
+        Returns
+        -------
+        str
+            The client display name.
+        """
         return "PySUS s3 Client"
 
     @property
     def description(self) -> str:
-        """Return a description of this client."""
+        """Return a description of this client.
+
+        Returns
+        -------
+        str
+            A description string (currently empty).
+        """
         return ""  # TODO:
 
     @property
     def catalog_path(self) -> Path:
-        """Return the local path to the downloaded catalog database."""
+        """Return the local path to the downloaded catalog database.
+
+        Returns
+        -------
+        Path
+            Filesystem path to the local catalog database file.
+        """
         return self._catalog_local
 
     @property
@@ -127,7 +227,18 @@ class DuckLake(BaseRemoteClient):
         return self.credentials is not None
 
     async def datasets(self, **kwargs) -> list[DuckDataset]:
-        """Return all datasets from the catalog as DuckDataset instances."""
+        """Return all datasets from the catalog as DuckDataset instances.
+
+        Parameters
+        ----------
+        ``**kwargs``
+            Additional filter arguments (currently unused).
+
+        Returns
+        -------
+        list[DuckDataset]
+            List of all datasets in the catalog.
+        """
         if not self._Session:
             await self.connect()
 
@@ -155,7 +266,17 @@ class DuckLake(BaseRemoteClient):
         secret_key: str | None = None,
         **kwargs,
     ) -> None:
-        """Authenticate with S3 credentials and reconnect to the catalog."""
+        """Authenticate with S3 credentials and reconnect to the catalog.
+
+        Parameters
+        ----------
+        access_key : str, optional
+            S3 access key ID. If omitted, credentials are cleared.
+        secret_key : str, optional
+            S3 secret access key. If omitted, credentials are cleared.
+        ``**kwargs``
+            Additional arguments (currently unused).
+        """
         if access_key and secret_key:
             self.credentials = DuckLakeCredentials(
                 access_key=SecretStr(access_key),
@@ -216,7 +337,13 @@ class DuckLake(BaseRemoteClient):
         return engine
 
     async def connect(self, force: bool = False):
-        """Connect to the catalog, downloading it first if necessary."""
+        """Connect to the catalog, downloading it first if necessary.
+
+        Parameters
+        ----------
+        force : bool, optional
+            Whether to re-download and re-connect even if already connected.
+        """
         if self._engine and not force:
             if not self._Session:
                 self._Session = sessionmaker(bind=self._engine)
@@ -227,7 +354,13 @@ class DuckLake(BaseRemoteClient):
         self._Session = sessionmaker(bind=self._engine)
 
     async def close(self):
-        """Dispose the engine, then upload the catalog if authenticated."""
+        """Dispose the engine, then upload the catalog if authenticated.
+
+        Raises
+        ------
+        PermissionError
+            If the client is not authenticated but an upload is required.
+        """
         if self._engine:
             await to_thread.run_sync(self._engine.dispose)
 
@@ -341,7 +474,28 @@ class DuckLake(BaseRemoteClient):
         year: int | None = None,
         month: int | None = None,
     ) -> list[File]:
-        """Filter catalog files by client, dataset, group, state, year."""
+        """Filter catalog files by client, dataset, group, state, year.
+
+        Parameters
+        ----------
+        client : Literal["FTP", "DadosGov"], optional
+            Source client to filter by.
+        dataset : str, optional
+            Dataset name to filter by.
+        group : str, optional
+            Group name pattern to filter by (case-insensitive ILIKE).
+        state : str, optional
+            Two-letter state code to filter by.
+        year : int, optional
+            Year to filter by.
+        month : int, optional
+            Month to filter by.
+
+        Returns
+        -------
+        list[:class:`~pysus.api.ducklake.models.File`]
+            List of matching file objects.
+        """
         if not self._Session:
             await self.connect()
 

@@ -24,7 +24,19 @@ from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 
 
 class File(BaseRemoteFile):
-    """A remote file in DuckLake catalog with download and verification."""
+    """A remote file in the DuckLake catalog with download and verification.
+
+    Parameters
+    ----------
+    record : CatalogFile
+        The underlying ORM record.
+    type : str, optional
+        File type identifier (default ``"remote"``).
+    dataset : Any
+        The parent dataset object.
+    group : Any, optional
+        The parent group object, if any.
+    """
 
     record: CatalogFile = Field(exclude=True)
     type: str = "remote"
@@ -33,32 +45,68 @@ class File(BaseRemoteFile):
 
     @property
     def basename(self) -> str:
-        """Return the file name without directory components."""
+        """Return the file name without directory components.
+
+        Returns
+        -------
+        str
+            The base file name.
+        """
         return self.path.name
 
     @property
     def extension(self) -> str:
-        """Return the file extension including the leading dot."""
+        """Return the file extension including the leading dot.
+
+        Returns
+        -------
+        str
+            File extension (e.g. ``'.csv'``).
+        """
         return self.path.suffix
 
     @property
     def size(self) -> int:
-        """Return the file size in bytes."""
+        """Return the file size in bytes.
+
+        Returns
+        -------
+        int
+            File size in bytes.
+        """
         return self.record.size
 
     @property
     def modify(self) -> datetime:
-        """Return the last-modified timestamp."""
+        """Return the last-modified timestamp.
+
+        Returns
+        -------
+        datetime
+            The last modification timestamp.
+        """
         return self.record.modified
 
     @property
     def rows(self) -> int:
-        """Return the number of rows in the file."""
+        """Return the number of rows in the file.
+
+        Returns
+        -------
+        int
+            Row count.
+        """
         return self.record.rows
 
     @property
     def sha256(self) -> str | None:
-        """Return the SHA-256 hash of the file, if available."""
+        """Return the SHA-256 hash of the file, if available.
+
+        Returns
+        -------
+        str or None
+            SHA-256 hex digest, or None if not recorded.
+        """
         return self.record.sha256
 
     async def _download(
@@ -77,7 +125,18 @@ class File(BaseRemoteFile):
         )
 
     async def verify(self, path: Path) -> bool:
-        """Verify the file matches the recorded SHA-256 hash."""
+        """Verify the file matches the recorded SHA-256 hash.
+
+        Parameters
+        ----------
+        path : Path
+            Path to the downloaded file on disk.
+
+        Returns
+        -------
+        bool
+            True if the hash matches or no hash is recorded, False otherwise.
+        """
         if not self.sha256:
             return True
 
@@ -93,22 +152,49 @@ class File(BaseRemoteFile):
 
 
 class DuckDataset(BaseRemoteDataset):
-    """A dataset from the DuckLake catalog, containing groups and files."""
+    """A dataset from the DuckLake catalog, containing groups and files.
+
+    Parameters
+    ----------
+    record : CatalogDataset
+        The underlying ORM record.
+    client : BaseRemoteClient
+        The parent client instance.
+    """
 
     record: CatalogDataset = Field(exclude=True)
     client: BaseRemoteClient = Field(exclude=True)
 
     def __repr__(self) -> str:
+        """Return a string representation of the dataset.
+
+        Returns
+        -------
+        str
+            The uppercased dataset name.
+        """
         return self.name.upper()
 
     @property
     def name(self) -> str:
-        """Return the short name of the dataset."""
+        """Return the short name of the dataset.
+
+        Returns
+        -------
+        str
+            The dataset short name.
+        """
         return self.record.name
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of the dataset."""
+        """Return the human-readable name of the dataset.
+
+        Returns
+        -------
+        str
+            The dataset display name, falling back to the short name.
+        """
         return (
             self.record.dataset_metadata.long_name
             if self.record.dataset_metadata
@@ -117,7 +203,13 @@ class DuckDataset(BaseRemoteDataset):
 
     @property
     def description(self) -> str:
-        """Return the description of the dataset."""
+        """Return the description of the dataset.
+
+        Returns
+        -------
+        str
+            The dataset description, or an empty string if unavailable.
+        """
         return (
             self.record.dataset_metadata.description
             if self.record.dataset_metadata
@@ -149,19 +241,39 @@ class DuckDataset(BaseRemoteDataset):
 
 
 class DuckGroup(BaseRemoteGroup):
-    """A group of related files within a DuckLake dataset."""
+    """A group of related files within a DuckLake dataset.
+
+    Parameters
+    ----------
+    record : DatasetGroup
+        The underlying ORM record.
+    dataset : DuckDataset
+        The parent dataset instance.
+    """
 
     record: DatasetGroup = Field(exclude=True)
     dataset: DuckDataset = Field(exclude=True)
 
     @property
     def name(self) -> str:
-        """Return the short name of the group."""
+        """Return the short name of the group.
+
+        Returns
+        -------
+        str
+            The group short name.
+        """
         return self.record.name
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of the group."""
+        """Return the human-readable name of the group.
+
+        Returns
+        -------
+        str
+            The group display name, falling back to the short name.
+        """
         return (
             self.record.group_metadata.long_name
             if self.record.group_metadata
@@ -170,7 +282,13 @@ class DuckGroup(BaseRemoteGroup):
 
     @property
     def description(self) -> str:
-        """Return the description of the group."""
+        """Return the description of the group.
+
+        Returns
+        -------
+        str
+            The group description, or an empty string if unavailable.
+        """
         if self.record.group_metadata:
             return self.record.group_metadata.description
         return ""
