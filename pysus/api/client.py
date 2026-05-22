@@ -69,7 +69,17 @@ class PySUS:
     """Central orchestrator for downloading and querying PySUS datasets."""
 
     def __init__(self, db_path: Path = CACHEPATH / "config.db"):
-        """Initialize PySUS with a DuckDB-backed SQLAlchemy engine."""
+        """Initialize the PySUS orchestrator.
+
+        Creates a SQLAlchemy engine backed by DuckDB, initializes the
+        schema, and sets up the session factory.
+
+        Parameters
+        ----------
+        db_path : Path, optional
+            Path to the DuckDB database file. Defaults to
+            ``CACHEPATH / "config.db"``.
+        """
 
         db_path = Path(db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -241,12 +251,31 @@ class PySUS:
     ) -> BaseLocalFile:
         """Download a remote file and return a local file handle.
 
+        Skips re-download if a matching local copy already exists.
+
         Parameters
         ----------
-        timeout : float | None
-            Maximum seconds to wait for the download. ``None`` (default) means
-            no timeout – use this when the socket-level timeout on the
-            underlying client is sufficient.
+        file : BaseRemoteFile
+            The remote file to download.
+        token : str, optional
+            Access token for authenticated clients (e.g. DadosGov).
+        callback : Callable, optional
+            Progress callback invoked during the download.
+        timeout : float, optional
+            Maximum seconds to wait for the download. ``None`` (default)
+            means no timeout.
+
+        Returns
+        -------
+        BaseLocalFile
+            The downloaded file wrapped in the appropriate handler.
+
+        Raises
+        ------
+        ValueError
+            If the file's client is not recognised.
+        RuntimeError
+            If the download fails for any reason.
         """
 
         from pysus.api.extensions import ExtensionFactory
@@ -332,7 +361,32 @@ class PySUS:
         timeout: float | None = None,
         add_dv: bool = True,
     ) -> Parquet:
-        """Download a file and convert it to Parquet format."""
+        """Download a file and convert it to Parquet format.
+
+        Parameters
+        ----------
+        file : BaseRemoteFile
+            The remote file to download and convert.
+        token : str, optional
+            Access token for authenticated clients.
+        callback : Callable[[int, int], None], optional
+            Progress callback.
+        timeout : float, optional
+            Maximum seconds to wait for the download.
+        add_dv : bool, optional
+            Whether to apply the IBGE verification digit on load
+            (default True).
+
+        Returns
+        -------
+        Parquet
+            The converted Parquet file handler.
+
+        Raises
+        ------
+        NotImplementedError
+            If the downloaded file type cannot be converted to Parquet.
+        """
 
         local_file = await self.download(
             file=file,
@@ -368,8 +422,13 @@ class PySUS:
         )
 
     def get_local_hierarchy(self):
-        """
-        Build a nested dict of cached files grouped by client and dataset.
+        """Build a nested dict of cached files grouped by client and dataset.
+
+        Returns
+        -------
+        dict
+            Nested dict keyed by
+            ``{client: {dataset: {group: [files]}}}``.
         """
 
         with self.Session() as session:
@@ -446,10 +505,27 @@ class PySUS:
 
         Parameters
         ----------
-        add_dv : bool
+        paths : list of Path
+            One or more Parquet file paths to read.
+        sql : str, optional
+            Optional SQL filter expression applied to the result.
+        mode : {"union", "intersection", "strict"}, optional
+            Schema resolution mode (default ``"union"``).
+        add_dv : bool, optional
             When True, automatically applies the IBGE verification digit to
-            municipality code columns. If there are matching columns, a
-            DataFrame is returned instead of a DuckDBPyConnection.
+            municipality code columns. If matching columns are found, a
+            DataFrame is returned instead of a ``DuckDBPyConnection``.
+
+        Returns
+        -------
+        DuckDBPyConnection or pd.DataFrame
+            The query result.
+
+        Raises
+        ------
+        ValueError
+            If no paths are provided, or if the schema mode is ``"strict"``
+            and the files have differing schemas.
         """
 
         from pysus.api.utils import add_dv as _add_dv_fn
@@ -459,6 +535,7 @@ class PySUS:
             raise ValueError("No paths provided")
 
         def get_columns(path: Path) -> set[tuple[str, str]]:
+            """Return the schema of a Parquet file as (name, type) pairs."""
             result = duckdb.execute(f"SELECT * FROM '{path}' LIMIT 0")
             return {(col[0], str(col[1])) for col in result.description}
 

@@ -56,6 +56,7 @@ class File(BaseLocalFile):
         """Yield the file contents in chunks of the given size."""
 
         def _read_sync():
+            """Read file chunks synchronously in a thread."""
             with open(self.path, "rb") as f:
                 while chunk := f.read(chunk_size):
                     yield chunk
@@ -135,6 +136,7 @@ class CSV(BaseTabularFile):
         if self._encoding is None:
 
             def detect():
+                """Detect encoding from file bytes synchronously."""
                 with open(self.path, "rb") as f:
                     return chardet.detect(f.read(1024 * 300))
 
@@ -151,6 +153,7 @@ class CSV(BaseTabularFile):
             encoding = await self._get_encoding()
 
             def sniff():
+                """Sniff the CSV delimiter synchronously."""
                 try:
                     with open(self.path, encoding=encoding) as f:
                         sample = f.read(1024 * 10)
@@ -168,6 +171,7 @@ class CSV(BaseTabularFile):
         separator = await self._get_sep()
 
         def _read_sync():
+            """Read the CSV synchronously in a thread."""
             return pd.read_csv(
                 self.path, sep=separator, encoding=encoding, low_memory=False
             )
@@ -183,6 +187,7 @@ class CSV(BaseTabularFile):
         separator = await self._get_sep()
 
         def _get_reader_sync():
+            """Create a CSV chunk reader synchronously in a thread."""
             return pd.read_csv(
                 self.path,
                 sep=separator,
@@ -233,6 +238,7 @@ class Parquet(BaseTabularFile):
         """Read the entire Parquet file into a DataFrame."""
 
         def _load():
+            """Read the Parquet file synchronously in a thread."""
             df = pd.read_parquet(self.path, engine="pyarrow")
             if parse:
                 df = self.parse_dftypes(df)
@@ -265,12 +271,14 @@ class Parquet(BaseTabularFile):
         """Convert known date and integer columns to their proper types."""
 
         def str_to_int(string):
+            """Convert a string to int, return original if not possible."""
             if pd.isna(string):
                 return string
             clean = str(string).replace(" ", "")
             return int(clean) if clean.isnumeric() else string
 
         def str_to_date(string):
+            """Convert a date string to date or return original on failure."""
             if isinstance(string, str):
                 try:
                     return datetime.strptime(string, "%Y%m%d").date()
@@ -308,7 +316,19 @@ class DBF(BaseTabularFile):
         return len(DBFReader(self.path, load=False))
 
     def decode_column(self, value):
-        """Decode a byte string value using cp1252 encoding."""
+        """Decode a raw DBF value, handling byte strings and null bytes.
+
+        Parameters
+        ----------
+        value : bytes or str or Any
+            The value to decode.
+
+        Returns
+        -------
+        str or Any
+            The decoded and stripped string, or the original value if it is
+            neither bytes nor str.
+        """
         if isinstance(value, bytes):
             return (
                 value.decode(encoding="cp1252", errors="replace")
@@ -323,6 +343,7 @@ class DBF(BaseTabularFile):
         """Read the entire DBF file into a DataFrame."""
 
         def _load():
+            """Read the DBF file synchronously in a thread."""
             dbf = DBFReader(self.path, encoding="cp1252", raw=True)
             df = pd.DataFrame(iter(dbf))
             return df.map(self.decode_column)
@@ -336,6 +357,7 @@ class DBF(BaseTabularFile):
         """Yield the DBF records in chunks of the given size."""
 
         def _get_db():
+            """Open the DBF reader synchronously in a thread."""
             return DBFReader(self.path, encoding="cp1252", raw=True)
 
         dbf_file = await to_thread.run_sync(_get_db)
@@ -371,6 +393,7 @@ class DBF(BaseTabularFile):
                 raise RuntimeError(f"Could not parse {out} to Parquet")
 
         async def _stream_to_single_file():
+            """Stream DBF records and write them to a single Parquet file."""
             dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
             total_rows = len(dbf_reader)
             writer = None
@@ -538,6 +561,7 @@ class PDF(BaseLocalFile):
         """Yield the PDF file contents in chunks of the given size."""
 
         def _read():
+            """Read PDF file data synchronously."""
             with open(self.path, "rb") as f:
                 if chunk_size:
                     while chunk := f.read(chunk_size):
@@ -563,6 +587,7 @@ class Zip(BaseCompressedFile):
         """Return the list of member names inside the archive."""
 
         def _list():
+            """List ZIP members synchronously in a thread."""
             with zipfile.ZipFile(self.path) as z:
                 return z.namelist()
 
@@ -572,6 +597,7 @@ class Zip(BaseCompressedFile):
         """Read and return the contents of a named archive member."""
 
         def _read():
+            """Read a ZIP member synchronously in a thread."""
             with zipfile.ZipFile(self.path) as z:
                 return z.read(member_name)
 
@@ -588,6 +614,7 @@ class Zip(BaseCompressedFile):
         target_dir.mkdir(parents=True, exist_ok=True)
 
         def _extract_sync():
+            """Extract ZIP contents synchronously in a thread."""
             with zipfile.ZipFile(self.path) as z:
                 z.extractall(target_dir)
 
@@ -636,6 +663,7 @@ class Zip(BaseCompressedFile):
         """Remove a temporary directory and its contents."""
 
         def _cleanup():
+            """Remove directory contents synchronously in a thread."""
             if not directory.exists():
                 return
 
@@ -663,6 +691,7 @@ class GZip(BaseCompressedFile):
         """Decompress and read the entire file contents into memory."""
 
         def _read():
+            """Decompress and read synchronously in a thread."""
             with gzip.open(self.path, "rb") as f:
                 return f.read()
 
@@ -688,6 +717,7 @@ class GZip(BaseCompressedFile):
         out_file = target_dir / self.path.stem
 
         def _decompress():
+            """Decompress gzip file synchronously in a thread."""
             with (
                 gzip.open(self.path, "rb") as f_in,
                 open(
@@ -714,6 +744,7 @@ class Tar(BaseCompressedFile):
         """Return the list of member names inside the archive."""
 
         def _list():
+            """List Tar members synchronously in a thread."""
             with tarfile.open(self.path) as t:
                 return t.getnames()
 
@@ -723,6 +754,7 @@ class Tar(BaseCompressedFile):
         """Read and return the contents of a named archive member."""
 
         def _read():
+            """Read a Tar member synchronously in a thread."""
             with tarfile.open(self.path) as t:
                 f = t.extractfile(member_name)
                 return f.read() if f else b""
@@ -740,6 +772,7 @@ class Tar(BaseCompressedFile):
         members = await self.list_members()
 
         def _extract():
+            """Extract Tar contents synchronously in a thread."""
             with tarfile.open(self.path) as t:
                 t.extractall(target_dir)
 
@@ -802,6 +835,7 @@ class FTPNotImported(BaseTabularFile):
         """Raise ImportError indicating the missing DBC dependency."""
 
         async def _internal_gen():
+            """Yield nothing; always raises ImportError."""
             raise ImportError(self.import_err)
             yield pd.DataFrame()
 
@@ -862,7 +896,21 @@ class ExtensionFactory:
 
     @classmethod
     async def get_file_class(cls, path: Path) -> type[BaseLocalFile]:
-        """Return handler class for path, falling back to extension matching."""
+        """Return the file handler class for a given path.
+
+        First attempts MIME-type identification; falls back to extension
+        matching.
+
+        Parameters
+        ----------
+        path : Path
+            The file path to classify.
+
+        Returns
+        -------
+        type[BaseLocalFile]
+            The handler class for the file type.
+        """
         mime_class = await cls._identify(path)
         if mime_class:
             return mime_class
@@ -873,7 +921,21 @@ class ExtensionFactory:
 
     @classmethod
     async def instantiate(cls, path: str | Path) -> BaseLocalFile:
-        """Create and return the appropriate file handler for a given path."""
+        """Create and return the appropriate file handler for a path.
+
+        Determines whether the path is a directory or a file, resolves the
+        handler class, and instantiates it.
+
+        Parameters
+        ----------
+        path : str or Path
+            The filesystem path to wrap in a handler.
+
+        Returns
+        -------
+        BaseLocalFile
+            The instantiated file handler.
+        """
         path = Path(path).expanduser().resolve()
         if await to_thread.run_sync(path.is_dir):
             return Directory(path=path, type="DIR")
