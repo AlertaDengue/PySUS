@@ -1,6 +1,16 @@
 Release Notes
 ---
 
+## [2.1.0](https://github.com/AlertaDengue/PySUS/compare/2.0.4...2.1.0) (2026-05-22)
+
+### Features
+
+* include the 'client' field in the querying and prioritize FTP client ([#273](https://github.com/AlertaDengue/PySUS/issues/273)) ([448c543](https://github.com/AlertaDengue/PySUS/commit/448c5434a68c53e6baa980aa5350a90c6d179f8c))
+
+### Bug Fixes
+
+* **dadosgov:** include group aliases on DadosGov to link files with FTP ([#272](https://github.com/AlertaDengue/PySUS/issues/272)) ([6aca1bd](https://github.com/AlertaDengue/PySUS/commit/6aca1bd56498516e38d8183558ce5d5fb7de4912))
+
 ## [2.0.4](https://github.com/AlertaDengue/PySUS/compare/2.0.3...2.0.4) (2026-05-18)
 
 ### Bug Fixes
