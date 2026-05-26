@@ -29,7 +29,7 @@ COPY docker/scripts/entrypoint.sh /entrypoint.sh
 COPY docker/notebooks/ /home/pysus/Notebooks/
 
 RUN pip install poetry \
-  && cd /usr/src && poetry config virtualenvs.create false && poetry install --with docs --extras dbc \
+  && cd /usr/src && poetry config virtualenvs.create false && poetry install --with docs \
   && pip install 'httpx<0.28' \
   && chown -R pysus:pysus /home/pysus
 

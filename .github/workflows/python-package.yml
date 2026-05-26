@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ (matrix.os == 'windows-latest' && 30) || 15 }}
+    timeout-minutes: ${{ (matrix.os == 'windows-latest' && 45) || 15 }}
 
     strategy:
       matrix:
@@ -34,7 +34,7 @@ jobs:
         pip install poetry poetry-plugin-export
         poetry config virtualenvs.create false
         if [ "${{ runner.os }}" = "Linux" ]; then
-          poetry install --without dev --extras dbc
+          poetry install --without dev
           pip install pre-commit
         else
           poetry install --without dev
@@ -57,7 +57,7 @@ jobs:
       shell: bash -l {0}
       run: |
         export DUCKDB_NO_THREADS=1
-        poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --timeout=480 -p no:cacheprovider -p no:asyncio
+        poetry run pytest -vv pysus/tests/ --timeout=480 -p no:cacheprovider -p no:asyncio
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest'

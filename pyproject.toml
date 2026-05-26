@@ -38,17 +38,15 @@ httpx = ">=0.28.0"
 aioftp = "^0.21.4"
 dbfread = "2.0.7"
 bigtree = "^0.12.2"
-
-pyreaddbc = { version = ">=1.1.0", optional = true }
-pycparser = { version = "2.21", optional = true }
-textual = { extras = ["syntax"], version = "^8.2.1", optional = true }
-humanize = { version = "^4.8.0", optional = true }
+pyreaddbc = ">=2.0.4"
 dotenv = "^0.9.9"
 boto3 = "^1.42.89"
 typer = "^0.24.1"
 
+humanize = { version = "^4.8.0", optional = true }
+textual = { extras = ["syntax"], version = "^8.2.1", optional = true }
+
 [tool.poetry.extras]
-dbc = ["pyreaddbc", "pycparser"]
 tui = ["textual", "humanize"]
 
 [tool.poetry.group.dev.dependencies]
