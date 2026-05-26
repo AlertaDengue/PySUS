@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.2.0](https://github.com/AlertaDengue/PySUS/compare/2.1.0...2.2.0) (2026-05-26)
+
+### Features
+
+* **package:** remove the need of the libffi-dev requirement on pyreaddbc ([#278](https://github.com/AlertaDengue/PySUS/issues/278)) ([5f8269f](https://github.com/AlertaDengue/PySUS/commit/5f8269f8d286a898ee27fc5cdafcc9a522030ef1))
+
 ## [2.1.0](https://github.com/AlertaDengue/PySUS/compare/2.0.4...2.1.0) (2026-05-22)
 
 ### Features
