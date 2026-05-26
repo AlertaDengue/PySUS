@@ -20,13 +20,6 @@ PySUS is a Python package for accessing and analyzing Brazil's public health dat
 pip install pysus
 ```
 
-For DBC file support (requires libffi):
-```bash
-# Ubuntu/Debian
-sudo apt install libffi-dev
-pip install pysus[dbc]
-```
-
 For the terminal user interface (TUI):
 ```bash
 pip install pysus[tui]

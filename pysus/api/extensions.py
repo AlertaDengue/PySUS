@@ -2,7 +2,6 @@
 
 import asyncio
 import csv
-import ctypes.util
 import gzip
 import shutil
 import sys
@@ -26,16 +25,9 @@ from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 from .types import FileType
 
 try:
-    LIBFFI = True
-    if sys.platform.startswith("linux"):
-        LIBFFI = ctypes.util.find_library("ffi") is not None
+    from pyreaddbc import dbc2dbf
 
-    if LIBFFI:
-        from pyreaddbc import dbc2dbf
-
-        DBC_IMPORT = True
-    else:
-        DBC_IMPORT = False
+    DBC_IMPORT = True
 except ImportError:
     DBC_IMPORT = False
 
@@ -781,7 +773,7 @@ class Tar(BaseCompressedFile):
         return list(await asyncio.gather(*tasks))
 
 
-class FTPNotImported(BaseTabularFile):
+class DBCNotImported(BaseTabularFile):
     """Placeholder for DBC files when optional dependency is not installed."""
 
     path: Path = Field(default_factory=lambda: Path("..."))
@@ -872,17 +864,22 @@ class ExtensionFactory:
         ".csv": CSV,
         ".parquet": Parquet,
         ".dbf": DBF,
-        ".dbc": DBC if DBC_IMPORT else FTPNotImported,  # type: ignore
+        ".dbc": DBC if DBC_IMPORT else DBCNotImported,  # type: ignore
         ".pdf": PDF,
         ".json": JSON,
     }
 
+    _magic_available: bool = sys.platform != "win32"
+
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
         """Identify the file class by its MIME type."""
+        if not cls._magic_available:
+            return None
         try:
             import magic
         except (ImportError, OSError):
+            cls._magic_available = False
             return None
         try:
             mime = await to_thread.run_sync(

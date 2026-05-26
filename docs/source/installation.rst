@@ -14,14 +14,6 @@ The simplest way to install PySUS is via pip:
 Extras
 ^^^^^^
 
-For DBC file support (requires ``libffi``):
-
-.. code-block:: bash
-
-   # Ubuntu/Debian
-   sudo apt install libffi-dev
-   pip install pysus[dbc]
-
 For the terminal user interface (TUI):
 
 .. code-block:: bash

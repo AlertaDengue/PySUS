@@ -77,11 +77,13 @@ class TestDownloadStatus:
 
 class TestLocalFileState:
     @pytest.mark.asyncio
-    async def test_update_state_creates_record(self, test_db_path):
+    async def test_update_state_creates_record(self, test_db_path, tmp_path):
         client = PySUS(db_path=test_db_path)
 
+        local = pathlib.Path(tmp_path / "test.dbc")
+
         await client._update_state(
-            local_path=pathlib.Path("/tmp/test.dbc"),
+            local_path=local,
             remote_path="/remote/test.dbc",
             client_name="ftp",
             status=DownloadStatus.COMPLETED,
@@ -93,9 +95,7 @@ class TestLocalFileState:
 
         with client.Session() as session:
             record = (
-                session.query(LocalFileState)
-                .filter_by(path="/tmp/test.dbc")
-                .first()
+                session.query(LocalFileState).filter_by(path=str(local)).first()
             )
             assert record is not None
             assert record.remote_path == "/remote/test.dbc"
@@ -109,34 +109,36 @@ class TestLocalFileState:
         await client.__aexit__(None, None, None)
 
     @pytest.mark.asyncio
-    async def test_delete_record_removes_entry(self, test_db_path):
+    async def test_delete_record_removes_entry(self, test_db_path, tmp_path):
         client = PySUS(db_path=test_db_path)
 
+        local = pathlib.Path(tmp_path / "test.dbc")
+
         await client._update_state(
-            local_path=pathlib.Path("/tmp/test.dbc"),
+            local_path=local,
             remote_path="/remote/test.dbc",
             client_name="ftp",
             status=DownloadStatus.COMPLETED,
         )
 
-        await client._delete_record("/tmp/test.dbc")
+        await client._delete_record(str(local))
 
         with client.Session() as session:
             record = (
-                session.query(LocalFileState)
-                .filter_by(path="/tmp/test.dbc")
-                .first()
+                session.query(LocalFileState).filter_by(path=str(local)).first()
             )
             assert record is None
 
         await client.__aexit__(None, None, None)
 
     @pytest.mark.asyncio
-    async def test_get_local_file_finds_existing(self, test_db_path):
+    async def test_get_local_file_finds_existing(self, test_db_path, tmp_path):
         client = PySUS(db_path=test_db_path)
 
+        local = pathlib.Path(tmp_path / "test.dbc")
+
         await client._update_state(
-            local_path=pathlib.Path("/tmp/test.dbc"),
+            local_path=local,
             remote_path="/remote/test.dbc",
             client_name="ftp",
             status=DownloadStatus.COMPLETED,
@@ -158,17 +160,20 @@ class TestLocalFileState:
 
 class TestGetCompletedRemotePaths:
     @pytest.mark.asyncio
-    async def test_get_completed_remote_paths(self, test_db_path):
+    async def test_get_completed_remote_paths(self, test_db_path, tmp_path):
         client = PySUS(db_path=test_db_path)
 
+        local1 = pathlib.Path(tmp_path / "test1.dbc")
+        local2 = pathlib.Path(tmp_path / "test2.dbc")
+
         await client._update_state(
-            local_path=pathlib.Path("/tmp/test1.dbc"),
+            local_path=local1,
             remote_path="/remote/test1.dbc",
             client_name="ftp",
             status=DownloadStatus.COMPLETED,
         )
         await client._update_state(
-            local_path=pathlib.Path("/tmp/test2.dbc"),
+            local_path=local2,
             remote_path="/remote/test2.dbc",
             client_name="ftp",
             status=DownloadStatus.PENDING,
