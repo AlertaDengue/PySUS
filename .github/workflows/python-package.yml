@@ -19,17 +19,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: actions/setup-python@v5
       with:
-        miniforge-version: latest
-        environment-file: conda/dev.yaml
-        channels: conda-forge,nodefaults
-        activate-environment: pysus
-        auto-update-conda: true
-        conda-solver: libmamba
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      shell: bash -l {0}
+      shell: bash
       run: |
         pip install poetry poetry-plugin-export
         poetry config virtualenvs.create false
@@ -43,21 +38,21 @@ jobs:
 
     - name: Linting
       if: matrix.os == 'ubuntu-latest'
-      shell: bash -l {0}
+      shell: bash
       run: pre-commit run --files pysus/**/*
 
     - name: Tests (Linux)
       if: matrix.os != 'windows-latest'
-      shell: bash -l {0}
+      shell: bash
       run: |
         poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
 
     - name: Tests (Windows)
       if: matrix.os == 'windows-latest'
-      shell: bash -l {0}
+      shell: bash
       run: |
         export DUCKDB_NO_THREADS=1
-        poetry run pytest -vv pysus/tests/ --timeout=480 -p no:cacheprovider -p no:asyncio
+        poetry run pytest -vv pysus/tests/ --timeout=480 -p no:cacheprovider
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest'

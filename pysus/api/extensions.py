@@ -868,22 +868,29 @@ class ExtensionFactory:
         ".json": JSON,
     }
 
+    _magic_available: bool = True
+    _magic_lock: asyncio.Lock = asyncio.Lock()
+
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
         """Identify the file class by its MIME type."""
+        if not cls._magic_available:
+            return None
         try:
             import magic
         except (ImportError, OSError):
+            cls._magic_available = False
             return None
-        try:
-            mime = await to_thread.run_sync(
-                magic.from_file,
-                str(path),
-                True,
-            )
-            return cls._mime.get(mime)
-        except (magic.MagicException, OSError):
-            return None
+        async with cls._magic_lock:
+            try:
+                mime = await to_thread.run_sync(
+                    magic.from_file,
+                    str(path),
+                    True,
+                )
+                return cls._mime.get(mime)
+            except (magic.MagicException, OSError):
+                return None
 
     @classmethod
     async def get_file_class(cls, path: Path) -> type[BaseLocalFile]:
