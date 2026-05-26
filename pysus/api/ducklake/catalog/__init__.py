@@ -4,6 +4,7 @@ Defines tables for datasets, groups, files, and columns stored
 in the pysus schema of the local DuckDB catalog.
 """
 
+import enum
 from datetime import datetime
 from typing import Optional
 
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -53,6 +55,21 @@ class CatalogTable(Base):
     __table_args__: tuple = ({"schema": "pysus"},)
 
 
+class Origin(enum.Enum):
+    """Origin type for a dataset.
+
+    Attributes
+    ----------
+    FTP : str
+        Dataset sourced from the FTP server.
+    API : str
+        Dataset sourced from an API.
+    """
+
+    FTP = "ftp"
+    API = "api"
+
+
 class CatalogDataset(CatalogTable):
     """ORM model for the datasets table, representing a dataset collection.
 
@@ -66,6 +83,8 @@ class CatalogDataset(CatalogTable):
         Human-readable full name.
     description : str, optional
         Optional description of the dataset contents.
+    origin : Origin
+        Whether the dataset originates from FTP or an API.
     """
 
     __tablename__ = "datasets"
@@ -78,6 +97,7 @@ class CatalogDataset(CatalogTable):
     name = Column(String, nullable=False, unique=True, index=True)
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+    origin = Column(Enum(Origin), nullable=False)
 
     groups = relationship(
         "DatasetGroup",
@@ -214,8 +234,6 @@ class CatalogFile(CatalogTable):
         Timestamp of the last known modification.
     origin_modified : datetime, optional
         Original modification timestamp from the source.
-    origin_size : int
-        Original file size in bytes.
     origin_path : str
         Original source path of the file.
     sha256 : str, optional
@@ -253,7 +271,6 @@ class CatalogFile(CatalogTable):
         DateTime,
         nullable=True,
     )
-    origin_size: Mapped[int] = mapped_column(Integer, nullable=False)
     origin_path: Mapped[str] = mapped_column(String, nullable=False)
     sha256: Mapped[str | None] = mapped_column(
         String(64),
