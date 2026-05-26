@@ -128,7 +128,7 @@ async def test_dataset_fetch_content(mock_client):
 
 
 @pytest.mark.asyncio
-async def test_file_download_calls_client(mock_client, mock_dataset):
+async def test_file_download_calls_client(mock_client, mock_dataset, tmp_path):
     file = File(
         path="/root/test.dbc",
         _info={"path": "/root/test.dbc", "name": "test.dbc"},
@@ -136,7 +136,7 @@ async def test_file_download_calls_client(mock_client, mock_dataset):
         dataset=mock_dataset,
     )
 
-    dest = Path("/tmp/test.dbc")
+    dest = Path(tmp_path / "test.dbc")
     await file._download(output=dest)
 
     mock_client._download_file.assert_called_once_with(file, dest, None)

@@ -303,14 +303,27 @@ class TestFetchData:
 
 
 class TestListFiles:
+    def _mock_asyncio_run(self, return_value):
+        import asyncio
+
+        def _run(coro):
+            if asyncio.iscoroutine(coro):
+                coro.close()
+            return return_value
+
+        return _run
+
     def test_list_files_returns_dataframe(self):
         import pandas as pd
 
-        with patch("pysus.api._impl.databases.asyncio.run") as mock_run:
-            mock_run.return_value = pd.DataFrame(
-                {"name": ["test.parquet"], "path": ["/test.parquet"]}
-            )
+        ret = pd.DataFrame(
+            {"name": ["test.parquet"], "path": ["/test.parquet"]}
+        )
 
+        with patch(
+            "pysus.api._impl.databases.asyncio.run",
+            side_effect=self._mock_asyncio_run(ret),
+        ):
             from pysus.api._impl.databases import list_files
 
             result = list_files(dataset="SINAN")
@@ -321,19 +334,22 @@ class TestListFiles:
     def test_list_files_with_filters(self):
         import pandas as pd
 
-        with patch("pysus.api._impl.databases.asyncio.run") as mock_run:
-            mock_run.return_value = pd.DataFrame(
-                {
-                    "name": ["test1.parquet", "test2.parquet"],
-                    "path": ["/test1.parquet", "/test2.parquet"],
-                    "dataset": ["sinan", "sinan"],
-                    "year": [2024, 2023],
-                    "month": [1, 2],
-                    "state": ["SP", "RJ"],
-                    "modify": ["2024-01-01", "2024-01-02"],
-                }
-            )
+        ret = pd.DataFrame(
+            {
+                "name": ["test1.parquet", "test2.parquet"],
+                "path": ["/test1.parquet", "/test2.parquet"],
+                "dataset": ["sinan", "sinan"],
+                "year": [2024, 2023],
+                "month": [1, 2],
+                "state": ["SP", "RJ"],
+                "modify": ["2024-01-01", "2024-01-02"],
+            }
+        )
 
+        with patch(
+            "pysus.api._impl.databases.asyncio.run",
+            side_effect=self._mock_asyncio_run(ret),
+        ):
             from pysus.api._impl.databases import list_files
 
             result = list_files(
@@ -357,9 +373,12 @@ class TestListFiles:
     def test_list_files_empty_result(self):
         import pandas as pd
 
-        with patch("pysus.api._impl.databases.asyncio.run") as mock_run:
-            mock_run.return_value = pd.DataFrame()
+        ret = pd.DataFrame()
 
+        with patch(
+            "pysus.api._impl.databases.asyncio.run",
+            side_effect=self._mock_asyncio_run(ret),
+        ):
             from pysus.api._impl.databases import list_files
 
             result = list_files(dataset="SINAN")

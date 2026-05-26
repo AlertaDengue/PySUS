@@ -6,7 +6,7 @@ Parquet conversion, and query execution across multiple backends.
 
 import enum
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -16,6 +16,7 @@ import pandas as pd
 from pysus import CACHEPATH
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from .dadosgov import DadosGovClient
 from .ducklake.client import DuckLake
@@ -61,7 +62,7 @@ class LocalFileState(Base):
     sha256: Mapped[str | None] = mapped_column(String, nullable=True)
     last_synced: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
     )
 
 
@@ -85,7 +86,10 @@ class PySUS:
         db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.cachepath = db_path.parent
-        self.engine = create_engine(f"duckdb:///{db_path}")
+        self.engine = create_engine(
+            f"duckdb:///{db_path.resolve().as_posix()}",
+            poolclass=NullPool,
+        )
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
 
@@ -239,7 +243,7 @@ class PySUS:
                 session.add(record)
 
             record.status = status
-            record.last_synced = datetime.utcnow()
+            record.last_synced = datetime.now(timezone.utc).replace(tzinfo=None)
             session.commit()
 
     async def download(
