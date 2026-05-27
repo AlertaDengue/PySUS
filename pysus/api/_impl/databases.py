@@ -25,7 +25,7 @@ from typing import Literal
 
 import pandas as pd
 from pysus.api.client import PySUS
-from pysus.api.types import State
+from pysus.api.types import Origin, State
 from tqdm import tqdm
 
 
@@ -519,7 +519,7 @@ def list_files(
         "CNES",
         "CIHA",
     ],
-    client: Literal["FTP", "DadosGov"] | None = None,
+    client: Origin | None = None,
     group: str | None = None,
     state: str | None = None,
     year: int | list[int] | None = None,
@@ -536,7 +536,7 @@ def list_files(
     ----------
     dataset : Literal
         Dataset name (e.g. ``"SINAN"``, ``"SINASC"``, etc.).
-    client : Literal["FTP", "DadosGov"], optional
+    client : Origin, optional
         Data source client to query.
     group : str, optional
         Group or disease code to filter by.

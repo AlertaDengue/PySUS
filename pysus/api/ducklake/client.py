@@ -6,7 +6,7 @@ and file download capabilities backed by a local DuckDB engine.
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import boto3
 import httpx
@@ -15,6 +15,7 @@ from botocore.config import Config
 from pydantic import BaseModel, PrivateAttr, SecretStr
 from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
+from pysus.api.types import DuckLake as DUCKLAKE, Origin
 from sqlalchemy import create_engine
 from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -181,7 +182,7 @@ class DuckLake(BaseRemoteClient):
         str
             The client short name.
         """
-        return "DuckLake"
+        return DUCKLAKE
 
     @property
     def long_name(self) -> str:
@@ -467,7 +468,7 @@ class DuckLake(BaseRemoteClient):
 
     async def query(
         self,
-        client: Literal["FTP", "DadosGov"] | None = None,
+        client: Origin | None = None,
         dataset: str | None = None,
         group: str | None = None,
         state: str | None = None,
@@ -478,7 +479,7 @@ class DuckLake(BaseRemoteClient):
 
         Parameters
         ----------
-        client : Literal["FTP", "DadosGov"], optional
+        client : Origin, optional
             Source client to filter by.
         dataset : str, optional
             Dataset name to filter by.

@@ -29,6 +29,7 @@ from .types import FileType, State
 
 if TYPE_CHECKING:
     from extensions import Parquet
+    from pysus.api.metadata.models import Column
 
 
 class BaseFile(BaseModel, ABC):
@@ -151,8 +152,8 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
     @property
     @abstractmethod
-    def columns(self) -> list[str]:
-        """Return the list of column names."""
+    def columns(self) -> list["Column"]:
+        """Return the list of column metadata."""
 
     @property
     @abstractmethod

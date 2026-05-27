@@ -20,9 +20,45 @@ from anyio import to_thread
 from dbfread import DBF as DBFReader
 from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
+from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 
 from .types import FileType
+
+_DTYPE_MAP: dict[str, str] = {
+    "int8": "INTEGER",
+    "int16": "INTEGER",
+    "int32": "INTEGER",
+    "int64": "BIGINT",
+    "uint8": "INTEGER",
+    "uint16": "INTEGER",
+    "uint32": "INTEGER",
+    "uint64": "BIGINT",
+    "float": "FLOAT",
+    "float16": "FLOAT",
+    "float32": "FLOAT",
+    "float64": "DOUBLE",
+    "double": "DOUBLE",
+    "bool": "BOOLEAN",
+    "bool_": "BOOLEAN",
+    "date32": "DATE",
+    "date64": "DATE",
+    "date": "DATE",
+    "datetime64[ns]": "DATE",
+    "object": "VARCHAR",
+    "string": "VARCHAR",
+    "utf8": "VARCHAR",
+    "large_string": "VARCHAR",
+}
+
+
+def _map_dtype(raw: str) -> str:
+    raw_lower = raw.lower().split("[")[0].split("(")[0].strip()
+    for key, val in _DTYPE_MAP.items():
+        if raw_lower == key or raw_lower.startswith(key):
+            return val
+    return "VARCHAR"
+
 
 try:
     from pyreaddbc import dbc2dbf
@@ -97,8 +133,9 @@ class CSV(BaseTabularFile):
     _sep: str | None = PrivateAttr(default=None)
 
     @property
-    def columns(self) -> list[str]:
-        """Return the column names from the CSV header row."""
+    def columns(self) -> list["Column"]:
+        """Return the column metadata from the CSV header row."""
+
         if self._encoding is not None:
             enc = self._encoding
         else:
@@ -112,7 +149,10 @@ class CSV(BaseTabularFile):
             )
             self._encoding = enc
         df = pd.read_csv(self.path, sep=",", nrows=0, encoding=enc)
-        return df.columns.tolist()
+        return [
+            Column.from_schema(name=col, dtype=_map_dtype(str(dt)))
+            for col, dt in zip(df.columns, df.dtypes)
+        ]
 
     @property
     def rows(self) -> int:
@@ -207,9 +247,14 @@ class Parquet(BaseTabularFile):
         return pq.read_schema(self.path)
 
     @property
-    def columns(self) -> list[str]:
-        """Return the column names from the Parquet schema."""
-        return pq.read_schema(self.path).names
+    def columns(self) -> list["Column"]:
+        """Return the column metadata from the Parquet schema."""
+
+        schema = pq.read_schema(self.path)
+        return [
+            Column.from_schema(name=field.name, dtype=_map_dtype(str(field.type)))
+            for field in schema
+        ]
 
     @property
     def rows(self) -> int:
@@ -298,9 +343,22 @@ class DBF(BaseTabularFile):
     type: FileType = Field("DBF")
 
     @property
-    def columns(self) -> list[str]:
-        """Return the field names from the DBF file."""
-        return DBFReader(self.path, load=False).field_names
+    def columns(self) -> list["Column"]:
+        """Return the column metadata from the DBF file."""
+
+        reader = DBFReader(self.path, load=False)
+        _DBF_DTYPE = {
+            "C": "VARCHAR",
+            "N": "INTEGER",
+            "F": "FLOAT",
+            "D": "DATE",
+            "L": "BOOLEAN",
+            "M": "VARCHAR",
+        }
+        return [
+            Column.from_schema(name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR"))
+            for f in reader.fields
+        ]
 
     @property
     def rows(self) -> int:
@@ -440,7 +498,7 @@ class DBC(BaseTabularFile):
     type: FileType = Field("DBC")
 
     @property
-    def columns(self) -> list[str]:
+    def columns(self) -> list["Column"]:
         """Not supported for DBC files. Convert to Parquet first."""
         raise NotImplementedError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
@@ -512,14 +570,18 @@ class JSON(BaseTabularFile):
     type: FileType = Field("JSON")
 
     @property
-    def columns(self) -> list[str]:
-        """Return the column names from the JSON file."""
+    def columns(self) -> list["Column"]:
+        """Return the column metadata from the JSON file."""
+
         df = (
             pd.read_json(self.path, nrows=0)
             if self.path.stat().st_size > 0
             else pd.DataFrame()
         )
-        return df.columns.tolist()
+        return [
+            Column.from_schema(name=col, dtype=_map_dtype(str(dt)))
+            for col, dt in zip(df.columns, df.dtypes)
+        ]
 
     @property
     def rows(self) -> int:
@@ -778,9 +840,7 @@ class DBCNotImported(BaseTabularFile):
 
     path: Path = Field(default_factory=lambda: Path("..."))
     type: str | FileType = Field(default="remote")
-    import_err: ClassVar[
-        str
-    ] = """
+    import_err: ClassVar[str] = """
         run "pip install pysus[dbc]" to handle DBC files.
         Make sure you also have libffi installed on the system. It may not work
         on Windows
@@ -807,7 +867,7 @@ class DBCNotImported(BaseTabularFile):
         raise ImportError(self.import_err)
 
     @property
-    def columns(self) -> list[str]:
+    def columns(self) -> list["Column"]:
         """Raise ImportError indicating the missing DBC dependency."""
         raise ImportError(self.import_err)
 

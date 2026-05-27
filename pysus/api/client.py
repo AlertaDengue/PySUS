@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import anyio
+
+from pysus.api.types import Origin
 import duckdb
 import pandas as pd
 from pysus import CACHEPATH
@@ -477,7 +479,7 @@ class PySUS:
 
     async def query(
         self,
-        client: Literal["DadosGov", "FTP"] | None = None,
+        client: Origin | None = None,
         dataset: str | None = None,
         group: str | None = None,
         state: str | None = None,

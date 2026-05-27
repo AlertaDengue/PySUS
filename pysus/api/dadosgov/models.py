@@ -30,13 +30,9 @@ def _dedup_entries(
         if m:
             stem = filename[: m.start()]
             fmt = m.group(1).lower()
-            grouped.setdefault(stem, []).append(
-                (fmt, filename, recurso, metadata)
-            )
+            grouped.setdefault(stem, []).append((fmt, filename, recurso, metadata))
         else:
-            grouped.setdefault(filename, []).append(
-                ("", filename, recurso, metadata)
-            )
+            grouped.setdefault(filename, []).append(("", filename, recurso, metadata))
 
     result: list[tuple[str, Any, dict]] = []
     for _, items in grouped.items():
@@ -249,9 +245,7 @@ class Group(BaseRemoteGroup):
     """A group of files within a dataset."""
 
     record: ConjuntoDados
-    _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(
-        default=None
-    )
+    _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -271,7 +265,8 @@ class Group(BaseRemoteGroup):
             A callable that extracts metadata from filenames.
         """
         super().__init__(
-            record=record, dataset=dataset  # type: ignore[call-arg]
+            record=record,
+            dataset=dataset,  # type: ignore[call-arg]
         )
         self._formatter = formatter
 
@@ -318,9 +313,7 @@ class Group(BaseRemoteGroup):
         """Build File objects from the underlying resources."""
         entries: list[tuple[str, Any, dict]] = []
         for recurso in self.record.resources:
-            filename = (
-                recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
-            )
+            filename = recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
             if filename.lower().endswith(".pdf") or filename.startswith("get_"):
                 continue
             metadata = {}
@@ -354,7 +347,7 @@ class Dataset(BaseRemoteDataset):
     """
 
     ids: list[str] = []
-    client: "DadosGov"
+    client: DadosGov
     group_aliases: dict[str, str] = {}
 
     def __repr__(self):
@@ -369,7 +362,7 @@ class Dataset(BaseRemoteDataset):
     async def _fetch_content(self) -> list[Group]:
         """Fetch all groups belonging to this dataset."""
         items: list[Group] = []
-        client: "DadosGov" = self.client
+        client: DadosGov = self.client
         if self.ids:
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)

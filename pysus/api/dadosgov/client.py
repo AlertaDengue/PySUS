@@ -11,6 +11,7 @@ import httpx
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
+from pysus.api.types import DadosGov as DADOSGOV
 
 if TYPE_CHECKING:
     from .models import Dataset
@@ -89,7 +90,7 @@ class DadosGov(BaseRemoteClient):
         str
             The abbreviated client name ``"DadosGov"``.
         """
-        return "DadosGov"
+        return DADOSGOV
 
     @property
     def long_name(self) -> str:
