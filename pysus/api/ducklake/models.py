@@ -8,19 +8,22 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
-import anyio
-from pydantic import Field
+from anyio import to_thread
+from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
 from pysus.api.models import (
-    BaseRemoteClient,
     BaseRemoteDataset,
     BaseRemoteFile,
     BaseRemoteGroup,
 )
+from sqlalchemy.orm import joinedload, sessionmaker
 
 from .catalog import CatalogDataset, CatalogFile, DatasetGroup
+
+if TYPE_CHECKING:
+    from .client import DuckLake
 
 
 class File(BaseRemoteFile):
@@ -147,12 +150,15 @@ class File(BaseRemoteFile):
                     sha256_hash.update(byte_block)
             return sha256_hash.hexdigest()
 
-        actual_hash = await anyio.to_thread.run_sync(_calculate)
+        actual_hash = await to_thread.run_sync(_calculate)
         return actual_hash == self.sha256
 
 
 class DuckDataset(BaseRemoteDataset):
     """A dataset from the DuckLake catalog, containing groups and files.
+
+    Each dataset manages its own DuckDB engine connected to a
+    per-dataset catalog file (``catalog_<name>.db``).
 
     Parameters
     ----------
@@ -163,7 +169,18 @@ class DuckDataset(BaseRemoteDataset):
     """
 
     record: CatalogDataset = Field(exclude=True)
-    client: BaseRemoteClient = Field(exclude=True)
+    client: "DuckLake" = Field(exclude=True)
+
+    _engine: Any = PrivateAttr(default=None)
+    _Session: Any = PrivateAttr(default=None)
+    _cache_dir: Path = PrivateAttr()
+    _catalog_local: Path = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._cache_dir = Path(CACHEPATH) / "ducklake"
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._catalog_local = self._cache_dir / f"catalog_{self.record.name.lower()}.db"
 
     def __repr__(self) -> str:
         """Return a string representation of the dataset.
@@ -184,7 +201,7 @@ class DuckDataset(BaseRemoteDataset):
         str
             The dataset short name.
         """
-        return self.record.name
+        return self.record.name  # type: ignore
 
     @property
     def long_name(self) -> str:
@@ -195,11 +212,7 @@ class DuckDataset(BaseRemoteDataset):
         str
             The dataset display name, falling back to the short name.
         """
-        return (
-            self.record.dataset_metadata.long_name
-            if self.record.dataset_metadata
-            else self.name
-        )
+        return ""  # TODO:
 
     @property
     def description(self) -> str:
@@ -210,22 +223,95 @@ class DuckDataset(BaseRemoteDataset):
         str
             The dataset description, or an empty string if unavailable.
         """
-        return (
-            self.record.dataset_metadata.description
-            if self.record.dataset_metadata
-            else ""
+        return ""  # TODO:
+
+    @property
+    def catalog_path(self) -> Path:
+        """Return the local path to the downloaded catalog database.
+
+        Returns
+        -------
+        Path
+            Filesystem path to the local catalog database file.
+        """
+        return self._catalog_local
+
+    async def connect(self, force: bool = False):
+        """Connect to the catalog, downloading it first if necessary.
+
+        Parameters
+        ----------
+        force : bool, optional
+            Whether to re-download and re-connect even if already connected.
+        """
+        if self._engine and not force:
+            if not self._Session:
+                self._Session = sessionmaker(bind=self._engine)
+            return
+
+        await self.client.download_dataset_catalog(self)  # type: ignore[arg-type]
+        self._engine = await to_thread.run_sync(
+            lambda: self.client._setup_engine(self._catalog_local)
         )
+        self._Session = sessionmaker(bind=self._engine)
+
+    async def close(self):
+        """Dispose the engine, uploading the catalog if authenticated."""
+        if self._engine:
+            await to_thread.run_sync(self._engine.dispose)
+            self._engine = None
+            self._Session = None
+
+            if self.client.credentials:
+                await self._upload_catalog()
+
+    async def _upload_catalog(self):
+        """Upload the per-dataset catalog to remote storage."""
+        if not self.client.credentials:
+            raise PermissionError(
+                "Admin credentials required to upload catalog.",
+            )
+
+        def _upload():
+            self.client._s3_client.upload_file(
+                str(self._catalog_local),
+                self.client.bucket,
+                f"catalog_{self.record.name.lower()}.db",
+            )
+
+        await to_thread.run_sync(_upload)
 
     async def _fetch_content(self) -> list[Union["DuckGroup", File]]:
         """Fetch groups and files belonging to this dataset."""
+        if not self._Session:
+            await self.connect()
+
+        def _fetch():
+            with self._Session() as session:
+                dataset = (
+                    session.query(CatalogDataset)
+                    .options(
+                        joinedload(CatalogDataset.groups).joinedload(
+                            DatasetGroup.files
+                        ),
+                        joinedload(CatalogDataset.files),
+                    )
+                    .filter(CatalogDataset.name == self.record.name)
+                    .first()
+                )
+                if not dataset:
+                    return [], []
+                session.expunge_all()
+                return dataset.groups, dataset.files
+
+        groups, files = await to_thread.run_sync(_fetch)
+
         items: list[Union["DuckGroup", File]] = []
 
-        if self.record.groups:
-            items.extend(
-                [DuckGroup(record=g, dataset=self) for g in self.record.groups]
-            )
+        if groups:
+            items.extend([DuckGroup(record=g, dataset=self) for g in groups])
 
-        if self.record.files:
+        if files:
             items.extend(
                 [
                     File(
@@ -233,7 +319,7 @@ class DuckDataset(BaseRemoteDataset):
                         record=f,
                         dataset=self,
                     )
-                    for f in self.record.files
+                    for f in files
                 ]
             )
 
@@ -263,7 +349,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group short name.
         """
-        return self.record.name
+        return self.record.name  # type: ignore
 
     @property
     def long_name(self) -> str:
@@ -274,11 +360,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group display name, falling back to the short name.
         """
-        return (
-            self.record.group_metadata.long_name
-            if self.record.group_metadata
-            else self.name
-        )
+        return self.record.long_name or self.name  # type: ignore
 
     @property
     def description(self) -> str:
@@ -289,9 +371,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group description, or an empty string if unavailable.
         """
-        if self.record.group_metadata:
-            return self.record.group_metadata.description
-        return ""
+        return self.record.description  # type: ignore
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
         """Fetch the list of files belonging to this group."""
@@ -305,3 +385,6 @@ class DuckGroup(BaseRemoteGroup):
             for f in self.record.files
         ]
         return files
+
+
+

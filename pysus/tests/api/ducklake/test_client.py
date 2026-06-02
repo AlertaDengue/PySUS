@@ -45,7 +45,7 @@ class TestDuckLake:
         from unittest.mock import patch
 
         client = DuckLake()
-        with patch.object(client, "_load_catalog"):
+        with patch.object(client, "_download_catalog"):
             await client.login(access_key="key", secret_key="secret")
         assert client._is_authenticated is True
 
@@ -54,7 +54,7 @@ class TestDuckLake:
         from unittest.mock import patch
 
         client = DuckLake()
-        with patch.object(client, "_load_catalog"):
+        with patch.object(client, "_download_catalog"):
             await client.login(access_key="key", secret_key="secret")
         assert client.credentials is not None
 
@@ -63,7 +63,7 @@ class TestDuckLake:
         from unittest.mock import patch
 
         client = DuckLake()
-        with patch.object(client, "_load_catalog"):
+        with patch.object(client, "_download_catalog"):
             await client.login(access_key="key", secret_key="secret")
         assert client._s3_client is not None
         client._s3_client = None
@@ -84,9 +84,14 @@ class TestDuckLake:
 
     @pytest.mark.asyncio
     async def test_upload_catalog_requires_auth(self):
+        from pysus.api.ducklake.catalog import CatalogDataset, Origin
+        from pysus.api.ducklake.models import DuckDataset
+
         client = DuckLake()
+        record = CatalogDataset(name="test", long_name="Test", origin=Origin.FTP)
+        dataset = DuckDataset(record=record, client=client)
         with pytest.raises(PermissionError):
-            await client._upload_catalog()
+            await dataset._upload_catalog()
 
 
 class TestDownloadFile:
@@ -100,9 +105,14 @@ class TestLoadCatalog:
 class TestUploadCatalog:
     @pytest.mark.asyncio
     async def test_upload_catalog_without_auth_raises(self):
+        from pysus.api.ducklake.catalog import CatalogDataset, Origin
+        from pysus.api.ducklake.models import DuckDataset
+
         client = DuckLake()
+        record = CatalogDataset(name="test", long_name="Test", origin=Origin.FTP)
+        dataset = DuckDataset(record=record, client=client)
         with pytest.raises(PermissionError):
-            await client._upload_catalog()
+            await dataset._upload_catalog()
 
 
 class TestDuckLakeQuery:

@@ -14,6 +14,7 @@ import anyio
 
 from pysus.api.types import Origin
 import duckdb
+from duckdb import func
 import pandas as pd
 from pysus import CACHEPATH
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
@@ -103,7 +104,7 @@ class PySUS:
         """Set up DuckLake catalog and return self as async context manager."""
 
         self._ducklake = DuckLake()
-        await self._ducklake._load_catalog()
+        await self._ducklake.connect()
         self._attach_client_catalog(
             "ducklake",
             str(self._ducklake.catalog_path),
@@ -126,7 +127,7 @@ class PySUS:
 
         if self._ducklake is None:
             self._ducklake = DuckLake()
-            await self._ducklake._load_catalog()
+            await self._ducklake.connect()
             self._attach_client_catalog(
                 "ducklake",
                 str(self._ducklake.catalog_path),
@@ -403,7 +404,7 @@ class PySUS:
 
         if hasattr(local_file, "to_parquet"):
             original_path = local_file.path
-            parquet_file = await local_file.to_parquet(callback=callback)
+            parquet_file = await local_file.to_parquet(callback=callback)  # type: ignore
             parquet_file.add_dv = add_dv
 
             await self._update_state(
@@ -490,15 +491,18 @@ class PySUS:
 
         if self._ducklake is None:
             await self.get_ducklake()
-        if self._ducklake is not None:
-            return await self._ducklake.query(
-                client=client,
-                dataset=dataset,
-                group=group,
-                state=state,
-                year=year,
-                month=month,
-            )
+
+        if self._ducklake is None:
+            raise ConnectionError("Could not connect to PySUS s3 bucket")
+
+        return await self._ducklake.query(
+            client=client,
+            dataset=dataset,
+            group=group,
+            state=state,
+            year=year,
+            month=month,
+        )
 
     def read_parquet(
         self,
@@ -572,9 +576,7 @@ class PySUS:
 
         else:
             paths_str = ", ".join(f"'{p}'" for p in paths)
-            query = (
-                f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
-            )
+            query = f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
 
         if sql:
             if sql.upper().startswith("SELECT"):
@@ -587,9 +589,7 @@ class PySUS:
         if not add_dv:
             return base
 
-        geocode_cols = [
-            col[0] for col in base.description if is_geocode_column(col[0])
-        ]
+        geocode_cols = [col[0] for col in base.description if is_geocode_column(col[0])]
         if not geocode_cols:
             return base
 
@@ -597,8 +597,8 @@ class PySUS:
             duckdb.create_function(
                 "__pysus_add_dv",
                 _add_dv_fn,
-                null_handling="special",
-            )
+                null_handling=func.SPECIAL,
+            )  # type: ignore
         except duckdb.NotImplementedException:
             pass
         selects = [

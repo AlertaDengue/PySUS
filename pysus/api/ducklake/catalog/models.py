@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -180,7 +181,10 @@ class DatasetGroup(CatalogTable):
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
 
-    dataset = relationship("CatalogDataset", back_populates="groups")
+    dataset = relationship(
+        "CatalogDataset",
+        back_populates="groups",
+    )
     files = relationship(
         "CatalogFile",
         back_populates="group",
@@ -246,14 +250,14 @@ class CatalogFile(CatalogTable):
     )
 
     path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     rows: Mapped[int] = mapped_column(Integer, nullable=False)
     modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     origin_modified: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,
     )
-    origin_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    origin_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     origin_path: Mapped[str] = mapped_column(String, nullable=False)
     sha256: Mapped[str | None] = mapped_column(
         String(64),

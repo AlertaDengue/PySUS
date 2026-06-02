@@ -625,13 +625,13 @@ class TestPySUSGetMethods:
 
         with (
             patch.object(
-                DuckLake, "_load_catalog", new_callable=AsyncMock
-            ) as mock_load,
+                DuckLake, "_download_catalog", new_callable=AsyncMock
+            ) as mock_download,
             patch.object(PySUS, "_attach_client_catalog") as mock_attach,
         ):
             await client.__aenter__()
             assert client._ducklake is not None
-            mock_load.assert_called_once()
+            mock_download.assert_called_once()
             mock_attach.assert_called_once()
 
         await client.__aexit__(None, None, None)
