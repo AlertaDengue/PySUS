@@ -11,12 +11,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 import anyio
-
-from pysus.api.types import Origin
 import duckdb
-from duckdb import func
 import pandas as pd
+from duckdb import func
 from pysus import CACHEPATH
+from pysus.api.types import Origin
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -518,7 +517,9 @@ class PySUS:
         all_datasets = await self._ducklake.datasets()
 
         if dataset:
-            matching = [d for d in all_datasets if d.name.lower() == dataset.lower()]
+            matching = [
+                d for d in all_datasets if d.name.lower() == dataset.lower()
+            ]
             if not matching:
                 return []
             target = matching[0]
@@ -617,7 +618,9 @@ class PySUS:
 
         else:
             paths_str = ", ".join(f"'{p}'" for p in paths)
-            query = f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
+            query = (
+                f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
+            )
 
         if sql:
             if sql.upper().startswith("SELECT"):
@@ -630,7 +633,9 @@ class PySUS:
         if not add_dv:
             return base
 
-        geocode_cols = [col[0] for col in base.description if is_geocode_column(col[0])]
+        geocode_cols = [
+            col[0] for col in base.description if is_geocode_column(col[0])
+        ]
         if not geocode_cols:
             return base
 

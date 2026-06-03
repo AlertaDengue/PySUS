@@ -6388,7 +6388,7 @@ TIPO_PARTO = {"sinasc": ""}
 
 TIPPRE = {"sia": ""}
 
-TIPPRE   = {"sia": ""}
+TIPPRE = {"sia": ""}
 
 TIP_DIARRE = {"sinan": ""}
 

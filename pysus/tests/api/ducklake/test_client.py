@@ -88,7 +88,9 @@ class TestDuckLake:
         from pysus.api.ducklake.models import DuckDataset
 
         client = DuckLake()
-        record = CatalogDataset(name="test", long_name="Test", origin=Origin.FTP)
+        record = CatalogDataset(
+            name="test", long_name="Test", origin=Origin.FTP
+        )
         dataset = DuckDataset(record=record, client=client)
         with pytest.raises(PermissionError):
             await dataset._upload_catalog()
@@ -109,10 +111,9 @@ class TestUploadCatalog:
         from pysus.api.ducklake.models import DuckDataset
 
         client = DuckLake()
-        record = CatalogDataset(name="test", long_name="Test", origin=Origin.FTP)
+        record = CatalogDataset(
+            name="test", long_name="Test", origin=Origin.FTP
+        )
         dataset = DuckDataset(record=record, client=client)
         with pytest.raises(PermissionError):
             await dataset._upload_catalog()
-
-
-

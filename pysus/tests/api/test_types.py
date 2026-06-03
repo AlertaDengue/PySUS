@@ -1,8 +1,17 @@
 from pydantic import TypeAdapter
-
-from pysus.api.types import FILE, DIR, PARQUET, CSV, JSON, PDF, DBC, DBF, ZIP
-from pysus.api.types import FileType
-from pysus.api.types import State
+from pysus.api.types import (
+    CSV,
+    DBC,
+    DBF,
+    DIR,
+    FILE,
+    JSON,
+    PARQUET,
+    PDF,
+    ZIP,
+    FileType,
+    State,
+)
 
 
 class TestFileType:
@@ -25,10 +34,33 @@ class TestState:
     def test_all_brazilian_states_present(self):
         adapter = TypeAdapter(State)
         expected_states = {
-            "AC", "AL", "AP", "AM", "BA", "CE", "ES", "GO",
-            "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE",
-            "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP",
-            "SE", "TO", "DF",
+            "AC",
+            "AL",
+            "AP",
+            "AM",
+            "BA",
+            "CE",
+            "ES",
+            "GO",
+            "MA",
+            "MT",
+            "MS",
+            "MG",
+            "PA",
+            "PB",
+            "PR",
+            "PE",
+            "PI",
+            "RJ",
+            "RN",
+            "RS",
+            "RO",
+            "RR",
+            "SC",
+            "SP",
+            "SE",
+            "TO",
+            "DF",
         }
         for state in expected_states:
             adapter.validate_python(state)

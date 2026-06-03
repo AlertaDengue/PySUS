@@ -24,8 +24,8 @@ import asyncio
 from typing import Literal
 
 import pandas as pd
-from pysus.api.client import PySUS
 from pysus.api import types
+from pysus.api.client import PySUS
 from tqdm import tqdm
 
 

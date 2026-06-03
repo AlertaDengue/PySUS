@@ -277,7 +277,11 @@ class DadosGov(BaseRemoteClient):
                 "Client not connected. Call login(token=...) first.",
             )
 
-        url = str(file.path).replace("https:/", "https://").replace("http:/", "http://")
+        url = (
+            str(file.path)
+            .replace("https:/", "https://")
+            .replace("http:/", "http://")
+        )
 
         async with self._client.stream("GET", url) as response:
             response.raise_for_status()

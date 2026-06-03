@@ -1,5 +1,4 @@
-from typing import Annotated
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
 from pydantic import AfterValidator
 
@@ -11,19 +10,47 @@ def _validate_origin(v: str) -> str:
 
 
 def _validate_column_type(v: str) -> str:
-    valid = ("VARCHAR", "INTEGER", "BIGINT", "FLOAT", "DOUBLE", "BOOLEAN", "DATE")
+    valid = (
+        "VARCHAR",
+        "INTEGER",
+        "BIGINT",
+        "FLOAT",
+        "DOUBLE",
+        "BOOLEAN",
+        "DATE",
+    )
     assert v in valid, f"Invalid column type: {v!r}"
     return v
 
 
 def _validate_file_type(v: str) -> str:
-    valid = ("FILE", "DIR", "PARQUET", "CSV", "JSON", "PDF", "DBC", "DBF", "ZIP")
+    valid = (
+        "FILE",
+        "DIR",
+        "PARQUET",
+        "CSV",
+        "JSON",
+        "PDF",
+        "DBC",
+        "DBF",
+        "ZIP",
+    )
     assert v in valid, f"Invalid file type: {v!r}"
     return v
 
 
 def _validate_dataset_name(v: str) -> str:
-    valid = ("SINAN", "SINASC", "SIM", "SIH", "SIA", "PNI", "IBGE", "CNES", "CIHA")
+    valid = (
+        "SINAN",
+        "SINASC",
+        "SIM",
+        "SIH",
+        "SIA",
+        "PNI",
+        "IBGE",
+        "CNES",
+        "CIHA",
+    )
     assert v in valid, f"Invalid dataset name: {v!r}"
     return v
 

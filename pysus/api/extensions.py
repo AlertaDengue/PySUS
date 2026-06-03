@@ -252,7 +252,9 @@ class Parquet(BaseTabularFile):
 
         schema = pq.read_schema(self.path)
         return [
-            Column.from_schema(name=field.name, dtype=_map_dtype(str(field.type)))
+            Column.from_schema(
+                name=field.name, dtype=_map_dtype(str(field.type))
+            )
             for field in schema
         ]
 
@@ -356,7 +358,9 @@ class DBF(BaseTabularFile):
             "M": "VARCHAR",
         }
         return [
-            Column.from_schema(name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR"))
+            Column.from_schema(
+                name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR")
+            )
             for f in reader.fields
         ]
 
@@ -840,7 +844,9 @@ class DBCNotImported(BaseTabularFile):
 
     path: Path = Field(default_factory=lambda: Path("..."))
     type: str | FileType = Field(default="remote")
-    import_err: ClassVar[str] = """
+    import_err: ClassVar[
+        str
+    ] = """
         run "pip install pysus[dbc]" to handle DBC files.
         Make sure you also have libffi installed on the system. It may not work
         on Windows

@@ -152,7 +152,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
     @property
     @abstractmethod
-    def columns(self) -> list["Column"]:
+    def columns(self) -> list[Column]:
         """Return the list of column metadata."""
 
     @property

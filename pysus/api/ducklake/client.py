@@ -319,7 +319,9 @@ class DuckLake(BaseRemoteClient):
                 else:
                     raise e
 
-    async def _download_catalog(self, local_path: Path, remote_path: str) -> None:
+    async def _download_catalog(
+        self, local_path: Path, remote_path: str
+    ) -> None:
         """Download a catalog database from remote storage with retries.
 
         Parameters
@@ -373,7 +375,9 @@ class DuckLake(BaseRemoteClient):
             "s3",
             endpoint_url=f"https://{self.endpoint}",
             aws_access_key_id=self.credentials.access_key.get_secret_value(),
-            aws_secret_access_key=(self.credentials.secret_key.get_secret_value()),
+            aws_secret_access_key=(
+                self.credentials.secret_key.get_secret_value()
+            ),
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )

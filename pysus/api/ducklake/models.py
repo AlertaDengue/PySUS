@@ -8,16 +8,12 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from anyio import to_thread
 from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
-from pysus.api.models import (
-    BaseRemoteDataset,
-    BaseRemoteFile,
-    BaseRemoteGroup,
-)
+from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
 
 from .catalog import CatalogDataset, CatalogFile, DatasetGroup
@@ -266,7 +262,9 @@ class DuckDataset(BaseRemoteDataset):
             return
 
         await self.client._download(
-            f"public/{self._catalog_name}", self._catalog_local, callback=callback
+            f"public/{self._catalog_name}",
+            self._catalog_local,
+            callback=callback,
         )
         self._engine = await to_thread.run_sync(
             lambda: self.client._setup_engine(self._catalog_local)

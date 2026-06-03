@@ -195,7 +195,9 @@ class TestPySUSQuery:
         return ds
 
     @pytest.mark.asyncio
-    async def test_query_with_dataset(self, test_db_path, tmp_path, mock_dataset):
+    async def test_query_with_dataset(
+        self, test_db_path, tmp_path, mock_dataset
+    ):
         from unittest.mock import MagicMock
 
         from pysus.api.ducklake.client import DuckLake
@@ -215,7 +217,10 @@ class TestPySUSQuery:
 
         mock_ducklake.datasets.assert_called_once()
         mock_dataset.query.assert_called_once_with(
-            group=None, state=None, year=None, month=None,
+            group=None,
+            state=None,
+            year=None,
+            month=None,
         )
         assert result == [mock_file]
         await client.__aexit__(None, None, None)
@@ -237,7 +242,10 @@ class TestPySUSQuery:
         await client.query(dataset="sinan", group="DENGUE")
 
         mock_dataset.query.assert_called_once_with(
-            group="DENGUE", state=None, year=None, month=None,
+            group="DENGUE",
+            state=None,
+            year=None,
+            month=None,
         )
         await client.__aexit__(None, None, None)
 
@@ -267,7 +275,10 @@ class TestPySUSQuery:
         )
 
         ds.query.assert_called_once_with(
-            group="DC", state="SP", year=2024, month=1,
+            group="DC",
+            state="SP",
+            year=2024,
+            month=1,
         )
         await client.__aexit__(None, None, None)
 
