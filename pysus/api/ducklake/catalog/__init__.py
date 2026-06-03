@@ -267,6 +267,7 @@ class CatalogFile(CatalogTable):
     path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     rows: Mapped[int] = mapped_column(Integer, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=True)
     modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     origin_modified: Mapped[datetime | None] = mapped_column(
         DateTime,

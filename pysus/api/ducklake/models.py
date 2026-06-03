@@ -8,7 +8,7 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, Optional
 
 from anyio import to_thread
 from pydantic import Field, PrivateAttr
@@ -18,7 +18,7 @@ from pysus.api.models import (
     BaseRemoteFile,
     BaseRemoteGroup,
 )
-from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
 
 from .catalog import CatalogDataset, CatalogFile, DatasetGroup
 
@@ -41,10 +41,23 @@ class File(BaseRemoteFile):
         The parent group object, if any.
     """
 
-    record: CatalogFile = Field(exclude=True)
-    type: str = "remote"
-    dataset: Any
-    group: Any = None
+    def __init__(
+        self,
+        dataset: "DuckDataset",
+        record: CatalogFile,
+        group: Optional["DuckGroup"] = None,
+    ) -> None:
+        super().__init__(
+            path=Path(record.path),
+            type=record.type or "remote",
+            dataset=dataset,
+        )
+        self.record: CatalogFile = record
+        self.group: Optional["DuckGroup"] = group
+
+    @property
+    def path(self) -> Path:
+        return Path(self.record.path)
 
     @property
     def basename(self) -> str:
@@ -173,14 +186,13 @@ class DuckDataset(BaseRemoteDataset):
 
     _engine: Any = PrivateAttr(default=None)
     _Session: Any = PrivateAttr(default=None)
-    _cache_dir: Path = PrivateAttr()
-    _catalog_local: Path = PrivateAttr()
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         super().__init__(**data)
-        self._cache_dir = Path(CACHEPATH) / "ducklake"
+        self._cache_dir: Path = Path(CACHEPATH) / "ducklake"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._catalog_local = self._cache_dir / f"catalog_{self.record.name.lower()}.db"
+        self._catalog_name: str = f"catalog_{self.record.name.lower()}.db"
+        self._catalog_local: Path = self._cache_dir / self._catalog_name
 
     def __repr__(self) -> str:
         """Return a string representation of the dataset.
@@ -236,7 +248,11 @@ class DuckDataset(BaseRemoteDataset):
         """
         return self._catalog_local
 
-    async def connect(self, force: bool = False):
+    async def connect(
+        self,
+        force: bool = False,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> None:
         """Connect to the catalog, downloading it first if necessary.
 
         Parameters
@@ -249,7 +265,9 @@ class DuckDataset(BaseRemoteDataset):
                 self._Session = sessionmaker(bind=self._engine)
             return
 
-        await self.client.download_dataset_catalog(self)  # type: ignore[arg-type]
+        await self.client._download(
+            f"public/{self._catalog_name}", self._catalog_local, callback=callback
+        )
         self._engine = await to_thread.run_sync(
             lambda: self.client._setup_engine(self._catalog_local)
         )
@@ -280,6 +298,59 @@ class DuckDataset(BaseRemoteDataset):
             )
 
         await to_thread.run_sync(_upload)
+
+    async def query(
+        self,
+        group: str | None = None,
+        state: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
+    ) -> list[File]:
+        """Filter files in this dataset's catalog by group, state, year, month.
+
+        Parameters
+        ----------
+        group : str, optional
+            Group name pattern to filter by (case-insensitive ILIKE).
+        state : str, optional
+            Two-letter state code to filter by.
+        year : int, optional
+            Year to filter by.
+        month : int, optional
+            Month to filter by.
+
+        Returns
+        -------
+        list[File]
+            List of matching file objects.
+        """
+        if not self._Session:
+            await self.connect()
+
+        def _query() -> list[CatalogFile]:
+            with self._Session() as session:
+                q = session.query(CatalogFile).options(
+                    joinedload(CatalogFile.group),
+                    joinedload(CatalogFile.dataset),
+                )
+                if group:
+                    q = (
+                        q.join(CatalogFile.group)
+                        .options(contains_eager(CatalogFile.group))
+                        .filter(DatasetGroup.name.ilike(group))
+                    )
+                if state:
+                    q = q.filter(CatalogFile.state == state.upper())
+                if year:
+                    q = q.filter(CatalogFile.year == year)
+                if month:
+                    q = q.filter(CatalogFile.month == month)
+                results = q.all()
+                session.expunge_all()
+                return results
+
+        records: list[CatalogFile] = await to_thread.run_sync(_query)
+        return [File(record=r, dataset=self) for r in records]
 
     async def _fetch_content(self) -> list[Union["DuckGroup", File]]:
         """Fetch groups and files belonging to this dataset."""
@@ -315,7 +386,6 @@ class DuckDataset(BaseRemoteDataset):
             items.extend(
                 [
                     File(
-                        path=f.path,
                         record=f,
                         dataset=self,
                     )
@@ -377,7 +447,6 @@ class DuckGroup(BaseRemoteGroup):
         """Fetch the list of files belonging to this group."""
         files: list[BaseRemoteFile] = [
             File(
-                path=f.path,
                 record=f,
                 group=self,
                 dataset=self.dataset,
@@ -385,6 +454,3 @@ class DuckGroup(BaseRemoteGroup):
             for f in self.record.files
         ]
         return files
-
-
-

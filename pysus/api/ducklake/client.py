@@ -15,102 +15,13 @@ from botocore.config import Config
 from pydantic import BaseModel, PrivateAttr, SecretStr
 from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
-from pysus.api.types import DuckLake as DUCKLAKE, Origin
+from pysus.api.types import DUCKLAKE
 from sqlalchemy import create_engine
-from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from .catalog import CatalogDataset, CatalogFile, DatasetGroup
+from .catalog import CatalogDataset, DatasetGroup
 from .models import DuckDataset, File
-
-
-class CatalogDatasetAdapter:
-    """Adapter wrapping a CatalogDataset ORM record for use by File objects.
-
-    Parameters
-    ----------
-    catalog_dataset : CatalogDataset
-        The ORM record to wrap.
-    ducklake : DuckLake
-        The parent DuckLake client instance.
-    """
-
-    def __init__(self, catalog_dataset: CatalogDataset, ducklake):
-        self.name = catalog_dataset.name
-        self.long_name = catalog_dataset.long_name or ""
-        self.description = catalog_dataset.description or ""
-        self.group_definitions: dict[str, str] = {}
-        self.ducklake = ducklake
-        self.client = ducklake
-
-    @property
-    def content(self):
-        """Query the DuckLake client for files in this dataset.
-
-        Returns
-        -------
-        list
-            List of files belonging to this dataset.
-        """
-        return self.ducklake.query(dataset=self.name.upper())
-
-
-class DatasetGroupAdapter:
-    """Adapter wrapping a DatasetGroup ORM record for use by File objects.
-
-    Parameters
-    ----------
-    dataset_group : DatasetGroup
-        The ORM record to wrap.
-    dataset : CatalogDataset
-        The parent dataset.
-    """
-
-    def __init__(self, dataset_group: DatasetGroup, dataset):
-        self.name = dataset_group.name
-        self.long_name = dataset_group.long_name or ""
-        self.description = dataset_group.description or ""
-        self.dataset = dataset
-
-    def __str__(self):
-        """Return the group name as its string representation.
-
-        Returns
-        -------
-        str
-            The short name of the group.
-        """
-        return self.name
-
-    @property
-    async def files(self):
-        """Return the list of files in this group.
-
-        Returns
-        -------
-        list
-            List of file objects in this group.
-        """
-        return []
-
-    async def _fetch_files(self):
-        """Fetch files from the remote source for this group."""
-        return []
-
-    async def search(self, **kwargs):
-        """Search for files within this group matching the given criteria.
-
-        Parameters
-        ----------
-        ``**kwargs``
-            Arbitrary filter criteria.
-
-        Returns
-        -------
-        list
-            List of matching file objects.
-        """
-        return []
 
 
 class DuckLakeCredentials(BaseModel):
@@ -148,11 +59,7 @@ class DuckLake(BaseRemoteClient):
     bucket: str = "pysus"
     credentials: DuckLakeCredentials | None = None
 
-    _cache_dir: Path = PrivateAttr()
-    _catalog_local: Path = PrivateAttr()
-    _catalog_remote: str = "public/catalog.db"
     _s3_client: Any = PrivateAttr(default=None)
-    _engine: Any = PrivateAttr(default=None)
     _Session: Any = PrivateAttr(default=None)
 
     def __init__(self, engine=None, **data) -> None:
@@ -167,9 +74,10 @@ class DuckLake(BaseRemoteClient):
         """
         super().__init__(**data)
         self._engine = engine
-        self._cache_dir = Path(CACHEPATH) / "ducklake"
+        self._cache_dir: Path = Path(CACHEPATH) / "ducklake"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._catalog_local = self._cache_dir / "catalog.db"
+        self._catalog_local: Path = self._cache_dir / "catalog.db"
+        self._catalog_remote: str = "public/catalog.db"
 
     @property
     def name(self) -> str:
@@ -353,7 +261,10 @@ class DuckLake(BaseRemoteClient):
                 self._Session = sessionmaker(bind=self._engine)
             return
 
-        await self._download_catalog(self._catalog_local, self._catalog_remote)
+        await self._download_catalog(
+            self._catalog_local,
+            self._catalog_remote,
+        )
         self._engine = await to_thread.run_sync(self._setup_engine)
         self._Session = sessionmaker(bind=self._engine)
 
@@ -441,17 +352,6 @@ class DuckLake(BaseRemoteClient):
 
         await self._download(remote_path, local_path)
 
-    async def download_dataset_catalog(self, dataset: DuckDataset) -> None:
-        """Download a dataset's catalog database from remote storage.
-
-        Parameters
-        ----------
-        dataset : DuckDataset
-            The dataset whose catalog should be downloaded.
-        """
-        remote_path = f"catalog_{dataset.record.name.lower()}.db"
-        await self._download_catalog(dataset.catalog_path, remote_path)
-
     async def _download_file(
         self,
         file: BaseRemoteFile,
@@ -477,110 +377,6 @@ class DuckLake(BaseRemoteClient):
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )
-
-    async def query(
-        self,
-        client: Origin | None = None,
-        dataset: str | None = None,
-        group: str | None = None,
-        state: str | None = None,
-        year: int | None = None,
-        month: int | None = None,
-    ) -> list[File]:
-        """Filter catalog files by client, dataset, group, state, year.
-
-        Parameters
-        ----------
-        client : Origin, optional
-            Source client to filter by.
-        dataset : str, optional
-            Dataset name to filter by.
-        group : str, optional
-            Group name pattern to filter by (case-insensitive ILIKE).
-        state : str, optional
-            Two-letter state code to filter by.
-        year : int, optional
-            Year to filter by.
-        month : int, optional
-            Month to filter by.
-
-        Returns
-        -------
-        list[:class:`~pysus.api.ducklake.models.File`]
-            List of matching file objects.
-        """
-        if not self._Session:
-            await self.connect()
-
-        def _query():
-            with self._Session() as session:
-                q = session.query(CatalogFile)
-
-                if dataset:
-                    q = (
-                        q.join(CatalogFile.dataset)
-                        .options(contains_eager(CatalogFile.dataset))
-                        .filter(CatalogDataset.name == dataset.lower())
-                    )
-                else:
-                    q = q.options(joinedload(CatalogFile.dataset))
-
-                if group:
-                    q = (
-                        q.join(CatalogFile.group)
-                        .options(contains_eager(CatalogFile.group))
-                        .filter(DatasetGroup.name.ilike(group))
-                    )
-                else:
-                    q = q.options(joinedload(CatalogFile.group))
-
-                if state:
-                    q = q.filter(CatalogFile.state == state.upper())
-
-                if year:
-                    q = q.filter(CatalogFile.year == year)
-
-                if month:
-                    q = q.filter(CatalogFile.month == month)
-
-                results = q.all()
-                session.expunge_all()
-                return results
-
-        records = await to_thread.run_sync(_query)
-
-        if client:
-            prefix = f"public/data/{client.lower()}/"
-            records = [r for r in records if r.path.startswith(prefix)]
-        else:
-            ftp = [r for r in records if r.path.startswith("public/data/ftp/")]
-            dadosgov = [
-                r for r in records if r.path.startswith("public/data/dadosgov/")
-            ]
-            ftp_keys = set()
-            for r in ftp:
-                stem = Path(r.path).stem
-                key = (r.dataset_id, r.year, r.month, stem)
-                ftp_keys.add(key)
-
-            def has_ftp_match(r):
-                stem = Path(r.path).stem
-                if stem.endswith(".csv"):
-                    stem = stem[:-4]
-                key = (r.dataset_id, r.year, r.month, stem)
-                return key in ftp_keys
-
-            records = ftp + [r for r in dadosgov if not has_ftp_match(r)]
-
-        return [
-            File(
-                path=r.path,
-                record=r,
-                dataset=CatalogDatasetAdapter(r.dataset, self),
-                group=(DatasetGroupAdapter(r.group, r.dataset) if r.group else None),
-            )
-            for r in records
-        ]
 
 
 DuckDataset.model_rebuild(_types_namespace={"DuckLake": DuckLake})

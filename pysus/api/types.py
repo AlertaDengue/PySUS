@@ -5,7 +5,7 @@ from pydantic import AfterValidator
 
 
 def _validate_origin(v: str) -> str:
-    valid = ("FTP", "DadosGov", "DuckLake")
+    valid = (FTP, DADOSGOV, DUCKLAKE)
     assert v in valid, f"Invalid origin: {v!r}"
     return v
 
@@ -63,8 +63,8 @@ def _validate_state(v: str) -> str:
 
 
 FTP: Annotated[str, AfterValidator(_validate_origin)] = "FTP"
-DadosGov: Annotated[str, AfterValidator(_validate_origin)] = "DadosGov"
-DuckLake: Annotated[str, AfterValidator(_validate_origin)] = "DuckLake"
+DADOSGOV: Annotated[str, AfterValidator(_validate_origin)] = "DadosGov"
+DUCKLAKE: Annotated[str, AfterValidator(_validate_origin)] = "DuckLake"
 
 VARCHAR: Annotated[str, AfterValidator(_validate_column_type)] = "VARCHAR"
 INTEGER: Annotated[str, AfterValidator(_validate_column_type)] = "INTEGER"

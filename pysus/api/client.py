@@ -487,22 +487,63 @@ class PySUS:
         year: int | None = None,
         month: int | None = None,
     ):
-        """Query available datasets through the DuckLake catalog."""
+        """Query available datasets through the DuckLake catalog.
 
+        Parameters
+        ----------
+        client : Origin, optional
+            Source client to filter by.
+        dataset : str, optional
+            Dataset name to filter by.
+        group : str, optional
+            Group name pattern to filter by (case-insensitive ILIKE).
+        state : str, optional
+            Two-letter state code to filter by.
+        year : int, optional
+            Year to filter by.
+        month : int, optional
+            Month to filter by.
+
+        Returns
+        -------
+        list
+            List of matching File objects.
+        """
         if self._ducklake is None:
             await self.get_ducklake()
 
         if self._ducklake is None:
             raise ConnectionError("Could not connect to PySUS s3 bucket")
 
-        return await self._ducklake.query(
-            client=client,
-            dataset=dataset,
-            group=group,
-            state=state,
-            year=year,
-            month=month,
-        )
+        all_datasets = await self._ducklake.datasets()
+
+        if dataset:
+            matching = [d for d in all_datasets if d.name.lower() == dataset.lower()]
+            if not matching:
+                return []
+            target = matching[0]
+            files = await target.query(
+                group=group,
+                state=state,
+                year=year,
+                month=month,
+            )
+        else:
+            files = []
+            for ds in all_datasets:
+                ds_files = await ds.query(
+                    group=group,
+                    state=state,
+                    year=year,
+                    month=month,
+                )
+                files.extend(ds_files)
+
+        if not client:
+            return files
+
+        prefix = f"public/data/{client.lower()}/"
+        return [f for f in files if f.record.path.startswith(prefix)]
 
     def read_parquet(
         self,

@@ -187,9 +187,16 @@ class TestGetCompletedRemotePaths:
 
 
 class TestPySUSQuery:
+    @pytest.fixture
+    def mock_dataset(self):
+        ds = MagicMock()
+        ds.name = "sinan"
+        ds.query = AsyncMock(return_value=[])
+        return ds
+
     @pytest.mark.asyncio
-    async def test_query_with_dataset(self, test_db_path, tmp_path):
-        from unittest.mock import AsyncMock, MagicMock
+    async def test_query_with_dataset(self, test_db_path, tmp_path, mock_dataset):
+        from unittest.mock import MagicMock
 
         from pysus.api.ducklake.client import DuckLake
 
@@ -198,47 +205,39 @@ class TestPySUSQuery:
         mock_ducklake = MagicMock(spec=DuckLake)
         mock_file = MagicMock()
         mock_file.path = tmp_path / "test.parquet"
-        mock_ducklake.query = AsyncMock(return_value=[mock_file])
+        mock_dataset.query = AsyncMock(return_value=[mock_file])
+        mock_ducklake.datasets = AsyncMock(return_value=[mock_dataset])
 
         client._ducklake = mock_ducklake
         client._attach_client_catalog = MagicMock()
 
         result = await client.query(dataset="sinan")
 
-        mock_ducklake.query.assert_called_once_with(
-            client=None,
-            dataset="sinan",
-            group=None,
-            state=None,
-            year=None,
-            month=None,
+        mock_ducklake.datasets.assert_called_once()
+        mock_dataset.query.assert_called_once_with(
+            group=None, state=None, year=None, month=None,
         )
         assert result == [mock_file]
         await client.__aexit__(None, None, None)
 
     @pytest.mark.asyncio
-    async def test_query_with_group(self, test_db_path):
-        from unittest.mock import AsyncMock, MagicMock
+    async def test_query_with_group(self, test_db_path, mock_dataset):
+        from unittest.mock import MagicMock
 
         from pysus.api.ducklake.client import DuckLake
 
         client = PySUS(db_path=test_db_path)
 
         mock_ducklake = MagicMock(spec=DuckLake)
-        mock_ducklake.query = AsyncMock(return_value=[])
+        mock_ducklake.datasets = AsyncMock(return_value=[mock_dataset])
 
         client._ducklake = mock_ducklake
         client._attach_client_catalog = MagicMock()
 
         await client.query(dataset="sinan", group="DENGUE")
 
-        mock_ducklake.query.assert_called_once_with(
-            client=None,
-            dataset="sinan",
-            group="DENGUE",
-            state=None,
-            year=None,
-            month=None,
+        mock_dataset.query.assert_called_once_with(
+            group="DENGUE", state=None, year=None, month=None,
         )
         await client.__aexit__(None, None, None)
 
@@ -251,7 +250,10 @@ class TestPySUSQuery:
         client = PySUS(db_path=test_db_path)
 
         mock_ducklake = MagicMock(spec=DuckLake)
-        mock_ducklake.query = AsyncMock(return_value=[])
+        ds = MagicMock()
+        ds.name = "sinasc"
+        ds.query = AsyncMock(return_value=[])
+        mock_ducklake.datasets = AsyncMock(return_value=[ds])
 
         client._ducklake = mock_ducklake
         client._attach_client_catalog = MagicMock()
@@ -264,18 +266,13 @@ class TestPySUSQuery:
             month=1,
         )
 
-        mock_ducklake.query.assert_called_once_with(
-            client=None,
-            dataset="sinasc",
-            group="DC",
-            state="SP",
-            year=2024,
-            month=1,
+        ds.query.assert_called_once_with(
+            group="DC", state="SP", year=2024, month=1,
         )
         await client.__aexit__(None, None, None)
 
     @pytest.mark.asyncio
-    async def test_query_initializes_ducklake(self, test_db_path):
+    async def test_query_initializes_ducklake(self, test_db_path, mock_dataset):
         from unittest.mock import AsyncMock, MagicMock, patch
 
         import duckdb
@@ -285,7 +282,7 @@ class TestPySUSQuery:
         assert client._ducklake is None
 
         mock_ducklake_instance = MagicMock(spec=DuckLake)
-        mock_ducklake_instance.query = AsyncMock(return_value=[])
+        mock_ducklake_instance.datasets = AsyncMock(return_value=[mock_dataset])
         tmp_catalog_path = test_db_path.parent / "catalog.db"
         mock_ducklake_instance.catalog_path = tmp_catalog_path
 

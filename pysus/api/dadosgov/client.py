@@ -11,7 +11,7 @@ import httpx
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
-from pysus.api.types import DadosGov as DADOSGOV
+from pysus.api.types import DADOSGOV
 
 if TYPE_CHECKING:
     from .models import Dataset
@@ -277,11 +277,7 @@ class DadosGov(BaseRemoteClient):
                 "Client not connected. Call login(token=...) first.",
             )
 
-        url = (
-            str(file.path)
-            .replace("https:/", "https://")
-            .replace("http:/", "http://")
-        )
+        url = str(file.path).replace("https:/", "https://").replace("http:/", "http://")
 
         async with self._client.stream("GET", url) as response:
             response.raise_for_status()
