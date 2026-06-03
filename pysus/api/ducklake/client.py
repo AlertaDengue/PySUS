@@ -17,10 +17,10 @@ from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import DUCKLAKE
 from sqlalchemy import create_engine
-from sqlalchemy.orm import joinedload, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from .catalog import CatalogDataset, DatasetGroup
+from .catalog.orm.default import Dataset
 from .models import DuckDataset, File
 
 
@@ -61,6 +61,7 @@ class DuckLake(BaseRemoteClient):
 
     _s3_client: Any = PrivateAttr(default=None)
     _Session: Any = PrivateAttr(default=None)
+    _datasets: list = PrivateAttr(default_factory=list)
 
     def __init__(self, engine=None, **data) -> None:
         """Initialize the DuckLake client.
@@ -151,16 +152,7 @@ class DuckLake(BaseRemoteClient):
 
         def _fetch():
             with self._Session() as session:
-                results = (
-                    session.query(CatalogDataset)
-                    .options(
-                        joinedload(CatalogDataset.groups).joinedload(
-                            DatasetGroup.files
-                        ),
-                        joinedload(CatalogDataset.files),
-                    )
-                    .all()
-                )
+                results = session.query(Dataset).all()
                 session.expunge_all()
                 return results
 
@@ -268,8 +260,23 @@ class DuckLake(BaseRemoteClient):
         self._engine = await to_thread.run_sync(self._setup_engine)
         self._Session = sessionmaker(bind=self._engine)
 
-    async def close(self) -> None:
-        """Dispose the discovery engine."""
+    async def close(self, update_catalog: bool = False) -> None:
+        """Close all datasets and dispose the discovery engine.
+
+        Parameters
+        ----------
+        update_catalog : bool, optional
+            Whether to upload all per-dataset catalogs before closing.
+            Requires authenticated credentials.
+        """
+        if update_catalog:
+            await self._upload_catalog()
+
+        datasets: list["DuckDataset"] = list(self._datasets)
+        for ds in datasets:
+            await ds.close(update_catalog=update_catalog)
+        self._datasets.clear()
+
         if self._engine:
             await to_thread.run_sync(self._engine.dispose)
             self._engine = None
@@ -319,9 +326,7 @@ class DuckLake(BaseRemoteClient):
                 else:
                     raise e
 
-    async def _download_catalog(
-        self, local_path: Path, remote_path: str
-    ) -> None:
+    async def _download_catalog(self, local_path: Path, remote_path: str) -> None:
         """Download a catalog database from remote storage with retries.
 
         Parameters
@@ -375,12 +380,34 @@ class DuckLake(BaseRemoteClient):
             "s3",
             endpoint_url=f"https://{self.endpoint}",
             aws_access_key_id=self.credentials.access_key.get_secret_value(),
-            aws_secret_access_key=(
-                self.credentials.secret_key.get_secret_value()
-            ),
+            aws_secret_access_key=(self.credentials.secret_key.get_secret_value()),
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )
+
+    async def _upload_catalog(self) -> None:
+        """Upload all per-dataset catalogs to remote storage.
+
+        Requires authenticated credentials.
+        """
+        if not self.credentials:
+            raise PermissionError(
+                "Admin credentials required to upload catalog.",
+            )
+
+        datasets = await self.datasets()
+        for ds in datasets:
+            if not ds._catalog_local.exists():
+                continue
+
+            def _upload(local=str(ds._catalog_local), name=ds._catalog_name):
+                self._s3_client.upload_file(
+                    local,
+                    self.bucket,
+                    name,
+                )
+
+            await to_thread.run_sync(_upload)
 
 
 DuckDataset.model_rebuild(_types_namespace={"DuckLake": DuckLake})

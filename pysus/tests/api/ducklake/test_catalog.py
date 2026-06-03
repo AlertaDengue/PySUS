@@ -1,10 +1,8 @@
-from pysus.api.ducklake.catalog import (
-    CatalogDataset,
+from pysus.api.ducklake.catalog.orm import CatalogDataset, CatalogTable, Origin
+from pysus.api.ducklake.catalog.orm.dataset import (
     CatalogFile,
-    CatalogTable,
     ColumnDefinition,
     DatasetGroup,
-    Origin,
     file_columns,
 )
 

@@ -84,16 +84,9 @@ class TestDuckLake:
 
     @pytest.mark.asyncio
     async def test_upload_catalog_requires_auth(self):
-        from pysus.api.ducklake.catalog import CatalogDataset, Origin
-        from pysus.api.ducklake.models import DuckDataset
-
         client = DuckLake()
-        record = CatalogDataset(
-            name="test", long_name="Test", origin=Origin.FTP
-        )
-        dataset = DuckDataset(record=record, client=client)
         with pytest.raises(PermissionError):
-            await dataset._upload_catalog()
+            await client._upload_catalog()
 
 
 class TestDownloadFile:
@@ -102,18 +95,3 @@ class TestDownloadFile:
 
 class TestLoadCatalog:
     pass
-
-
-class TestUploadCatalog:
-    @pytest.mark.asyncio
-    async def test_upload_catalog_without_auth_raises(self):
-        from pysus.api.ducklake.catalog import CatalogDataset, Origin
-        from pysus.api.ducklake.models import DuckDataset
-
-        client = DuckLake()
-        record = CatalogDataset(
-            name="test", long_name="Test", origin=Origin.FTP
-        )
-        dataset = DuckDataset(record=record, client=client)
-        with pytest.raises(PermissionError):
-            await dataset._upload_catalog()

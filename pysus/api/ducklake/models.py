@@ -16,7 +16,11 @@ from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
 
-from .catalog import CatalogDataset, CatalogFile, DatasetGroup
+from pysus.api.ducklake.catalog.orm.dataset import (
+    Dataset,
+    File as CatalogFile,
+    Group,
+)
 
 if TYPE_CHECKING:
     from .client import DuckLake
@@ -171,13 +175,13 @@ class DuckDataset(BaseRemoteDataset):
 
     Parameters
     ----------
-    record : CatalogDataset
+    record : Dataset
         The underlying ORM record.
     client : BaseRemoteClient
         The parent client instance.
     """
 
-    record: CatalogDataset = Field(exclude=True)
+    record: Dataset = Field(exclude=True)
     client: "DuckLake" = Field(exclude=True)
 
     _engine: Any = PrivateAttr(default=None)
@@ -261,6 +265,9 @@ class DuckDataset(BaseRemoteDataset):
                 self._Session = sessionmaker(bind=self._engine)
             return
 
+        if self not in self.client._datasets:
+            self.client._datasets.append(self)
+
         await self.client._download(
             f"public/{self._catalog_name}",
             self._catalog_local,
@@ -271,14 +278,21 @@ class DuckDataset(BaseRemoteDataset):
         )
         self._Session = sessionmaker(bind=self._engine)
 
-    async def close(self):
-        """Dispose the engine, uploading the catalog if authenticated."""
+    async def close(self, update_catalog: bool = False):
+        """Dispose the engine, optionally uploading the per-dataset catalog.
+
+        Parameters
+        ----------
+        update_catalog : bool, optional
+            Whether to upload the per-dataset catalog to remote storage.
+            Requires the parent client to be authenticated.
+        """
         if self._engine:
             await to_thread.run_sync(self._engine.dispose)
             self._engine = None
             self._Session = None
 
-            if self.client.credentials:
+            if update_catalog and self.client._is_authenticated:
                 await self._upload_catalog()
 
     async def _upload_catalog(self):
@@ -335,7 +349,7 @@ class DuckDataset(BaseRemoteDataset):
                     q = (
                         q.join(CatalogFile.group)
                         .options(contains_eager(CatalogFile.group))
-                        .filter(DatasetGroup.name.ilike(group))
+                        .filter(Group.name.ilike(group))
                     )
                 if state:
                     q = q.filter(CatalogFile.state == state.upper())
@@ -358,14 +372,12 @@ class DuckDataset(BaseRemoteDataset):
         def _fetch():
             with self._Session() as session:
                 dataset = (
-                    session.query(CatalogDataset)
+                    session.query(Dataset)
                     .options(
-                        joinedload(CatalogDataset.groups).joinedload(
-                            DatasetGroup.files
-                        ),
-                        joinedload(CatalogDataset.files),
+                        joinedload(Dataset.groups).joinedload(Group.files),
+                        joinedload(Dataset.files),
                     )
-                    .filter(CatalogDataset.name == self.record.name)
+                    .filter(Dataset.name == self.record.name)
                     .first()
                 )
                 if not dataset:
@@ -399,13 +411,13 @@ class DuckGroup(BaseRemoteGroup):
 
     Parameters
     ----------
-    record : DatasetGroup
+    record : Group
         The underlying ORM record.
     dataset : DuckDataset
         The parent dataset instance.
     """
 
-    record: DatasetGroup = Field(exclude=True)
+    record: Group = Field(exclude=True)
     dataset: DuckDataset = Field(exclude=True)
 
     @property

@@ -1,7 +1,6 @@
-"""SQLAlchemy ORM models for the DuckLake catalog schema.
+"""Per-dataset catalog ORM models — stored in ``catalog_<name>.db``.
 
-Defines tables for datasets, groups, files, and columns stored
-in the pysus schema of the local DuckDB catalog.
+Defines tables for groups, files, and columns within a single dataset.
 """
 
 from datetime import datetime
@@ -23,7 +22,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
-    """Base class for all DuckLake catalog ORM models."""
+    """Base class for per-dataset catalog ORM models."""
 
     pass
 
@@ -47,14 +46,7 @@ file_columns = Table(
 )
 
 
-class CatalogTable(Base):
-    """Abstract base for catalog tables sharing the pysus schema."""
-
-    __abstract__ = True
-    __table_args__: tuple = ({"schema": "pysus"},)
-
-
-class CatalogDataset(CatalogTable):
+class Dataset(Base):
     """ORM model for the datasets table, representing a dataset collection.
 
     Parameters
@@ -70,6 +62,7 @@ class CatalogDataset(CatalogTable):
     """
 
     __tablename__ = "datasets"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -97,7 +90,7 @@ class CatalogDataset(CatalogTable):
     )
 
 
-class ColumnDefinition(CatalogTable):
+class ColumnDefinition(Base):
     """ORM model for dataset column metadata.
 
     Parameters
@@ -117,6 +110,7 @@ class ColumnDefinition(CatalogTable):
     """
 
     __tablename__ = "dataset_columns"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -147,7 +141,7 @@ class ColumnDefinition(CatalogTable):
     )
 
 
-class DatasetGroup(CatalogTable):
+class Group(Base):
     """ORM model for dataset groups, grouping related files within a dataset.
 
     Parameters
@@ -165,6 +159,7 @@ class DatasetGroup(CatalogTable):
     """
 
     __tablename__ = "dataset_groups"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -197,7 +192,7 @@ class DatasetGroup(CatalogTable):
     )
 
 
-class CatalogFile(CatalogTable):
+class File(Base):
     """ORM model for the files table, representing individual data files.
 
     Parameters
@@ -214,6 +209,8 @@ class CatalogFile(CatalogTable):
         File size in bytes.
     rows : int
         Number of rows in the file.
+    type : str, optional
+        File type identifier.
     modified : datetime
         Timestamp of the last known modification.
     origin_modified : datetime, optional
@@ -233,6 +230,7 @@ class CatalogFile(CatalogTable):
     """
 
     __tablename__ = "files"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -252,6 +250,7 @@ class CatalogFile(CatalogTable):
     path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     rows: Mapped[int] = mapped_column(Integer, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=True)
     modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     origin_modified: Mapped[datetime | None] = mapped_column(
         DateTime,
@@ -281,11 +280,11 @@ class CatalogFile(CatalogTable):
         index=True,
     )
 
-    dataset: Mapped["CatalogDataset"] = relationship(
+    dataset: Mapped["Dataset"] = relationship(
         "CatalogDataset",
         back_populates="files",
     )
-    group: Mapped[Optional["DatasetGroup"]] = relationship(
+    group: Mapped[Optional["Group"]] = relationship(
         "DatasetGroup",
         back_populates="files",
     )
