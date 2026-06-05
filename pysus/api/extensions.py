@@ -10,7 +10,6 @@ import zipfile
 from collections.abc import AsyncGenerator, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import ClassVar
 
 import chardet
 import pandas as pd
@@ -19,6 +18,7 @@ import pyarrow.parquet as pq
 from anyio import to_thread
 from dbfread import DBF as DBFReader
 from pydantic import Field, PrivateAttr
+from pyreaddbc import dbc2dbf
 from pysus import CACHEPATH
 from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
@@ -58,14 +58,6 @@ def _map_dtype(raw: str) -> str:
         if raw_lower == key or raw_lower.startswith(key):
             return val
     return "VARCHAR"
-
-
-try:
-    from pyreaddbc import dbc2dbf
-
-    DBC_IMPORT = True
-except ImportError:
-    DBC_IMPORT = False
 
 
 class File(BaseLocalFile):
@@ -535,7 +527,8 @@ class DBC(BaseTabularFile):
         chunk_size: int = 30000,
         callback: Callable[[int, int], None] | None = None,
     ) -> "Parquet":
-        """Decompress DBC to DBF, then convert to Parquet."""
+        import gc
+
         from pysus.api.extensions import ExtensionFactory
 
         if output_path is None:
@@ -563,9 +556,21 @@ class DBC(BaseTabularFile):
                 chunk_size=chunk_size,
                 callback=callback,
             )
+        except Exception as err:  # noqa
+            if "dbf_ext" in locals():
+                del dbf_ext
+            gc.collect()
+            raise err
         finally:
             if tmp_dbf_path.exists():
-                await to_thread.run_sync(tmp_dbf_path.unlink)
+                try:
+                    await to_thread.run_sync(tmp_dbf_path.unlink)
+                except PermissionError:
+                    gc.collect()
+                    try:
+                        await to_thread.run_sync(tmp_dbf_path.unlink)
+                    except PermissionError:
+                        pass
 
 
 class JSON(BaseTabularFile):
@@ -839,76 +844,6 @@ class Tar(BaseCompressedFile):
         return list(await asyncio.gather(*tasks))
 
 
-class DBCNotImported(BaseTabularFile):
-    """Placeholder for DBC files when optional dependency is not installed."""
-
-    path: Path = Field(default_factory=lambda: Path("..."))
-    type: str | FileType = Field(default="remote")
-    import_err: ClassVar[
-        str
-    ] = """
-        run "pip install pysus[dbc]" to handle DBC files.
-        Make sure you also have libffi installed on the system. It may not work
-        on Windows
-    """
-
-    @property
-    def name(self) -> str:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    @property
-    def extension(self) -> str:
-        """Return the .dbc extension."""
-        return ".dbc"
-
-    @property
-    def size(self) -> int:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    @property
-    def modify(self) -> datetime:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    @property
-    def columns(self) -> list["Column"]:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    @property
-    def rows(self) -> int:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    async def load(self) -> pd.DataFrame:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-    def stream(
-        self,
-        chunk_size: int = 10000,
-    ) -> AsyncGenerator[pd.DataFrame, None]:
-        """Raise ImportError indicating the missing DBC dependency."""
-
-        async def _internal_gen():
-            """Yield nothing; always raises ImportError."""
-            raise ImportError(self.import_err)
-            yield pd.DataFrame()
-
-        return _internal_gen()
-
-    async def to_parquet(
-        self,
-        output_path: str | Path | None = None,
-        chunk_size: int = 10000,
-        callback: Callable[[int, int], None] | None = None,
-    ) -> Parquet:
-        """Raise ImportError indicating the missing DBC dependency."""
-        raise ImportError(self.import_err)
-
-
 class ExtensionFactory:
     """Factory that maps file extensions and MIME types to handler classes."""
 
@@ -930,7 +865,7 @@ class ExtensionFactory:
         ".csv": CSV,
         ".parquet": Parquet,
         ".dbf": DBF,
-        ".dbc": DBC if DBC_IMPORT else DBCNotImported,  # type: ignore
+        ".dbc": DBC,
         ".pdf": PDF,
         ".json": JSON,
     }

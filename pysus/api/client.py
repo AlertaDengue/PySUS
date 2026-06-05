@@ -26,7 +26,7 @@ from .extensions import Parquet
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from duckdb import DuckDBPyConnection
 
 
@@ -403,7 +403,7 @@ class PySUS:
 
         if hasattr(local_file, "to_parquet"):
             original_path = local_file.path
-            parquet_file = await local_file.to_parquet(callback=callback)  # type: ignore
+            parquet_file = await local_file.to_parquet(callback=callback)
             parquet_file.add_dv = add_dv
 
             await self._update_state(

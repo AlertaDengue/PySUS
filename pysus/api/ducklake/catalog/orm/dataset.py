@@ -74,12 +74,12 @@ class Dataset(Base):
     description = Column(String, nullable=True)
 
     groups = relationship(
-        "DatasetGroup",
+        "Group",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
     files = relationship(
-        "CatalogFile",
+        "File",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
@@ -128,9 +128,9 @@ class ColumnDefinition(Base):
     description = Column(String, nullable=True)
     nullable = Column(Boolean, nullable=False, default=True)
 
-    dataset = relationship("CatalogDataset", back_populates="columns")
+    dataset = relationship("Dataset", back_populates="columns")
     files = relationship(
-        "CatalogFile",
+        "File",
         secondary=file_columns,
         back_populates="columns",
     )
@@ -177,11 +177,11 @@ class Group(Base):
     description = Column(String, nullable=True)
 
     dataset = relationship(
-        "CatalogDataset",
+        "Dataset",
         back_populates="groups",
     )
     files = relationship(
-        "CatalogFile",
+        "File",
         back_populates="group",
         cascade="all, delete-orphan",
     )
@@ -281,11 +281,11 @@ class File(Base):
     )
 
     dataset: Mapped["Dataset"] = relationship(
-        "CatalogDataset",
+        "Dataset",
         back_populates="files",
     )
     group: Mapped[Optional["Group"]] = relationship(
-        "DatasetGroup",
+        "Group",
         back_populates="files",
     )
     columns: Mapped[list["ColumnDefinition"]] = relationship(

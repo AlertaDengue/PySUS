@@ -27,7 +27,7 @@ from tqdm.asyncio import tqdm
 
 from .types import FileType, State
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from extensions import Parquet
     from pysus.api.metadata.models import Column
 
@@ -213,49 +213,52 @@ class BaseTabularFile(BaseLocalFile, ABC):
         )
 
         try:
-            async for chunk in self.stream(
-                chunk_size=chunk_size,
-            ):  # type: ignore
-                if chunk.empty:
-                    continue
+            try:
+                async for chunk in self.stream(
+                    chunk_size=chunk_size,
+                ):
+                    if chunk.empty:
+                        continue
 
-                rows_in_chunk = len(chunk)
-                current_rows += rows_in_chunk
+                    rows_in_chunk = len(chunk)
+                    current_rows += rows_in_chunk
 
-                table = await to_thread.run_sync(
-                    pa.Table.from_pandas,
-                    chunk,
-                )
-
-                schema = table.schema
-                if any(pa.types.is_null(f.type) for f in schema):
-                    new_fields = [
-                        (
-                            pa.field(f.name, pa.string(), nullable=True)
-                            if pa.types.is_null(f.type)
-                            else f
-                        )
-                        for f in schema
-                    ]
-                    table = table.cast(pa.schema(new_fields))
-
-                if writer is None:
-                    writer = await to_thread.run_sync(
-                        pq.ParquetWriter, output_path, table.schema
+                    table = await to_thread.run_sync(
+                        pa.Table.from_pandas,
+                        chunk,
                     )
 
-                await to_thread.run_sync(writer.write_table, table)
+                    schema = table.schema
+                    if any(pa.types.is_null(f.type) for f in schema):
+                        new_fields = [
+                            (
+                                pa.field(f.name, pa.string(), nullable=True)
+                                if pa.types.is_null(f.type)
+                                else f
+                            )
+                            for f in schema
+                        ]
+                        table = table.cast(pa.schema(new_fields))
 
-                pbar.update(rows_in_chunk)
+                    if writer is None:
+                        writer = await to_thread.run_sync(
+                            pq.ParquetWriter, output_path, table.schema
+                        )
 
-                if callback:
-                    callback(current_rows, total_rows)
+                    await to_thread.run_sync(writer.write_table, table)
 
-                await asyncio.sleep(0)
+                    pbar.update(rows_in_chunk)
+
+                    if callback:
+                        callback(current_rows, total_rows)
+
+                    await asyncio.sleep(0)
+            finally:
+                if writer:
+                    await to_thread.run_sync(writer.close)
+                    writer = None
         finally:
             pbar.close()
-            if writer:
-                await to_thread.run_sync(writer.close)
 
         output = await ExtensionFactory.instantiate(output_path)
         if not isinstance(output, Parquet):

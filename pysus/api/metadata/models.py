@@ -71,7 +71,8 @@ class Column:
 
     @classmethod
     def from_schema(cls, name: str, dtype: ColumnType) -> "Column":
-        """Create a Column from a file schema, looking up description from columns.py."""
+        """Create a Column from a file schema, looking up description from
+        columns.py."""
         return cls(
             name=name,
             description=pick_description(lookup_column_meta(name)),

@@ -13,16 +13,13 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from anyio import to_thread
 from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
+from pysus.api.ducklake.catalog.orm.dataset import Dataset
+from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
+from pysus.api.ducklake.catalog.orm.dataset import Group
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
 
-from pysus.api.ducklake.catalog.orm.dataset import (
-    Dataset,
-    File as CatalogFile,
-    Group,
-)
-
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .client import DuckLake
 
 
@@ -41,23 +38,19 @@ class File(BaseRemoteFile):
         The parent group object, if any.
     """
 
-    def __init__(
-        self,
-        dataset: "DuckDataset",
-        record: CatalogFile,
-        group: Optional["DuckGroup"] = None,
-    ) -> None:
+    record: CatalogFile = Field(exclude=True)
+    group: Optional["DuckGroup"] = Field(default=None, exclude=True)
+
+    def __init__(self, **data: Any) -> None:
+        record = data.pop("record")
+        group = data.pop("group", None)
         super().__init__(
             path=Path(record.path),
             type=record.type or "remote",
-            dataset=dataset,
+            record=record,  # type: ignore[call-arg]
+            group=group,
+            **data,
         )
-        self.record: CatalogFile = record
-        self.group: Optional["DuckGroup"] = group
-
-    @property
-    def path(self) -> Path:
-        return Path(self.record.path)
 
     @property
     def basename(self) -> str:
@@ -191,7 +184,7 @@ class DuckDataset(BaseRemoteDataset):
         super().__init__(**data)
         self._cache_dir: Path = Path(CACHEPATH) / "ducklake"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._catalog_name: str = f"catalog_{self.record.name.lower()}.db"
+        self._catalog_name: str = f"catalog_{self.record.name.lower()}.duckdb"
         self._catalog_local: Path = self._cache_dir / self._catalog_name
 
     def __repr__(self) -> str:
@@ -306,7 +299,7 @@ class DuckDataset(BaseRemoteDataset):
             self.client._s3_client.upload_file(
                 str(self._catalog_local),
                 self.client.bucket,
-                f"catalog_{self.record.name.lower()}.db",
+                f"catalog_{self.record.name.lower()}.duckdb",
             )
 
         await to_thread.run_sync(_upload)

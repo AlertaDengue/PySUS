@@ -1,7 +1,10 @@
-class Header: ...
+class Header:
+    """..."""
 
 
-class Columns: ...
+class Columns:
+    """..."""
 
 
-class Footer: ...
+class Footer:
+    """..."""

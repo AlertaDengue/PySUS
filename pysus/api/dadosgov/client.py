@@ -13,7 +13,7 @@ from pysus import __version__
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import DADOSGOV
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .models import Dataset
 
 

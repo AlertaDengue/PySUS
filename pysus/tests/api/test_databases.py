@@ -1,4 +1,8 @@
+import asyncio
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 class TestSinan:
@@ -301,6 +305,95 @@ class TestFetchData:
             assert len(result) == 0
             mock_pysus.download.assert_not_called()
 
+    def test_fetch_data_with_progress(self):
+        with (
+            patch("pysus.api._impl.databases.PySUS") as mock_pysus_class,
+            patch("pysus.api._impl.databases.tqdm", new=lambda x, **kw: x),
+        ):
+            mock_pysus = MagicMock()
+            enter_mock = AsyncMock(return_value=mock_pysus)
+            exit_mock = AsyncMock()
+            mock_pysus_class.return_value.__aenter__ = enter_mock
+            mock_pysus_class.return_value.__aexit__ = exit_mock
+
+            mock_file = MagicMock()
+            mock_file.path = "/tmp/test.parquet"
+            mock_pysus.query = AsyncMock(return_value=[mock_file, mock_file])
+            mock_pysus.download = AsyncMock(return_value=mock_file)
+            mock_pysus.read_parquet.return_value.df.return_value = MagicMock()
+
+            from pysus.api._impl.databases import _fetch_data
+
+            _fetch_data(dataset="sinan", year=2024, show_progress=True)
+
+            assert mock_pysus.download.call_count == 2
+
+
+class TestFetchDataRunningLoop:
+    def test_fetch_data_running_loop_no_nest_asyncio_raises(self):
+        saved = sys.modules.pop("nest_asyncio", None)
+        import builtins
+
+        real_import = builtins.__import__
+
+        def raising_import(name, *args, **kwargs):
+            if name == "nest_asyncio":
+                raise ImportError(f"No module named {name}")
+            return real_import(name, *args, **kwargs)
+
+        try:
+
+            async def _inner():
+                from pysus.api._impl.databases import _fetch_data
+
+                with patch("builtins.__import__", side_effect=raising_import):
+                    with pytest.raises(
+                        RuntimeError, match="nest_asyncio is required"
+                    ):
+                        _fetch_data(
+                            dataset="sinan",
+                            year=2024,
+                            show_progress=False,
+                        )
+
+            asyncio.run(_inner())
+        finally:
+            if saved is not None:
+                sys.modules["nest_asyncio"] = saved
+
+    def test_fetch_data_running_loop_with_nest_asyncio(self):
+        nest_mock = MagicMock()
+
+        async def _inner():
+            with (
+                patch("pysus.api._impl.databases.PySUS") as mock_pysus_class,
+                patch.dict("sys.modules", {"nest_asyncio": nest_mock}),
+            ):
+                mock_pysus = MagicMock()
+                mock_pysus_class.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus
+                )
+                mock_pysus_class.return_value.__aexit__ = AsyncMock()
+                mock_pysus.query = AsyncMock(return_value=[])
+
+                from pysus.api._impl.databases import _fetch_data
+
+                loop = asyncio.get_running_loop()
+                expected = MagicMock()
+
+                with patch.object(
+                    loop, "run_until_complete", return_value=expected
+                ):
+                    result = _fetch_data(
+                        dataset="sinan",
+                        year=2024,
+                        show_progress=False,
+                    )
+                    nest_mock.apply.assert_called_once()
+                    assert result == expected
+
+        asyncio.run(_inner())
+
 
 class TestListFiles:
     def _mock_asyncio_run(self, return_value):
@@ -385,3 +478,91 @@ class TestListFiles:
 
             assert isinstance(result, pd.DataFrame)
             assert len(result) == 0
+
+    def test_list_files_with_real_coroutine(self):
+        import pandas as pd
+
+        mock_record = MagicMock()
+        mock_record.path = "/remote/sinan/dengue.parquet"
+        mock_record.dataset.name = "sinan"
+        mock_record.group.name = "DENGUE"
+        mock_record.record.year = 2024
+        mock_record.record.month = 1
+        mock_record.record.state = "SP"
+        mock_record.record.origin_modified = "2024-01-15"
+
+        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+            mock_pysus = MagicMock()
+            mock_pysus_class.return_value.__aenter__ = AsyncMock(
+                return_value=mock_pysus
+            )
+            mock_pysus_class.return_value.__aexit__ = AsyncMock()
+            mock_pysus.query = AsyncMock(return_value=[mock_record])
+
+            from pysus.api._impl.databases import list_files
+
+            result = list_files(dataset="SINAN", year=2024, month=1)
+
+            assert isinstance(result, pd.DataFrame)
+            assert len(result) == 1
+            assert result.iloc[0]["name"] == "dengue.parquet"
+            assert result.iloc[0]["path"] == "/remote/sinan/dengue.parquet"
+            assert result.iloc[0]["dataset"] == "sinan"
+            assert result.iloc[0]["group"] == "DENGUE"
+            assert result.iloc[0]["year"] == 2024
+            assert result.iloc[0]["month"] == 1
+            assert result.iloc[0]["state"] == "SP"
+            assert result.iloc[0]["modify"] == "2024-01-15"
+
+    def test_list_files_with_none_fields(self):
+        mock_record = MagicMock()
+        mock_record.path = "/remote/sinan/dengue.parquet"
+        mock_record.dataset = None
+        mock_record.group = None
+        mock_record.record.year = 2024
+        mock_record.record.month = 1
+        mock_record.record.state = "SP"
+        mock_record.record.origin_modified = "2024-01-15"
+
+        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+            mock_pysus = MagicMock()
+            mock_pysus_class.return_value.__aenter__ = AsyncMock(
+                return_value=mock_pysus
+            )
+            mock_pysus_class.return_value.__aexit__ = AsyncMock()
+            mock_pysus.query = AsyncMock(return_value=[mock_record])
+
+            from pysus.api._impl.databases import list_files
+
+            result = list_files(dataset="SINAN")
+
+            assert result.iloc[0]["dataset"] is None
+            assert result.iloc[0]["group"] is None
+
+    def test_list_files_with_multiple_records(self):
+        records = []
+        for i in range(3):
+            r = MagicMock()
+            r.path = f"/remote/sinan/file{i}.parquet"
+            r.dataset.name = "sinan"
+            r.group.name = "DENGUE"
+            r.record.year = 2024
+            r.record.month = i + 1
+            r.record.state = "SP"
+            r.record.origin_modified = "2024-01-15"
+            records.append(r)
+
+        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+            mock_pysus = MagicMock()
+            mock_pysus_class.return_value.__aenter__ = AsyncMock(
+                return_value=mock_pysus
+            )
+            mock_pysus_class.return_value.__aexit__ = AsyncMock()
+            mock_pysus.query = AsyncMock(side_effect=[records[:2], records[2:]])
+
+            from pysus.api._impl.databases import list_files
+
+            result = list_files(dataset="SINAN", year=[2023, 2024])
+
+            assert len(result) == 3
+            assert mock_pysus.query.call_count == 2

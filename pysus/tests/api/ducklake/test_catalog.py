@@ -1,75 +1,112 @@
-from pysus.api.ducklake.catalog.orm import CatalogDataset, CatalogTable, Origin
+"""Tests for DuckLake catalog ORM models."""
+
 from pysus.api.ducklake.catalog.orm.dataset import (
-    CatalogFile,
     ColumnDefinition,
-    DatasetGroup,
+    Dataset,
+    File,
+    Group,
     file_columns,
 )
+from pysus.api.ducklake.catalog.orm.default import Dataset as DefaultDataset
 
 
-class TestOrigin:
-    def test_origin_ftp(self):
-        assert Origin.FTP.value == "ftp"
+class TestDefaultDataset:
+    def test_tablename(self):
+        assert DefaultDataset.__tablename__ == "datasets"
 
-    def test_origin_api(self):
-        assert Origin.API.value == "api"
+    def test_columns(self):
+        cols = DefaultDataset.__table__.columns
+        assert "id" in cols
+        assert "name" in cols
+        assert "long_name" in cols
+        assert "description" in cols
+
+    def test_schema(self):
+        assert DefaultDataset.__table_args__[0]["schema"] == "pysus"
 
 
-class TestCatalogTable:
-    def test_catalog_table_is_abstract(self):
-        assert CatalogTable.__abstract__ is True
+class TestDataset:
+    def test_tablename(self):
+        assert Dataset.__tablename__ == "datasets"
 
+    def test_columns(self):
+        cols = Dataset.__table__.columns
+        assert "id" in cols
+        assert "name" in cols
+        assert "long_name" in cols
+        assert "description" in cols
 
-class TestCatalogDataset:
-    def test_catalog_dataset_tablename(self):
-        assert CatalogDataset.__tablename__ == "datasets"
+    def test_schema(self):
+        assert Dataset.__table_args__[0]["schema"] == "pysus"
 
-    def test_catalog_dataset_columns(self):
-        assert "id" in CatalogDataset.__table__.columns
-        assert "name" in CatalogDataset.__table__.columns
-        assert "long_name" in CatalogDataset.__table__.columns
-        assert "origin" in CatalogDataset.__table__.columns
+    def test_relationships(self):
+        assert hasattr(Dataset, "groups")
+        assert hasattr(Dataset, "files")
+        assert hasattr(Dataset, "columns")
 
 
 class TestColumnDefinition:
-    def test_column_definition_tablename(self):
+    def test_tablename(self):
         assert ColumnDefinition.__tablename__ == "dataset_columns"
 
-    def test_column_definition_columns(self):
-        assert "id" in ColumnDefinition.__table__.columns
-        assert "dataset_id" in ColumnDefinition.__table__.columns
-        assert "name" in ColumnDefinition.__table__.columns
-        assert "type" in ColumnDefinition.__table__.columns
+    def test_columns(self):
+        cols = ColumnDefinition.__table__.columns
+        assert "id" in cols
+        assert "dataset_id" in cols
+        assert "name" in cols
+        assert "type" in cols
+        assert "description" in cols
+        assert "nullable" in cols
 
 
-class TestDatasetGroup:
-    def test_dataset_group_tablename(self):
-        assert DatasetGroup.__tablename__ == "dataset_groups"
+class TestGroup:
+    def test_tablename(self):
+        assert Group.__tablename__ == "dataset_groups"
 
-    def test_dataset_group_columns(self):
-        assert "id" in DatasetGroup.__table__.columns
-        assert "dataset_id" in DatasetGroup.__table__.columns
-        assert "name" in DatasetGroup.__table__.columns
-        assert "long_name" in DatasetGroup.__table__.columns
+    def test_columns(self):
+        cols = Group.__table__.columns
+        assert "id" in cols
+        assert "dataset_id" in cols
+        assert "name" in cols
+        assert "long_name" in cols
+        assert "description" in cols
+
+    def test_relationships(self):
+        assert hasattr(Group, "dataset")
+        assert hasattr(Group, "files")
 
 
-class TestCatalogFile:
-    def test_catalog_file_tablename(self):
-        assert CatalogFile.__tablename__ == "files"
+class TestFile:
+    def test_tablename(self):
+        assert File.__tablename__ == "files"
 
-    def test_catalog_file_columns(self):
-        assert "id" in CatalogFile.__table__.columns
-        assert "dataset_id" in CatalogFile.__table__.columns
-        assert "path" in CatalogFile.__table__.columns
-        assert "size" in CatalogFile.__table__.columns
-        assert "rows" in CatalogFile.__table__.columns
-        assert "modified" in CatalogFile.__table__.columns
-        assert "year" in CatalogFile.__table__.columns
-        assert "month" in CatalogFile.__table__.columns
-        assert "state" in CatalogFile.__table__.columns
+    def test_columns(self):
+        cols = File.__table__.columns
+        assert "id" in cols
+        assert "dataset_id" in cols
+        assert "group_id" in cols
+        assert "path" in cols
+        assert "size" in cols
+        assert "rows" in cols
+        assert "type" in cols
+        assert "modified" in cols
+        assert "year" in cols
+        assert "month" in cols
+        assert "state" in cols
+        assert "sha256" in cols
+        assert "origin_size" in cols
+        assert "origin_path" in cols
+
+    def test_relationships(self):
+        assert hasattr(File, "dataset")
+        assert hasattr(File, "group")
+        assert hasattr(File, "columns")
 
 
 class TestFileColumns:
+    def test_file_columns_table_name(self):
+        assert file_columns.name == "file_columns"
+
     def test_file_columns_primary_keys(self):
         file_id_col = file_columns.c.file_id
         column_id_col = file_columns.c.column_id

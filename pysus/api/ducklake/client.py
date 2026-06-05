@@ -77,8 +77,8 @@ class DuckLake(BaseRemoteClient):
         self._engine = engine
         self._cache_dir: Path = Path(CACHEPATH) / "ducklake"
         self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._catalog_local: Path = self._cache_dir / "catalog.db"
-        self._catalog_remote: str = "public/catalog.db"
+        self._catalog_local: Path = self._cache_dir / "catalog.duckdb"
+        self._catalog_remote: str = "public/catalog.duckdb"
 
     @property
     def name(self) -> str:
@@ -197,7 +197,8 @@ class DuckLake(BaseRemoteClient):
         Parameters
         ----------
         local_path : Path, optional
-            Path to the catalog database file. Defaults to the discovery catalog.
+            Path to the catalog database file.
+            Defaults to the discovery catalog.
         """
         if local_path is None:
             local_path = self._catalog_local
@@ -210,7 +211,8 @@ class DuckLake(BaseRemoteClient):
             conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
 
             has_pysus = conn.exec_driver_sql(
-                "SELECT 1 FROM information_schema.schemata WHERE schema_name = 'pysus'"
+                "SELECT 1 FROM information_schema.schemata"
+                " WHERE schema_name = 'pysus'"
             ).fetchone()
 
             if has_pysus:
@@ -326,7 +328,9 @@ class DuckLake(BaseRemoteClient):
                 else:
                     raise e
 
-    async def _download_catalog(self, local_path: Path, remote_path: str) -> None:
+    async def _download_catalog(
+        self, local_path: Path, remote_path: str
+    ) -> None:
         """Download a catalog database from remote storage with retries.
 
         Parameters
@@ -380,7 +384,9 @@ class DuckLake(BaseRemoteClient):
             "s3",
             endpoint_url=f"https://{self.endpoint}",
             aws_access_key_id=self.credentials.access_key.get_secret_value(),
-            aws_secret_access_key=(self.credentials.secret_key.get_secret_value()),
+            aws_secret_access_key=(
+                self.credentials.secret_key.get_secret_value()
+            ),
             region_name=self.region,
             config=Config(signature_version="s3v4"),
         )
@@ -400,7 +406,10 @@ class DuckLake(BaseRemoteClient):
             if not ds._catalog_local.exists():
                 continue
 
-            def _upload(local=str(ds._catalog_local), name=ds._catalog_name):
+            _local = str(ds._catalog_local)
+            _name = ds._catalog_name
+
+            def _upload(local=_local, name=_name):
                 self._s3_client.upload_file(
                     local,
                     self.bucket,

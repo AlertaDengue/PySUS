@@ -15,7 +15,8 @@ class Base(DeclarativeBase):
 
 
 class Dataset(Base):
-    """ORM model for the datasets table — central registry of available datasets.
+    """ORM model for the datasets table — central registry of available
+    datasets.
 
     Parameters
     ----------

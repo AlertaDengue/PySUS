@@ -13,7 +13,7 @@ from pydantic import PrivateAttr
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import FTP as FTP_STR
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from pysus.api.ftp.models import Dataset
     from pysus.api.types import State
 
