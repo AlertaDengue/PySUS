@@ -11,8 +11,9 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from anyio import to_thread
 from pydantic import PrivateAttr
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
+from pysus.api.types import FTP as FTP_STR
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from pysus.api.ftp.models import Dataset
     from pysus.api.types import State
 
@@ -55,7 +56,7 @@ class FTP(BaseRemoteClient):
         str
             The client short name ("FTP").
         """
-        return "FTP"
+        return FTP_STR
 
     @property
     def long_name(self) -> str:

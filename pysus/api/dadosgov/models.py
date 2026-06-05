@@ -271,7 +271,8 @@ class Group(BaseRemoteGroup):
             A callable that extracts metadata from filenames.
         """
         super().__init__(
-            record=record, dataset=dataset  # type: ignore[call-arg]
+            record=record,
+            dataset=dataset,  # type: ignore[call-arg]
         )
         self._formatter = formatter
 
@@ -354,7 +355,7 @@ class Dataset(BaseRemoteDataset):
     """
 
     ids: list[str] = []
-    client: "DadosGov"
+    client: DadosGov
     group_aliases: dict[str, str] = {}
 
     def __repr__(self):
@@ -369,7 +370,7 @@ class Dataset(BaseRemoteDataset):
     async def _fetch_content(self) -> list[Group]:
         """Fetch all groups belonging to this dataset."""
         items: list[Group] = []
-        client: "DadosGov" = self.client
+        client: DadosGov = self.client
         if self.ids:
             for group_id in self.ids:
                 record = await client.get_dataset(group_id)

@@ -1,18 +1,16 @@
-"""SQLAlchemy ORM models for the DuckLake catalog schema.
+"""Per-dataset catalog ORM models — stored in ``catalog_<name>.db``.
 
-Defines tables for datasets, groups, files, and columns stored
-in the pysus schema of the local DuckDB catalog.
+Defines tables for groups, files, and columns within a single dataset.
 """
 
-import enum
 from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -24,7 +22,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
-    """Base class for all DuckLake catalog ORM models."""
+    """Base class for per-dataset catalog ORM models."""
 
     pass
 
@@ -48,29 +46,7 @@ file_columns = Table(
 )
 
 
-class CatalogTable(Base):
-    """Abstract base for catalog tables sharing the pysus schema."""
-
-    __abstract__ = True
-    __table_args__: tuple = ({"schema": "pysus"},)
-
-
-class Origin(enum.Enum):
-    """Origin type for a dataset.
-
-    Attributes
-    ----------
-    FTP : str
-        Dataset sourced from the FTP server.
-    API : str
-        Dataset sourced from an API.
-    """
-
-    FTP = "ftp"
-    API = "api"
-
-
-class CatalogDataset(CatalogTable):
+class Dataset(Base):
     """ORM model for the datasets table, representing a dataset collection.
 
     Parameters
@@ -83,11 +59,10 @@ class CatalogDataset(CatalogTable):
         Human-readable full name.
     description : str, optional
         Optional description of the dataset contents.
-    origin : Origin
-        Whether the dataset originates from FTP or an API.
     """
 
     __tablename__ = "datasets"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -97,15 +72,14 @@ class CatalogDataset(CatalogTable):
     name = Column(String, nullable=False, unique=True, index=True)
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    origin = Column(Enum(Origin), nullable=False)
 
     groups = relationship(
-        "DatasetGroup",
+        "Group",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
     files = relationship(
-        "CatalogFile",
+        "File",
         back_populates="dataset",
         cascade="all, delete-orphan",
     )
@@ -116,7 +90,7 @@ class CatalogDataset(CatalogTable):
     )
 
 
-class ColumnDefinition(CatalogTable):
+class ColumnDefinition(Base):
     """ORM model for dataset column metadata.
 
     Parameters
@@ -136,6 +110,7 @@ class ColumnDefinition(CatalogTable):
     """
 
     __tablename__ = "dataset_columns"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -153,9 +128,9 @@ class ColumnDefinition(CatalogTable):
     description = Column(String, nullable=True)
     nullable = Column(Boolean, nullable=False, default=True)
 
-    dataset = relationship("CatalogDataset", back_populates="columns")
+    dataset = relationship("Dataset", back_populates="columns")
     files = relationship(
-        "CatalogFile",
+        "File",
         secondary=file_columns,
         back_populates="columns",
     )
@@ -166,7 +141,7 @@ class ColumnDefinition(CatalogTable):
     )
 
 
-class DatasetGroup(CatalogTable):
+class Group(Base):
     """ORM model for dataset groups, grouping related files within a dataset.
 
     Parameters
@@ -184,6 +159,7 @@ class DatasetGroup(CatalogTable):
     """
 
     __tablename__ = "dataset_groups"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id = Column(
         Integer,
@@ -200,9 +176,12 @@ class DatasetGroup(CatalogTable):
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
 
-    dataset = relationship("CatalogDataset", back_populates="groups")
+    dataset = relationship(
+        "Dataset",
+        back_populates="groups",
+    )
     files = relationship(
-        "CatalogFile",
+        "File",
         back_populates="group",
         cascade="all, delete-orphan",
     )
@@ -213,7 +192,7 @@ class DatasetGroup(CatalogTable):
     )
 
 
-class CatalogFile(CatalogTable):
+class File(Base):
     """ORM model for the files table, representing individual data files.
 
     Parameters
@@ -230,10 +209,14 @@ class CatalogFile(CatalogTable):
         File size in bytes.
     rows : int
         Number of rows in the file.
+    type : str, optional
+        File type identifier.
     modified : datetime
         Timestamp of the last known modification.
     origin_modified : datetime, optional
         Original modification timestamp from the source.
+    origin_size : int
+        Original file size in bytes.
     origin_path : str
         Original source path of the file.
     sha256 : str, optional
@@ -247,6 +230,7 @@ class CatalogFile(CatalogTable):
     """
 
     __tablename__ = "files"
+    __table_args__: tuple = ({"schema": "pysus"},)
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -264,13 +248,15 @@ class CatalogFile(CatalogTable):
     )
 
     path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     rows: Mapped[int] = mapped_column(Integer, nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=True)
     modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     origin_modified: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,
     )
+    origin_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     origin_path: Mapped[str] = mapped_column(String, nullable=False)
     sha256: Mapped[str | None] = mapped_column(
         String(64),
@@ -294,12 +280,12 @@ class CatalogFile(CatalogTable):
         index=True,
     )
 
-    dataset: Mapped["CatalogDataset"] = relationship(
-        "CatalogDataset",
+    dataset: Mapped["Dataset"] = relationship(
+        "Dataset",
         back_populates="files",
     )
-    group: Mapped[Optional["DatasetGroup"]] = relationship(
-        "DatasetGroup",
+    group: Mapped[Optional["Group"]] = relationship(
+        "Group",
         back_populates="files",
     )
     columns: Mapped[list["ColumnDefinition"]] = relationship(

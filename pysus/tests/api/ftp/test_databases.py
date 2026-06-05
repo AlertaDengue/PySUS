@@ -2,7 +2,18 @@ from unittest.mock import MagicMock
 
 import pytest
 from pysus.api.ftp.client import FTP
-from pysus.api.ftp.databases import AVAILABLE_DATABASES
+from pysus.api.ftp.databases import (
+    AVAILABLE_DATABASES,
+    CIHA,
+    CNES,
+    IBGEDATASUS,
+    PNI,
+    SIA,
+    SIH,
+    SIM,
+    SINAN,
+    SINASC,
+)
 
 
 @pytest.fixture
@@ -68,3 +79,95 @@ async def test_ciha_search_logic(mock_client):
     assert res["year"] == 2011
     assert res["month"] == 1
     assert res["group"]["name"] == "CIHA"
+
+
+def test_ciha_formatter_exception(mock_client):
+    db = CIHA(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None, "month": None}
+
+
+def test_cnes_formatter_exception(mock_client):
+    db = CNES(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None, "month": None}
+
+
+def test_sinasc_formatter_exception(mock_client):
+    db = SINASC(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None}
+
+
+def test_sim_formatter_cid9(mock_client):
+    db = SIM(client=mock_client)
+    result = db.formatter("CID9DOAC96.dbc")
+    assert result["state"] == "AC"
+    assert result["year"] == 1996
+
+
+def test_sim_formatter_exception(mock_client):
+    db = SIM(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None}
+
+
+def test_pni_formatter_exception(mock_client):
+    db = PNI(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None}
+
+
+def test_ibge_formatter_proj(mock_client):
+    db = IBGEDATASUS(client=mock_client)
+    result = db.formatter("PROJBR00.zip")
+    assert result["year"] == 2000
+    assert result["group"]["name"] == "PROJ"
+
+
+def test_ibge_formatter_exception(mock_client):
+    db = IBGEDATASUS(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "year": None}
+
+
+def test_sia_formatter_group_not_in_definitions(mock_client):
+    db = SIA(client=mock_client)
+    result = db.formatter("ZZAC0001.dbc")
+    assert result["group"] is None
+
+
+def test_sia_formatter_exception(mock_client):
+    db = SIA(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None, "month": None}
+
+
+def test_sih_formatter_exception(mock_client):
+    db = SIH(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "state": None, "year": None, "month": None}
+
+
+def test_sinan_formatter_src(mock_client):
+    db = SINAN(client=mock_client)
+    result = db.formatter("SRCBR06.dbc")
+    assert result["group"]["name"] == "SRC"
+
+
+def test_sinan_formatter_leibr22(mock_client):
+    db = SINAN(client=mock_client)
+    result = db.formatter("LEIBR22.dbc")
+    assert result["group"]["name"] == "LEIV"
+
+
+def test_sinan_formatter_lerbr19(mock_client):
+    db = SINAN(client=mock_client)
+    result = db.formatter("LERBR19.dbc")
+    assert result["group"]["name"] == "LERD"
+
+
+def test_sinan_formatter_exception(mock_client):
+    db = SINAN(client=mock_client)
+    result = db.formatter("A")
+    assert result == {"group": None, "year": None}

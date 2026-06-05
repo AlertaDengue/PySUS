@@ -272,7 +272,7 @@ class SIA(Dataset):
                 }
 
             m = re.search(r"_(\w{3})-out_(\d{4})_\.csv$", name)
-            if m:
+            if m:  # pragma: no cover
                 return {
                     "state": None,
                     "year": _parse_year(m.group(2)),

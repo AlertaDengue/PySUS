@@ -42,3 +42,11 @@ def test_add_dv_empty():
 
 def test_add_dv_non_digit():
     assert add_dv("abc") == "abc"
+
+
+def test_add_dv_5digit_returns_as_is():
+    assert add_dv("12345") == "12345"
+
+
+def test_add_dv_8digit_returns_as_is():
+    assert add_dv("12345678") == "12345678"

@@ -13,7 +13,9 @@ from typing import TYPE_CHECKING, Literal
 import anyio
 import duckdb
 import pandas as pd
+from duckdb import func
 from pysus import CACHEPATH
+from pysus.api.types import Origin
 from sqlalchemy import DateTime, Enum, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -24,7 +26,7 @@ from .extensions import Parquet
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from duckdb import DuckDBPyConnection
 
 
@@ -101,7 +103,7 @@ class PySUS:
         """Set up DuckLake catalog and return self as async context manager."""
 
         self._ducklake = DuckLake()
-        await self._ducklake._load_catalog()
+        await self._ducklake.connect()
         self._attach_client_catalog(
             "ducklake",
             str(self._ducklake.catalog_path),
@@ -124,7 +126,7 @@ class PySUS:
 
         if self._ducklake is None:
             self._ducklake = DuckLake()
-            await self._ducklake._load_catalog()
+            await self._ducklake.connect()
             self._attach_client_catalog(
                 "ducklake",
                 str(self._ducklake.catalog_path),
@@ -477,26 +479,72 @@ class PySUS:
 
     async def query(
         self,
-        client: Literal["DadosGov", "FTP"] | None = None,
+        client: Origin | None = None,
         dataset: str | None = None,
         group: str | None = None,
         state: str | None = None,
         year: int | None = None,
         month: int | None = None,
     ):
-        """Query available datasets through the DuckLake catalog."""
+        """Query available datasets through the DuckLake catalog.
 
+        Parameters
+        ----------
+        client : Origin, optional
+            Source client to filter by.
+        dataset : str, optional
+            Dataset name to filter by.
+        group : str, optional
+            Group name pattern to filter by (case-insensitive ILIKE).
+        state : str, optional
+            Two-letter state code to filter by.
+        year : int, optional
+            Year to filter by.
+        month : int, optional
+            Month to filter by.
+
+        Returns
+        -------
+        list
+            List of matching File objects.
+        """
         if self._ducklake is None:
             await self.get_ducklake()
-        if self._ducklake is not None:
-            return await self._ducklake.query(
-                client=client,
-                dataset=dataset,
+
+        if self._ducklake is None:
+            raise ConnectionError("Could not connect to PySUS s3 bucket")
+
+        all_datasets = await self._ducklake.datasets()
+
+        if dataset:
+            matching = [
+                d for d in all_datasets if d.name.lower() == dataset.lower()
+            ]
+            if not matching:
+                return []
+            target = matching[0]
+            files = await target.query(
                 group=group,
                 state=state,
                 year=year,
                 month=month,
             )
+        else:
+            files = []
+            for ds in all_datasets:
+                ds_files = await ds.query(
+                    group=group,
+                    state=state,
+                    year=year,
+                    month=month,
+                )
+                files.extend(ds_files)
+
+        if not client:
+            return files
+
+        prefix = f"public/data/{client.lower()}/"
+        return [f for f in files if f.record.path.startswith(prefix)]
 
     def read_parquet(
         self,
@@ -595,8 +643,8 @@ class PySUS:
             duckdb.create_function(
                 "__pysus_add_dv",
                 _add_dv_fn,
-                null_handling="special",
-            )
+                null_handling=func.SPECIAL,
+            )  # type: ignore
         except duckdb.NotImplementedException:
             pass
         selects = [

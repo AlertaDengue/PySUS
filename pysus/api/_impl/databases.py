@@ -24,8 +24,8 @@ import asyncio
 from typing import Literal
 
 import pandas as pd
+from pysus.api import types
 from pysus.api.client import PySUS
-from pysus.api.types import State
 from tqdm import tqdm
 
 
@@ -220,7 +220,7 @@ def sinan(
 
 
 def sinasc(
-    state: State,
+    state: types.State,
     year: int | list[int],
     group: str | None = None,
     **kwargs,
@@ -232,7 +232,7 @@ def sinasc(
 
     Parameters
     ----------
-    state : State
+    state : types.State
         Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
@@ -255,7 +255,7 @@ def sinasc(
 
 
 def sim(
-    state: State,
+    state: types.State,
     year: int | list[int],
     group: str | None = None,
     **kwargs,
@@ -290,7 +290,7 @@ def sim(
 
 
 def sih(
-    state: State,
+    state: types.State,
     year: int | list[int],
     month: int | list[int],
     group: str | None = None,
@@ -303,7 +303,7 @@ def sih(
 
     Parameters
     ----------
-    state : State
+    state : types.State
         Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
@@ -329,7 +329,7 @@ def sih(
 
 
 def sia(
-    state: State,
+    state: types.State,
     year: int | list[int],
     month: int | list[int],
     group: str | None = None,
@@ -342,7 +342,7 @@ def sia(
 
     Parameters
     ----------
-    state : State
+    state : types.State
         Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
@@ -368,7 +368,7 @@ def sia(
 
 
 def pni(
-    state: State,
+    state: types.State,
     year: int | list[int],
     group: str | None = None,
     **kwargs,
@@ -430,7 +430,7 @@ def ibge(
 
 
 def cnes(
-    state: State,
+    state: types.State,
     year: int | list[int],
     month: int | list[int],
     group: str | None = None,
@@ -469,7 +469,7 @@ def cnes(
 
 
 def ciha(
-    state: State,
+    state: types.State,
     year: int | list[int],
     month: int | list[int],
     group: str | None = "CIHA",
@@ -508,18 +508,8 @@ def ciha(
 
 
 def list_files(
-    dataset: Literal[
-        "SINAN",
-        "SINASC",
-        "SIM",
-        "SIH",
-        "SIA",
-        "PNI",
-        "IBGE",
-        "CNES",
-        "CIHA",
-    ],
-    client: Literal["FTP", "DadosGov"] | None = None,
+    dataset: types.DatasetName,
+    client: types.Origin | None = None,
     group: str | None = None,
     state: str | None = None,
     year: int | list[int] | None = None,
@@ -536,7 +526,7 @@ def list_files(
     ----------
     dataset : Literal
         Dataset name (e.g. ``"SINAN"``, ``"SINASC"``, etc.).
-    client : Literal["FTP", "DadosGov"], optional
+    client : Origin, optional
         Data source client to query.
     group : str, optional
         Group or disease code to filter by.

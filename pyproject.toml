@@ -31,7 +31,8 @@ pydantic = "^2.12.5"
 duckdb = "^1.4.4"
 duckdb-engine = "^0.17.0"
 sqlalchemy = "^2.0.48"
-python-magic = "^0.4.27"
+python-magic = { version = "*", platform = "!=win32" }
+python-magic-bin = { version = "*", platform = "win32" }
 chardet = "^7.4.0.post2"
 anyio = "^4.13.0"
 httpx = ">=0.28.0"
