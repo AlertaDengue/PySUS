@@ -30,13 +30,9 @@ def _dedup_entries(
         if m:
             stem = filename[: m.start()]
             fmt = m.group(1).lower()
-            grouped.setdefault(stem, []).append(
-                (fmt, filename, recurso, metadata)
-            )
+            grouped.setdefault(stem, []).append((fmt, filename, recurso, metadata))
         else:
-            grouped.setdefault(filename, []).append(
-                ("", filename, recurso, metadata)
-            )
+            grouped.setdefault(filename, []).append(("", filename, recurso, metadata))
 
     result: list[tuple[str, Any, dict]] = []
     for _, items in grouped.items():
@@ -210,7 +206,7 @@ class File(BaseRemoteFile):
         """Download the file to a local path."""
         if not output:
             output = CACHEPATH / self.name
-        return await self.client._download_file(self, output, callback=callback)
+        return await self.client.download(self, output, callback=callback)
 
     async def fetch_size(self) -> int:
         """Fetch the remote file size and update the local record.
@@ -249,9 +245,7 @@ class Group(BaseRemoteGroup):
     """A group of files within a dataset."""
 
     record: ConjuntoDados
-    _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(
-        default=None
-    )
+    _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -319,9 +313,7 @@ class Group(BaseRemoteGroup):
         """Build File objects from the underlying resources."""
         entries: list[tuple[str, Any, dict]] = []
         for recurso in self.record.resources:
-            filename = (
-                recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
-            )
+            filename = recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
             if filename.lower().endswith(".pdf") or filename.startswith("get_"):
                 continue
             metadata = {}

@@ -13,11 +13,14 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from anyio import to_thread
 from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
-from pysus.api.ducklake.catalog.orm.dataset import Dataset
-from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
-from pysus.api.ducklake.catalog.orm.dataset import Group
+from .catalog.adapters import DatasetAdapter
+from .catalog.orm.default import Dataset
+from .catalog.orm.dataset import (
+    File as CatalogFile,
+    Group,
+)
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
-from sqlalchemy.orm import contains_eager, joinedload, sessionmaker
+from sqlalchemy import select, orm
 
 if TYPE_CHECKING:  # pragma: no cover
     from .client import DuckLake
@@ -127,7 +130,7 @@ class File(BaseRemoteFile):
         if not output:
             output = CACHEPATH / self.name
 
-        return await self.client._download_file(
+        return await self.client.download(
             self,
             output,
             callback=callback,
@@ -161,148 +164,39 @@ class File(BaseRemoteFile):
 
 
 class DuckDataset(BaseRemoteDataset):
-    """A dataset from the DuckLake catalog, containing groups and files.
-
-    Each dataset manages its own DuckDB engine connected to a
-    per-dataset catalog file (``catalog_<name>.db``).
-
-    Parameters
-    ----------
-    record : Dataset
-        The underlying ORM record.
-    client : BaseRemoteClient
-        The parent client instance.
-    """
-
     record: Dataset = Field(exclude=True)
     client: "DuckLake" = Field(exclude=True)
-
-    _engine: Any = PrivateAttr(default=None)
-    _Session: Any = PrivateAttr(default=None)
+    adapter: DatasetAdapter = Field(exclude=True)
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
-        self._cache_dir: Path = Path(CACHEPATH) / "ducklake"
-        self._cache_dir.mkdir(parents=True, exist_ok=True)
-        self._catalog_name: str = f"catalog_{self.record.name.lower()}.duckdb"
-        self._catalog_local: Path = self._cache_dir / self._catalog_name
 
     def __repr__(self) -> str:
-        """Return a string representation of the dataset.
-
-        Returns
-        -------
-        str
-            The uppercased dataset name.
-        """
         return self.name.upper()
 
     @property
     def name(self) -> str:
-        """Return the short name of the dataset.
-
-        Returns
-        -------
-        str
-            The dataset short name.
-        """
-        return self.record.name  # type: ignore
+        return str(self.record.name)
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of the dataset.
-
-        Returns
-        -------
-        str
-            The dataset display name, falling back to the short name.
-        """
-        return ""  # TODO:
+        return ""
 
     @property
     def description(self) -> str:
-        """Return the description of the dataset.
-
-        Returns
-        -------
-        str
-            The dataset description, or an empty string if unavailable.
-        """
-        return ""  # TODO:
-
-    @property
-    def catalog_path(self) -> Path:
-        """Return the local path to the downloaded catalog database.
-
-        Returns
-        -------
-        Path
-            Filesystem path to the local catalog database file.
-        """
-        return self._catalog_local
+        return ""
 
     async def connect(
         self,
         force: bool = False,
-        callback: Callable[[int, int], None] | None = None,
     ) -> None:
-        """Connect to the catalog, downloading it first if necessary.
-
-        Parameters
-        ----------
-        force : bool, optional
-            Whether to re-download and re-connect even if already connected.
-        """
-        if self._engine and not force:
-            if not self._Session:
-                self._Session = sessionmaker(bind=self._engine)
-            return
-
         if self not in self.client._datasets:
             self.client._datasets.append(self)
 
-        await self.client._download(
-            f"public/{self._catalog_name}",
-            self._catalog_local,
-            callback=callback,
-        )
-        self._engine = await to_thread.run_sync(
-            lambda: self.client._setup_engine(self._catalog_local)
-        )
-        self._Session = sessionmaker(bind=self._engine)
+        await self.adapter.connect(force=force)
 
     async def close(self, update_catalog: bool = False):
-        """Dispose the engine, optionally uploading the per-dataset catalog.
-
-        Parameters
-        ----------
-        update_catalog : bool, optional
-            Whether to upload the per-dataset catalog to remote storage.
-            Requires the parent client to be authenticated.
-        """
-        if self._engine:
-            await to_thread.run_sync(self._engine.dispose)
-            self._engine = None
-            self._Session = None
-
-            if update_catalog and self.client._is_authenticated:
-                await self._upload_catalog()
-
-    async def _upload_catalog(self):
-        """Upload the per-dataset catalog to remote storage."""
-        if not self.client.credentials:
-            raise PermissionError(
-                "Admin credentials required to upload catalog.",
-            )
-
-        def _upload():
-            self.client._s3_client.upload_file(
-                str(self._catalog_local),
-                self.client.bucket,
-                f"catalog_{self.record.name.lower()}.duckdb",
-            )
-
-        await to_thread.run_sync(_upload)
+        await self.adapter.close(update=update_catalog)
 
     async def query(
         self,
@@ -311,72 +205,58 @@ class DuckDataset(BaseRemoteDataset):
         year: int | None = None,
         month: int | None = None,
     ) -> list[File]:
-        """Filter files in this dataset's catalog by group, state, year, month.
-
-        Parameters
-        ----------
-        group : str, optional
-            Group name pattern to filter by (case-insensitive ILIKE).
-        state : str, optional
-            Two-letter state code to filter by.
-        year : int, optional
-            Year to filter by.
-        month : int, optional
-            Month to filter by.
-
-        Returns
-        -------
-        list[File]
-            List of matching file objects.
-        """
-        if not self._Session:
-            await self.connect()
+        await self.adapter.connect()
 
         def _query() -> list[CatalogFile]:
-            with self._Session() as session:
-                q = session.query(CatalogFile).options(
-                    joinedload(CatalogFile.group),
-                    joinedload(CatalogFile.dataset),
+            with self.adapter.get_session() as session:
+                stmt = (
+                    select(CatalogFile)
+                    .filter(CatalogFile.dataset_id == self.record.id)
+                    .options(
+                        orm.joinedload(CatalogFile.group),
+                    )
                 )
                 if group:
-                    q = (
-                        q.join(CatalogFile.group)
-                        .options(contains_eager(CatalogFile.group))
+                    stmt = (
+                        stmt.join(CatalogFile.group)
+                        .options(orm.contains_eager(CatalogFile.group))
                         .filter(Group.name.ilike(group))
                     )
                 if state:
-                    q = q.filter(CatalogFile.state == state.upper())
+                    stmt = stmt.filter(CatalogFile.state == state.upper())
                 if year:
-                    q = q.filter(CatalogFile.year == year)
+                    stmt = stmt.filter(CatalogFile.year == year)
                 if month:
-                    q = q.filter(CatalogFile.month == month)
-                results = q.all()
+                    stmt = stmt.filter(CatalogFile.month == month)
+
+                results = session.scalars(stmt).all()
                 session.expunge_all()
-                return results
+                return list(results)
 
         records: list[CatalogFile] = await to_thread.run_sync(_query)
         return [File(record=r, dataset=self) for r in records]
 
     async def _fetch_content(self) -> list[Union["DuckGroup", File]]:
-        """Fetch groups and files belonging to this dataset."""
-        if not self._Session:
-            await self.connect()
+        await self.adapter.connect()
 
         def _fetch():
-            with self._Session() as session:
-                dataset = (
-                    session.query(Dataset)
-                    .options(
-                        joinedload(Dataset.groups).joinedload(Group.files),
-                        joinedload(Dataset.files),
-                    )
-                    .filter(Dataset.name == self.record.name)
-                    .first()
+            with self.adapter.get_session() as session:
+                stmt = (
+                    select(Group)
+                    .options(orm.joinedload(Group.files))
+                    .filter(Group.dataset_id == self.record.id)
                 )
-                if not dataset:
-                    return [], []
+                groups = session.scalars(stmt).all()
+
+                ungrouped = session.scalars(
+                    select(CatalogFile).filter(
+                        CatalogFile.dataset_id == self.record.id,
+                        CatalogFile.group_id.is_(None),
+                    )
+                ).all()
+
                 session.expunge_all()
-                return dataset.groups, dataset.files
+                return list(groups), list(ungrouped)
 
         groups, files = await to_thread.run_sync(_fetch)
 
@@ -386,15 +266,7 @@ class DuckDataset(BaseRemoteDataset):
             items.extend([DuckGroup(record=g, dataset=self) for g in groups])
 
         if files:
-            items.extend(
-                [
-                    File(
-                        record=f,
-                        dataset=self,
-                    )
-                    for f in files
-                ]
-            )
+            items.extend([File(record=f, dataset=self) for f in files])
 
         return items
 

@@ -322,9 +322,9 @@ class PySUS:
 
             if timeout is not None:
                 with anyio.fail_after(timeout):
-                    await client._download_file(file, local_path, callback)
+                    await client.download(file, local_path, callback)
             else:
-                await client._download_file(file, local_path, callback)
+                await client.download(file, local_path, callback)
 
             await self._update_state(
                 local_path=local_path,
@@ -517,9 +517,7 @@ class PySUS:
         all_datasets = await self._ducklake.datasets()
 
         if dataset:
-            matching = [
-                d for d in all_datasets if d.name.lower() == dataset.lower()
-            ]
+            matching = [d for d in all_datasets if d.name.lower() == dataset.lower()]
             if not matching:
                 return []
             target = matching[0]
@@ -618,9 +616,7 @@ class PySUS:
 
         else:
             paths_str = ", ".join(f"'{p}'" for p in paths)
-            query = (
-                f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
-            )
+            query = f"SELECT * FROM read_parquet([{paths_str}], union_by_name=True)"
 
         if sql:
             if sql.upper().startswith("SELECT"):
@@ -633,9 +629,7 @@ class PySUS:
         if not add_dv:
             return base
 
-        geocode_cols = [
-            col[0] for col in base.description if is_geocode_column(col[0])
-        ]
+        geocode_cols = [col[0] for col in base.description if is_geocode_column(col[0])]
         if not geocode_cols:
             return base
 

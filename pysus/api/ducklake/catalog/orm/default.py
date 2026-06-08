@@ -41,3 +41,6 @@ class Dataset(Base):
     name = Column(String, nullable=False, unique=True, index=True)
     long_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
+
+    def __repr__(self):
+        return self.name

@@ -3,6 +3,21 @@ from typing import Annotated, TypeAlias
 from pydantic import AfterValidator
 
 
+def _validate_s3_endpoint(v: str) -> str:
+    assert v == "nbg1.your-objectstorage.com"
+    return v
+
+
+def _validate_s3_region(v: str) -> str:
+    assert v == "nbg1"
+    return v
+
+
+def _validate_s3_bucket(v: str) -> str:
+    assert v == "pysus"
+    return v
+
+
 def _validate_origin(v: str) -> str:
     valid = (FTP, DADOSGOV, DUCKLAKE)
     assert v in valid, f"Invalid origin: {v!r}"
@@ -92,6 +107,12 @@ def _validate_state(v: str) -> str:
 FTP: Annotated[str, AfterValidator(_validate_origin)] = "FTP"
 DADOSGOV: Annotated[str, AfterValidator(_validate_origin)] = "DadosGov"
 DUCKLAKE: Annotated[str, AfterValidator(_validate_origin)] = "DuckLake"
+
+S3_ENDPOINT: Annotated[str, AfterValidator(_validate_s3_endpoint)] = (
+    "nbg1.your-objectstorage.com"
+)
+S3_REGION: Annotated[str, AfterValidator(_validate_s3_region)] = "nbg1"
+S3_BUCKET: Annotated[str, AfterValidator(_validate_s3_bucket)] = "pysus"
 
 VARCHAR: Annotated[str, AfterValidator(_validate_column_type)] = "VARCHAR"
 INTEGER: Annotated[str, AfterValidator(_validate_column_type)] = "INTEGER"

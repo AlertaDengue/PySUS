@@ -148,7 +148,7 @@ class File(BaseRemoteFile):
             cache_dir.mkdir(parents=True, exist_ok=True)
             output = cache_dir / self.basename
 
-        return await self.client._download_file(self, output, callback)
+        return await self.client.download(self, output, callback)
 
 
 class Directory:

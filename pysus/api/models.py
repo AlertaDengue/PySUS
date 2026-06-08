@@ -520,7 +520,7 @@ class BaseRemoteClient(BaseRemoteObject, ABC):
         """Return a list of available datasets matching *kwargs*."""
 
     @abstractmethod
-    async def _download_file(
+    async def download(
         self,
         file: BaseRemoteFile,
         output: Path,
