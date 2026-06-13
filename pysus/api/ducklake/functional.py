@@ -1,12 +1,11 @@
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
-from anyio import sleep, to_thread
-import httpx
 import boto3
-from botocore.config import Config
+import httpx
+from anyio import sleep, to_thread
 from botocore import UNSIGNED
-
+from botocore.config import Config
 from pysus.api import types
 
 
@@ -15,35 +14,29 @@ async def download_http(
     local_path: Path,
     callback: Callable[[int, int], None] | None = None,
 ) -> None:
-    """Download *remote_path* to *local_path* with HTTP streaming and retries.
-
-    Parameters
-    ----------
-    remote_path : str
-        Object key within the bucket.
-    local_path : Path
-        Local destination path.
-    callback : Callable[[int, int], None], optional
-        Progress callback receiving ``(downloaded, total)`` bytes.
-    """
     url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
     max_retries = 5
 
     for attempt in range(max_retries):
         try:
-            async with httpx.AsyncClient(follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                follow_redirects=True, verify=False
+            ) as client:
                 async with client.stream("GET", url) as r:
                     r.raise_for_status()
                     total = int(r.headers.get("Content-Length", 0))
                     downloaded = 0
+
                     with open(local_path, "wb") as f:
-                        async for chunk in r.aiter_bytes(chunk_size=1024 * 1024):
+                        async for chunk in r.aiter_bytes(
+                            chunk_size=1024 * 1024
+                        ):
                             await to_thread.run_sync(f.write, chunk)
                             downloaded += len(chunk)
                             if callback:
                                 callback(downloaded, total)
             return
-        except OSError as e:
+        except (OSError, httpx.HTTPStatusError) as e:
             if attempt < max_retries - 1:
                 await sleep(1)
             else:
@@ -57,7 +50,9 @@ async def download_s3(
     secret_key: str | None = None,
     callback: Callable[[int, int], None] | None = None,
 ) -> None:
-    """Download *remote_path* to *local_path* using boto3 with optional credentials.
+    """
+    Download *remote_path* to *local_path* using
+    boto3 with optional credentials.
 
     Parameters
     ----------
@@ -93,7 +88,7 @@ async def download_s3(
             client = boto3.client(**client_args)
             meta = client.head_object(Bucket=types.S3_BUCKET, Key=remote_path)
             return int(meta.get("ContentLength", 0))
-        except Exception:
+        except Exception:  # noqa
             return 0
 
     def _download(client_args, total_size: int):
@@ -119,7 +114,7 @@ async def download_s3(
             total_size = await to_thread.run_sync(_get_total_size, client_args)
             await to_thread.run_sync(_download, client_args, total_size)
             return
-        except Exception as e:
+        except Exception as e:  # noqa
             if attempt < max_retries - 1:
                 await sleep(1)
             else:
@@ -172,7 +167,7 @@ async def upload_s3(
             total_size = local_path.stat().st_size
             await to_thread.run_sync(_upload, client_args, total_size)
             return
-        except Exception as e:
+        except Exception as e:  # noqa
             if attempt < max_retries - 1:
                 await sleep(1)
             else:

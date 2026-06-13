@@ -14,7 +14,7 @@ This module provides the application-level models and data adapters required to 
 
 ## Architecture Overview
 
-The system separates the raw database management layer (Adapters) from the client wrapper layer (Client Models). 
+The system separates the raw database management layer (Adapters) from the client wrapper layer (Client Models).
 
 1. **Adapters (`BaseAdapter`)**: Track local and remote `.duckdb` target states, manage connections, handle S3 transfers, and expose scoped SQLAlchemy transaction sessions.
 2. **Client Components (`DuckLake`)**: Coordinate high-level actions, parse credential models, route queries, and handle collection loops.
@@ -32,6 +32,4 @@ from pysus.api.ducklake.client import DuckLake
 
 async with DuckLake() as dl:
     datasets = await dl.datasets()
-
-sia = datasets[4] # e.g., SIA
-files = await sia.query(state="SP", year=2026)
+```

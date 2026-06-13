@@ -4,8 +4,8 @@ Tracks only available datasets. File-level metadata lives in
 per-dataset ``catalog_<name>.db`` files defined in ``.dataset``.
 """
 
-from sqlalchemy import Column, Integer, Sequence, String
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Integer, Sequence, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -33,14 +33,16 @@ class Dataset(Base):
     __tablename__ = "datasets"
     __table_args__: tuple = ({"schema": "pysus"},)
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         Sequence("datasets_id_seq", schema="pysus"),
         primary_key=True,
     )
-    name = Column(String, nullable=False, unique=True, index=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
+    name: Mapped[str] = mapped_column(
+        String, nullable=False, unique=True, index=True
+    )
+    long_name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
 
     def __repr__(self):
         return self.name

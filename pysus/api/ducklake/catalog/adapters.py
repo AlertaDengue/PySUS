@@ -1,19 +1,19 @@
+import asyncio
+import os
 from abc import ABC
 from pathlib import Path
-import asyncio
 
 import httpx
 from anyio import to_thread
 from pydantic import BaseModel, SecretStr
-from sqlalchemy.engine import Engine
-from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.orm import sessionmaker, Session
-
 from pysus import CACHEPATH
 from pysus.api import types
-from pysus.api.ducklake.functional import download_s3, upload_s3
 from pysus.api.ducklake.catalog.orm.dataset import DatasetBase
+from pysus.api.ducklake.functional import download_http, upload_s3
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine, Result
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 
 class DuckLakeCredentials(BaseModel):
@@ -45,8 +45,20 @@ class BaseAdapter(ABC):
 
     def get_session(self) -> Session:
         if not self._session_factory:
-            raise RuntimeError("Database engine not initialized. Call connect() first.")
+            raise RuntimeError(
+                "Database engine not initialized. Call connect() first."
+            )
         return self._session_factory()
+
+    def sql(self, query: str, params: dict | None = None) -> Result:
+        if not self._engine:
+            raise RuntimeError(
+                "Database engine not initialized. Call connect() first."
+            )
+        with self._engine.connect() as conn:
+            if params:
+                return conn.execute(text(query), params)
+            return conn.exec_driver_sql(query)
 
     async def connect(self, force: bool = False) -> None:
         if self._engine and not force:
@@ -54,12 +66,38 @@ class BaseAdapter(ABC):
                 self._session_factory = sessionmaker(bind=self._engine)
             return
 
+        if force:
+            await self._download_catalog(
+                self.db_local,
+                str(self.db_remote),
+                force=True,
+            )
+            self._engine = await to_thread.run_sync(self.setup_engine)
+            self._session_factory = sessionmaker(bind=self._engine)
+            return
+
         await self._download_catalog(
             self.db_local,
             str(self.db_remote),
+            force=False,
         )
-        self._engine = await to_thread.run_sync(self.setup_engine)
-        self._session_factory = sessionmaker(bind=self._engine)
+        try:
+            self._engine = await to_thread.run_sync(self.setup_engine)
+            self._session_factory = sessionmaker(bind=self._engine)
+        except Exception:  # noqa
+            if self.db_local.exists():
+                try:
+                    os.remove(self.db_local)
+                except OSError:
+                    pass
+
+            await self._download_catalog(
+                self.db_local,
+                str(self.db_remote),
+                force=True,
+            )
+            self._engine = await to_thread.run_sync(self.setup_engine)
+            self._session_factory = sessionmaker(bind=self._engine)
 
     def setup_engine(
         self, access_key: str | None = None, secret_key: str | None = None
@@ -74,7 +112,10 @@ class BaseAdapter(ABC):
             conn.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS pysus;")
 
             has_pysus = conn.exec_driver_sql(
-                "SELECT 1 FROM information_schema.schemata WHERE schema_name = 'pysus'"
+                statement=(
+                    "SELECT 1 FROM information_schema.schemata "
+                    "WHERE schema_name = 'pysus'"
+                )
             ).fetchone()
 
             if has_pysus:
@@ -101,10 +142,12 @@ class BaseAdapter(ABC):
         DatasetBase.metadata.create_all(bind=engine)
         return engine
 
-    async def _download_catalog(self, local_path: Path, remote_path: str) -> None:
+    async def _download_catalog(
+        self, local_path: Path, remote_path: str, force: bool = False
+    ) -> None:
         url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
 
-        if local_path.exists():
+        if local_path.exists() and not force:
             try:
                 local_size = local_path.stat().st_size
             except OSError:
@@ -112,35 +155,28 @@ class BaseAdapter(ABC):
         else:
             local_size = -1
 
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            try:
-                head = await client.head(url)
+        remote_size = 0
+        if local_size != -1:
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                try:
+                    head = await client.head(url)
 
-                if head.status_code == 404:
+                    if head.status_code == 404:
+                        return
+
+                    head.raise_for_status()
+                    remote_size = int(head.headers.get("content-length", 0))
+                except httpx.HTTPStatusError:
                     return
+                except Exception:  # noqa
+                    remote_size = 0
 
-                head.raise_for_status()
-                remote_size = int(head.headers.get("content-length", 0))
-            except httpx.HTTPStatusError:
-                return
-            except Exception:
-                remote_size = 0
-
-        if remote_size == local_size:
+        if not force and remote_size == local_size and local_size != -1:
             return
 
-        access_key = (
-            self.credentials.access_key.get_secret_value() if self.credentials else None
-        )
-        secret_key = (
-            self.credentials.secret_key.get_secret_value() if self.credentials else None
-        )
-
-        await download_s3(
+        await download_http(
             remote_path=remote_path,
             local_path=local_path,
-            access_key=access_key,
-            secret_key=secret_key,
         )
 
     async def _upload_catalog(self) -> None:
@@ -195,20 +231,20 @@ class CatalogAdapter(BaseAdapter):
     def __init__(self, engine=None, **data) -> None:
         super().__init__(engine=engine, **data)
         self.db_local: Path = self.cache_dir / "catalog.duckdb"
-        self.db_remote: str = "public/catalog.duckdb"
+        self.db_remote: Path = Path("public/catalog.duckdb")
 
 
 class DatasetAdapter(BaseAdapter):
-    def __init__(self, name: str, engine=None, **data) -> None:
+    def __init__(self, name: str, dataset_id: int, engine=None, **data) -> None:
         super().__init__(engine=engine, **data)
         self.dataset_name: str = name
         self.db_local: Path = self.cache_dir / f"catalog_{name}.duckdb"
-        self.db_remote: str = f"datasets/catalog_{name}.duckdb"
+        self.db_remote: Path = Path(f"datasets/catalog_{name}.duckdb")
+        self.dataset_id = dataset_id
 
 
 class ColumnsAdapter(BaseAdapter):
     def __init__(self, engine=None, **data) -> None:
         super().__init__(engine=engine, **data)
-        self.db_local: Path = self.cache_dir / "columns.duckdb"
-        self.db_remote: str = "public/columns.duckdb"
-
+        self.db_local: Path = self.cache_dir / "catalog_columns.duckdb"
+        self.db_remote: Path = Path("public/catalog_columns.duckdb")

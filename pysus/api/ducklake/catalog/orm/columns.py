@@ -1,5 +1,5 @@
+from sqlalchemy import Boolean, Column, Index, Integer, Sequence, String
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, Integer, Sequence, String, Boolean, Index
 
 
 class ColumnsBase(DeclarativeBase):
@@ -9,7 +9,9 @@ class ColumnsBase(DeclarativeBase):
 class ColumnDefinition(ColumnsBase):
     __tablename__ = "dataset_columns"
 
-    id = Column(Integer, Sequence("columns_id_seq", schema="pysus"), primary_key=True)
+    id = Column(
+        Integer, Sequence("columns_id_seq", schema="pysus"), primary_key=True
+    )
     dataset_id = Column(Integer, nullable=False, index=True)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)

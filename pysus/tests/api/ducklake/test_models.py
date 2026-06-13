@@ -6,9 +6,9 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
-from pysus.api.ducklake.catalog.orm.dataset import Dataset
 from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
 from pysus.api.ducklake.catalog.orm.dataset import Group
+from pysus.api.ducklake.catalog.orm.default import Dataset
 from pysus.api.ducklake.models import DuckDataset, DuckGroup, File
 
 # ---------------------------------------------------------------------------

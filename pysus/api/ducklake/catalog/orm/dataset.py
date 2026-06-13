@@ -1,17 +1,18 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
 from sqlalchemy import (
+    BigInteger,
     Column,
+    DateTime,
+    ForeignKey,
+    Index,
     Integer,
     Sequence,
     String,
-    ForeignKey,
-    BigInteger,
-    Index,
-    DateTime,
     Table,
 )
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class DatasetBase(DeclarativeBase):
@@ -34,13 +35,17 @@ class Group(DatasetBase):
         {"schema": "pysus"},
     )
 
-    id = Column(Integer, Sequence("groups_id_seq", schema="pysus"), primary_key=True)
-    name = Column(String, nullable=False)
-    dataset_id = Column(Integer, nullable=False, index=True)
-    long_name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
+    id: Mapped[int] = mapped_column(
+        Integer, Sequence("groups_id_seq", schema="pysus"), primary_key=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    dataset_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    long_name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    files = relationship("File", back_populates="group", cascade="all, delete-orphan")
+    files: Mapped[list["File"]] = relationship(
+        "File", back_populates="group", cascade="all, delete-orphan"
+    )
 
 
 class File(DatasetBase):
@@ -48,7 +53,14 @@ class File(DatasetBase):
     __table_args__ = (
         Index("ix_files_dataset_group", "dataset_id", "group_id"),
         Index("ix_files_temporal", "year", "month"),
-        Index("ix_files_lookup", "dataset_id", "group_id", "year", "month", "state"),
+        Index(
+            "ix_files_lookup",
+            "dataset_id",
+            "group_id",
+            "year",
+            "month",
+            "state",
+        ),
         {"schema": "pysus"},
     )
 
@@ -57,20 +69,32 @@ class File(DatasetBase):
     )
     dataset_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     group_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("pysus.dataset_groups.id"), nullable=True, index=True
+        Integer,
+        ForeignKey("pysus.dataset_groups.id"),
+        nullable=True,
+        index=True,
     )
     path: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     rows: Mapped[int] = mapped_column(Integer, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=True)
     modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    origin_modified: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    origin_modified: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
     origin_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     origin_path: Mapped[str] = mapped_column(String, nullable=False)
-    sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    sha256: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     year: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    month: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    state: Mapped[str | None] = mapped_column(String(2), nullable=True, index=True)
+    month: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True
+    )
+    state: Mapped[str | None] = mapped_column(
+        String(2), nullable=True, index=True
+    )
 
-    group: Mapped[Optional["Group"]] = relationship("Group", back_populates="files")
-
+    group: Mapped[Optional["Group"]] = relationship(
+        "Group", back_populates="files"
+    )

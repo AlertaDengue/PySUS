@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pysus.api.ducklake.catalog.orm.dataset import Dataset as PerDataset
 from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
+from pysus.api.ducklake.catalog.orm.default import Dataset as PerDataset
 from pysus.api.ducklake.client import DuckLake, DuckLakeCredentials
 from pysus.api.ducklake.models import DuckDataset, File
 
@@ -40,12 +40,16 @@ class TestDuckLake:
     async def test_ducklake_catalog_path(self, tmp_path):
         with patch("pysus.api.ducklake.client.CACHEPATH", tmp_path):
             client = DuckLake()
-            assert client.catalog_path == tmp_path / "ducklake" / "catalog.duckdb"
+            assert (
+                client.catalog_path == tmp_path / "ducklake" / "catalog.duckdb"
+            )
 
     @pytest.mark.asyncio
     async def test_ducklake_catalog_url(self):
         client = DuckLake()
-        expected = "https://nbg1.your-objectstorage.com/pysus/public/catalog.duckdb"
+        expected = (
+            "https://nbg1.your-objectstorage.com/pysus/public/catalog.duckdb"
+        )
         assert client._catalog_url == expected
 
     @pytest.mark.asyncio
@@ -132,7 +136,9 @@ class TestDuckLake:
 
 class TestDuckLakeDatasets:
     @pytest.mark.asyncio
-    async def test_datasets_creates_session_and_returns_duckdatasets(self, tmp_path):
+    async def test_datasets_creates_session_and_returns_duckdatasets(
+        self, tmp_path
+    ):
         with patch("pysus.api.ducklake.client.CACHEPATH", tmp_path):
             client = DuckLake()
 
@@ -171,7 +177,9 @@ class TestDuckLakeDatasets:
         async def _connect(*args, **kwargs):
             client._Session = MagicMock(return_value=mock_session)
 
-        with patch.object(DuckLake, "connect", new=AsyncMock(side_effect=_connect)):
+        with patch.object(
+            DuckLake, "connect", new=AsyncMock(side_effect=_connect)
+        ):
 
             def run_sync(fn, *args, **kwargs):
                 return fn()
@@ -197,7 +205,9 @@ class TestDuckLakeSetupEngine:
             result = client._setup_engine()
 
             calls = [str(c) for c in mock_conn.exec_driver_sql.call_args_list]
-            assert any("SET search_path" in c and "pysus,main" in c for c in calls)
+            assert any(
+                "SET search_path" in c and "pysus,main" in c for c in calls
+            )
             assert result is mock_engine
 
     def test_setup_engine_no_pysus_schema(self):
@@ -226,13 +236,19 @@ class TestDuckLakeSetupEngine:
             mock_conn.exec_driver_sql().fetchone.return_value = None
 
             client = DuckLake(
-                credentials=DuckLakeCredentials(access_key="ak", secret_key="sk")
+                credentials=DuckLakeCredentials(
+                    access_key="ak", secret_key="sk"
+                )
             )
             client._setup_engine()
 
             calls = [str(c) for c in mock_conn.exec_driver_sql.call_args_list]
-            s3_access = any("s3_access_key_id" in c and "ak" in c for c in calls)
-            s3_secret = any("s3_secret_access_key" in c and "sk" in c for c in calls)
+            s3_access = any(
+                "s3_access_key_id" in c and "ak" in c for c in calls
+            )
+            s3_secret = any(
+                "s3_secret_access_key" in c and "sk" in c for c in calls
+            )
             assert s3_access
             assert s3_secret
 
@@ -272,7 +288,9 @@ class TestDuckLakeConnect:
                 "pysus.api.ducklake.client.to_thread.run_sync",
                 side_effect=run_sync,
             ):
-                with patch.object(client, "_setup_engine", return_value=MagicMock()):
+                with patch.object(
+                    client, "_setup_engine", return_value=MagicMock()
+                ):
                     await client.connect()
                     mock_dl.assert_awaited_once_with(
                         client._catalog_local,
@@ -302,7 +320,9 @@ class TestDuckLakeDownload:
             "pysus.api.ducklake.client.httpx.AsyncClient",
             return_value=mock_client,
         )
-        sleep_patcher = patch("pysus.api.ducklake.client.sleep", new_callable=AsyncMock)
+        sleep_patcher = patch(
+            "pysus.api.ducklake.client.sleep", new_callable=AsyncMock
+        )
 
         first_stream_cm = MagicMock()
         first_resp = MagicMock()
@@ -351,7 +371,9 @@ class TestDuckLakeDownload:
             "pysus.api.ducklake.client.httpx.AsyncClient",
             return_value=mock_client,
         )
-        sleep_patcher = patch("pysus.api.ducklake.client.sleep", new_callable=AsyncMock)
+        sleep_patcher = patch(
+            "pysus.api.ducklake.client.sleep", new_callable=AsyncMock
+        )
 
         stream_cm = MagicMock()
         resp = MagicMock()
@@ -556,8 +578,13 @@ class TestDuckLakeDownloadFile:
     @pytest.mark.asyncio
     async def test_download_file_invalid_type_raises(self):
         client = DuckLake()
-        with pytest.raises(ValueError, match="FTP File was not properly instantiated"):
-            await client.download("not-a-file", Path("/tmp/test"))  # type: ignore
+        with pytest.raises(
+            ValueError, match="FTP File was not properly instantiated"
+        ):
+            await client.download(
+                "not-a-file",
+                Path("/tmp/test"),
+            )  # type: ignore
 
     @pytest.mark.asyncio
     async def test_download_file_valid(self, tmp_path):
@@ -597,7 +624,9 @@ class TestDuckLakeUploadCatalog:
         ds._catalog_local = local_db
         ds._catalog_name = "catalog_test.duckdb"
 
-        with patch.object(DuckLake, "datasets", new=AsyncMock(return_value=[ds])):
+        with patch.object(
+            DuckLake, "datasets", new=AsyncMock(return_value=[ds])
+        ):
             await client._upload_catalog()
             client._s3_client.upload_file.assert_called_once_with(
                 str(local_db), client.bucket, ds._catalog_name
@@ -615,6 +644,8 @@ class TestDuckLakeUploadCatalog:
         ds._catalog_local = nonexistent
         ds._catalog_name = "catalog_test.duckdb"
 
-        with patch.object(DuckLake, "datasets", new=AsyncMock(return_value=[ds])):
+        with patch.object(
+            DuckLake, "datasets", new=AsyncMock(return_value=[ds])
+        ):
             await client._upload_catalog()
             client._s3_client.upload_file.assert_not_called()

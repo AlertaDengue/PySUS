@@ -1,12 +1,8 @@
 """Tests for DuckLake catalog ORM models."""
 
-from pysus.api.ducklake.catalog.orm.dataset import (
-    ColumnDefinition,
-    Dataset,
-    File,
-    Group,
-    file_columns,
-)
+from pysus.api.ducklake.catalog.orm.columns import ColumnDefinition
+from pysus.api.ducklake.catalog.orm.dataset import File, Group, file_columns
+from pysus.api.ducklake.catalog.orm.default import Dataset
 from pysus.api.ducklake.catalog.orm.default import Dataset as DefaultDataset
 
 

@@ -11,114 +11,63 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from anyio import to_thread
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
-from .catalog.adapters import DatasetAdapter
-from .catalog.orm.default import Dataset
-from .catalog.orm.dataset import (
-    File as CatalogFile,
-    Group,
-)
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
-from sqlalchemy import select, orm
+from sqlalchemy import or_, orm, select
 
-if TYPE_CHECKING:  # pragma: no cover
+from .catalog.adapters import DatasetAdapter
+from .catalog.orm.dataset import File as CatalogFile
+from .catalog.orm.dataset import Group
+from .catalog.orm.default import Dataset
+
+if TYPE_CHECKING:
     from .client import DuckLake
 
 
 class File(BaseRemoteFile):
-    """A remote file in the DuckLake catalog with download and verification.
-
-    Parameters
-    ----------
-    record : CatalogFile
-        The underlying ORM record.
-    type : str, optional
-        File type identifier (default ``"remote"``).
-    dataset : Any
-        The parent dataset object.
-    group : Any, optional
-        The parent group object, if any.
-    """
-
-    record: CatalogFile = Field(exclude=True)
     group: Optional["DuckGroup"] = Field(default=None, exclude=True)
+
+    _record: CatalogFile = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
         record = data.pop("record")
         group = data.pop("group", None)
+
         super().__init__(
             path=Path(record.path),
             type=record.type or "remote",
-            record=record,  # type: ignore[call-arg]
             group=group,
             **data,
         )
+        self._record = record
+
+    @property
+    def record(self) -> CatalogFile:
+        return self._record
 
     @property
     def basename(self) -> str:
-        """Return the file name without directory components.
-
-        Returns
-        -------
-        str
-            The base file name.
-        """
         return self.path.name
 
     @property
     def extension(self) -> str:
-        """Return the file extension including the leading dot.
-
-        Returns
-        -------
-        str
-            File extension (e.g. ``'.csv'``).
-        """
         return self.path.suffix
 
     @property
     def size(self) -> int:
-        """Return the file size in bytes.
-
-        Returns
-        -------
-        int
-            File size in bytes.
-        """
         return self.record.size
 
     @property
     def modify(self) -> datetime:
-        """Return the last-modified timestamp.
-
-        Returns
-        -------
-        datetime
-            The last modification timestamp.
-        """
         return self.record.modified
 
     @property
     def rows(self) -> int:
-        """Return the number of rows in the file.
-
-        Returns
-        -------
-        int
-            Row count.
-        """
         return self.record.rows
 
     @property
     def sha256(self) -> str | None:
-        """Return the SHA-256 hash of the file, if available.
-
-        Returns
-        -------
-        str or None
-            SHA-256 hex digest, or None if not recorded.
-        """
         return self.record.sha256
 
     async def _download(
@@ -126,29 +75,11 @@ class File(BaseRemoteFile):
         output: Path | None = None,
         callback: Callable[[int, int], None] | None = None,
     ) -> Path:
-        """Download the file from object storage to the given output path."""
         if not output:
             output = CACHEPATH / self.name
-
-        return await self.client.download(
-            self,
-            output,
-            callback=callback,
-        )
+        return await self.client.download(self, output, callback=callback)
 
     async def verify(self, path: Path) -> bool:
-        """Verify the file matches the recorded SHA-256 hash.
-
-        Parameters
-        ----------
-        path : Path
-            Path to the downloaded file on disk.
-
-        Returns
-        -------
-        bool
-            True if the hash matches or no hash is recorded, False otherwise.
-        """
         if not self.sha256:
             return True
 
@@ -166,14 +97,24 @@ class File(BaseRemoteFile):
 class DuckDataset(BaseRemoteDataset):
     record: "Dataset" = Field(exclude=True)
     client: "DuckLake" = Field(exclude=True)
-    adapter: "DatasetAdapter" = Field(exclude=True)
+    border: "DatasetAdapter" = Field(exclude=True)
     update_on_close: bool = Field(default=False, exclude=True)
 
     def __init__(self, **data) -> None:
+        if "adapter" in data and "border" not in data:
+            data["border"] = data.pop("adapter")
         super().__init__(**data)
 
-    def __repr__(self) -> str:
-        return self.name.upper()
+    def __str__(self) -> str:
+        return self.record.name
+
+    @property
+    def adapter(self) -> "DatasetAdapter":
+        return self.border
+
+    @property
+    def id(self) -> int:
+        return int(self.adapter.dataset_id)
 
     @property
     def name(self) -> str:
@@ -187,13 +128,9 @@ class DuckDataset(BaseRemoteDataset):
     def description(self) -> str:
         return str(self.record.description)
 
-    async def connect(
-        self,
-        force: bool = False,
-    ) -> None:
+    async def connect(self, force: bool = False) -> None:
         if self not in self.client._datasets:
             self.client._datasets.append(self)
-
         await self.adapter.connect(force=force)
 
     async def close(self, update_catalog: bool | None = None):
@@ -204,32 +141,44 @@ class DuckDataset(BaseRemoteDataset):
 
     async def query(
         self,
-        group: str | None = None,
-        state: str | None = None,
-        year: int | None = None,
-        month: int | None = None,
+        group: str | list[str] | None = None,
+        state: str | list[str] | None = None,
+        year: int | list[int] | None = None,
+        month: int | list[int] | None = None,
     ) -> list[File]:
+        def _to_list(val: Any) -> list[Any] | None:
+            if val is None:
+                return None
+            return val if isinstance(val, list) else [val]
+
+        groups = _to_list(group)
+        states = _to_list(state)
+        years = _to_list(year)
+        months = _to_list(month)
+
         def _query() -> list[CatalogFile]:
             with self.adapter.get_session() as session:
                 stmt = select(CatalogFile).filter(
-                    CatalogFile.dataset_id == self.record.id,
+                    CatalogFile.dataset_id == self.id,
                 )
 
-                if group:
+                if groups:
                     stmt = (
                         stmt.join(CatalogFile.group)
                         .options(orm.contains_eager(CatalogFile.group))
-                        .filter(Group.name.ilike(group))
+                        .filter(or_(*[Group.name.ilike(g) for g in groups]))
                     )
                 else:
                     stmt = stmt.options(orm.joinedload(CatalogFile.group))
 
-                if state:
-                    stmt = stmt.filter(CatalogFile.state == state.upper())
-                if year:
-                    stmt = stmt.filter(CatalogFile.year == year)
-                if month:
-                    stmt = stmt.filter(CatalogFile.month == month)
+                if states:
+                    stmt = stmt.filter(
+                        CatalogFile.state.in_([s.upper() for s in states])
+                    )
+                if years:
+                    stmt = stmt.filter(CatalogFile.year.in_(years))
+                if months:
+                    stmt = stmt.filter(CatalogFile.month.in_(months))
 
                 results = session.scalars(stmt).all()
                 session.expunge_all()
@@ -245,13 +194,13 @@ class DuckDataset(BaseRemoteDataset):
                 stmt = (
                     select(Group)
                     .options(orm.joinedload(Group.files))
-                    .filter(Group.dataset_id == self.record.id)
+                    .filter(Group.dataset_id == self.id)
                 )
                 groups = session.scalars(stmt).all()
 
                 ungrouped = session.scalars(
                     select(CatalogFile).filter(
-                        CatalogFile.dataset_id == self.record.id,
+                        CatalogFile.dataset_id == self.id,
                         CatalogFile.group_id.is_(None),
                     )
                 ).all()
@@ -261,15 +210,14 @@ class DuckDataset(BaseRemoteDataset):
 
         async with self.adapter:
             groups, files = await to_thread.run_sync(_fetch)
-
-            items: list[Union[DuckGroup, File]] = []
+            items: list[DuckGroup | File] = []
 
             if groups:
-                items.extend([DuckGroup(record=g, dataset=self) for g in groups])
-
+                items.extend(
+                    [DuckGroup(record=g, dataset=self) for g in groups]
+                )
             if files:
                 items.extend([File(record=f, dataset=self) for f in files])
-
             return items
 
     async def __aenter__(self):
@@ -281,60 +229,27 @@ class DuckDataset(BaseRemoteDataset):
 
 
 class DuckGroup(BaseRemoteGroup):
-    """A group of related files within a DuckLake dataset.
-
-    Parameters
-    ----------
-    record : Group
-        The underlying ORM record.
-    dataset : DuckDataset
-        The parent dataset instance.
-    """
-
     record: Group = Field(exclude=True)
     dataset: DuckDataset = Field(exclude=True)
 
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def name(self) -> str:
-        """Return the short name of the group.
-
-        Returns
-        -------
-        str
-            The group short name.
-        """
         return str(self.record.name)
 
     @property
     def long_name(self) -> str:
-        """Return the human-readable name of the group.
-
-        Returns
-        -------
-        str
-            The group display name, falling back to the short name.
-        """
         return str(self.record.long_name)
 
     @property
     def description(self) -> str:
-        """Return the description of the group.
-
-        Returns
-        -------
-        str
-            The group description, or an empty string if unavailable.
-        """
         return str(self.record.description)
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
-        """Fetch the list of files belonging to this group."""
         files: list[BaseRemoteFile] = [
-            File(
-                record=f,
-                group=self,
-                dataset=self.dataset,
-            )
+            File(record=f, group=self, dataset=self.dataset)
             for f in self.record.files
         ]
         return files

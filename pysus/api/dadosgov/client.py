@@ -265,7 +265,7 @@ class DadosGov(BaseRemoteClient):
             client=self,
         )
 
-    async def _download_file(
+    async def download(
         self,
         file: BaseRemoteFile,
         output: pathlib.Path,

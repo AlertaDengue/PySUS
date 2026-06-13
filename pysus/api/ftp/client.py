@@ -109,7 +109,7 @@ class FTP(BaseRemoteClient):
         def _connect():
             if self.ftp is None:
                 self._ftp = FTPLib(self.host, timeout=self.timeout)
-                self.ftp.login()
+                self._ftp.login()
 
         await to_thread.run_sync(_connect)
 
@@ -171,7 +171,7 @@ class FTP(BaseRemoteClient):
 
         return [d(client=self) for d in AVAILABLE_DATABASES]
 
-    async def _download_file(
+    async def download(
         self,
         file: BaseRemoteFile,
         output: pathlib.Path,
