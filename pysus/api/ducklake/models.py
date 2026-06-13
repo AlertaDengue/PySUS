@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from anyio import to_thread
-from pydantic import Field, PrivateAttr
+from pydantic import Field
 from pysus import CACHEPATH
 from .catalog.adapters import DatasetAdapter
 from .catalog.orm.default import Dataset
@@ -164,9 +164,10 @@ class File(BaseRemoteFile):
 
 
 class DuckDataset(BaseRemoteDataset):
-    record: Dataset = Field(exclude=True)
+    record: "Dataset" = Field(exclude=True)
     client: "DuckLake" = Field(exclude=True)
-    adapter: DatasetAdapter = Field(exclude=True)
+    adapter: "DatasetAdapter" = Field(exclude=True)
+    update_on_close: bool = Field(default=False, exclude=True)
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
@@ -180,11 +181,11 @@ class DuckDataset(BaseRemoteDataset):
 
     @property
     def long_name(self) -> str:
-        return ""
+        return str(self.record.long_name)
 
     @property
     def description(self) -> str:
-        return ""
+        return str(self.record.description)
 
     async def connect(
         self,
@@ -195,8 +196,11 @@ class DuckDataset(BaseRemoteDataset):
 
         await self.adapter.connect(force=force)
 
-    async def close(self, update_catalog: bool = False):
-        await self.adapter.close(update=update_catalog)
+    async def close(self, update_catalog: bool | None = None):
+        should_update = (
+            self.update_on_close if update_catalog is None else update_catalog
+        )
+        await self.adapter.close(update=should_update)
 
     async def query(
         self,
@@ -205,23 +209,21 @@ class DuckDataset(BaseRemoteDataset):
         year: int | None = None,
         month: int | None = None,
     ) -> list[File]:
-        await self.adapter.connect()
-
         def _query() -> list[CatalogFile]:
             with self.adapter.get_session() as session:
-                stmt = (
-                    select(CatalogFile)
-                    .filter(CatalogFile.dataset_id == self.record.id)
-                    .options(
-                        orm.joinedload(CatalogFile.group),
-                    )
+                stmt = select(CatalogFile).filter(
+                    CatalogFile.dataset_id == self.record.id,
                 )
+
                 if group:
                     stmt = (
                         stmt.join(CatalogFile.group)
                         .options(orm.contains_eager(CatalogFile.group))
                         .filter(Group.name.ilike(group))
                     )
+                else:
+                    stmt = stmt.options(orm.joinedload(CatalogFile.group))
+
                 if state:
                     stmt = stmt.filter(CatalogFile.state == state.upper())
                 if year:
@@ -233,12 +235,11 @@ class DuckDataset(BaseRemoteDataset):
                 session.expunge_all()
                 return list(results)
 
-        records: list[CatalogFile] = await to_thread.run_sync(_query)
-        return [File(record=r, dataset=self) for r in records]
+        async with self.adapter:
+            records: list[CatalogFile] = await to_thread.run_sync(_query)
+            return [File(record=r, dataset=self) for r in records]
 
     async def _fetch_content(self) -> list[Union["DuckGroup", File]]:
-        await self.adapter.connect()
-
         def _fetch():
             with self.adapter.get_session() as session:
                 stmt = (
@@ -258,17 +259,25 @@ class DuckDataset(BaseRemoteDataset):
                 session.expunge_all()
                 return list(groups), list(ungrouped)
 
-        groups, files = await to_thread.run_sync(_fetch)
+        async with self.adapter:
+            groups, files = await to_thread.run_sync(_fetch)
 
-        items: list[Union["DuckGroup", File]] = []
+            items: list[Union[DuckGroup, File]] = []
 
-        if groups:
-            items.extend([DuckGroup(record=g, dataset=self) for g in groups])
+            if groups:
+                items.extend([DuckGroup(record=g, dataset=self) for g in groups])
 
-        if files:
-            items.extend([File(record=f, dataset=self) for f in files])
+            if files:
+                items.extend([File(record=f, dataset=self) for f in files])
 
-        return items
+            return items
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.close(update_catalog=None)
 
 
 class DuckGroup(BaseRemoteGroup):
@@ -294,7 +303,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group short name.
         """
-        return self.record.name  # type: ignore
+        return str(self.record.name)
 
     @property
     def long_name(self) -> str:
@@ -305,7 +314,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group display name, falling back to the short name.
         """
-        return self.record.long_name or self.name  # type: ignore
+        return str(self.record.long_name)
 
     @property
     def description(self) -> str:
@@ -316,7 +325,7 @@ class DuckGroup(BaseRemoteGroup):
         str
             The group description, or an empty string if unavailable.
         """
-        return self.record.description  # type: ignore
+        return str(self.record.description)
 
     async def _fetch_files(self) -> list[BaseRemoteFile]:
         """Fetch the list of files belonging to this group."""

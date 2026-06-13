@@ -1,5 +1,6 @@
 from abc import ABC
 from pathlib import Path
+import asyncio
 
 import httpx
 from anyio import to_thread
@@ -12,6 +13,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from pysus import CACHEPATH
 from pysus.api import types
 from pysus.api.ducklake.functional import download_s3, upload_s3
+from pysus.api.ducklake.catalog.orm.dataset import DatasetBase
 
 
 class DuckLakeCredentials(BaseModel):
@@ -25,12 +27,17 @@ class BaseAdapter(ABC):
     db_remote: Path
 
     def __init__(
-        self, engine=None, credentials: DuckLakeCredentials | None = None, **data
+        self,
+        engine=None,
+        credentials: DuckLakeCredentials | None = None,
+        update_on_close: bool = False,
+        **data,
     ) -> None:
         self._engine = engine
         self._session_factory = None
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.credentials = credentials
+        self.update_on_close = update_on_close
 
     @property
     def remote_url(self) -> str:
@@ -64,6 +71,7 @@ class BaseAdapter(ABC):
 
         with engine.connect() as conn:
             conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
+            conn.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS pysus;")
 
             has_pysus = conn.exec_driver_sql(
                 "SELECT 1 FROM information_schema.schemata WHERE schema_name = 'pysus'"
@@ -90,6 +98,7 @@ class BaseAdapter(ABC):
 
             conn.commit()
 
+        DatasetBase.metadata.create_all(bind=engine)
         return engine
 
     async def _download_catalog(self, local_path: Path, remote_path: str) -> None:
@@ -106,8 +115,14 @@ class BaseAdapter(ABC):
         async with httpx.AsyncClient(follow_redirects=True) as client:
             try:
                 head = await client.head(url)
+
+                if head.status_code == 404:
+                    return
+
                 head.raise_for_status()
                 remote_size = int(head.headers.get("content-length", 0))
+            except httpx.HTTPStatusError:
+                return
             except Exception:
                 remote_size = 0
 
@@ -153,6 +168,28 @@ class BaseAdapter(ABC):
             self._engine = None
             self._session_factory = None
 
+    def __del__(self) -> None:
+        if not hasattr(self, "_engine") or not self._engine:
+            return
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                loop.create_task(self.close(update=False))
+        except RuntimeError:
+            try:
+                asyncio.run(self.close(update=False))
+            except Exception:  # noqa
+                pass
+        except Exception:  # noqa
+            pass
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.close(update=self.update_on_close)
+
 
 class CatalogAdapter(BaseAdapter):
     def __init__(self, engine=None, **data) -> None:
@@ -174,3 +211,4 @@ class ColumnsAdapter(BaseAdapter):
         super().__init__(engine=engine, **data)
         self.db_local: Path = self.cache_dir / "columns.duckdb"
         self.db_remote: str = "public/columns.duckdb"
+
