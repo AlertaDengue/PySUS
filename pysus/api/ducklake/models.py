@@ -97,7 +97,7 @@ class File(BaseRemoteFile):
 class DuckDataset(BaseRemoteDataset):
     record: "Dataset" = Field(exclude=True)
     client: "DuckLake" = Field(exclude=True)
-    border: "DatasetAdapter" = Field(exclude=True)
+    border: Any = Field(exclude=True)
     update_on_close: bool = Field(default=False, exclude=True)
 
     def __init__(self, **data) -> None:
@@ -143,12 +143,14 @@ class DuckDataset(BaseRemoteDataset):
         self,
         group: str | list[str] | None = None,
         state: str | list[str] | None = None,
-        year: int | list[int] | None = None,
-        month: int | list[int] | None = None,
+        year: int | list[int] | range | None = None,
+        month: int | list[int] | range | None = None,
     ) -> list[File]:
         def _to_list(val: Any) -> list[Any] | None:
             if val is None:
                 return None
+            if isinstance(val, range):
+                return list(val)
             return val if isinstance(val, list) else [val]
 
         groups = _to_list(group)

@@ -1,14 +1,9 @@
-import builtins
-from unittest.mock import patch
-
 from pysus.api.metadata.models import (
     Column,
     Dataset,
     DatasetGroup,
     File,
     FileMeta,
-    lookup_column_meta,
-    pick_description,
 )
 from pysus.api.metadata.report import Columns, Footer, Header
 from pysus.api.types import VARCHAR
@@ -28,48 +23,17 @@ class TestReportClasses:
         assert isinstance(f, Footer)
 
 
-class TestLookupColumnMeta:
-    def test_found_returns_dict(self):
-        meta = lookup_column_meta("ABAND")
-        assert meta is not None
-        assert isinstance(meta, dict)
-
-    def test_not_found_returns_none(self):
-        meta = lookup_column_meta("NONEXISTENT_COLUMN_XYZ")
-        assert meta is None
-
-    def test_import_error_returns_none(self):
-        with patch.object(
-            builtins, "__import__", side_effect=ImportError("mock")
-        ):
-            result = lookup_column_meta("ABAND")
-            assert result is None
-
-
-class TestPickDescription:
-    def test_none_meta_returns_empty(self):
-        assert pick_description(None) == ""
-
-    def test_non_empty_value_returns_first_value(self):
-        meta = {"sinan": "Some description"}
-        assert pick_description(meta) == "Some description"
-
-    def test_empty_dict_returns_empty(self):
-        assert pick_description({}) == ""
-
-    def test_all_empty_values_returns_empty(self):
-        meta = {"sinan": "", "sih": ""}
-        assert pick_description(meta) == ""
-
-
 class TestColumnFromSchema:
     def test_from_schema_creates_column(self):
-        col = Column.from_schema("ABAND", VARCHAR)
+        col = Column.from_schema(
+            "ABAND", VARCHAR, description="Abandonment info"
+        )
         assert isinstance(col, Column)
         assert col.name == "ABAND"
         assert col.dtype == VARCHAR
+        assert col.description == "Abandonment info"
 
-    def test_from_schema_unknown_column(self):
+    def test_from_schema_default_description(self):
         col = Column.from_schema("NONEXISTENT_COLUMN_XYZ", VARCHAR)
         assert col.name == "NONEXISTENT_COLUMN_XYZ"
         assert col.description == ""

@@ -239,7 +239,7 @@ class DatasetAdapter(BaseAdapter):
         super().__init__(engine=engine, **data)
         self.dataset_name: str = name
         self.db_local: Path = self.cache_dir / f"catalog_{name}.duckdb"
-        self.db_remote: Path = Path(f"datasets/catalog_{name}.duckdb")
+        self.db_remote: Path = Path(f"public/catalog_{name}.duckdb")
         self.dataset_id = dataset_id
 
 

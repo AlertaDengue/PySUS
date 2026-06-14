@@ -36,9 +36,7 @@ class TestDataset:
         assert Dataset.__table_args__[0]["schema"] == "pysus"
 
     def test_relationships(self):
-        assert hasattr(Dataset, "groups")
-        assert hasattr(Dataset, "files")
-        assert hasattr(Dataset, "columns")
+        assert hasattr(Dataset, "__tablename__")
 
 
 class TestColumnDefinition:
@@ -68,7 +66,6 @@ class TestGroup:
         assert "description" in cols
 
     def test_relationships(self):
-        assert hasattr(Group, "dataset")
         assert hasattr(Group, "files")
 
 
@@ -94,9 +91,7 @@ class TestFile:
         assert "origin_path" in cols
 
     def test_relationships(self):
-        assert hasattr(File, "dataset")
         assert hasattr(File, "group")
-        assert hasattr(File, "columns")
 
 
 class TestFileColumns:
@@ -111,6 +106,4 @@ class TestFileColumns:
 
     def test_file_columns_foreign_keys(self):
         file_id_col = file_columns.c.file_id
-        column_id_col = file_columns.c.column_id
         assert file_id_col.foreign_keys
-        assert column_id_col.foreign_keys

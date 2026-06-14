@@ -8,12 +8,12 @@ and hospitalisation records (CIHA).
 """
 
 import asyncio
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
 from pysus.api import types
 from pysus.api.client import PySUS
-from tqdm import tqdm
+from tqdm.asyncio import tqdm
 
 __all__ = [
     "sinan",
@@ -57,10 +57,9 @@ def _fetch_data(
     month : int | list[int], optional
         Month or list of months to fetch.
     show_progress : bool, optional
-        Whether to display a tqdm progress bar during download. Default is True.
+        Whether to display a tqdm progress bar during download.
     as_dataframe : bool, optional
         Whether to concatenate and return the data as a pandas DataFrame.
-        Default is False.
     **kwargs
         Additional arguments forwarded to :meth:`PySUS.read_parquet`.
 
@@ -71,48 +70,41 @@ def _fetch_data(
         as_dataframe is True, returns a concatenated DataFrame.
     """
 
-    async def _fetch():
-
+    async def _fetch() -> list[str] | pd.DataFrame:
         async with PySUS() as pysus:
-            years = [year] if isinstance(year, int) else (year or [None])
-            months = [month] if isinstance(month, int) else (month or [None])
+            files = await pysus.query(
+                dataset=dataset,
+                group=group,
+                state=state,
+                year=year,
+                month=month,
+            )
 
-            files = []
-            for y in years:
-                for m in months:
-                    files.extend(
-                        await pysus.query(
-                            dataset=dataset,
-                            group=group,
-                            state=state,
-                            year=y,
-                            month=m,
-                        )
-                    )
+            if not files:
+                return pd.DataFrame() if as_dataframe else cast(list[str], [])
 
-            paths = []
+            sem = asyncio.Semaphore(3)
+
+            async def _throttled_download(f):
+                async with sem:
+                    return await pysus.download(f)
+
+            tasks = [_throttled_download(f) for f in files]
+
             if show_progress:
-                for file in tqdm(
-                    files,
+                downloaded_files = await tqdm.gather(
+                    *tasks,
                     desc=f"Downloading {dataset}",
                     unit="file",
-                ):
-                    f = await pysus.download(file)
-                    paths.append(str(f.path))
+                )
             else:
-                for file in files:
-                    f = await pysus.download(file)
-                    paths.append(str(f.path))
+                downloaded_files = await asyncio.gather(*tasks)
+
+            paths: list[str] = [str(f.path) for f in downloaded_files]
 
             if as_dataframe:
-                return (
-                    pysus.read_parquet(
-                        paths,
-                        **kwargs,
-                    ).df()
-                    if paths
-                    else pd.DataFrame()
-                )
+                res = pysus.read_parquet(paths, **kwargs).df()
+                return cast(pd.DataFrame, res)
 
             return paths
 
@@ -132,9 +124,11 @@ def _fetch_data(
                 "Install it with: pip install nest_asyncio"
             )
             raise RuntimeError(msg) from None
-        return loop.run_until_complete(_fetch())
-    else:
-        return asyncio.run(_fetch())
+        result = loop.run_until_complete(_fetch())
+        return cast(list[str] | pd.DataFrame, result)
+
+    result = asyncio.run(_fetch())
+    return cast(list[str] | pd.DataFrame, result)
 
 
 def sinan(

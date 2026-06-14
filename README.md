@@ -37,7 +37,7 @@ docker run -p 8888:8888 alertadengue/pysus
 Or build locally and start the container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml up --build
+docker compose up --build
 ```
 
 Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser.
@@ -45,7 +45,7 @@ Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser
 Stop the container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml down
+docker compose down
 ```
 
 ## Quick Start
@@ -268,7 +268,7 @@ pytest tests/
 Run tests inside the Docker container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
+docker compose exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
 ```
 
 ## License

@@ -34,7 +34,7 @@ Or build locally and start the container:
 
 .. code-block:: bash
 
-   docker compose -f docker/docker-compose.yaml up --build
+   docker compose up --build
 
 Then open http://127.0.0.1:8888/lab in your browser.
 
@@ -42,7 +42,7 @@ Stop the container with:
 
 .. code-block:: bash
 
-   docker compose -f docker/docker-compose.yaml down
+   docker compose down
 
 Development
 -----------

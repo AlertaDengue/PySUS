@@ -314,7 +314,11 @@ class PySUS:
             )
             return await ExtensionFactory.instantiate(local_path)
 
-        except Exception as e:  # noqa: B902
+        except Exception as e:  # noqa
+            import traceback
+
+            traceback.print_exc()
+
             await self._update_state(
                 local_path,
                 str(remote_path),

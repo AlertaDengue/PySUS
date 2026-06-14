@@ -11,7 +11,7 @@ from pysus.api.ftp.models import Dataset, Directory, File, Group
 def mock_client():
     client = MagicMock(spec=FTP)
     client._list_directory = AsyncMock()
-    client._download_file = AsyncMock()
+    client.download = AsyncMock()
     return client
 
 
@@ -107,8 +107,8 @@ async def test_file_download_no_output(mock_client, mock_dataset, tmp_path):
     cache_dir.mkdir(parents=True, exist_ok=True)
     with patch("pysus.api.ftp.models.CACHEPATH", cache_dir):
         await file._download()
-        mock_client._download_file.assert_called_once()
-        args, _ = mock_client._download_file.call_args
+        mock_client.download.assert_called_once()
+        args, _ = mock_client.download.call_args
         assert args[1] == cache_dir / "test.dbc"
 
 
@@ -124,7 +124,7 @@ async def test_file_download_calls_client(mock_client, mock_dataset, tmp_path):
     dest = Path(tmp_path / "test.dbc")
     await file._download(output=dest)
 
-    mock_client._download_file.assert_called_once_with(file, dest, None)
+    mock_client.download.assert_called_once_with(file, dest, None)
 
 
 @pytest.mark.asyncio

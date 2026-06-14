@@ -17,10 +17,16 @@ async def download_http(
     url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
     max_retries = 5
 
+    timeout = httpx.Timeout(15.0, read=60.0, write=20.0, connect=15.0)
+    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+
     for attempt in range(max_retries):
         try:
             async with httpx.AsyncClient(
-                follow_redirects=True, verify=False
+                follow_redirects=True,
+                verify=False,
+                limits=limits,
+                timeout=timeout,
             ) as client:
                 async with client.stream("GET", url) as r:
                     r.raise_for_status()
@@ -28,17 +34,20 @@ async def download_http(
                     downloaded = 0
 
                     with open(local_path, "wb") as f:
-                        async for chunk in r.aiter_bytes(
-                            chunk_size=1024 * 1024
-                        ):
+                        async for chunk in r.aiter_bytes(chunk_size=64 * 1024):
                             await to_thread.run_sync(f.write, chunk)
                             downloaded += len(chunk)
                             if callback:
                                 callback(downloaded, total)
             return
-        except (OSError, httpx.HTTPStatusError) as e:
+        except (
+            OSError,
+            httpx.HTTPStatusError,
+            httpx.ConnectError,
+            httpx.ReadError,
+        ) as e:
             if attempt < max_retries - 1:
-                await sleep(1)
+                await sleep(2 * (attempt + 1))
             else:
                 raise e
 
