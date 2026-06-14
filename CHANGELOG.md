@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [2.3.0](https://github.com/AlertaDengue/PySUS/compare/2.2.0...2.3.0) (2026-06-14)
+
+### Features
+
+* **ducklake:** split the catalog.db into individual files for each dataset ([#279](https://github.com/AlertaDengue/PySUS/issues/279)) ([714edad](https://github.com/AlertaDengue/PySUS/commit/714edad4658e1fae93f7ddf7e10baebcf21945f8))
+* improve ducklake api struture ([#283](https://github.com/AlertaDengue/PySUS/issues/283)) ([2ee7b70](https://github.com/AlertaDengue/PySUS/commit/2ee7b70cb49d3235e879f108c58e90e821201840))
+
 ## [2.2.0](https://github.com/AlertaDengue/PySUS/compare/2.1.0...2.2.0) (2026-05-26)
 
 ### Features
