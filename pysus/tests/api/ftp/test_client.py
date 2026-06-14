@@ -146,7 +146,7 @@ async def test_download_file_reconnects_on_failure(ftp_client):
         patch("pysus.api.ftp.client.FTP.connect") as mock_connect,
         patch("builtins.open", MagicMock()),
     ):
-        await ftp_client._download_file(mock_file, pathlib.Path("test.dbc"))
+        await ftp_client.download(mock_file, pathlib.Path("test.dbc"))
         assert mock_connect.call_count >= 1
 
 
@@ -166,7 +166,7 @@ async def test_download_file_with_callback(ftp_client):
     mock_ftp_internal.retrbinary.side_effect = simulate_retrbinary
 
     with patch("builtins.open", MagicMock()):
-        await ftp_client._download_file(
+        await ftp_client.download(
             mock_file, pathlib.Path("test.dbc"), callback=callback
         )
         callback.assert_called_once()
@@ -186,7 +186,7 @@ async def test_download_file_without_callback(ftp_client):
     mock_ftp_internal.retrbinary.side_effect = simulate_retrbinary
 
     with patch("builtins.open", MagicMock()):
-        await ftp_client._download_file(mock_file, pathlib.Path("test.dbc"))
+        await ftp_client.download(mock_file, pathlib.Path("test.dbc"))
 
 
 @pytest.mark.asyncio

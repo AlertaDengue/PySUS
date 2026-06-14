@@ -71,10 +71,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Docker image
-      run: docker compose -f docker/docker-compose.yaml build
+      run: docker compose build
 
     - name: Start container
-      run: docker compose -f docker/docker-compose.yaml up -d
+      run: docker compose up -d
 
     - name: Wait for Jupyter
       run: |
@@ -84,8 +84,8 @@ jobs:
         done
 
     - name: Run tests inside container
-      run: docker compose -f docker/docker-compose.yaml exec -T -w /usr/src jupyter python3 -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -x -o cache_dir=/tmp/.pytest_cache
+      run: docker compose exec -T -w /usr/src jupyter python3 -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -x -o cache_dir=/tmp/.pytest_cache
 
     - name: Cleanup
       if: always()
-      run: docker compose -f docker/docker-compose.yaml down -v
+      run: docker compose down -v

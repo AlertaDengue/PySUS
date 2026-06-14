@@ -100,14 +100,8 @@ class PySUS:
         self._dadosgov: DadosGovClient | None = None
 
     async def __aenter__(self):
-        """Set up DuckLake catalog and return self as async context manager."""
-
         self._ducklake = DuckLake()
         await self._ducklake.connect()
-        self._attach_client_catalog(
-            "ducklake",
-            str(self._ducklake.catalog_path),
-        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -123,14 +117,9 @@ class PySUS:
 
     async def get_ducklake(self) -> DuckLake:
         """Return the DuckLake client, initializing it lazily if needed."""
-
         if self._ducklake is None:
             self._ducklake = DuckLake()
             await self._ducklake.connect()
-            self._attach_client_catalog(
-                "ducklake",
-                str(self._ducklake.catalog_path),
-            )
         return self._ducklake
 
     async def get_dadosgov(self, access_token: str | None) -> DadosGovClient:
@@ -180,19 +169,6 @@ class PySUS:
             record = parquet_version or records[0]
 
             return await ExtensionFactory.instantiate(str(record.path))
-
-    def _attach_client_catalog(self, name: str, path: str):
-        """Attach an external DuckDB catalog to the engine if not attached."""
-
-        abs_path = str(Path(path).absolute())
-        with self.engine.connect() as conn:
-            q = "SELECT database_name FROM duckdb_databases() WHERE path = ?"
-            existing = conn.exec_driver_sql(q, (abs_path,)).fetchone()
-
-            if not existing:
-                conn.exec_driver_sql(
-                    f"ATTACH '{abs_path}' AS {name} (READ_ONLY)",
-                )
 
     def _get_dest_path(self, file: BaseRemoteFile) -> Path:
         """Build the local filesystem path for a given remote file."""
@@ -322,9 +298,9 @@ class PySUS:
 
             if timeout is not None:
                 with anyio.fail_after(timeout):
-                    await client._download_file(file, local_path, callback)
+                    await client.download(file, local_path, callback)
             else:
-                await client._download_file(file, local_path, callback)
+                await client.download(file, local_path, callback)
 
             await self._update_state(
                 local_path=local_path,
@@ -338,7 +314,11 @@ class PySUS:
             )
             return await ExtensionFactory.instantiate(local_path)
 
-        except Exception as e:  # noqa: B902
+        except Exception as e:  # noqa
+            import traceback
+
+            traceback.print_exc()
+
             await self._update_state(
                 local_path,
                 str(remote_path),
@@ -403,7 +383,9 @@ class PySUS:
 
         if hasattr(local_file, "to_parquet"):
             original_path = local_file.path
-            parquet_file = await local_file.to_parquet(callback=callback)
+            parquet_file = await local_file.to_parquet(
+                callback=callback,
+            )
             parquet_file.add_dv = add_dv
 
             await self._update_state(
@@ -480,28 +462,28 @@ class PySUS:
     async def query(
         self,
         client: Origin | None = None,
-        dataset: str | None = None,
-        group: str | None = None,
-        state: str | None = None,
-        year: int | None = None,
-        month: int | None = None,
-    ):
+        dataset: str | list[str] | None = None,
+        group: str | list[str] | None = None,
+        state: str | list[str] | None = None,
+        year: int | list[int] | None = None,
+        month: int | list[int] | None = None,
+    ) -> list[BaseRemoteFile]:
         """Query available datasets through the DuckLake catalog.
 
         Parameters
         ----------
         client : Origin, optional
             Source client to filter by.
-        dataset : str, optional
-            Dataset name to filter by.
-        group : str, optional
-            Group name pattern to filter by (case-insensitive ILIKE).
-        state : str, optional
-            Two-letter state code to filter by.
-        year : int, optional
-            Year to filter by.
-        month : int, optional
-            Month to filter by.
+        dataset : str or list of str, optional
+            Dataset name(s) to filter by.
+        group : str or list of str, optional
+            Group name pattern(s) to filter by (case-insensitive ILIKE).
+        state : str or list of str, optional
+            Two-letter state code(s) to filter by.
+        year : int or list of int, optional
+            Year(s) to filter by.
+        month : int or list of int, optional
+            Month(s) to filter by.
 
         Returns
         -------
@@ -517,34 +499,32 @@ class PySUS:
         all_datasets = await self._ducklake.datasets()
 
         if dataset:
-            matching = [
-                d for d in all_datasets if d.name.lower() == dataset.lower()
+            target_names = (
+                [dataset.lower()]
+                if isinstance(dataset, str)
+                else [d.lower() for d in dataset]
+            )
+            target_datasets = [
+                d for d in all_datasets if d.name.lower() in target_names
             ]
-            if not matching:
-                return []
-            target = matching[0]
-            files = await target.query(
+        else:
+            target_datasets = all_datasets
+
+        files: list[BaseRemoteFile] = []
+        for ds in target_datasets:
+            ds_files = await ds.query(
                 group=group,
                 state=state,
                 year=year,
                 month=month,
             )
-        else:
-            files = []
-            for ds in all_datasets:
-                ds_files = await ds.query(
-                    group=group,
-                    state=state,
-                    year=year,
-                    month=month,
-                )
-                files.extend(ds_files)
+            files.extend(ds_files)
 
         if not client:
             return files
 
         prefix = f"public/data/{client.lower()}/"
-        return [f for f in files if f.record.path.startswith(prefix)]
+        return [f for f in files if str(f.path).startswith(prefix)]
 
     def read_parquet(
         self,

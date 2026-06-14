@@ -464,7 +464,7 @@ class TestDadosGov:
         mock_file = MagicMock()
         mock_file.path = "http://example.com/file.csv"
         with pytest.raises(ConnectionError, match="Client not connected"):
-            await client._download_file(mock_file, Path("/tmp/out.csv"))
+            await client.download(mock_file, Path("/tmp/out.csv"))
 
     @pytest.mark.asyncio
     async def test_download_file_success(self, tmp_path):
@@ -493,9 +493,7 @@ class TestDadosGov:
         callback = MagicMock()
 
         try:
-            result = await client._download_file(
-                mock_file, output, callback=callback
-            )
+            result = await client.download(mock_file, output, callback=callback)
 
             assert result == output
             mock_http.stream.assert_called_once_with(
@@ -534,7 +532,7 @@ class TestDadosGov:
         output = tmp_path / "test_download_nocb.csv"
 
         try:
-            result = await client._download_file(mock_file, output)
+            result = await client.download(mock_file, output)
 
             assert result == output
             mock_http.stream.assert_called_once_with(

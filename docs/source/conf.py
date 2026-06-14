@@ -21,7 +21,10 @@ intersphinx_mapping = {
 }
 
 templates_path = ["_templates"]
+
+# Explicitly map extensions to ensure notebooks are routed to nbsphinx
 source_suffix = ".rst"
+
 master_doc = "index"
 
 project = "PySUS"

@@ -511,9 +511,9 @@ class TestPySUSQuery:
         ds.name = "sinan"
 
         mock_file1 = MagicMock()
-        mock_file1.record.path = "public/data/ftp/somefile"
+        mock_file1.path = "public/data/ftp/somefile"
         mock_file2 = MagicMock()
-        mock_file2.record.path = "public/data/dadosgov/otherfile"
+        mock_file2.path = "public/data/dadosgov/otherfile"
 
         ds.query = AsyncMock(return_value=[mock_file1, mock_file2])
         mock_ducklake.datasets = AsyncMock(return_value=[ds])
@@ -597,7 +597,7 @@ class TestDownload:
                 return_value=mock_local,
             ):
                 mock_client = AsyncMock()
-                mock_client._download_file = AsyncMock()
+                mock_client.download = AsyncMock()
                 client._ftp = mock_client
                 await client.download(mock_file)
 
@@ -642,7 +642,7 @@ class TestDownload:
             ),
         ):
             mock_client = AsyncMock()
-            mock_client._download_file = _slow_download
+            mock_client.download = _slow_download
             client._ftp = mock_client
 
             with pytest.raises(
@@ -691,7 +691,7 @@ class TestDownload:
             ),
         ):
             mock_ducklake = AsyncMock()
-            mock_ducklake._download_file = AsyncMock()
+            mock_ducklake.download = AsyncMock()
             client._ducklake = mock_ducklake
 
             result = await client.download(mock_file)
@@ -740,7 +740,7 @@ class TestDownload:
             ),
         ):
             mock_dadosgov = AsyncMock()
-            mock_dadosgov._download_file = AsyncMock()
+            mock_dadosgov.download = AsyncMock()
             client._dadosgov = mock_dadosgov
 
             result = await client.download(mock_file, token="test_token")
@@ -1128,15 +1128,8 @@ class TestPySUSGetMethods:
 
         client = PySUS(db_path=test_db_path)
 
-        with (
-            patch.object(
-                DuckLake, "_download_catalog", new_callable=AsyncMock
-            ) as mock_download,
-            patch.object(PySUS, "_attach_client_catalog") as mock_attach,
-        ):
+        with patch.object(DuckLake, "connect", new_callable=AsyncMock):
             await client.__aenter__()
             assert client._ducklake is not None
-            mock_download.assert_called_once()
-            mock_attach.assert_called_once()
 
         await client.__aexit__(None, None, None)

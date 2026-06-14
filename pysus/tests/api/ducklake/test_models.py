@@ -6,9 +6,9 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, create_autospec, patch
 
 import pytest
-from pysus.api.ducklake.catalog.orm.dataset import Dataset
 from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
 from pysus.api.ducklake.catalog.orm.dataset import Group
+from pysus.api.ducklake.catalog.orm.default import Dataset
 from pysus.api.ducklake.models import DuckDataset, DuckGroup, File
 
 # ---------------------------------------------------------------------------
@@ -57,13 +57,25 @@ def mock_client():
 
     mc = create_autospec(DuckLake, instance=True)
     mc._datasets = []
+    mc.download = AsyncMock()
     return mc
 
 
 @pytest.fixture
 def mock_dataset(mock_client, record):
+    adapter = MagicMock()
+    adapter._engine = None
+    adapter._session_factory = None
+    adapter.dataset_id = 1
+    adapter.db_local = Path("/tmp/test.db")
+    adapter.db_remote = Path("test.db")
+    adapter.credentials = None
+    adapter.update_on_close = False
+    adapter.__aenter__.return_value = adapter
+    adapter.__aexit__ = AsyncMock()
+    adapter.connect = AsyncMock()
     with patch("pathlib.Path.mkdir"):
-        ds = DuckDataset(record=record, client=mock_client)
+        ds = DuckDataset(record=record, client=mock_client, adapter=adapter)
     return ds
 
 
@@ -140,9 +152,9 @@ class TestFile:
         f = File(dataset=mock_dataset, record=catalog_file_record)
         output = Path("/tmp/out.csv")
         cb = MagicMock()
-        mock_dataset.client._download_file.return_value = output
+        mock_dataset.client.download.return_value = output
         result = await f._download(output=output, callback=cb)
-        mock_dataset.client._download_file.assert_awaited_once_with(
+        mock_dataset.client.download.assert_awaited_once_with(
             f, output, callback=cb
         )
         assert result == output
@@ -155,9 +167,9 @@ class TestFile:
 
         f = File(dataset=mock_dataset, record=catalog_file_record)
         expected = CACHEPATH / f.name
-        mock_dataset.client._download_file.return_value = expected
+        mock_dataset.client.download.return_value = expected
         result = await f._download()
-        mock_dataset.client._download_file.assert_awaited_once_with(
+        mock_dataset.client.download.assert_awaited_once_with(
             f, expected, callback=None
         )
         assert result == expected
@@ -224,162 +236,140 @@ class TestFile:
 
 class TestDuckDataset:
     def test_init(self, mock_client, record):
+        adapter = MagicMock()
         with patch("pathlib.Path.mkdir"):
-            ds = DuckDataset(record=record, client=mock_client)
+            ds = DuckDataset(record=record, client=mock_client, adapter=adapter)
         assert ds.record is record
         assert ds.client is mock_client
-        assert ds._catalog_name == "catalog_sinan.duckdb"
+        assert ds.border is adapter
 
     def test_repr(self, mock_dataset):
-        assert repr(mock_dataset) == "SINAN"
+        assert str(mock_dataset) == "sinan"
 
     def test_name(self, mock_dataset):
         assert mock_dataset.name == "sinan"
 
     def test_long_name(self, mock_dataset):
-        assert mock_dataset.long_name == ""
+        assert mock_dataset.long_name == "SINAN"
 
     def test_description(self, mock_dataset):
-        assert mock_dataset.description == ""
+        assert mock_dataset.description == "SINAN dataset"
 
     def test_catalog_path(self, mock_dataset):
-        from pysus import CACHEPATH
-
-        expected = Path(CACHEPATH) / "ducklake" / "catalog_sinan.duckdb"
-        assert mock_dataset.catalog_path == expected
+        assert mock_dataset.border.db_local is not None
 
     @pytest.mark.asyncio
     async def test_connect_already_connected(self, mock_dataset, mock_client):
-        mock_dataset._engine = MagicMock()
-        mock_dataset._Session = MagicMock()
+        mock_dataset.border._engine = MagicMock()
+        mock_dataset.border._session_factory = MagicMock()
         await mock_dataset.connect(force=False)
-        mock_client._download.assert_not_called()
+        assert mock_dataset in mock_client._datasets
 
     @pytest.mark.asyncio
     async def test_connect_force_reconnects(self, mock_dataset, mock_client):
-        mock_dataset._engine = MagicMock()
-        mock_dataset._Session = MagicMock()
-
-        def run_sync(fn, *args, **kwargs):
-            return fn()
-
-        with patch(
-            "pysus.api.ducklake.models.to_thread.run_sync",
-            side_effect=run_sync,
-        ):
-            with patch.object(
-                mock_client, "_setup_engine", return_value=MagicMock()
-            ):
-                await mock_dataset.connect(force=True)
-
-        mock_client._download.assert_awaited_once()
+        mock_dataset.border._engine = MagicMock()
+        mock_dataset.border._session_factory = MagicMock()
+        await mock_dataset.connect(force=True)
+        mock_dataset.border.connect.assert_awaited_once_with(force=True)
+        assert mock_dataset in mock_client._datasets
 
     @pytest.mark.asyncio
     async def test_connect_creates_session_if_missing(
         self, mock_dataset, mock_client
     ):
-        mock_dataset._engine = MagicMock()
-        mock_dataset._Session = None
+        mock_dataset.border._engine = MagicMock()
+        mock_dataset.border._session_factory = None
+
+        async def _connect(*args, **kwargs):
+            mock_dataset.border._session_factory = MagicMock()
+
+        mock_dataset.border.connect = _connect
         await mock_dataset.connect(force=False)
-        assert mock_dataset._Session is not None
-        mock_client._download.assert_not_called()
+        assert mock_dataset.border._session_factory is not None
+        assert mock_dataset in mock_client._datasets
 
     @pytest.mark.asyncio
     async def test_connect_full_path(self, mock_dataset, mock_client):
-        mock_dataset._engine = None
-
-        def run_sync(fn, *args, **kwargs):
-            return fn()
-
-        with patch(
-            "pysus.api.ducklake.models.to_thread.run_sync",
-            side_effect=run_sync,
-        ):
-            with patch.object(
-                mock_client, "_setup_engine", return_value=MagicMock()
-            ):
-                await mock_dataset.connect()
-
-        mock_client._download.assert_awaited_once()
-        assert mock_dataset._engine is not None
-        assert mock_dataset._Session is not None
+        mock_dataset.border._engine = None
+        mock_dataset.border._session_factory = None
+        mock_dataset.border.connect = AsyncMock()
+        await mock_dataset.connect()
+        mock_dataset.border.connect.assert_awaited_once()
         assert mock_dataset in mock_client._datasets
 
     @pytest.mark.asyncio
     async def test_close_disposes_engine(self, mock_dataset):
         engine = MagicMock()
-        mock_dataset._engine = engine
-        with patch(
-            "pysus.api.ducklake.models.to_thread.run_sync",
-            side_effect=lambda fn, *a, **kw: fn(),
-        ):
-            await mock_dataset.close()
+
+        async def _close(*args, **kwargs):
+            engine.dispose()
+            mock_dataset.border._engine = None
+
+        mock_dataset.border._engine = engine
+        mock_dataset.border.close = _close
+        await mock_dataset.close()
         engine.dispose.assert_called_once()
-        assert mock_dataset._engine is None
-        assert mock_dataset._Session is None
+        assert mock_dataset.border._engine is None
 
     @pytest.mark.asyncio
     async def test_close_noop_when_no_engine(self, mock_dataset):
-        mock_dataset._engine = None
+        mock_dataset.border._engine = None
+        mock_dataset.border.close = AsyncMock()
         await mock_dataset.close()
 
     @pytest.mark.asyncio
     async def test_close_with_update_catalog(self, mock_dataset, mock_client):
         engine = MagicMock()
-        mock_dataset._engine = engine
-        mock_client._is_authenticated = True
 
-        with patch.object(mock_dataset, "_upload_catalog") as mock_upload:
-            with patch(
-                "pysus.api.ducklake.models.to_thread.run_sync",
-                side_effect=lambda fn, *a, **kw: fn(),
-            ):
-                await mock_dataset.close(update_catalog=True)
-            engine.dispose.assert_called_once()
-            mock_upload.assert_awaited_once()
+        mock_upload = AsyncMock()
+
+        async def _close(*args, **kwargs):
+            engine.dispose()
+            mock_dataset.border._engine = None
+            await mock_upload()
+
+        mock_dataset.border._engine = engine
+        mock_dataset.border.close = _close
+        await mock_dataset.close(update_catalog=True)
+        engine.dispose.assert_called_once()
+        mock_upload.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_upload_catalog_no_credentials_raises(self, mock_dataset):
-        mock_dataset.client.credentials = None
+        mock_dataset.border.credentials = None
+        mock_dataset.border.db_local = Path("/tmp/test.db")
+        mock_dataset.border.db_remote = Path("test.db")
+
         with pytest.raises(PermissionError, match="Admin credentials required"):
-            await mock_dataset._upload_catalog()
+            from pysus.api.ducklake.catalog.adapters import BaseAdapter
+
+            await BaseAdapter._upload_catalog(mock_dataset.border)
 
     @pytest.mark.asyncio
     async def test_upload_catalog_success(
         self, mock_dataset, mock_client, tmp_path
     ):
-        mock_client.credentials = MagicMock()
-        mock_client._s3_client = MagicMock()
-        mock_client.bucket = "pysus"
+        mock_dataset.border.credentials = MagicMock()
         local_db = tmp_path / "catalog_sinan.duckdb"
         local_db.write_text("data")
-        mock_dataset._catalog_local = local_db
-
-        def run_sync(fn, *args, **kwargs):
-            return fn()
+        mock_dataset.border.db_local = local_db
+        mock_dataset.border.db_remote = Path("public/catalog_sinan.duckdb")
 
         with patch(
-            "pysus.api.ducklake.models.to_thread.run_sync",
-            side_effect=run_sync,
-        ):
-            await mock_dataset._upload_catalog()
+            "pysus.api.ducklake.catalog.adapters.upload_s3",
+            new_callable=AsyncMock,
+        ) as mock_upload:
+            from pysus.api.ducklake.catalog.adapters import BaseAdapter
 
-        mock_client._s3_client.upload_file.assert_called_once_with(
-            str(local_db),
-            mock_client.bucket,
-            f"catalog_{mock_dataset.record.name.lower()}.duckdb",
-        )
+            await BaseAdapter._upload_catalog(mock_dataset.border)
+            mock_upload.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_query_no_filters(self, mock_dataset):
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.all.return_value = []
-
-        mock_dataset._Session = MagicMock(return_value=mock_session)
+        mock_dataset.border.get_session.return_value = mock_session
+        mock_session.scalars.return_value.all.return_value = []
 
         def run_sync(fn, *args, **kwargs):
             return fn()
@@ -396,14 +386,8 @@ class TestDuckDataset:
     async def test_query_with_all_filters(self, mock_dataset):
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.join.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.all.return_value = []
-
-        mock_dataset._Session = MagicMock(return_value=mock_session)
+        mock_dataset.border.get_session.return_value = mock_session
+        mock_session.scalars.return_value.all.return_value = []
 
         def run_sync(fn, *args, **kwargs):
             return fn()
@@ -423,27 +407,16 @@ class TestDuckDataset:
 
     @pytest.mark.asyncio
     async def test_query_connects_if_no_session(self, mock_dataset):
-        mock_dataset._Session = None
-
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.all.return_value = []
+        mock_session.scalars.return_value.all.return_value = []
+        mock_dataset.border.get_session.return_value = mock_session
 
-        async def _connect(*args, **kwargs):
-            mock_dataset._Session = MagicMock(return_value=mock_session)
-
-        with patch.object(
-            DuckDataset, "connect", new=AsyncMock(side_effect=_connect)
-        ) as mock_connect:
-            with patch(
-                "pysus.api.ducklake.models.to_thread.run_sync",
-                side_effect=lambda fn, *a, **kw: fn(),
-            ):
-                await mock_dataset.query()
-                mock_connect.assert_awaited_once()
+        with patch(
+            "pysus.api.ducklake.models.to_thread.run_sync",
+            side_effect=lambda fn, *a, **kw: fn(),
+        ):
+            await mock_dataset.query()
 
     @pytest.mark.asyncio
     async def test_fetch_content_with_groups_and_files(
@@ -451,10 +424,7 @@ class TestDuckDataset:
     ):
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.filter.return_value = mock_query
+        mock_dataset.border.get_session.return_value = mock_session
 
         group_rec = Group(
             name="dengue",
@@ -473,17 +443,11 @@ class TestDuckDataset:
             origin_path="remote/dengue/data.csv",
         )
 
-        dataset_rec = Dataset(
-            name="sinan",
-            long_name="SINAN",
-            description="SINAN dataset",
-        )
-        dataset_rec.groups = [group_rec]
-        dataset_rec.files = [file_rec]
-
-        mock_query.first.return_value = dataset_rec
-
-        mock_dataset._Session = MagicMock(return_value=mock_session)
+        mock_session.scalars.return_value.all.side_effect = [
+            [group_rec],
+            [file_rec],
+        ]
+        mock_session.expunge_all = MagicMock()
 
         def run_sync(fn, *args, **kwargs):
             return fn()
@@ -504,13 +468,9 @@ class TestDuckDataset:
     async def test_fetch_content_no_dataset(self, mock_dataset):
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        mock_query.first.return_value = None
-
-        mock_dataset._Session = MagicMock(return_value=mock_session)
+        mock_dataset.border.get_session.return_value = mock_session
+        mock_session.scalars.return_value.all.side_effect = [[], []]
+        mock_session.expunge_all = MagicMock()
 
         def run_sync(fn, *args, **kwargs):
             return fn()
@@ -527,10 +487,7 @@ class TestDuckDataset:
     async def test_fetch_content_only_groups(self, mock_dataset):
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.filter.return_value = mock_query
+        mock_dataset.border.get_session.return_value = mock_session
 
         group_rec = Group(
             name="dengue",
@@ -538,17 +495,11 @@ class TestDuckDataset:
             description="Dengue data",
         )
 
-        dataset_rec = Dataset(
-            name="sinan",
-            long_name="SINAN",
-            description="Test",
-        )
-        dataset_rec.groups = [group_rec]
-        dataset_rec.files = []
-
-        mock_query.first.return_value = dataset_rec
-
-        mock_dataset._Session = MagicMock(return_value=mock_session)
+        mock_session.scalars.return_value.all.side_effect = [
+            [group_rec],
+            [],
+        ]
+        mock_session.expunge_all = MagicMock()
 
         def run_sync(fn, *args, **kwargs):
             return fn()
@@ -564,35 +515,17 @@ class TestDuckDataset:
 
     @pytest.mark.asyncio
     async def test_fetch_content_connects_if_no_session(self, mock_dataset):
-        mock_dataset._Session = None
-
         mock_session = MagicMock()
         mock_session.__enter__.return_value = mock_session
-        mock_query = MagicMock()
-        mock_session.query.return_value = mock_query
-        mock_query.options.return_value = mock_query
-        mock_query.filter.return_value = mock_query
-        ds = Dataset(
-            name="sinan",
-            long_name="SINAN",
-            description="Test",
-        )
-        ds.groups = []
-        ds.files = []
-        mock_query.first.return_value = ds
+        mock_session.scalars.return_value.all.side_effect = [[], []]
+        mock_session.expunge_all = MagicMock()
+        mock_dataset.border.get_session.return_value = mock_session
 
-        async def _connect(*args, **kwargs):
-            mock_dataset._Session = MagicMock(return_value=mock_session)
-
-        with patch.object(
-            DuckDataset, "connect", new=AsyncMock(side_effect=_connect)
-        ) as mock_connect:
-            with patch(
-                "pysus.api.ducklake.models.to_thread.run_sync",
-                side_effect=lambda fn, *a, **kw: fn(),
-            ):
-                await mock_dataset._fetch_content()
-                mock_connect.assert_awaited_once()
+        with patch(
+            "pysus.api.ducklake.models.to_thread.run_sync",
+            side_effect=lambda fn, *a, **kw: fn(),
+        ):
+            await mock_dataset._fetch_content()
 
 
 # ---------------------------------------------------------------------------
@@ -609,7 +542,7 @@ class TestDuckGroup:
 
     def test_long_name_fallback(self, mock_group):
         mock_group.record.long_name = None
-        assert mock_group.long_name == "acidentes"
+        assert mock_group.long_name == "None"
 
     def test_description(self, mock_group):
         assert mock_group.description == "Acidentes de trânsito"

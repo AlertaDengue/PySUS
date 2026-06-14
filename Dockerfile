@@ -25,12 +25,10 @@ RUN useradd -ms /bin/bash pysus \
 
 COPY pyproject.toml poetry.lock LICENSE README.md /usr/src/
 COPY pysus /usr/src/pysus
-COPY docker/scripts/entrypoint.sh /entrypoint.sh
-COPY docker/notebooks/ /home/pysus/Notebooks/
+COPY entrypoint.sh /entrypoint.sh
 
 RUN pip install poetry \
   && cd /usr/src && poetry config virtualenvs.create false && poetry install --with docs \
-  && pip install 'httpx<0.28' \
   && chown -R pysus:pysus /home/pysus
 
 USER pysus

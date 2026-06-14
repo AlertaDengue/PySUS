@@ -4,9 +4,9 @@ from collections.abc import Callable
 from logging import error
 from pathlib import Path
 
-from anyio import to_thread
 from pysus.api.client import PySUS
 from pysus.api.dadosgov.models import File as APIFile
+from pysus.api.ducklake.functional import upload_s3
 from pysus.api.extensions import Parquet
 from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
@@ -24,13 +24,15 @@ class CatalogManager:
         self.secret_key = secret_key or os.getenv("SECRET_KEY")
         self.dadosgov_token = dadosgov_token or os.getenv("DADOSGOV_TOKEN")
 
-        if not access_key or not secret_key:
+        if not self.access_key or not self.secret_key:
             raise ValueError("s3 credentials are needed")
 
     async def __aenter__(self):
         await self.pysus.__aenter__()
         ducklake = await self.pysus.get_ducklake()
-        await ducklake.login(self.access_key, self.secret_key)
+        await ducklake.login(
+            access_key=self.access_key, secret_key=self.secret_key
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -38,7 +40,7 @@ class CatalogManager:
             if not exc_type:
                 ducklake = self.pysus._ducklake
                 if ducklake:
-                    await ducklake._upload_catalog()
+                    await ducklake.close(update_catalog=True)
         finally:
             await self.pysus.__aexit__(exc_type, exc_val, exc_tb)
 
@@ -50,85 +52,99 @@ class CatalogManager:
         if not self.pysus._ducklake:
             raise ConnectionError("DuckLake is not connected")
 
+        remote_file_path = Path(file.path)
         s3_key = (
             f"public/data/{file.client.name.lower()}"
             f"/{file.dataset.name.lower()}"
-            f"/{file.path.with_suffix('.parquet').name}"
+            f"/{remote_file_path.with_suffix('.parquet').name}"
         )
 
         dataset_id = None
         group_id = None
 
-        engine = self.pysus._ducklake._engine
-        with engine.raw_connection() as conn:
-            cursor = conn.cursor()
+        catalog_engine = self.pysus._ducklake._catalog_adap._engine
+        columns_engine = self.pysus._ducklake._columns_adap._engine
+
+        if not catalog_engine or not columns_engine:
+            raise ConnectionError(
+                "DuckLake database engines are not initialized"
+            )
+
+        catalog_conn = catalog_engine.raw_connection()
+        columns_conn = columns_engine.raw_connection()
+
+        with catalog_conn, columns_conn:
+            catalog_cursor = catalog_conn.cursor()
+            columns_cursor = columns_conn.cursor()
+
             try:
                 dataset_name = file.dataset.name.lower()
                 is_ftp = file.client.name.lower() == "ftp"
 
-                cursor.execute(
-                    f"SELECT id FROM pysus.datasets WHERE name = '{dataset_name}'"  # noqa
+                catalog_cursor.execute(
+                    "SELECT id FROM pysus.datasets WHERE name = ?",
+                    (dataset_name,),
                 )
-                row = cursor.fetchone()
+                row = catalog_cursor.fetchone()
 
                 if row:
                     dataset_id = row[0]
                     origin_val = "'FTP'" if is_ftp else "'API'"
-                    cursor.execute(
+                    catalog_cursor.execute(
                         f"UPDATE pysus.datasets SET origin = {origin_val} "
                         f"WHERE id = {dataset_id}"
                     )
                 else:
-                    cursor.execute("SELECT MAX(id) FROM pysus.datasets")
-                    max_id = cursor.fetchone()[0]
+                    catalog_cursor.execute("SELECT MAX(id) FROM pysus.datasets")
+                    max_id_row = catalog_cursor.fetchone()
+                    max_id = max_id_row[0] if max_id_row else None
                     dataset_id = (max_id or 0) + 1
                     origin_val = "'FTP'" if is_ftp else "'API'"
-                    cursor.execute(
-                        f"INSERT INTO pysus.datasets (id, name, "
-                        f"long_name, origin) "
-                        f"VALUES ({dataset_id}, '{dataset_name}', "
+                    catalog_cursor.execute(
+                        f"INSERT INTO pysus.datasets (id, name, long_name, "
+                        f"origin) VALUES ({dataset_id}, '{dataset_name}', "
                         f"'{file.dataset.long_name}', {origin_val})"
                     )
 
                 if file.group:
                     group_name = file.group.name
-                    cursor.execute(
+                    catalog_cursor.execute(
                         "SELECT id FROM pysus.dataset_groups "
-                        f"WHERE name = '{group_name}' AND "
-                        f"dataset_id = {dataset_id}"
+                        "WHERE name = ? AND dataset_id = ?",
+                        (group_name, dataset_id),
                     )
-                    row = cursor.fetchone()
+                    row = catalog_cursor.fetchone()
                     if row:
                         group_id = row[0]
                     else:
-                        cursor.execute(
-                            "SELECT MAX(id) FROM pysus.dataset_groups",
+                        catalog_cursor.execute(
+                            "SELECT MAX(id) FROM pysus.dataset_groups"
                         )
-                        max_id = cursor.fetchone()[0]
+                        max_id_row = catalog_cursor.fetchone()
+                        max_id = max_id_row[0] if max_id_row else None
                         group_id = (max_id or 0) + 1
                         long_name = file.dataset.group_definitions.get(
                             group_name.upper(), group_name
                         )
-                        cursor.execute(
-                            f"INSERT INTO pysus.dataset_groups "
-                            f"(id, dataset_id, name, long_name) "
-                            f"VALUES ({group_id}, {dataset_id}, "
-                            f"'{group_name}', '{long_name}')"
+                        catalog_cursor.execute(
+                            f"INSERT INTO pysus.dataset_groups (id, "
+                            f"dataset_id, name, long_name) VALUES ({group_id},"
+                            f" {dataset_id}, '{group_name}', '{long_name}')"
                         )
 
                 group_val = "NULL" if group_id is None else str(group_id)
 
-                cursor.execute(
-                    f"SELECT id, group_id FROM pysus.files WHERE path = '{s3_key}'"  # noqa
+                catalog_cursor.execute(
+                    "SELECT id, group_id FROM pysus.files WHERE path = ?",
+                    (s3_key,),
                 )
-                row = cursor.fetchone()
+                row = catalog_cursor.fetchone()
 
                 if row:
                     file_id, db_group_id = row
-
                     group_mismatch = db_group_id != group_id
                     should_upload = self._should_upload_raw(
-                        cursor,
+                        catalog_cursor,
                         file_id,
                         file,
                     )
@@ -136,77 +152,81 @@ class CatalogManager:
                     if not should_upload and not group_mismatch:
                         return
 
-                    cursor.execute(
-                        f"DELETE FROM pysus.file_columns WHERE file_id = {file_id}"  # noqa
+                    columns_cursor.execute(
+                        "DELETE FROM pysus.file_columns WHERE file_id = ?",
+                        (file_id,),
                     )
-                    cursor.execute(
-                        f"DELETE FROM pysus.files WHERE id = {file_id}",
+                    catalog_cursor.execute(
+                        "DELETE FROM pysus.files WHERE id = ?",
+                        (file_id,),
                     )
                 else:
-                    cursor.execute("SELECT MAX(id) FROM pysus.files")
-                    max_id = cursor.fetchone()[0]
+                    catalog_cursor.execute("SELECT MAX(id) FROM pysus.files")
+                    max_id_row = catalog_cursor.fetchone()
+                    max_id = max_id_row[0] if max_id_row else None
                     file_id = (max_id or 0) + 1
 
                 parquet_ext = await self._download_with_retry(file, callback)
                 await self._upload_to_s3(parquet_ext.path, s3_key)
 
-                year_val = "NULL" if file.year is None else file.year
-                month_val = "NULL" if file.month is None else file.month
+                year_val = "NULL" if file.year is None else str(file.year)
+                month_val = "NULL" if file.month is None else str(file.month)
                 state_val = "NULL" if file.state is None else f"'{file.state}'"
 
-                cursor.execute(
-                    f"INSERT INTO pysus.files (id, dataset_id, "
-                    f"group_id, path, size, rows, "
-                    f"modified, origin_modified, origin_path, year, "
-                    f"month, state) "
-                    f"VALUES ({file_id}, {dataset_id}, {group_val}, "
-                    f"'{s3_key}', {parquet_ext.size}, "
-                    f"{parquet_ext.rows}, CURRENT_TIMESTAMP, "
-                    f"'{file.modify}', '{file.path}', "
+                catalog_cursor.execute(
+                    f"INSERT INTO pysus.files (id, dataset_id, group_id, "
+                    f"path, size, rows, modified, origin_modified, "
+                    f"origin_path, year, month, state) VALUES ({file_id}, "
+                    f"{dataset_id}, {group_val}, '{s3_key}', "
+                    f"{parquet_ext.size}, {parquet_ext.rows}, "
+                    f"CURRENT_TIMESTAMP, '{file.modify}', '{file.path}', "
                     f"{year_val}, {month_val}, {state_val})"
                 )
 
                 new_columns = self._get_or_create_columns_raw(
-                    cursor, parquet_ext, dataset_id
+                    columns_cursor, parquet_ext, dataset_id
                 )
 
                 for col in new_columns:
-                    cursor.execute(
-                        f"INSERT INTO pysus.file_columns "
-                        f"(file_id, column_id) VALUES ({file_id}, {col})"
+                    columns_cursor.execute(
+                        f"INSERT INTO pysus.file_columns (file_id, column_id) "
+                        f"VALUES ({file_id}, {col})"
                     )
 
-                conn.commit()
-                cursor.execute("CHECKPOINT")
+                catalog_conn.commit()
+                columns_conn.commit()
+
+                catalog_cursor.execute("CHECKPOINT")
+                columns_cursor.execute("CHECKPOINT")
 
                 if parquet_ext.path.exists():
                     parquet_ext.path.unlink()
                 await self.pysus._delete_record(str(parquet_ext.path))
 
-            except Exception:  # noqa
+            except BaseException as rollback_err:  # noqa
                 try:
-                    conn.rollback()
-                except Exception:  # noqa
-                    pass
-                raise
+                    catalog_conn.rollback()
+                except Exception as inner_err:  # noqa
+                    error(f"Catalog rollback failed: {inner_err}")
+                try:
+                    columns_conn.rollback()
+                except Exception as inner_err:  # noqa
+                    error(f"Columns rollback failed: {inner_err}")
+                raise rollback_err
 
     async def _upload_to_s3(
         self,
         local_path: Path,
         s3_path: str,
-        callback: Callable[[int], None] | None = None,
+        callback: Callable[[int, int], None] | None = None,
     ):
-        def _do_upload():
-            if not self.pysus._ducklake:
-                raise ConnectionError("DuckLake not connected")
-            self.pysus._ducklake._s3_client.upload_file(
-                str(local_path),
-                self.pysus._ducklake.bucket,
-                s3_path,
-                Callback=callback,
-            )
-
-        await to_thread.run_sync(_do_upload)
+        await upload_s3(
+            local_path=local_path,
+            access_key=str(self.access_key),
+            secret_key=str(self.secret_key),
+            remote_path=s3_path,
+            callback=callback,
+        )
 
     async def _download_with_retry(
         self,
@@ -249,7 +269,8 @@ class CatalogManager:
             return True
 
         cursor.execute(
-            f"SELECT origin_modified FROM pysus.files WHERE id = {file_id}",
+            "SELECT origin_modified FROM pysus.files WHERE id = ?",
+            (file_id,),
         )
         row = cursor.fetchone()
         if not row:
@@ -263,7 +284,7 @@ class CatalogManager:
         if file_mod is None:
             return True
 
-        return file_mod > origin_modified
+        return str(file_mod) > str(origin_modified)
 
     def _get_or_create_columns_raw(
         self, cursor, file: Parquet, dataset_id: int
@@ -288,7 +309,8 @@ class CatalogManager:
 
             cursor.execute(
                 "SELECT id FROM pysus.dataset_columns "
-                f"WHERE name = '{col_name}' AND dataset_id = {dataset_id}"
+                "WHERE name = ? AND dataset_id = ?",
+                (col_name, dataset_id),
             )
             existing = cursor.fetchone()
 
@@ -296,13 +318,13 @@ class CatalogManager:
                 result.append(existing[0])
             else:
                 cursor.execute("SELECT MAX(id) FROM pysus.dataset_columns")
-                max_id = cursor.fetchone()[0]
+                max_id_row = cursor.fetchone()
+                max_id = max_id_row[0] if max_id_row else None
                 new_id = (max_id or 0) + 1
                 cursor.execute(
-                    "INSERT INTO pysus.dataset_columns "
-                    "(id, dataset_id, name, type, nullable) "
-                    f"VALUES ({new_id}, {dataset_id}, '{col_name}', "
-                    f"'{sql_type}', true)"
+                    "INSERT INTO pysus.dataset_columns (id, dataset_id, name, "
+                    "type, nullable) VALUES (?, ?, ?, ?, true)",
+                    (new_id, dataset_id, col_name, sql_type),
                 )
                 result.append(new_id)
 

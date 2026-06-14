@@ -415,11 +415,9 @@ class TestFileDownload:
         output = Path("/tmp/test_out.csv")
         callback = MagicMock()
 
-        with patch.object(
-            ds.client, "_download_file", new_callable=AsyncMock
-        ) as mock_dl:
-            mock_dl.return_value = output
-            result = await f._download(output=output, callback=callback)
+        mock_dl = AsyncMock(return_value=output)
+        object.__setattr__(ds.client, "download", mock_dl)
+        result = await f._download(output=output, callback=callback)
 
         assert result == output
         mock_dl.assert_awaited_once_with(f, output, callback=callback)
@@ -432,11 +430,9 @@ class TestFileDownload:
 
         expected = CACHEPATH / f.name
 
-        with patch.object(
-            ds.client, "_download_file", new_callable=AsyncMock
-        ) as mock_dl:
-            mock_dl.return_value = expected
-            result = await f._download()
+        mock_dl = AsyncMock(return_value=expected)
+        object.__setattr__(ds.client, "download", mock_dl)
+        result = await f._download()
 
         assert result == expected
 

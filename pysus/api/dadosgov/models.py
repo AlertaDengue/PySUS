@@ -210,7 +210,7 @@ class File(BaseRemoteFile):
         """Download the file to a local path."""
         if not output:
             output = CACHEPATH / self.name
-        return await self.client._download_file(self, output, callback=callback)
+        return await self.client.download(self, output, callback=callback)
 
     async def fetch_size(self) -> int:
         """Fetch the remote file size and update the local record.

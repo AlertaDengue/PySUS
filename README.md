@@ -37,7 +37,7 @@ docker run -p 8888:8888 alertadengue/pysus
 Or build locally and start the container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml up --build
+docker compose up --build
 ```
 
 Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser.
@@ -45,35 +45,46 @@ Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser
 Stop the container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml down
+docker compose down
 ```
 
 ## Quick Start
 
 ### Simplified Database Functions (New in 2.0)
 
-The easiest way to get data as a pandas DataFrame:
+By default, the high-level convenience functions query and download data locally, returning a list of paths to the downloaded Parquet files. This allows you to inspect the file structure or load them with your preferred tool (e.g., pandas, Polars, DuckDB).
 
 ```python
 from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
 
-# Download SINAN Dengue data for 2000
-df = sinan(disease="deng", year=2000)
+# Download SINAN Dengue data for 2000 and return a list of Parquet paths
+parquet_files = sinan(disease="deng", year=2000)
 
 # Multiple years
-df = sinan(disease="deng", year=[2023, 2024])
+parquet_files = sinan(disease="deng", year=[2023, 2024])
 
 # SINASC births for São Paulo, 2020-2023
-df = sinasc(state="SP", year=[2020, 2021, 2022, 2023])
+parquet_files = sinasc(state="SP", year=[2020, 2021, 2022, 2023])
 
 # SIM mortality data
-df = sim(state="SP", year=2024)
+parquet_files = sim(state="SP", year=2024)
 
 # SIH hospitalizations with month
-df = sih(state="SP", year=2024, month=[1, 2, 3])
+parquet_files = sih(state="SP", year=2024, month=[1, 2, 3])
 
 # CNES health facilities
-df = cnes(state="SP", year=2024, month=1)
+parquet_files = cnes(state="SP", year=2024, month=1)
+```
+
+### Loading as a DataFrame Directly
+If you prefer to load and combine the data automatically into a single pandas DataFrame, pass the as_dataframe=True parameter to any of the functions:
+
+```python
+import pandas as pd
+from pysus import sinan
+
+# Download and return a concatenated pandas DataFrame
+df = sinan(disease="deng", year=2024, as_dataframe=True)
 ```
 
 ### Listing the files
@@ -257,7 +268,7 @@ pytest tests/
 Run tests inside the Docker container:
 
 ```bash
-docker compose -f docker/docker-compose.yaml exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
+docker compose exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
 ```
 
 ## License

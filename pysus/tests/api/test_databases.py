@@ -203,7 +203,7 @@ class TestFetchData:
             years = [2023, 2024]
             _fetch_data(dataset="sinan", year=years, show_progress=False)
 
-            assert mock_pysus.query.call_count == 2
+            assert mock_pysus.query.call_count == 1
 
     def test_fetch_data_with_group_filter(self):
         with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
@@ -253,6 +253,7 @@ class TestFetchData:
                 dataset="sinan",
                 year=2024,
                 show_progress=False,
+                as_dataframe=True,
             )
 
             assert isinstance(result, pd.DataFrame)
@@ -299,6 +300,7 @@ class TestFetchData:
                 dataset="sinan",
                 year=2024,
                 show_progress=True,
+                as_dataframe=True,
             )
 
             assert isinstance(result, pd.DataFrame)
@@ -308,7 +310,11 @@ class TestFetchData:
     def test_fetch_data_with_progress(self):
         with (
             patch("pysus.api._impl.databases.PySUS") as mock_pysus_class,
-            patch("pysus.api._impl.databases.tqdm", new=lambda x, **kw: x),
+            patch(
+                "pysus.api._impl.databases.tqdm.gather",
+                new_callable=AsyncMock,
+                return_value=[MagicMock(), MagicMock()],
+            ) as mock_tqdm_gather,
         ):
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
@@ -326,7 +332,10 @@ class TestFetchData:
 
             _fetch_data(dataset="sinan", year=2024, show_progress=True)
 
-            assert mock_pysus.download.call_count == 2
+            assert mock_tqdm_gather.called
+
+            called_args = mock_tqdm_gather.call_args[0]
+            assert len(called_args) == 2
 
 
 class TestFetchDataRunningLoop:
