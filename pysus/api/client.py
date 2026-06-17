@@ -306,7 +306,7 @@ class PySUS:
                 local_path=local_path,
                 remote_path=str(remote_path),
                 client_name=client_name,
-                status=DownloadStatus.DOWNLOADING,
+                status=DownloadStatus.COMPLETED,
                 year=file.year,
                 month=file.month,
                 state=file.state,
