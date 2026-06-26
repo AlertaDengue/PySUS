@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - docker-compose
-  - python>=3.10,<3.13
+  - python>=3.11,<3.14
   - jupyter
   - make
   - pip
