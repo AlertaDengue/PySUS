@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.4.0](https://github.com/AlertaDengue/PySUS/compare/2.3.0...2.4.0) (2026-06-26)
+
+### Features
+
+* **deps:** update numpy version ([#293](https://github.com/AlertaDengue/PySUS/issues/293)) ([7a1e73b](https://github.com/AlertaDengue/PySUS/commit/7a1e73bf5d97e1086af4b4d7b3d1f2db762ec661))
+
 ## [2.3.0](https://github.com/AlertaDengue/PySUS/compare/2.2.0...2.3.0) (2026-06-14)
 
 ### Features
