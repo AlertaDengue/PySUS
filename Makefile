@@ -22,7 +22,7 @@ export PRINT_HELP_PYSCRIPT
 help:
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-DOCKER = docker compose -p pysus -f docker/docker-compose.yaml
+DOCKER = docker compose -p pysus
 SERVICE :=
 SEMANTIC_RELEASE = npx --yes \
           -p semantic-release \
@@ -53,6 +53,14 @@ test-jupyter-pysus: ## run pytest for notebooks inside jupyter container
 .PHONY: test-pysus
 test-pysus: ## run tests quickly with the default Python
 	poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15
+
+.PHONY: test-pysus-with-coverage
+test-pysus-with-coverage: ## run tests with coverage report
+	poetry run pytest -vv pysus/tests/ --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
+
+.PHONY: lint
+lint:
+	pre-commit run --all-files
 
 # RELEASE
 # =======

@@ -2,34 +2,36 @@ name: release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag for Docker image (e.g., 9.9.9-test)"
+        required: false
+        type: string
   push:
-    branches: [ main ]
+    branches: [main]
+    tags:
+      - "[0-9]*"
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        shell: bash -l {0}
 
     steps:
     - uses: actions/checkout@v4
 
-    - uses: conda-incubator/setup-miniconda@v3
-      with:
-        miniforge-version: latest
-        environment-file: conda/dev.yaml
-        channels: conda-forge,nodefaults
-        activate-environment: pysus
-        auto-update-conda: true
-        conda-solver: libmamba
+    - name: Install poetry
+      run: pipx install poetry
 
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       with:
-        node-version: 20.11.0
+        node-version: 22
 
     - name: Test release
       if: ${{ github.event_name != 'workflow_dispatch' }}
@@ -45,3 +47,65 @@ jobs:
       run: |
         poetry config pypi-token.pypi ${PYPI_TOKEN}
         make release
+
+  docker-push:
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: alertadengue
+        password: ${{ secrets.DOCKER_TOKEN }}
+
+    - name: Extract version
+      id: version
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: true
+        tags: |
+          alertadengue/pysus:latest
+          alertadengue/pysus:${{ steps.version.outputs.tag }}
+
+  docs:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc
+
+    - name: Install dependencies
+      run: |
+        pip install poetry wget
+        poetry config virtualenvs.create false
+        poetry install --no-root --with docs
+
+    - name: Build docs
+      run: |
+        cd docs
+        make html

@@ -1,0 +1,16 @@
+services:
+  jupyter:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    hostname: pysus-jupyter
+    container_name: pysus-jupyter
+    ports:
+      - "8888:8888"
+    privileged: true
+    environment:
+      - DISPLAY=:0
+      - CI=${CI:-0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    entrypoint: ["/entrypoint.sh"]

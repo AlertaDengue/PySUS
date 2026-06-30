@@ -1,6 +1,121 @@
 Release Notes
 ---
 
+## [2.4.0](https://github.com/AlertaDengue/PySUS/compare/2.3.0...2.4.0) (2026-06-26)
+
+### Features
+
+* **deps:** update numpy version ([#293](https://github.com/AlertaDengue/PySUS/issues/293)) ([7a1e73b](https://github.com/AlertaDengue/PySUS/commit/7a1e73bf5d97e1086af4b4d7b3d1f2db762ec661))
+
+## [2.3.0](https://github.com/AlertaDengue/PySUS/compare/2.2.0...2.3.0) (2026-06-14)
+
+### Features
+
+* **ducklake:** split the catalog.db into individual files for each dataset ([#279](https://github.com/AlertaDengue/PySUS/issues/279)) ([714edad](https://github.com/AlertaDengue/PySUS/commit/714edad4658e1fae93f7ddf7e10baebcf21945f8))
+* improve ducklake api struture ([#283](https://github.com/AlertaDengue/PySUS/issues/283)) ([2ee7b70](https://github.com/AlertaDengue/PySUS/commit/2ee7b70cb49d3235e879f108c58e90e821201840))
+
+## [2.2.0](https://github.com/AlertaDengue/PySUS/compare/2.1.0...2.2.0) (2026-05-26)
+
+### Features
+
+* **package:** remove the need of the libffi-dev requirement on pyreaddbc ([#278](https://github.com/AlertaDengue/PySUS/issues/278)) ([5f8269f](https://github.com/AlertaDengue/PySUS/commit/5f8269f8d286a898ee27fc5cdafcc9a522030ef1))
+
+## [2.1.0](https://github.com/AlertaDengue/PySUS/compare/2.0.4...2.1.0) (2026-05-22)
+
+### Features
+
+* include the 'client' field in the querying and prioritize FTP client ([#273](https://github.com/AlertaDengue/PySUS/issues/273)) ([448c543](https://github.com/AlertaDengue/PySUS/commit/448c5434a68c53e6baa980aa5350a90c6d179f8c))
+
+### Bug Fixes
+
+* **dadosgov:** include group aliases on DadosGov to link files with FTP ([#272](https://github.com/AlertaDengue/PySUS/issues/272)) ([6aca1bd](https://github.com/AlertaDengue/PySUS/commit/6aca1bd56498516e38d8183558ce5d5fb7de4912))
+
+## [2.0.4](https://github.com/AlertaDengue/PySUS/compare/2.0.3...2.0.4) (2026-05-18)
+
+### Bug Fixes
+
+* **docker:** simplify docker instalation & some fixes ([#266](https://github.com/AlertaDengue/PySUS/issues/266)) ([8eb7d9f](https://github.com/AlertaDengue/PySUS/commit/8eb7d9f9151a6383fb25b572643ef9f72765b586))
+
+## [2.0.3](https://github.com/AlertaDengue/PySUS/compare/2.0.2...2.0.3) (2026-05-15)
+
+### Bug Fixes
+
+* **parquet:** include parsings to parquet reading ([#265](https://github.com/AlertaDengue/PySUS/issues/265)) ([790c387](https://github.com/AlertaDengue/PySUS/commit/790c3870d2fa815e99e7e3b8583226bbc7bc4ce5))
+
+## [2.0.2](https://github.com/AlertaDengue/PySUS/compare/2.0.1...2.0.2) (2026-05-13)
+
+### Bug Fixes
+
+* **sinan:** fix group on ducklake query ([#263](https://github.com/AlertaDengue/PySUS/issues/263)) ([a3baa7b](https://github.com/AlertaDengue/PySUS/commit/a3baa7bfda1424cdba0d92e39626465ef2c72f5f))
+
+## [2.0.1](https://github.com/AlertaDengue/PySUS/compare/2.0.0...2.0.1) (2026-05-05)
+
+### Bug Fixes
+
+* include group on sinan listing ([#259](https://github.com/AlertaDengue/PySUS/issues/259)) ([e7d2117](https://github.com/AlertaDengue/PySUS/commit/e7d211734ab5c40812f98ad1659a36822f5874ae))
+
+## [2.0.0](https://github.com/AlertaDengue/PySUS/compare/1.0.1...2.0.0) (2026-05-05)
+
+### ⚠ BREAKING CHANGES
+
+* v2
+
+* chore: include a file listing on _impl
+
+* chore: retry downloading catalog if it fail
+
+* tests: include more tests
+* version 2.0.0
+
+* remove circular imports
+
+* move individual database files to databases.py
+
+* normalize FileDescription to prepare for ducklake implementation
+
+* start building the dadosgov models to extract & describe the files within the datasets
+* refactor local data files; implement groups for pysus dep; async everything
+
+* refactor(ducklake): implement abstract classes on the ducklake api classes
+
+* refactor(ducklake): implement abstract classes on the ducklake api classes
+
+* refactor(ftp): implement base models to ftp api
+
+* finish implementing it on all ftp databases
+
+* include some tests
+
+* update tqdm
+
+* implement interfaces on dadosgov modules
+
+* create a PySUS orchestrator that will be a bridge between remote clients and local files
+
+* clean package/prepare to v2 release; start refining tui
+
+* restric dependency import error only to DBC
+
+* start testing the programatically upload of the files on s3
+
+* fix all the mypy linting errors
+
+* include more tests now that catalog.db is filled
+
+* fix tests
+
+### Features
+
+* include a python API to dados.gov.br API ([#241](https://github.com/AlertaDengue/PySUS/issues/241)) ([f20a1c9](https://github.com/AlertaDengue/PySUS/commit/f20a1c99ef3ad7962ba5366d657a1638b24e3d8d))
+* include the simple implementation & update docs ([#256](https://github.com/AlertaDengue/PySUS/issues/256)) ([711af95](https://github.com/AlertaDengue/PySUS/commit/711af95e915b9066ab2b87755657ba7f3be3336e))
+
+## [1.0.1](https://github.com/AlertaDengue/PySUS/compare/1.0.0...1.0.1) (2026-02-19)
+
+### Bug Fixes
+
+* **release:** reinclude poetry install w/o full conda install on release.yaml ([#238](https://github.com/AlertaDengue/PySUS/issues/238)) ([d173ff6](https://github.com/AlertaDengue/PySUS/commit/d173ff6a2412b096d7501603d4d69b3b4a9e4bb8))
+* **release:** update node dep on release.yaml ([#236](https://github.com/AlertaDengue/PySUS/issues/236)) ([caefbeb](https://github.com/AlertaDengue/PySUS/commit/caefbeb369fb9d13c37f30757c96abf47623a16d))
+
 ## [1.0.0](https://github.com/AlertaDengue/PySUS/compare/0.15.0...1.0.0) (2025-06-11)
 
 ### ⚠ BREAKING CHANGES

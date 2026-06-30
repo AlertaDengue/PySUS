@@ -1,0 +1,830 @@
+"""DATASUS FTP dataset definitions with filename parsers for each database."""
+
+from typing import Any
+
+from pysus.api.ftp.models import Dataset, Directory
+from pysus.utils import zfill_year
+
+
+class CIHA(Dataset):
+    """Comunicação de Internação Hospitalar e Ambulatorial (CIHA)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/CIHA/201101_/Dados"),
+    ]
+
+    group_definitions: dict[str, str] = {
+        "CIHA": "Comunicação de Internação Hospitalar e Ambulatorial",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "CIHA"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Comunicação de Internação Hospitalar e Ambulatorial"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return (
+            "A CIHA foi criada para ampliar o processo de planejamento, "
+            "programação, controle, avaliação e regulação da assistência à "
+            "saúde permitindo um conhecimento mais abrangente e profundo dos "
+            "perfis nosológico e epidemiológico da população brasileira."
+        )
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a CIHA filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw CIHA filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            group_code = name[:4]
+            state = name[4:6]
+            year_short = name[6:8]
+            month = name[8:10]
+
+            group_info = None
+            if group_code in self.group_definitions:
+                group_info = {
+                    "name": group_code,
+                    "long_name": self.group_definitions[group_code],
+                    "description": None,
+                }
+
+            return {
+                "group": group_info,
+                "state": state,
+                "year": int(zfill_year(year_short)),
+                "month": int(month),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None, "month": None}
+
+
+class CNES(Dataset):
+    """Cadastro Nacional de Estabelecimentos de Saúde (CNES)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/CNES/200508_/Dados"),
+    ]
+    group_definitions: dict[str, str] = {
+        "DC": "Dados Complementares",
+        "EE": "Estabelecimento de Ensino",
+        "EF": "Estabelecimento Filantrópico",
+        "EP": "Equipes",
+        "EQ": "Equipamentos",
+        "GM": "Gestão e Metas",
+        "HB": "Habilitação",
+        "IN": "Incentivos",
+        "LT": "Leitos",
+        "PF": "Profissional",
+        "RC": "Regra Contratual",
+        "SR": "Serviço Especializado",
+        "ST": "Estabelecimentos",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "CNES"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Cadastro Nacional de Estabelecimentos de Saúde"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return (
+            "O Cadastro Nacional de Estabelecimentos de Saúde (CNES) é o "
+            "sistema de informação oficial de cadastramento de informações "
+            "de todos os estabelecimentos de saúde no país."
+        )
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a CNES filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw CNES filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            group_code = name[:2]
+            state = name[2:4]
+            year_short = name[4:6]
+            month = name[6:8]
+
+            group_info = None
+            if group_code in self.group_definitions:
+                group_info = {
+                    "name": group_code,
+                    "long_name": self.group_definitions[group_code],
+                }
+
+            return {
+                "group": group_info,
+                "state": state,
+                "year": int(zfill_year(year_short)),
+                "month": int(month),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None, "month": None}
+
+
+class SINASC(Dataset):
+    """Sistema de Informações sobre Nascidos Vivos (SINASC)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/SINASC/NOV/DNRES"),
+        Directory("/dissemin/publicos/SINASC/ANT/DNRES"),
+    ]
+    group_definitions: dict[str, str] = {
+        "DN": "Declarações de Nascidos Vivos",
+        "DNR": "Nascidos Vivos por UF de residência",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "SINASC"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Sistema de Informações sobre Nascidos Vivos"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return """
+            O SINASC fornece subsídios para o diagnóstico de saúde e
+            planejamento de políticas.
+        """
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SINASC filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SINASC filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            year_short = name[-2:]
+            charname = "".join([c for c in name if not c.isnumeric()])
+            group_code, state = charname[:-2], charname[-2:]
+
+            return {
+                "group": {
+                    "name": group_code,
+                    "long_name": self.group_definitions.get(group_code),
+                },
+                "state": state,
+                "year": int(zfill_year(year_short)),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None}
+
+
+class SIM(Dataset):
+    """Sistema de Informação sobre Mortalidade (SIM)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/SIM/CID10/DORES"),
+        Directory("/dissemin/publicos/SIM/CID9/DORES"),
+    ]
+    group_definitions: dict[str, str] = {
+        "DO": "Mortalidade Geral (CID-10)",
+        "DOR": "Mortalidade Geral (CID-9)",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "SIM"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Sistema de Informação sobre Mortalidade"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return "O SIM coleta dados sobre obitos no pais para analise epidemiologica."  # noqa
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SIM filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIM filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            if "CID9" in filename:
+                group_code, state, year = name[:-4], name[-4:-2], name[-2:]
+            else:
+                group_code, state, year = name[:-6], name[-6:-4], name[-4:]
+
+            return {
+                "group": {
+                    "name": group_code,
+                    "long_name": self.group_definitions.get(group_code),
+                },
+                "state": state,
+                "year": int(zfill_year(year)),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None}
+
+
+class PNI(Dataset):
+    """Programa Nacional de Imunizações (PNI)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/PNI/DADOS"),
+    ]
+    group_definitions: dict[str, str] = {
+        "CPNI": "Cobertura Vacinal",
+        "DPNI": "Doses Aplicadas",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "PNI"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Programa Nacional de Imunizações"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return "O SI-PNI monitora a cobertura vacinal e doses aplicadas."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a PNI filename into group, state and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw PNI filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            group_code, state, year_short = name[:4], name[4:6], name[-2:]
+
+            return {
+                "group": {
+                    "name": group_code,
+                    "long_name": self.group_definitions.get(group_code),
+                },
+                "state": state,
+                "year": int(zfill_year(year_short)),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None}
+
+
+class IBGEDATASUS(Dataset):
+    """População Residente e Projeções (IBGE)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/IBGE/POP"),
+        Directory("/dissemin/publicos/IBGE/censo"),
+        Directory("/dissemin/publicos/IBGE/POPTCU"),
+        Directory("/dissemin/publicos/IBGE/projpop"),
+    ]
+
+    group_definitions: dict[str, str] = {
+        "POP": "População",
+        "POPT": "População Total",
+        "ALF": "Alfabetização",
+        "ESCA": "Escolaridade A (Geral)",
+        "ESCB": "Escolaridade B (Níveis Específicos)",
+        "RENDA": "Rendimento e Renda",
+        "IDOSO": "População Idosa",
+        "PROJ": "Projeções Populacionais",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "IBGE"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "População Residente e Projeções (IBGE)"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return "Informações sobre a população residente obtidas de Censos."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an IBGE filename into group and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw IBGE filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``year``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            year = name[-2:]
+            group, _, year = name[:-4], name[-4:-2], name[-2:]
+
+            if group == "PROJ":
+                year = "20" + str(year)
+            else:
+                year = str(zfill_year(year))
+
+            return {
+                "group": {
+                    "name": group,
+                    "long_name": self.group_definitions.get(group, ""),
+                },
+                "year": int(year),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "year": None}
+
+
+class SIA(Dataset):
+    """Sistema de Informações Ambulatoriais — outpatient information system."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/SIASUS/199407_200712/Dados"),
+        Directory("/dissemin/publicos/SIASUS/200801_/Dados"),
+    ]
+    group_definitions: dict[str, str] = {
+        "PA": "Produção Ambulatorial",
+        "BI": "Boletim de Produção Ambulatorial Individualizado",
+        "AD": "APAC de Laudos Diversos",
+        "AM": "APAC de Medicamentos",
+        "AN": "APAC de Nefrologia",
+        "AQ": "APAC de Quimioterapia",
+        "AR": "APAC de Radioterapia",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "SIA"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Sistema de Informações Ambulatoriais"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return "O SIA acompanha as ações de saúde produzidas."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an SIA filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIA filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            digits = "".join([d for d in name if d.isdigit()])
+            chars = name.split(digits)[0]
+
+            group_code = chars[:-2]
+            state = chars[-2:]
+            year_short = digits[:2]
+            month = digits[2:]
+
+            group_info = None
+            if group_code in self.group_definitions:
+                group_info = {
+                    "name": group_code,
+                    "long_name": self.group_definitions[group_code],
+                }
+
+            return {
+                "group": group_info,
+                "state": state,
+                "year": int(zfill_year(year_short)),
+                "month": int(month),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None, "month": None}
+
+
+class SIH(Dataset):
+    """Sistema de Informações Hospitalares (SIH)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/SIHSUS/199201_200712/Dados"),
+        Directory("/dissemin/publicos/SIHSUS/200801_/Dados"),
+    ]
+    group_definitions: dict[str, str] = {
+        "RD": "AIH Reduzida",
+        "RJ": "AIH Rejeitada",
+        "SP": "Serviços Profissionais",
+        "ER": "AIH Rejeitada com Erro",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "SIH"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Sistema de Informações Hospitalares"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return """
+            O SIH processa as internações hospitalares financiadas pelo SUS.
+        """
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse an SIH filename into group, state, year and month metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SIH filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``state``, ``year``, ``month``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            group_code = name[:2]
+            state = name[2:4]
+            year_short = name[4:6]
+            month = name[6:8]
+
+            return {
+                "group": {
+                    "name": group_code,
+                    "long_name": self.group_definitions.get(group_code),
+                },
+                "state": state,
+                "year": int(zfill_year(year_short)),
+                "month": int(month),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "state": None, "year": None, "month": None}
+
+
+class SINAN(Dataset):
+    """Sistema de Informação de Agravos de Notificação (SINAN)."""
+
+    paths: list[Directory] = [
+        Directory("/dissemin/publicos/SINAN/DADOS/FINAIS"),
+        Directory("/dissemin/publicos/SINAN/DADOS/PRELIM"),
+    ]
+
+    group_definitions: dict[str, str] = {
+        "ACBI": "Acidente de trabalho com material biológico",
+        "ACGR": "Acidente de trabalho",
+        "ANIM": "Acidente por Animais Peçonhentos",
+        "ANTR": "Atendimento Antirrabico",
+        "BOTU": "Botulismo",
+        "CANC": "Cancêr relacionado ao trabalho",
+        "CHAG": "Doença de Chagas Aguda",
+        "CHIK": "Febre de Chikungunya",
+        "COLE": "Cólera",
+        "COQU": "Coqueluche",
+        "DENG": "Dengue",
+        "DERM": "Dermatoses ocupacionais",
+        "DIFT": "Difteria",
+        "ESQU": "Esquistossomose",
+        "EXAN": "Doença exantemáticas",
+        "FMAC": "Febre Maculosa",
+        "FTIF": "Febre Tifóide",
+        "HANS": "Hanseníase",
+        "HANT": "Hantavirose",
+        "HEPA": "Hepatites Virais",
+        "IEXO": "Intoxicação Exógena",
+        "INFL": "Influenza Pandêmica",
+        "LEIV": "Leishmaniose Visceral",
+        "LEPT": "Leptospirose",
+        "LERD": "LER/Dort",
+        "LTAN": "Leishmaniose Tegumentar Americana",
+        "MALA": "Malária",
+        "MENI": "Meningite",
+        "MENT": "Transtornos mentais relacionados ao trabalho",
+        "NTRA": "Notificação de Tracoma",
+        "PAIR": "Perda auditiva por ruído relacionado ao trabalho",
+        "PEST": "Peste",
+        "PFAN": "Paralisia Flácida Aguda",
+        "PNEU": "Pneumoconioses realacionadas ao trabalho",
+        "RAIV": "Raiva",
+        "SDTA": "Surto Doenças Transmitidas por Alimentos",
+        "SIFA": "Sífilis Adquirida",
+        "SIFC": "Sífilis Congênita",
+        "SIFG": "Sífilis em Gestante",
+        "SRC": "Síndrome da Rubéola Congênia",
+        "TETA": "Tétano Acidental",
+        "TETN": "Tétano Neonatal",
+        "TOXC": "Toxoplasmose Congênita",
+        "TOXG": "Toxoplasmose Gestacional",
+        "TRAC": "Inquérito de Tracoma",
+        "TUBE": "Tuberculose",
+        "VARC": "Varicela",
+        "VIOL": "Violência doméstica, sexual e/ou outras violências",
+        "ZIKA": "Zika Vírus",
+    }
+
+    @property
+    def name(self) -> str:
+        """Return the dataset short name.
+
+        Returns
+        -------
+        str
+            The dataset acronym (e.g. "CIHA").
+        """
+        return "SINAN"
+
+    @property
+    def long_name(self) -> str:
+        """Return the dataset full name in Portuguese.
+
+        Returns
+        -------
+        str
+            The full Portuguese name of the dataset.
+        """
+        return "Sistema de Informação de Agravos de Notificação"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the dataset's purpose.
+
+        Returns
+        -------
+        str
+            A description of the dataset's purpose in Portuguese.
+        """
+        return "O SINAN é alimentado pela notificação de doenças compulsórias."
+
+    def formatter(self, filename: str) -> dict[str, Any]:
+        """Parse a SINAN filename into group and year metadata.
+
+        Parameters
+        ----------
+        filename : str
+            The raw SINAN filename to parse.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dict with keys ``group``, ``year``.
+            On parse failure values are set to None.
+        """
+        try:
+            name = filename.split(".")[0].upper()
+            year_short = name[-2:]
+
+            if name.startswith("SRC"):
+                group_code = name[:3]
+            elif name == "LEIBR22":
+                group_code = "LEIV"  # MISPELLED FILE NAME
+            elif name == "LERBR19":
+                group_code = "LERD"  # ANOTHER ONE
+            else:
+                group_code = name[:4]
+
+            return {
+                "group": {
+                    "name": group_code,
+                    "long_name": self.group_definitions.get(group_code),
+                },
+                "year": int(zfill_year(year_short)),
+            }
+        except (IndexError, ValueError):
+            return {"group": None, "year": None}
+
+
+AVAILABLE_DATABASES: list[type[Dataset]] = [
+    CIHA,
+    CNES,
+    IBGEDATASUS,
+    PNI,
+    SIA,
+    SIH,
+    SIM,
+    SINAN,
+    SINASC,
+]

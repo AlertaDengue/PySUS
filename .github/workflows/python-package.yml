@@ -4,41 +4,88 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    defaults:
-      run:
-        shell: bash -l {0}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ (matrix.os == 'windows-latest' && 45) || 15 }}
 
     strategy:
       matrix:
-        python_version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
 
     concurrency:
-      group: ci-tests-${{ matrix.python_version }}-${{ github.ref }}
+      group: ci-tests-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.ref }}
       cancel-in-progress: true
 
     steps:
     - uses: actions/checkout@v4
 
-    - uses: conda-incubator/setup-miniconda@v3
+    - uses: actions/setup-python@v5
       with:
-        miniforge-version: latest
-        environment-file: conda/dev.yaml
-        channels: conda-forge,nodefaults
-        activate-environment: pysus
-        auto-update-conda: true
-        conda-solver: libmamba
+        python-version: ${{ matrix.python-version }}
 
-    - name: Run jupyterlab with PySUS
+    - name: Install dependencies
+      shell: bash
       run: |
-        make run-jupyter-pysus
-        # make test-jupyter-pysus  ## takes too long
+        pip install poetry poetry-plugin-export
+        poetry config virtualenvs.create false
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          poetry install --without dev
+          pip install pre-commit
+        else
+          poetry install --without dev
+        fi
+        pip install pytest pytest-timeout pytest-retry pytest-asyncio pytest-cov
 
-    - name: Linting & Tests
+    - name: Linting
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: pre-commit run --files pysus/**/*
+
+    - name: Tests (Linux)
+      if: matrix.os != 'windows-latest'
+      shell: bash
       run: |
-        export CI=1
-        poetry install
-        pre-commit run --all-files
-        make test-pysus
+        poetry run pytest -vv pysus/tests/ --retries 3 --retry-delay 15 --cov=pysus --cov-report=xml:coverage.xml --cov-report=term-missing
+
+    - name: Tests (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        export DUCKDB_NO_THREADS=1
+        poetry run pytest -vv pysus/tests/ --timeout=480 -p no:cacheprovider
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: false
+
+  docker-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker compose build
+
+    - name: Start container
+      run: docker compose up -d
+
+    - name: Wait for Jupyter
+      run: |
+        for i in $(seq 1 10); do
+          curl -s -o /dev/null http://127.0.0.1:8888 && break
+          sleep 2
+        done
+
+    - name: Run tests inside container
+      run: docker compose exec -T -w /usr/src jupyter python3 -m pytest -vv pysus/tests/ --retries 3 --retry-delay 15 -x -o cache_dir=/tmp/.pytest_cache
+
+    - name: Cleanup
+      if: always()
+      run: docker compose down -v
