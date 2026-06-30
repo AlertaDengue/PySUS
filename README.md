@@ -2,6 +2,7 @@
 [![DOI](https://zenodo.org/badge/63720586.svg)](https://zenodo.org/badge/latestdoi/63720586)
 [![release](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml/badge.svg)](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml)
 [![Documentation Status](https://readthedocs.org/projects/pysus/badge/?version=latest)](https://pysus.readthedocs.io/en/latest/?badge=latest)
+[![EpidBot Ready](https://img.shields.io/badge/EpidBot-Ready-brightgreen?style=flat-square&logo=robot&logoColor=white)](https://epidbot.kwar-ai.com.br)
 
 This package collects a set of utilities for handling with public databases published by Brazil's DATASUS
 The documentation of how to use PySUS can be found [here](http://pysus.readthedocs.io/en/latest/)
