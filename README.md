@@ -124,7 +124,7 @@ async def main():
         df = pysus.read_parquet(paths, mode="union").df()
 ```
 
-### Using the Streamlit Web UI (experimental feature)
+### Using the Streamlit Web UI
 
 Launch the local web interface:
 
@@ -143,14 +143,6 @@ Or run directly with Streamlit:
 ```bash
 streamlit run pysus/http/app.py
 ```
-
-The web interface provides three data sources:
-
-- **Default (DuckLake)**: Queries the PySUS S3 catalog — the primary data source. Select a dataset and filter by group, state, year, and month.
-- **FTP DataSUS**: Browses legacy DATASUS FTP directories. Auto-connects on tab selection.
-- **API DataSUS (DadosGov)**: Queries the dados.gov.br open data API. Requires an API token.
-
-Use the interactive filters to find files, add them to the download queue, and download with a single click. After a query, an expandable Python snippet shows the equivalent code to reproduce the same operation in a script or notebook.
 
 ## Features
 

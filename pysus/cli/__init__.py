@@ -11,7 +11,7 @@ def version():
 
 @app.command()
 def http(
-    port: int = typer.Option(  # noqa: B008
+    port: int = typer.Option(
         8501,
         "-p",
         "--port",
@@ -20,8 +20,8 @@ def http(
 ):
     """Launch the local Streamlit visual interface."""
     try:
-        import streamlit.web.bootstrap as bootstrap  # noqa
-        from streamlit.runtime.scriptrunner import get_script_run_ctx  # noqa
+        import streamlit.web.bootstrap as bootstrap
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
     except ImportError:
         raise ImportError(
             "The HTTP UI requires extra dependencies. "
