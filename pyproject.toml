@@ -11,7 +11,8 @@ exclude = [
   "pysus/tests",
   "pysus/tests/**",
   "pysus/management",
-  "pysus/management/**"
+  "pysus/management/**",
+  "pysus/http/**",
 ]
 
 [tool.poetry.dependencies]
@@ -105,6 +106,8 @@ exclude = ["*.git", "docs/"]
 omit = [
     "pysus/management/client.py",
     "pysus/tui/*",
+    "pysus/http/*",
+    "pysus/cli/*",
 ]
 
 [[tool.mypy.overrides]]

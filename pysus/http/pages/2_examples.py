@@ -1,3 +1,3 @@
 import streamlit as st
 
-st.title("Datasets")
+st.title("Examples")
