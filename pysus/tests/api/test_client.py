@@ -551,6 +551,50 @@ class TestDownload:
         assert result == mock_local
 
     @pytest.mark.asyncio
+    async def test_download_sets_status_to_completed_on_success(self, test_db_path):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from pysus.api.extensions import ExtensionFactory
+
+        mock_local = MagicMock()
+        mock_local.path.exists.return_value = False
+        mock_file = MagicMock()
+        mock_file.size = 1000
+        mock_file.client.name = "ftp"
+        mock_file.path = test_db_path.parent / "remote.dbc"
+        mock_file.basename = "remote.dbc"
+
+        client = PySUS(db_path=test_db_path)
+
+        mock_update = AsyncMock()
+
+        with (
+            patch.object(
+                client, "get_local_file", new=AsyncMock(return_value=mock_local)
+            ),
+            patch.object(
+                client,
+                "_get_dest_path",
+                return_value=test_db_path.parent / "test.dbc",
+            ),
+            patch.object(client, "_update_state", new=mock_update),
+            patch.object(
+                ExtensionFactory,
+                "instantiate",
+                new_callable=AsyncMock,
+                return_value=mock_local,
+            ),
+        ):
+            mock_client = AsyncMock()
+            client._ftp = mock_client
+
+            await client.download(mock_file)
+
+        assert mock_update.call_count == 2        
+        final_call = mock_update.call_args_list[1]
+        assert final_call.kwargs['status'] == DownloadStatus.COMPLETED
+
+    @pytest.mark.asyncio
     async def test_download_re_fetches_when_size_differs(self, test_db_path):
         import pathlib
         from unittest.mock import AsyncMock, MagicMock, patch
