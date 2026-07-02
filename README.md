@@ -11,7 +11,7 @@ PySUS is a Python package for accessing and analyzing Brazil's public health dat
 ## What's New in PySUS 2.0
 
 - **Simplified API**: New high-level functions for direct DataFrame access
-- **CLI & TUI**: Launch the text-based user interface from command line
+- **Streamlit Web UI**: Launch a local web interface for browsing and downloading datasets
 - **Flexible Schema Modes**: Read multiple parquet files with union, intersection, or strict modes
 - **SQL Query**: Filter catalog queries by dataset, group, state, year, and month
 
@@ -21,9 +21,9 @@ PySUS is a Python package for accessing and analyzing Brazil's public health dat
 pip install pysus
 ```
 
-For the terminal user interface (TUI):
+For the local Streamlit web interface:
 ```bash
-pip install pysus[tui]
+pip install pysus[http]
 ```
 
 ### Docker
@@ -124,21 +124,33 @@ async def main():
         df = pysus.read_parquet(paths, mode="union").df()
 ```
 
-### Using the TUI (unstable/under testing)
+### Using the Streamlit Web UI (experimental feature)
 
-Launch the interactive text-based interface:
+Launch the local web interface:
 
 ```bash
-pysus tui -l pt
+pysus http
 ```
 
-Or from Python:
+Or with a custom port:
 
-```python
-from pysus.tui.app import PySUS
-app = PySUS(lang="pt")
-app.run()
+```bash
+pysus http -p 8080
 ```
+
+Or run directly with Streamlit:
+
+```bash
+streamlit run pysus/http/app.py
+```
+
+The web interface provides three data sources:
+
+- **Default (DuckLake)**: Queries the PySUS S3 catalog — the primary data source. Select a dataset and filter by group, state, year, and month.
+- **FTP DataSUS**: Browses legacy DATASUS FTP directories. Auto-connects on tab selection.
+- **API DataSUS (DadosGov)**: Queries the dados.gov.br open data API. Requires an API token.
+
+Use the interactive filters to find files, add them to the download queue, and download with a single click. After a query, an expandable Python snippet shows the equivalent code to reproduce the same operation in a script or notebook.
 
 ## Features
 
@@ -147,7 +159,7 @@ app.run()
 - **DuckLake Integration**: S3-compatible cloud storage for parquet catalogs
 - **Local Catalog**: SQLite-based tracking of download history to avoid re-downloads
 - **Type Inference**: Automatic data type conversion from legacy formats (DBF, DBC)
-- **CLI with TUI**: Command-line interface with interactive text-based UI
+- **CLI with Streamlit UI**: Command-line interface with local web-based UI
 
 ## Architecture
 
