@@ -33,8 +33,8 @@ st.markdown(
 )
 
 
-@st.cache_data(show_spinner="Loading datasets...")
-def load_catalog() -> None:
+@st.cache_data(show_spinner="loading datasets...")
+def _load_catalog() -> None:
     async def _fetch():
         async with PySUS():
             return
@@ -65,26 +65,26 @@ def _lang_selector() -> None:
 
 
 def home() -> None:
-    catalog = load_catalog()
-    st.session_state.catalog = catalog
-
     _lang_selector()
     lang: str = st.session_state.lang
+
+    st.title("Datasets")
 
 
 if __name__ == "__main__":
     _init_lang()
+    _load_catalog()
     lang = st.session_state.lang
 
-    home_page = st.Page(home, title=t("home_page", lang), default=True)
-    datasets_page = st.Page("pages/1_ducklake.py", title="Datasets")
-    ftp_page = st.Page("pages/2_ftp.py", title="FTP")
-    dadosgov_page = st.Page("pages/3_dadosgov.py", title="DadosGov")
+    home_page = st.Page(home, title=f"🏠️ {t('home_page', lang)}", default=True)
+    client_page = st.Page("pages/1_client.py", title="📥️ Downloads")
+
+    examples_page = st.Page("pages/2_examples.py", title="Examples")
 
     st.logo(
-        "https://raw.githubusercontent.com/luabida/PySUS/709a96d0cc9199894a2d9619a0189617d8f46a55/pysus/http/assets/logo_large.svg",
-        icon_image="https://raw.githubusercontent.com/luabida/PySUS/7a3c210c80c47362d70996c0a005b60321f4bffa/pysus/http/assets/logo.svg",
+        "https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo_large.svg",
+        icon_image="https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo.svg",
     )
 
-    pg = st.navigation([home_page, datasets_page, ftp_page, dadosgov_page])
+    pg = st.navigation({"": [home_page, client_page], "docs": [examples_page]})
     pg.run()
