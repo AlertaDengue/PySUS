@@ -649,8 +649,9 @@ async def test_dbf_to_parquet_empty(tmp_dir):
     dbf_path = tmp_dir / "test.dbf"
     _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [])
     obj = DBF(path=dbf_path)
-    with pytest.raises(TypeError):
-        await obj.to_parquet()
+    result = await obj.to_parquet()
+    assert isinstance(result, Parquet)
+    assert result.path.exists()
 
 
 @pytest.mark.asyncio
@@ -1142,6 +1143,7 @@ async def test_zip_to_parquet_no_tabular(tmp_dir):
 async def test_dbc_to_parquet_permission_error_cleanup(tmp_dir):
     """Cover the PermissionError retry in DBC.to_parquet finally block."""
     from unittest.mock import patch
+
     from pysus.api.extensions import DBC
 
     dbf_path = tmp_dir / "test.dbf"

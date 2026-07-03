@@ -3,7 +3,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pysus.api.client import DownloadStatus, LocalFileState, PySUS
-from pysus.api.errors import ConnectionError, DownloadError, FormatError, ValidationError
+from pysus.api.errors import (
+    ConnectionError,
+    DownloadError,
+    FormatError,
+    ValidationError,
+)
 
 
 @pytest.fixture
@@ -552,7 +557,9 @@ class TestDownload:
         assert result == mock_local
 
     @pytest.mark.asyncio
-    async def test_download_sets_status_to_completed_on_success(self, test_db_path):
+    async def test_download_sets_status_to_completed_on_success(
+        self, test_db_path
+    ):
         from unittest.mock import AsyncMock, MagicMock, patch
 
         from pysus.api.extensions import ExtensionFactory
@@ -591,9 +598,9 @@ class TestDownload:
 
             await client.download(mock_file)
 
-        assert mock_update.call_count == 2        
+        assert mock_update.call_count == 2
         final_call = mock_update.call_args_list[1]
-        assert final_call.kwargs['status'] == DownloadStatus.COMPLETED
+        assert final_call.kwargs["status"] == DownloadStatus.COMPLETED
 
     @pytest.mark.asyncio
     async def test_download_re_fetches_when_size_differs(self, test_db_path):

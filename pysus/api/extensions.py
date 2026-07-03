@@ -23,6 +23,11 @@ from pysus import CACHEPATH
 from pysus.api.errors import ConversionError, FormatError
 from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
+from pysus.data.dbf_reader import (
+    read_dbf_fast,
+    read_dbf_schema,
+    stream_dbf_fast,
+)
 
 from .types import FileType
 
@@ -341,7 +346,24 @@ class DBF(BaseTabularFile):
     def columns(self) -> list["Column"]:
         """Return the column metadata from the DBF file."""
 
-        reader = DBFReader(self.path, load=False)
+        try:
+            schema = read_dbf_schema(self.path)
+        except Exception:  # noqa: B902 — fallback to dbfread
+            reader = DBFReader(self.path, load=False)
+            _DBF_DTYPE = {
+                "C": "VARCHAR",
+                "N": "INTEGER",
+                "F": "FLOAT",
+                "D": "DATE",
+                "L": "BOOLEAN",
+                "M": "VARCHAR",
+            }
+            return [
+                Column.from_schema(
+                    name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR")
+                )
+                for f in reader.fields
+            ]
         _DBF_DTYPE = {
             "C": "VARCHAR",
             "N": "INTEGER",
@@ -352,15 +374,18 @@ class DBF(BaseTabularFile):
         }
         return [
             Column.from_schema(
-                name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR")
+                name=f.name, dtype=_DBF_DTYPE.get(f.type_, "VARCHAR")
             )
-            for f in reader.fields
+            for f in schema.fields
         ]
 
     @property
     def rows(self) -> int:
         """Return the number of records in the DBF file."""
-        return len(DBFReader(self.path, load=False))
+        try:
+            return read_dbf_schema(self.path).num_records
+        except Exception:  # noqa: B902 — fallback to dbfread
+            return len(DBFReader(self.path, load=False))
 
     def decode_column(self, value):
         """Decode a raw DBF value, handling byte strings and null bytes.
@@ -386,22 +411,56 @@ class DBF(BaseTabularFile):
             return value.replace("\x00", "").strip()
         return value
 
-    async def load(self) -> pd.DataFrame:
-        """Read the entire DBF file into a DataFrame."""
+    def _load_dbfread(self) -> pd.DataFrame:
+        """Read the entire DBF file into a DataFrame using dbfread."""
+        dbf = DBFReader(self.path, encoding="cp1252", raw=True)
+        df = pd.DataFrame(iter(dbf))
+        return df.map(self.decode_column)
 
-        def _load():
-            """Read the DBF file synchronously in a thread."""
-            dbf = DBFReader(self.path, encoding="cp1252", raw=True)
-            df = pd.DataFrame(iter(dbf))
-            return df.map(self.decode_column)
+    async def load(self, fast: bool = True) -> pd.DataFrame:
+        """Read the entire DBF file into a DataFrame.
 
-        return await to_thread.run_sync(_load)
+        Parameters
+        ----------
+        fast : bool
+            If ``True`` use the byte-level reader (default), falling back
+            to dbfread on failure.
+            If ``False`` use dbfread.
+        """
+
+        if fast:
+            try:
+                return await to_thread.run_sync(read_dbf_fast, self.path)
+            except Exception:  # noqa: B902 — fallback to dbfread
+                pass
+
+        return await to_thread.run_sync(self._load_dbfread)
 
     async def stream(
         self,
         chunk_size: int = 30000,
+        fast: bool = True,
     ) -> AsyncGenerator[pd.DataFrame, None]:
-        """Yield the DBF records in chunks of the given size."""
+        """Yield the DBF records in chunks of the given size.
+
+        Parameters
+        ----------
+        chunk_size : int
+            Number of rows per chunk.
+        fast : bool
+            If ``True`` use the byte-level reader (default), falling back
+            to dbfread on failure.
+            If ``False`` use dbfread.
+        """
+
+        if fast:
+            try:
+                for chunk in stream_dbf_fast(self.path, chunk_size):
+                    yield chunk
+                    await asyncio.sleep(0)
+                return
+            except Exception:  # noqa: B902 — fallback to dbfread
+                pass
 
         def _get_db():
             """Open the DBF reader synchronously in a thread."""
@@ -424,8 +483,20 @@ class DBF(BaseTabularFile):
         output_path: str | Path | None = None,
         chunk_size: int = 30000,
         callback: Callable[[int, int], None] | None = None,
+        fast: bool = True,
     ) -> "Parquet":
-        """Convert the DBF file to Parquet format."""
+        """Convert the DBF file to Parquet format.
+
+        Parameters
+        ----------
+        output_path : str or Path, optional
+        chunk_size : int
+            Rows per chunk when building Parquet.
+        callback : callable, optional
+        fast : bool
+            If ``True`` use the byte-level reader (default).
+            If ``False`` use dbfread.
+        """
         from pysus.api.extensions import ExtensionFactory
 
         out = (
@@ -440,53 +511,98 @@ class DBF(BaseTabularFile):
                 raise ConversionError(f"Could not parse {out} to Parquet")
             return file
 
-        async def _stream_to_single_file():
-            dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
-            total_rows = len(dbf_reader)
-            writer = None
-            records = []
-
+        if fast:
             try:
-                for i, record in enumerate(dbf_reader):
-                    records.append(record)
-                    current_count = i + 1
+                await self._to_parquet_fast(out, chunk_size, callback)
+            except Exception:  # noqa: B902 — fallback to dbfread
+                await self._to_parquet_dbfread(out, chunk_size, callback)
+        else:
+            await self._to_parquet_dbfread(out, chunk_size, callback)
 
-                    if current_count % chunk_size == 0:
-                        df = pd.DataFrame(records).map(self.decode_column)
-                        table = pa.Table.from_pandas(df)
-                        if writer is None:
-                            writer = pq.ParquetWriter(str(out), table.schema)
-                        writer.write_table(table)
-                        records = []
+        file = await ExtensionFactory.instantiate(out)
+        if not isinstance(file, Parquet):
+            raise ConversionError(f"Could not parse {out} to Parquet")
+        return file
 
-                        if callback:
-                            callback(current_count, total_rows)
-                        await asyncio.sleep(0)
+    async def _to_parquet_fast(
+        self,
+        out: Path,
+        chunk_size: int,
+        callback: Callable[[int, int], None] | None,
+    ):
+        schema = read_dbf_schema(self.path)
+        total_rows = schema.num_records
+        writer = None
+        processed = 0
 
-                if records:
+        try:
+            for chunk in stream_dbf_fast(self.path, chunk_size):
+                table = pa.Table.from_pandas(chunk)
+                if writer is None:
+                    writer = pq.ParquetWriter(str(out), table.schema)
+                writer.write_table(table)
+                processed += len(chunk)
+
+                if callback:
+                    callback(processed, total_rows)
+                await asyncio.sleep(0)
+
+            if writer is None:
+                df_empty = pd.DataFrame(
+                    columns=pd.Index([f.name for f in schema.fields])
+                )
+                table_empty = pa.Table.from_pandas(df_empty)
+                writer = pq.ParquetWriter(str(out), table_empty.schema)
+        finally:
+            if writer:
+                writer.close()
+
+    async def _to_parquet_dbfread(
+        self,
+        out: Path,
+        chunk_size: int,
+        callback: Callable[[int, int], None] | None,
+    ):
+        dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
+        total_rows = len(dbf_reader)
+        writer = None
+        records = []
+
+        try:
+            for i, record in enumerate(dbf_reader):
+                records.append(record)
+                current_count = i + 1
+
+                if current_count % chunk_size == 0:
                     df = pd.DataFrame(records).map(self.decode_column)
                     table = pa.Table.from_pandas(df)
                     if writer is None:
                         writer = pq.ParquetWriter(str(out), table.schema)
                     writer.write_table(table)
+                    records = []
 
                     if callback:
-                        callback(total_rows, total_rows)
+                        callback(current_count, total_rows)
+                    await asyncio.sleep(0)
 
+            if records:
+                df = pd.DataFrame(records).map(self.decode_column)
+                table = pa.Table.from_pandas(df)
                 if writer is None:
-                    df_empty = pd.DataFrame(columns=pd.Index(self.columns))
-                    table_empty = pa.Table.from_pandas(df_empty)
-                    writer = pq.ParquetWriter(str(out), table_empty.schema)
+                    writer = pq.ParquetWriter(str(out), table.schema)
+                writer.write_table(table)
 
-            finally:
-                if writer:
-                    writer.close()
+                if callback:
+                    callback(total_rows, total_rows)
 
-        await _stream_to_single_file()
-        file = await ExtensionFactory.instantiate(out)
-        if not isinstance(file, Parquet):
-            raise ConversionError(f"Could not parse {out} to Parquet")
-        return file
+            if writer is None:
+                df_empty = pd.DataFrame(columns=pd.Index(self.columns))
+                table_empty = pa.Table.from_pandas(df_empty)
+                writer = pq.ParquetWriter(str(out), table_empty.schema)
+
+        finally:
+            if writer:
+                writer.close()
 
 
 class DBC(BaseTabularFile):

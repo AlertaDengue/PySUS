@@ -277,7 +277,8 @@ class TestDadosGov:
     async def test_connect_without_token_raises_value_error(self):
         client = DadosGov()
         with pytest.raises(
-            AuthenticationError, match="A token is required to connect to DadosGov"
+            AuthenticationError,
+            match="A token is required to connect to DadosGov",
         ):
             await client.connect(token=None)
 

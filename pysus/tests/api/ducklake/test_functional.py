@@ -53,12 +53,14 @@ async def test_download_http_retry_on_remote_protocol_error(tmp_path):
 
         async def fake_bytes(**kwargs):
             yield final_content
+
         r.aiter_bytes = fake_bytes
         return r
 
     class FailThenSucceedCtx:
         async def __aenter__(self):
             return make_response()
+
         async def __aexit__(self, *a):
             pass
 
@@ -67,8 +69,10 @@ async def test_download_http_retry_on_remote_protocol_error(tmp_path):
     with patch("httpx.AsyncClient", return_value=mock_client):
         with patch("httpx.Timeout", return_value=httpx.Timeout(5.0)):
             with patch("httpx.Limits", return_value=httpx.Limits()):
-                with patch("pysus.api.ducklake.functional.sleep",
-                           new_callable=AsyncMock):
+                with patch(
+                    "pysus.api.ducklake.functional.sleep",
+                    new_callable=AsyncMock,
+                ):
                     await download_http("remote/path", local)
 
     assert local.read_bytes() == final_content
@@ -86,6 +90,7 @@ async def test_download_http_cleanup_partial_on_error(tmp_path):
     class ErrorCtx:
         async def __aenter__(self):
             raise httpx.ConnectError("connection refused")
+
         async def __aexit__(self, *a):
             pass
 
@@ -94,8 +99,10 @@ async def test_download_http_cleanup_partial_on_error(tmp_path):
     with patch("httpx.AsyncClient", return_value=mock_client):
         with patch("httpx.Timeout", return_value=httpx.Timeout(5.0)):
             with patch("httpx.Limits", return_value=httpx.Limits()):
-                with patch("pysus.api.ducklake.functional.sleep",
-                           new_callable=AsyncMock):
+                with patch(
+                    "pysus.api.ducklake.functional.sleep",
+                    new_callable=AsyncMock,
+                ):
                     with pytest.raises(httpx.ConnectError):
                         await download_http("remote/path", local)
 
@@ -123,12 +130,14 @@ async def test_download_http_retry_on_http_error(tmp_path):
 
         async def fake_bytes(**kwargs):
             yield final_content
+
         r.aiter_bytes = fake_bytes
         return r
 
     class RetryCtx:
         async def __aenter__(self):
             return make_response()
+
         async def __aexit__(self, *a):
             pass
 
@@ -137,8 +146,10 @@ async def test_download_http_retry_on_http_error(tmp_path):
     with patch("httpx.AsyncClient", return_value=mock_client):
         with patch("httpx.Timeout", return_value=httpx.Timeout(5.0)):
             with patch("httpx.Limits", return_value=httpx.Limits()):
-                with patch("pysus.api.ducklake.functional.sleep",
-                           new_callable=AsyncMock):
+                with patch(
+                    "pysus.api.ducklake.functional.sleep",
+                    new_callable=AsyncMock,
+                ):
                     await download_http("remote/path", local)
 
     assert local.read_bytes() == final_content
@@ -164,7 +175,9 @@ async def test_download_http_callback(tmp_path):
     mock_client.stream.return_value = mock_stream
 
     with patch("httpx.AsyncClient", return_value=mock_client):
-        await download_http("remote/path", local, callback=lambda d, t: progress.append((d, t)))
+        await download_http(
+            "remote/path", local, callback=lambda d, t: progress.append((d, t))
+        )
 
     assert len(progress) > 0
     assert progress[-1] == (3, 3)
@@ -202,7 +215,10 @@ async def test_download_s3_callback(tmp_path):
         mock_s3.head_object.return_value = {"ContentLength": 6}
         mock_s3.download_file.side_effect = fake_download_file
         mock_boto.return_value = mock_s3
-        cb = lambda d, t: progress.append((d, t))
+
+        def cb(d, t):
+            progress.append((d, t))
+
         await download_s3("remote/key", local, callback=cb)
 
     assert len(progress) > 0
@@ -238,6 +254,7 @@ async def test_download_http_unlink_os_error_swallowed(tmp_path):
     class ErrorCtx:
         async def __aenter__(self):
             raise httpx.ConnectError("connection failed")
+
         async def __aexit__(self, *a):
             pass
 
@@ -246,8 +263,10 @@ async def test_download_http_unlink_os_error_swallowed(tmp_path):
     with patch("httpx.AsyncClient", return_value=mock_client):
         with patch("httpx.Timeout", return_value=httpx.Timeout(5.0)):
             with patch("httpx.Limits", return_value=httpx.Limits()):
-                with patch("pysus.api.ducklake.functional.sleep",
-                           new_callable=AsyncMock):
+                with patch(
+                    "pysus.api.ducklake.functional.sleep",
+                    new_callable=AsyncMock,
+                ):
                     with patch("pathlib.Path.unlink", side_effect=OSError):
                         with pytest.raises(httpx.ConnectError):
                             await download_http("remote/path", local)

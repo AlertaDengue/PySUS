@@ -151,17 +151,20 @@ class TestState:
 
 def test_validate_s3_endpoint_invalid_raises():
     from pysus.api.types import _validate_s3_endpoint
+
     with pytest.raises(AssertionError):
         _validate_s3_endpoint("invalid-endpoint.com")
 
 
 def test_validate_s3_region_invalid_raises():
     from pysus.api.types import _validate_s3_region
+
     with pytest.raises(AssertionError):
         _validate_s3_region("invalid-region")
 
 
 def test_validate_s3_bucket_invalid_raises():
     from pysus.api.types import _validate_s3_bucket
+
     with pytest.raises(AssertionError):
         _validate_s3_bucket("invalid-bucket")
