@@ -3,6 +3,7 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
+from pysus.api.errors import ConnectionError, ParseError
 from pysus.api.ftp.client import FTP
 
 
@@ -67,7 +68,7 @@ def test_line_parser_with_formatter(ftp_client):
 
 
 def test_line_parser_invalid_line(ftp_client):
-    with pytest.raises(ValueError, match="Invalid FTP line"):
+    with pytest.raises(ParseError, match="Invalid FTP line"):
         ftp_client._line_parser("only three")
 
 

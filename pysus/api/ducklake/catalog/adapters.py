@@ -1,6 +1,7 @@
 import asyncio
 import os
 from abc import ABC
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -10,6 +11,7 @@ from pysus import CACHEPATH
 from pysus.api import types
 from pysus.api.ducklake.catalog.orm.dataset import DatasetBase
 from pysus.api.ducklake.functional import download_http, upload_s3
+from pysus.api.errors import CatalogError
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, Result
 from sqlalchemy.orm import Session, sessionmaker
@@ -45,14 +47,14 @@ class BaseAdapter(ABC):
 
     def get_session(self) -> Session:
         if not self._session_factory:
-            raise RuntimeError(
+            raise CatalogError(
                 "Database engine not initialized. Call connect() first."
             )
         return self._session_factory()
 
     def sql(self, query: str, params: dict | None = None) -> Result:
         if not self._engine:
-            raise RuntimeError(
+            raise CatalogError(
                 "Database engine not initialized. Call connect() first."
             )
         with self._engine.connect() as conn:
@@ -60,7 +62,11 @@ class BaseAdapter(ABC):
                 return conn.execute(text(query), params)
             return conn.exec_driver_sql(query)
 
-    async def connect(self, force: bool = False) -> None:
+    async def connect(
+        self,
+        force: bool = False,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> None:
         if self._engine and not force:
             if not self._session_factory:
                 self._session_factory = sessionmaker(bind=self._engine)
@@ -71,6 +77,7 @@ class BaseAdapter(ABC):
                 self.db_local,
                 str(self.db_remote),
                 force=True,
+                callback=callback,
             )
             self._engine = await to_thread.run_sync(self.setup_engine)
             self._session_factory = sessionmaker(bind=self._engine)
@@ -80,6 +87,7 @@ class BaseAdapter(ABC):
             self.db_local,
             str(self.db_remote),
             force=False,
+            callback=callback,
         )
         try:
             self._engine = await to_thread.run_sync(self.setup_engine)
@@ -95,6 +103,7 @@ class BaseAdapter(ABC):
                 self.db_local,
                 str(self.db_remote),
                 force=True,
+                callback=callback,
             )
             self._engine = await to_thread.run_sync(self.setup_engine)
             self._session_factory = sessionmaker(bind=self._engine)
@@ -143,7 +152,11 @@ class BaseAdapter(ABC):
         return engine
 
     async def _download_catalog(
-        self, local_path: Path, remote_path: str, force: bool = False
+        self,
+        local_path: Path,
+        remote_path: str,
+        force: bool = False,
+        callback: Callable[[int, int], None] | None = None,
     ) -> None:
         url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
 
@@ -174,10 +187,18 @@ class BaseAdapter(ABC):
         if not force and remote_size == local_size and local_size != -1:
             return
 
-        await download_http(
-            remote_path=remote_path,
-            local_path=local_path,
-        )
+        try:
+            await download_http(
+                remote_path=remote_path, local_path=local_path,
+                callback=callback,
+            )
+        except Exception:
+            if local_path.exists():
+                try:
+                    local_path.unlink()
+                except OSError:
+                    pass
+            raise
 
     async def _upload_catalog(self) -> None:
         if not self.credentials:

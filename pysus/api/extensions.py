@@ -20,6 +20,7 @@ from dbfread import DBF as DBFReader
 from pydantic import Field, PrivateAttr
 from pyreaddbc import dbc2dbf
 from pysus import CACHEPATH
+from pysus.api.errors import ConversionError, FormatError
 from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 
@@ -436,10 +437,10 @@ class DBF(BaseTabularFile):
         if out.exists():
             file = await ExtensionFactory.instantiate(out)
             if not isinstance(file, Parquet):
-                raise RuntimeError(f"Could not parse {out} to Parquet")
+                raise ConversionError(f"Could not parse {out} to Parquet")
+            return file
 
         async def _stream_to_single_file():
-            """Stream DBF records and write them to a single Parquet file."""
             dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
             total_rows = len(dbf_reader)
             writer = None
@@ -484,7 +485,7 @@ class DBF(BaseTabularFile):
         await _stream_to_single_file()
         file = await ExtensionFactory.instantiate(out)
         if not isinstance(file, Parquet):
-            raise RuntimeError(f"Could not parse {out} to Parquet")
+            raise ConversionError(f"Could not parse {out} to Parquet")
         return file
 
 
@@ -496,14 +497,14 @@ class DBC(BaseTabularFile):
     @property
     def columns(self) -> list["Column"]:
         """Not supported for DBC files. Convert to Parquet first."""
-        raise NotImplementedError(
+        raise FormatError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
         )
 
     @property
     def rows(self) -> int:
         """Not supported for DBC files. Convert to Parquet first."""
-        raise NotImplementedError(
+        raise FormatError(
             "DBC metadata cannot be read directly. Convert to Parquet first."
         )
 
@@ -538,7 +539,9 @@ class DBC(BaseTabularFile):
         if output_path.exists():
             file = await ExtensionFactory.instantiate(output_path)
             if not isinstance(file, Parquet):
-                raise RuntimeError(f"Could not parse {output_path} to parquet")
+                raise ConversionError(
+                    f"Could not parse {output_path} to parquet"
+                )
             return file
 
         tmp_dbf_path = self.path.with_suffix(".dbf")
@@ -550,7 +553,7 @@ class DBC(BaseTabularFile):
             )
             dbf_ext = await ExtensionFactory.instantiate(tmp_dbf_path)
             if not isinstance(dbf_ext, BaseTabularFile):
-                raise RuntimeError(f"Not a DBF: {dbf_ext}")
+                raise ConversionError(f"Not a DBF: {dbf_ext}")
             return await dbf_ext.to_parquet(
                 output_path=output_path,
                 chunk_size=chunk_size,
@@ -710,7 +713,7 @@ class Zip(BaseCompressedFile):
             )
 
             if not tabular_file:
-                raise ValueError(
+                raise ConversionError(
                     f"No tabular file found inside {self.path.name}",
                 )
 

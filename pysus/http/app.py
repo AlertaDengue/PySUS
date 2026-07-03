@@ -33,10 +33,14 @@ st.markdown(
 )
 
 
-@st.cache_data(show_spinner="loading datasets...")
+@st.cache_data(show_spinner="loading datasets...", ttl=600)
 def _load_catalog() -> None:
     async def _fetch():
-        async with PySUS():
+        try:
+            async with PySUS():
+                return
+        except Exception:
+            _load_catalog.clear()
             return
 
     return asyncio.run(_fetch())
@@ -44,7 +48,7 @@ def _load_catalog() -> None:
 
 def _init_lang() -> None:
     if "lang" not in st.session_state:
-        st.session_state.lang = "en"
+        st.session_state.lang = "pt"
 
 
 def _on_lang_change() -> None:
@@ -54,7 +58,7 @@ def _on_lang_change() -> None:
 
 def _lang_selector() -> None:
     _init_lang()
-    current_label = LANG_LABELS.get(st.session_state.lang, "English")
+    current_label = LANG_LABELS.get(st.session_state.lang, "Português")
     st.sidebar.selectbox(
         t("lang_label", st.session_state.lang),
         list(LANGUAGES.keys()),
@@ -82,8 +86,8 @@ if __name__ == "__main__":
     examples_page = st.Page("pages/2_examples.py", title="Examples")
 
     st.logo(
-        "https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo_large.svg",
-        icon_image="https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo.svg",
+        "https://raw.githubusercontent.com/AlertaDengue/PySUS/db96a5ae94e899851490328ce784b3a5afd68a30/pysus/http/assets/logo_large.svg",
+        icon_image="https://raw.githubusercontent.com/AlertaDengue/PySUS/db96a5ae94e899851490328ce784b3a5afd68a30/pysus/http/assets/logo.svg",
     )
 
     pg = st.navigation({"": [home_page, client_page], "docs": [examples_page]})

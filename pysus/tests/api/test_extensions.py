@@ -11,6 +11,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+from pysus.api.errors import ConversionError, FormatError
 from pysus.api.extensions import (
     CSV,
     DBC,
@@ -677,7 +678,7 @@ async def test_dbf_to_parquet_output_not_parquet(tmp_dir):
     out = tmp_dir / "out.csv"
     out.write_text("a,b\n1,2")
 
-    with pytest.raises(RuntimeError, match="Could not parse"):
+    with pytest.raises(ConversionError, match="Could not parse"):
         await obj.to_parquet(output_path=out)
 
 
@@ -689,7 +690,7 @@ async def test_dbf_to_parquet_non_parquet_extension(tmp_dir):
     obj = DBF(path=dbf_path)
 
     out = tmp_dir / "out.custom"
-    with pytest.raises(RuntimeError, match="Could not parse"):
+    with pytest.raises(ConversionError, match="Could not parse"):
         await obj.to_parquet(output_path=out)
 
 
@@ -700,13 +701,13 @@ async def test_dbf_to_parquet_non_parquet_extension(tmp_dir):
 
 def test_dbc_columns_raises():
     obj = DBC(path=Path("test.dbc"))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(FormatError):
         _ = obj.columns
 
 
 def test_dbc_rows_raises():
     obj = DBC(path=Path("test.dbc"))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(FormatError):
         _ = obj.rows
 
 
@@ -757,7 +758,7 @@ async def test_dbc_to_parquet_output_exists_not_parquet(tmp_dir):
     out = tmp_dir / "out.csv"
     out.write_text("a,b\n1,2")
 
-    with pytest.raises(RuntimeError, match="Could not parse"):
+    with pytest.raises(ConversionError, match="Could not parse"):
         await obj.to_parquet(output_path=out)
 
 
@@ -1115,7 +1116,7 @@ async def test_dbc_to_parquet_not_tabular(tmp_dir):
             ExtensionFactory, "instantiate", return_value=mock_non_tabular
         ),
     ):
-        with pytest.raises(RuntimeError, match="Not a DBF"):
+        with pytest.raises(ConversionError, match="Not a DBF"):
             await obj.to_parquet()
 
 
@@ -1133,5 +1134,31 @@ async def test_zip_to_parquet_no_tabular(tmp_dir):
         z.write(text_path, arcname="readme.txt")
 
     obj = Zip(path=zip_path)
-    with pytest.raises(ValueError, match="No tabular file found"):
+    with pytest.raises(ConversionError, match="No tabular file found"):
         await obj.to_parquet()
+
+
+@pytest.mark.asyncio
+async def test_dbc_to_parquet_permission_error_cleanup(tmp_dir):
+    """Cover the PermissionError retry in DBC.to_parquet finally block."""
+    from unittest.mock import patch
+    from pysus.api.extensions import DBC
+
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [("Alice",)])
+    dbc_path = tmp_dir / "test.dbc"
+    dbf_path.rename(dbc_path)
+
+    out = tmp_dir / "out.parquet"
+
+    def fake_dbc2dbf(inp, outp):
+        _create_dbf(Path(outp), [("NAME", "C", 10, 0)], [("Bob",)])
+
+    with patch("pysus.api.extensions.dbc2dbf", side_effect=fake_dbc2dbf):
+        with patch(
+            "pathlib.Path.unlink",
+            side_effect=[PermissionError, PermissionError],
+        ):
+            obj = DBC(path=dbc_path)
+            result = await obj.to_parquet(output_path=out, chunk_size=10)
+    assert result is not None
