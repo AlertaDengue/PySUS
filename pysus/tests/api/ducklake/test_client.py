@@ -10,6 +10,7 @@ from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
 from pysus.api.ducklake.catalog.orm.default import Dataset as PerDataset
 from pysus.api.ducklake.client import DuckLake, DuckLakeCredentials
 from pysus.api.ducklake.models import DuckDataset, File
+from pysus.api.errors import AuthenticationError, ValidationError
 
 
 class TestDuckLakeCredentials:
@@ -148,8 +149,12 @@ class TestDuckLakeConnect:
         client._catalog_adap = AsyncMock()
         client._columns_adap = AsyncMock()
         await client.connect()
-        client._catalog_adap.connect.assert_awaited_once_with(force=False)
-        client._columns_adap.connect.assert_awaited_once_with(force=False)
+        client._catalog_adap.connect.assert_awaited_once_with(
+            force=False, callback=None
+        )
+        client._columns_adap.connect.assert_awaited_once_with(
+            force=False, callback=None
+        )
 
     @pytest.mark.asyncio
     async def test_connect_force(self):
@@ -157,8 +162,12 @@ class TestDuckLakeConnect:
         client._catalog_adap = AsyncMock()
         client._columns_adap = AsyncMock()
         await client.connect(force=True)
-        client._catalog_adap.connect.assert_awaited_once_with(force=True)
-        client._columns_adap.connect.assert_awaited_once_with(force=True)
+        client._catalog_adap.connect.assert_awaited_once_with(
+            force=True, callback=None
+        )
+        client._columns_adap.connect.assert_awaited_once_with(
+            force=True, callback=None
+        )
 
 
 class TestDuckLakeDownload:
@@ -450,7 +459,7 @@ class TestDuckLakeDownloadFile:
     async def test_download_file_invalid_type_raises(self):
         client = DuckLake()
         with pytest.raises(
-            ValueError,
+            ValidationError,
             match="DuckLake File was not properly instantiated",
         ):
             await client.download(

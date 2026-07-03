@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 from pysus import CACHEPATH
+from pysus.api.errors import ConversionError
 from pysus.api.extensions import Parquet
 from pysus.api.models import BaseRemoteGroup  # noqa
 from pysus.api.models import (
@@ -301,7 +302,7 @@ async def test_to_parquet_value_error(tmp_path):
         "pysus.api.extensions.ExtensionFactory.instantiate"
     ) as mock_inst:
         mock_inst.return_value = "not_a_parquet"
-        with pytest.raises(ValueError, match="Could not parse"):
+        with pytest.raises(ConversionError, match="Could not parse"):
             await tabular.to_parquet(output_path=out)
 
 

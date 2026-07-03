@@ -33,10 +33,14 @@ st.markdown(
 )
 
 
-@st.cache_data(show_spinner="loading datasets...")
+@st.cache_data(show_spinner="loading datasets...", ttl=600)
 def _load_catalog() -> None:
     async def _fetch():
-        async with PySUS():
+        try:
+            async with PySUS():
+                return
+        except Exception:
+            _load_catalog.clear()
             return
 
     return asyncio.run(_fetch())
@@ -44,7 +48,7 @@ def _load_catalog() -> None:
 
 def _init_lang() -> None:
     if "lang" not in st.session_state:
-        st.session_state.lang = "en"
+        st.session_state.lang = "pt"
 
 
 def _on_lang_change() -> None:
@@ -54,7 +58,7 @@ def _on_lang_change() -> None:
 
 def _lang_selector() -> None:
     _init_lang()
-    current_label = LANG_LABELS.get(st.session_state.lang, "English")
+    current_label = LANG_LABELS.get(st.session_state.lang, "Português")
     st.sidebar.selectbox(
         t("lang_label", st.session_state.lang),
         list(LANGUAGES.keys()),

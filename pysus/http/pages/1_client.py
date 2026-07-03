@@ -1,7 +1,8 @@
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from typing import Any
 
+import pandas as pd
 import streamlit as st
 from humanize import naturalsize
 
@@ -48,7 +49,21 @@ CLIENTS = {
 
 
 def _lang() -> str:
-    return st.session_state.get("lang", "en")
+    return st.session_state.get("lang", "pt")
+
+
+def _display_name(d: Any) -> str:
+    """Build a selectbox label from a dataset's name and long_name."""
+    name = d.name.upper() if hasattr(d, "name") else str(d)
+    long_name = getattr(d, "long_name", "")
+    return f"{name} — {long_name}" if long_name else name
+
+
+def _ds_key(selected: str | None) -> str:
+    """Extract the short dataset name from a display label."""
+    if not selected:
+        return ""
+    return selected.split(" — ")[0]
 
 
 @st.cache_resource
@@ -92,21 +107,66 @@ def _cached_datasets(pysus: PySUS, client: str) -> list[Any]:
     return st.session_state[cache_key]
 
 
+def _cached_options_with_progress(
+    client: str,
+    datasets: list[Any],
+    ds_name: str,
+    opt_type: str,
+) -> list[Any]:
+    cache_key = f"_opts_{client}_{ds_name}_{opt_type}"
+    if cache_key in st.session_state:
+        return st.session_state[cache_key]
+
+    progress = st.progress(0, text=t("loading_catalog", _lang()))
+
+    def _cb(dl: int, total: int) -> None:
+        progress.progress(
+            min(dl / max(total, 1), 1.0),
+            text=t("loading_catalog", _lang()),
+        )
+
+    try:
+        return _cached_options(
+            client,
+            datasets,
+            ds_name,
+            opt_type,
+            callback=_cb,
+        )
+    finally:
+        progress.empty()
+
+
 def _cached_options(
-    client: str, datasets: list[Any], ds_name: str, opt_type: str
+    client: str,
+    datasets: list[Any],
+    ds_name: str,
+    opt_type: str,
+    callback: Callable[[int, int], None] | None = None,
 ) -> list[Any]:
     cache_key = f"_opts_{client}_{ds_name}_{opt_type}"
     if cache_key not in st.session_state:
         if opt_type == "group":
-            st.session_state[cache_key] = _get_group_options(client, datasets, ds_name)
+            st.session_state[cache_key] = _get_group_options(
+                client, datasets, ds_name, callback=callback
+            )
         elif opt_type == "year":
-            st.session_state[cache_key] = _get_year_options(client, datasets, ds_name)
+            st.session_state[cache_key] = _get_year_options(
+                client, datasets, ds_name, callback=callback
+            )
         elif opt_type == "month":
-            st.session_state[cache_key] = _get_month_options(client, datasets, ds_name)
+            st.session_state[cache_key] = _get_month_options(
+                client, datasets, ds_name, callback=callback
+            )
     return st.session_state[cache_key]
 
 
-def _get_group_options(client: str, datasets: list[Any], ds_name: str) -> list[str]:
+def _get_group_options(
+    client: str,
+    datasets: list[Any],
+    ds_name: str,
+    callback: Callable[[int, int], None] | None = None,
+) -> list[str]:
     if not ds_name:
         return []
     target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
@@ -118,13 +178,17 @@ def _get_group_options(client: str, datasets: list[Any], ds_name: str) -> list[s
         from pysus.api.ducklake.catalog.orm.dataset import Group as OrmGroup
 
         async def _fetch() -> list[str]:
-            await target.adapter.connect()
+            await target.adapter.connect(callback=callback)
             with target.adapter.get_session() as session:
                 stmt = select(OrmGroup).filter(OrmGroup.dataset_id == target.id)
                 orm_groups = session.scalars(stmt).all()
                 return sorted(g.name for g in orm_groups)
 
-        return _run_async(_fetch())
+        try:
+            return _run_async(_fetch())
+        except Exception as exc:
+            st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
+            return []
 
     if client == "ftp":
         return sorted(target.group_definitions.keys())
@@ -135,7 +199,12 @@ def _get_group_options(client: str, datasets: list[Any], ds_name: str) -> list[s
     return []
 
 
-def _get_year_options(client: str, datasets: list[Any], ds_name: str) -> list[int]:
+def _get_year_options(
+    client: str,
+    datasets: list[Any],
+    ds_name: str,
+    callback: Callable[[int, int], None] | None = None,
+) -> list[int]:
     if not ds_name:
         return []
     if client != "ducklake":
@@ -148,7 +217,7 @@ def _get_year_options(client: str, datasets: list[Any], ds_name: str) -> list[in
     from pysus.api.ducklake.catalog.orm.dataset import File as OrmFile
 
     async def _fetch() -> list[int]:
-        await target.adapter.connect()
+        await target.adapter.connect(callback=callback)
         with target.adapter.get_session() as session:
             stmt = (
                 select(distinct(OrmFile.year))
@@ -157,10 +226,19 @@ def _get_year_options(client: str, datasets: list[Any], ds_name: str) -> list[in
             )
             return sorted(y for y in session.scalars(stmt).all())
 
-    return _run_async(_fetch())
+    try:
+        return _run_async(_fetch())
+    except Exception as exc:
+        st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
+        return []
 
 
-def _get_month_options(client: str, datasets: list[Any], ds_name: str) -> list[int]:
+def _get_month_options(
+    client: str,
+    datasets: list[Any],
+    ds_name: str,
+    callback: Callable[[int, int], None] | None = None,
+) -> list[int]:
     if not ds_name:
         return []
     if client != "ducklake":
@@ -173,7 +251,7 @@ def _get_month_options(client: str, datasets: list[Any], ds_name: str) -> list[i
     from pysus.api.ducklake.catalog.orm.dataset import File as OrmFile
 
     async def _fetch() -> list[int]:
-        await target.adapter.connect()
+        await target.adapter.connect(callback=callback)
         with target.adapter.get_session() as session:
             stmt = (
                 select(distinct(OrmFile.month))
@@ -182,7 +260,11 @@ def _get_month_options(client: str, datasets: list[Any], ds_name: str) -> list[i
             )
             return sorted(m for m in session.scalars(stmt).all())
 
-    return _run_async(_fetch())
+    try:
+        return _run_async(_fetch())
+    except Exception as exc:
+        st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
+        return []
 
 
 def _render_year_filter(client: str, year_options: list[int]) -> list[int] | None:
@@ -229,17 +311,37 @@ def _render_month_filter(client: str, month_options: list[int]) -> list[int] | N
 
 def _render_ducklake_filters(pysus: PySUS) -> None:
     if pysus._ducklake is None:
-        with st.spinner(t("loading_catalog", _lang())):
-            try:
-                _run_async(pysus.get_ducklake())
-            except Exception:
-                st.warning(t("catalog_failed", _lang()))
-                return
+        progress = st.progress(0, text=t("loading_catalog", _lang()))
+        cum_dl = 0
+        cum_total = 0
+        last_total = -1
+        last_dl = 0
+
+        def _on_progress(dl: int, total: int) -> None:
+            nonlocal cum_dl, cum_total, last_total, last_dl
+            if last_total != total and last_total != -1:
+                cum_dl += last_dl
+                cum_total += last_total
+                last_dl = 0
+            last_total = total
+            last_dl = dl
+            cur_total = cum_total + total
+            cur_dl = cum_dl + dl
+            pct = cur_dl / max(cur_total, 1)
+            progress.progress(min(pct, 1.0), text=t("loading_catalog", _lang()))
+
+        try:
+            _run_async(pysus.get_ducklake(callback=_on_progress))
+            progress.empty()
+        except Exception:
+            progress.empty()
+            st.warning(t("catalog_failed", _lang()))
+            return
     datasets = _cached_datasets(pysus, "ducklake")
     if not datasets:
         st.warning(t("catalog_failed", _lang()))
         return
-    ds_names = sorted(d.name.upper() for d in datasets)
+    ds_names = sorted(_display_name(d) for d in datasets)
 
     selected_ds = st.selectbox(
         t("dataset", _lang()),
@@ -248,7 +350,7 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
         placeholder=t("browser_choose", _lang()),
         key=f"_ds_ducklake",
     )
-    ds_key = selected_ds or ""
+    ds_key = _ds_key(selected_ds)
 
     _prev = st.session_state.get("_prev_ds_ducklake")
     if selected_ds and selected_ds != _prev:
@@ -260,9 +362,9 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
     if not selected_ds:
         return
 
-    group_options = _cached_options("ducklake", datasets, ds_key, "group")
-    year_options = _cached_options("ducklake", datasets, ds_key, "year")
-    month_options = _cached_options("ducklake", datasets, ds_key, "month")
+    group_options = _cached_options_with_progress("ducklake", datasets, ds_key, "group")
+    year_options = _cached_options_with_progress("ducklake", datasets, ds_key, "year")
+    month_options = _cached_options_with_progress("ducklake", datasets, ds_key, "month")
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -288,7 +390,7 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
 
     if st.button(t("fetch", _lang()), width="stretch"):
         _clear_options_cache("ducklake")
-        _parse_and_query(pysus, "ducklake", selected_ds, group, state, year, month)
+        _parse_and_query(pysus, "ducklake", ds_key, group, state, year, month)
 
 
 def _render_ftp_filters(pysus: PySUS) -> None:
@@ -299,7 +401,7 @@ def _render_ftp_filters(pysus: PySUS) -> None:
         return
     if not datasets:
         return
-    ds_names = [d.name for d in datasets]
+    ds_names = [_display_name(d) for d in datasets]
     selected_ds = st.selectbox(
         t("dataset", _lang()),
         ds_names,
@@ -307,7 +409,7 @@ def _render_ftp_filters(pysus: PySUS) -> None:
         placeholder=t("browser_choose", _lang()),
         key=f"_ds_ftp",
     )
-    ds_key = selected_ds or ""
+    ds_key = _ds_key(selected_ds)
 
     _prev = st.session_state.get("_prev_ds_ftp")
     if selected_ds and selected_ds != _prev:
@@ -344,7 +446,7 @@ def _render_ftp_filters(pysus: PySUS) -> None:
     month = _render_month_filter("ftp", [])
 
     if st.button(t("fetch", _lang()), width="stretch"):
-        _parse_and_query(pysus, "ftp", selected_ds, group, state, year, month)
+        _parse_and_query(pysus, "ftp", ds_key, group, state, year, month)
 
 
 def _render_dadosgov_filters(pysus: PySUS) -> None:
@@ -368,7 +470,7 @@ def _render_dadosgov_filters(pysus: PySUS) -> None:
         return
 
     datasets = _cached_datasets(pysus, "dadosgov")
-    ds_names = [d.name for d in datasets]
+    ds_names = [_display_name(d) for d in datasets]
     selected_ds = st.selectbox(
         t("dataset", _lang()),
         ds_names,
@@ -376,7 +478,7 @@ def _render_dadosgov_filters(pysus: PySUS) -> None:
         placeholder=t("browser_choose", _lang()),
         key=f"_ds_dadosgov",
     )
-    ds_key = selected_ds or ""
+    ds_key = _ds_key(selected_ds)
 
     _prev = st.session_state.get("_prev_ds_dadosgov")
     if selected_ds and selected_ds != _prev:
@@ -413,7 +515,7 @@ def _render_dadosgov_filters(pysus: PySUS) -> None:
     month = _render_month_filter("dadosgov", [])
 
     if st.button(t("fetch", _lang()), width="stretch"):
-        _parse_and_query(pysus, "dadosgov", selected_ds, group, state, year, month)
+        _parse_and_query(pysus, "dadosgov", ds_key, group, state, year, month)
 
 
 def _parse_and_query(
@@ -435,17 +537,21 @@ def _parse_and_query(
     month_vals = month or None
 
     with st.spinner(t("querying", _lang(), client=client)):
-        files = _run_async(
-            _query_client(
-                pysus,
-                client,
-                ds_name,
-                groups,
-                states,
-                year_vals,
-                month_vals,
+        try:
+            files = _run_async(
+                _query_client(
+                    pysus,
+                    client,
+                    ds_name,
+                    groups,
+                    states,
+                    year_vals,
+                    month_vals,
+                )
             )
-        )
+        except Exception as exc:
+            st.error(t("query_failed", _lang(), error=str(exc)))
+            return
 
     if not files:
         st.info(t("no_files", _lang()))
@@ -538,13 +644,78 @@ def _build_file_row(f: BaseRemoteFile, queued: bool = False) -> dict[str, Any]:
 
     return {
         "File": f.basename,
-        "Size": naturalsize(f.size),
+        "Size (bytes)": int(f.size),
+        "Size": naturalsize(int(f.size)),
         "Year": year,
         "Month": month,
         "State": state,
         "Group": group_name,
         "Queued": "✅" if queued else "",
     }
+
+
+def _size_column_config() -> dict[str, Any]:
+    return {
+        "Size": st.column_config.TextColumn(t("size", _lang()), width="small"),
+    }
+
+
+def _native_dir_picker(title: str, initialdir: str) -> str:
+    """Open a native directory picker dialog and return the selected path."""
+    import platform
+    import subprocess
+
+    system = platform.system()
+
+    if system == "Linux":
+        for cmd in (
+            [
+                "zenity",
+                "--file-selection",
+                "--directory",
+                f"--filename={initialdir}/",
+                f"--title={title}",
+            ],
+            ["kdialog", "--getexistingdirectory", initialdir, "--title", title],
+        ):
+            try:
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                return r.stdout.strip()
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+
+    elif system == "Windows":
+        ps = f"""
+Add-Type -AssemblyName System.Windows.Forms
+$f = New-Object System.Windows.Forms.FolderBrowserDialog
+$f.Description = '{title}'
+$f.SelectedPath = '{initialdir}'
+$f.ShowDialog() | Out-Null
+$f.SelectedPath
+"""
+        r = subprocess.run(
+            ["powershell", "-Command", ps],
+            capture_output=True,
+            text=True,
+        )
+        return r.stdout.strip()
+
+    elif system == "Darwin":
+        applescript = f"""
+tell application "System Events"
+    activate
+    set f to choose folder with prompt "{title}" default location POSIX file "{initialdir}"
+    POSIX path of f
+end tell
+"""
+        r = subprocess.run(
+            ["osascript", "-e", applescript],
+            capture_output=True,
+            text=True,
+        )
+        return r.stdout.strip()
+
+    return ""
 
 
 def _show_results(pysus: PySUS, client: str) -> None:
@@ -558,15 +729,30 @@ def _show_results(pysus: PySUS, client: str) -> None:
     if queue_key not in st.session_state:
         st.session_state[queue_key] = []
 
-    download_queue = st.session_state[queue_key]
-    queued_paths = {str(f.path) for f in download_queue}
+    raw_queue = st.session_state[queue_key]
+    if raw_queue and not isinstance(raw_queue[0], int):
+        st.session_state[queue_key] = []
+        raw_queue = []
 
-    # --- Box 1: Query Results ---
+    queued_indices: list[int] = raw_queue
+    download_queue = [files[i] for i in queued_indices]
+
+    if msg := st.session_state.pop("_last_download_msg", None):
+        st.success(msg)
+
     st.subheader(t("results_title", _lang(), count=str(len(files))))
 
-    import pandas as pd
-
-    df = pd.DataFrame([_build_file_row(f, str(f.path) in queued_paths) for f in files])
+    cache_key = f"_result_rows_{client}"
+    cache_fp = (id(files), tuple(queued_indices))
+    if st.session_state.get("_result_cache_fp") != cache_fp:
+        st.session_state["_result_cache_fp"] = cache_fp
+        st.session_state[cache_key] = [
+            _build_file_row(f, i in queued_indices) for i, f in enumerate(files)
+        ]
+    df = pd.DataFrame(st.session_state[cache_key])
+    for col in list(df.columns):
+        if col != "File" and df[col].replace("", None).isna().all():
+            df.drop(columns=[col], inplace=True)
 
     event = st.dataframe(
         df,
@@ -574,23 +760,21 @@ def _show_results(pysus: PySUS, client: str) -> None:
         hide_index=True,
         on_select="rerun",
         selection_mode="multi-row",
+        column_config=_size_column_config(),
     )
 
-    selected_indices = event.selection.get("rows", [])  # type: ignore[attr-defined]
+    selected_indices = event.selection.get("rows", [])  # type: ignore
 
     col1, col2 = st.columns([3, 1])
     with col2:
         if selected_indices and st.button(t("add_to_queue", _lang()), width="stretch"):
-            added = 0
-            for idx in selected_indices:
-                f = files[idx]
-                if str(f.path) not in queued_paths:
-                    st.session_state[queue_key].append(f)
-                    added += 1
-            if added:
+            new_indices = [i for i in selected_indices if i not in queued_indices]
+            if new_indices:
+                st.session_state[queue_key] = sorted(
+                    set(queued_indices) | set(new_indices)
+                )
                 st.rerun()
 
-    # --- Box 2: Download Queue ---
     st.divider()
     st.subheader(t("queue_title", _lang(), count=str(len(download_queue))))
 
@@ -598,12 +782,20 @@ def _show_results(pysus: PySUS, client: str) -> None:
         st.caption(t("queue_empty", _lang()))
         return
 
-    queue_df = pd.DataFrame(
-        [
-            {"": idx, "File": f.basename, "Size": naturalsize(f.size)}
+    qcache_key = f"_queue_rows_{client}"
+    qcache_fp = (id(files), tuple(queued_indices))
+    if st.session_state.get("_q_cache_fp") != qcache_fp:
+        st.session_state["_q_cache_fp"] = qcache_fp
+        st.session_state[qcache_key] = [
+            {
+                "": idx,
+                "File": f.basename,
+                "Size (bytes)": int(f.size),
+                "Size": naturalsize(int(f.size)),
+            }
             for idx, f in enumerate(download_queue)
         ]
-    ).set_index("")
+    queue_df = pd.DataFrame(st.session_state[qcache_key]).set_index("")
 
     selection = st.dataframe(
         queue_df,
@@ -611,34 +803,54 @@ def _show_results(pysus: PySUS, client: str) -> None:
         height=min(35 * len(download_queue) + 38, 250),
         on_select="rerun",
         selection_mode="multi-row",
+        column_config=_size_column_config(),
     )
 
-    remove_indices = selection.selection.get("rows", [])  # type: ignore[attr-defined]
+    remove_indices = selection.selection.get("rows", [])  # type: ignore
 
     dataset_name = st.session_state.get(f"_query_dataset_{client}", "")
     default_dir = str(CACHEPATH / "downloads" / client / (dataset_name or "data"))
 
-    col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
-    with col1:
-        download_dir = st.text_input(
+    dir_key = f"_dl_dir_{client}"
+    if dir_key not in st.session_state:
+        st.session_state[dir_key] = default_dir
+
+    pending = st.session_state.pop("_dl_pending_" + client, None)
+    if pending:
+        st.session_state[dir_key] = pending
+
+    col_dir, col_btn = st.columns([4, 1])
+    with col_dir:
+        st.text_input(
             t("save_to", _lang()),
-            value=default_dir,
-            key=f"_dl_dir_{client}",
+            key=dir_key,
             label_visibility="collapsed",
-            placeholder=t("download_dir_placeholder", _lang()),
         )
-    with col2:
+    with col_btn:
+        if st.button(t("browse", _lang()), width="stretch"):
+            folder = _native_dir_picker(
+                title=t("browse_dir_title", _lang()),
+                initialdir=st.session_state[dir_key],
+            )
+            if folder:
+                st.session_state["_dl_pending_" + client] = folder
+                st.rerun()
+    col1, col2, col3 = st.columns(3)
+    with col1:
         if remove_indices and st.button(t("remove", _lang()), width="stretch"):
-            for idx in sorted(remove_indices, reverse=True):
-                st.session_state[queue_key].pop(idx)
+            remove_targets = {queued_indices[i] for i in remove_indices}
+            st.session_state[queue_key] = [
+                i for i in queued_indices if i not in remove_targets
+            ]
             st.rerun()
-    with col3:
+    with col2:
         if st.button(t("clear", _lang()), width="stretch"):
             st.session_state[queue_key] = []
             st.rerun()
-    with col4:
+    with col3:
         if st.button(t("download", _lang()), width="stretch", type="primary"):
-            _download_selected(pysus, client, download_queue, download_dir)
+            _download_selected(pysus, client, download_queue, st.session_state[dir_key])
+            st.rerun()
 
 
 def _download_selected(
@@ -650,6 +862,7 @@ def _download_selected(
     queue_key = f"_download_queue_{client}"
     total = len(files)
     progress = st.progress(0, text=t("download_start", _lang()))
+    failed: set[str] = set()
 
     async def _download():
         for i, f in enumerate(files):
@@ -666,12 +879,21 @@ def _download_selected(
             try:
                 await pysus.download(file=f)
             except Exception as exc:
+                failed.add(f.basename)
                 st.error(t("download_failed", _lang(), name=f.basename, error=str(exc)))
 
     _run_async(_download())
-    progress.progress(1.0, text=t("download_done", _lang()))
-    st.session_state[queue_key] = []
-    st.success(t("download_success", _lang(), count=str(total), dir=output_dir))
+    progress.empty()
+    done = total - len(failed)
+
+    st.session_state[queue_key] = [
+        st.session_state[queue_key][i]
+        for i, f in enumerate(files)
+        if f.basename in failed
+    ]
+    st.session_state["_last_download_msg"] = t(
+        "download_success", _lang(), count=str(done), dir=output_dir
+    )
 
 
 def _build_query_code(client: str) -> str | None:

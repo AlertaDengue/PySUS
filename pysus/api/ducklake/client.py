@@ -10,6 +10,7 @@ from pathlib import Path
 
 from anyio import to_thread
 from pydantic import Field, PrivateAttr, SecretStr
+from pysus.api.errors import AuthenticationError, ValidationError
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import DUCKLAKE
 
@@ -107,7 +108,7 @@ class DuckLake(BaseRemoteClient):
         secret_key = kwargs.get("secret_key")
 
         if not access_key or not secret_key:
-            raise ValueError(
+            raise AuthenticationError(
                 "DuckLake authentication requires 'access_key' and 'secret_key'"
             )
 
@@ -120,9 +121,13 @@ class DuckLake(BaseRemoteClient):
         await self._catalog_adap.connect(force=True)
         await self._columns_adap.connect(force=True)
 
-    async def connect(self, force: bool = False) -> None:
-        await self._catalog_adap.connect(force=force)
-        await self._columns_adap.connect(force=force)
+    async def connect(
+        self,
+        force: bool = False,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> None:
+        await self._catalog_adap.connect(force=force, callback=callback)
+        await self._columns_adap.connect(force=force, callback=callback)
 
     async def close(self, update_catalog: bool | None = None) -> None:
         should_update = (
@@ -142,7 +147,7 @@ class DuckLake(BaseRemoteClient):
         callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         if not isinstance(file, File):
-            raise ValueError("DuckLake File was not properly instantiated")
+            raise ValidationError("DuckLake File was not properly instantiated")
 
         await download_http(
             remote_path=file.record.path,

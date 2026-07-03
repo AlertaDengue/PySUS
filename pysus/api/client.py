@@ -22,6 +22,7 @@ from sqlalchemy.pool import NullPool
 
 from .dadosgov import DadosGovClient
 from .ducklake.client import DuckLake
+from .errors import ConnectionError, DownloadError, FormatError, ValidationError
 from .extensions import Parquet
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
@@ -115,11 +116,14 @@ class PySUS:
             await self._dadosgov.close()
         self.engine.dispose()
 
-    async def get_ducklake(self) -> DuckLake:
+    async def get_ducklake(
+        self,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> DuckLake:
         """Return the DuckLake client, initializing it lazily if needed."""
         if self._ducklake is None:
             self._ducklake = DuckLake()
-            await self._ducklake.connect()
+            await self._ducklake.connect(callback=callback)
         return self._ducklake
 
     async def get_dadosgov(self, access_token: str | None) -> DadosGovClient:
@@ -292,7 +296,7 @@ class PySUS:
             elif client_name == "dadosgov":
                 client = await self.get_dadosgov(token)
             else:
-                raise ValueError(
+                raise ValidationError(
                     f"No download logic for client: {client_name}",
                 )
 
@@ -326,7 +330,7 @@ class PySUS:
                 DownloadStatus.FAILED,
             )
             local_path.unlink(missing_ok=True)
-            raise RuntimeError(
+            raise DownloadError(
                 f"Unexpected error downloading {file.basename}: {e}",
             ) from e
 
@@ -405,7 +409,7 @@ class PySUS:
 
             return parquet_file
 
-        raise NotImplementedError(
+        raise FormatError(
             f"{local_file} can't be converted to Parquet",
         )
 
@@ -564,7 +568,7 @@ class PySUS:
         from pysus.api.utils import is_geocode_column
 
         if not paths:
-            raise ValueError("No paths provided")
+            raise ValidationError("No paths provided")
 
         def get_columns(path: Path) -> set[tuple[str, str]]:
             """Return the schema of a Parquet file as (name, type) pairs."""
@@ -583,7 +587,7 @@ class PySUS:
         if mode == "strict":
             for i, schema in enumerate(schemas):
                 if schema != schemas[0]:
-                    raise ValueError(
+                    raise ValidationError(
                         f"Schema mismatch: file {i} has columns "
                         f"{[c[0] for c in schema]}, "
                         f"expected {[c[0] for c in schemas[0]]}"

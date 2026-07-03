@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Optional
 import httpx
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr
 from pysus import __version__
+from pysus.api.errors import AuthenticationError, ConnectionError
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import DADOSGOV
 
@@ -131,7 +132,7 @@ class DadosGov(BaseRemoteClient):
         _token = token or self._token
 
         if not _token:
-            raise ValueError(
+            raise AuthenticationError(
                 "A token is required to connect to DadosGov. "
                 "Pass it to connect(token=...) or login(token=...)."
             )

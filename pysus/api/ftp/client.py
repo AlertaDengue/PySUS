@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 from anyio import to_thread
 from pydantic import PrivateAttr
+from pysus.api.errors import ConnectionError, ParseError
 from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 from pysus.api.types import FTP as FTP_STR
 
@@ -210,7 +211,7 @@ class FTP(BaseRemoteClient):
         """Parse a line from a DATASUS FTP LIST response into FTPFileInfo."""
         parts = file_line.strip().split()
         if len(parts) < 4:
-            raise ValueError(f"Invalid FTP line: {file_line}")
+            raise ParseError(f"Invalid FTP line: {file_line}")
 
         date_str, time_str = parts[0], parts[1]
         is_dir = parts[2].upper() == "<DIR>"

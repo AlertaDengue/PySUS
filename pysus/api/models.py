@@ -25,6 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pysus import CACHEPATH
 from tqdm.asyncio import tqdm
 
+from .errors import ConversionError
 from .types import FileType, State
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -59,6 +60,14 @@ class BaseFile(BaseModel, ABC):
     def __str__(self) -> str:
         """Return the file's basename as its string representation."""
         return self.basename
+
+    def __fspath__(self) -> str:
+        """Return the file system path representation.
+
+        Enables use with :func:`os.fspath` and anywhere a path-like
+        object is accepted (e.g. ``open(pysus_file)``).
+        """
+        return self.path.__fspath__()
 
     @property
     @abstractmethod
@@ -262,7 +271,7 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
         output = await ExtensionFactory.instantiate(output_path)
         if not isinstance(output, Parquet):
-            raise ValueError(f"Could not parse {output} to Parquet")
+            raise ConversionError(f"Could not parse {output} to Parquet")
         return output
 
 

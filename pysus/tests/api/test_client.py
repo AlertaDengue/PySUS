@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pysus.api.client import DownloadStatus, LocalFileState, PySUS
+from pysus.api.errors import ConnectionError, DownloadError, FormatError, ValidationError
 
 
 @pytest.fixture
@@ -690,7 +691,7 @@ class TestDownload:
             client._ftp = mock_client
 
             with pytest.raises(
-                RuntimeError, match="Unexpected error downloading"
+                DownloadError, match="Unexpected error downloading"
             ):
                 await client.download(mock_file, timeout=0.001)
 
@@ -822,7 +823,7 @@ class TestDownload:
             patch.object(client, "_update_state", new=AsyncMock()),
         ):
             with pytest.raises(
-                RuntimeError,
+                DownloadError,
                 match=(
                     "Unexpected error downloading test.unknown:"
                     " No download logic for client: unknown"
@@ -892,7 +893,7 @@ class TestDownloadToParquet:
             client, "download", new=AsyncMock(return_value=mock_local_file)
         ):
             with pytest.raises(
-                NotImplementedError, match="can't be converted to Parquet"
+                FormatError, match="can't be converted to Parquet"
             ):
                 await client.download_to_parquet(mock_file)
 
@@ -1016,7 +1017,7 @@ class TestReadParquet:
 
         client = PySUS(db_path=tmp_path / "config.db")
 
-        with pytest.raises(ValueError, match="Schema mismatch"):
+        with pytest.raises(ValidationError, match="Schema mismatch"):
             client.read_parquet([parquet1, parquet2], mode="strict")
 
     def test_read_parquet_with_sql(self, tmp_path):
@@ -1057,7 +1058,7 @@ class TestReadParquet:
 
         client = PySUS(db_path=tmp_path / "config.db")
 
-        with pytest.raises(ValueError, match="No paths provided"):
+        with pytest.raises(ValidationError, match="No paths provided"):
             client.read_parquet([])
 
     def test_read_parquet_add_dv_applies_verification_digit(self, tmp_path):
