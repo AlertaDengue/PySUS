@@ -1136,3 +1136,29 @@ async def test_zip_to_parquet_no_tabular(tmp_dir):
     obj = Zip(path=zip_path)
     with pytest.raises(ConversionError, match="No tabular file found"):
         await obj.to_parquet()
+
+
+@pytest.mark.asyncio
+async def test_dbc_to_parquet_permission_error_cleanup(tmp_dir):
+    """Cover the PermissionError retry in DBC.to_parquet finally block."""
+    from unittest.mock import patch
+    from pysus.api.extensions import DBC
+
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [("Alice",)])
+    dbc_path = tmp_dir / "test.dbc"
+    dbf_path.rename(dbc_path)
+
+    out = tmp_dir / "out.parquet"
+
+    def fake_dbc2dbf(inp, outp):
+        _create_dbf(Path(outp), [("NAME", "C", 10, 0)], [("Bob",)])
+
+    with patch("pysus.api.extensions.dbc2dbf", side_effect=fake_dbc2dbf):
+        with patch(
+            "pathlib.Path.unlink",
+            side_effect=[PermissionError, PermissionError],
+        ):
+            obj = DBC(path=dbc_path)
+            result = await obj.to_parquet(output_path=out, chunk_size=10)
+    assert result is not None

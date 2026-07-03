@@ -10,7 +10,7 @@ from pysus.api.ducklake.catalog.orm.dataset import File as CatalogFile
 from pysus.api.ducklake.catalog.orm.default import Dataset as PerDataset
 from pysus.api.ducklake.client import DuckLake, DuckLakeCredentials
 from pysus.api.ducklake.models import DuckDataset, File
-from pysus.api.errors import AuthenticationError, ValidationError
+from pysus.api.errors import AuthenticationError, CatalogError, ValidationError
 
 
 class TestDuckLakeCredentials:
@@ -519,3 +519,283 @@ class TestDuckLakeUploadCatalog:
         adapter.db_local = nonexistent
         with pytest.raises(FileNotFoundError, match="catalog file not found"):
             await adapter._upload_catalog()
+
+
+class TestDuckLakeLogin:
+    @pytest.mark.asyncio
+    async def test_login_missing_credentials_raises(self):
+        from pysus.api.errors import AuthenticationError
+        client = DuckLake()
+        with pytest.raises(AuthenticationError, match="authentication requires"):
+            await client.login()
+
+
+class TestDuckLakeDestructor:
+    def test_del_no_adapters_does_nothing(self):
+        client = DuckLake()
+        del client._catalog_adap
+        del client._columns_adap
+        client.__del__()
+
+    def test_del_with_running_loop_creates_task(self):
+        import asyncio
+        client = DuckLake()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            client.__del__()
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+
+
+class TestBaseAdapter:
+    @pytest.mark.asyncio
+    async def test_get_session_before_connect_raises(self, tmp_path):
+        """get_session before connect raises CatalogError."""
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from pysus.api.errors import CatalogError
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        with pytest.raises(CatalogError, match="not initialized"):
+            adapter.get_session()
+
+    @pytest.mark.asyncio
+    async def test_sql_before_connect_raises(self, tmp_path):
+        """sql before connect raises CatalogError."""
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from pysus.api.errors import CatalogError
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        with pytest.raises(CatalogError, match="not initialized"):
+            adapter.sql("SELECT 1")
+
+    @pytest.mark.asyncio
+    async def test_connect_when_engine_exists_skips(self, tmp_path):
+        """connect with existing engine returns immediately."""
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from unittest.mock import MagicMock
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        mock_engine = MagicMock()
+        adapter._engine = mock_engine
+        await adapter.connect()
+        assert adapter._engine is mock_engine
+
+    @pytest.mark.asyncio
+    async def test_download_catalog_already_exists_same_size_skips(self, tmp_path):
+        """_download_catalog skips when local size matches remote."""
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_bytes(b"data")
+        
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-length": "4"}
+        mock_response.raise_for_status = MagicMock()
+        
+        async def fake_head(*args, **kwargs):
+            return mock_response
+        
+        with patch("httpx.AsyncClient.head", new=fake_head):
+            await adapter._download_catalog(local, "remote/path", force=False)
+
+    @pytest.mark.asyncio
+    async def test_download_catalog_remote_404_returns(self, tmp_path):
+        """_download_catalog returns early on 404."""
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_bytes(b"data")
+        
+        async def fake_head(*args, **kwargs):
+            from httpx import HTTPStatusError
+            response = MagicMock()
+            response.status_code = 404
+            raise HTTPStatusError("404", request=MagicMock(), response=response)
+        
+        with patch("httpx.AsyncClient", autospec=True) as mock_client_class:
+            mock_client = MagicMock()
+            mock_client.head = fake_head
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+            await adapter._download_catalog(local, "remote/path", force=False)
+
+
+class TestAdapterConnect:
+    @pytest.mark.asyncio
+    async def test_connect_force_downloads_and_sets_engine(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from unittest.mock import MagicMock
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "ducklake" / "catalog.duckdb"
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_text("")
+        adapter.db_local = local
+        adapter.db_remote = local.parent / "remote.duckdb"
+
+        mock_engine = MagicMock()
+        with patch.object(adapter, "setup_engine", return_value=mock_engine):
+            with patch.object(adapter, "_download_catalog", new_callable=AsyncMock):
+                await adapter.connect(force=True)
+        assert adapter._engine is mock_engine
+
+    @pytest.mark.asyncio
+    async def test_connect_engine_fails_cleanup_and_retry(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from unittest.mock import MagicMock
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "ducklake" / "catalog.duckdb"
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_text("corrupted")
+        adapter.db_local = local
+
+        call_count = [0]
+
+        async def fake_download(*args, **kwargs):
+            call_count[0] += 1
+
+        def fake_setup():
+            call_count[0]
+            if call_count[0] == 1:
+                raise RuntimeError("bad db")
+            return MagicMock()
+
+        with patch.object(adapter, "_download_catalog", side_effect=fake_download):
+            with patch.object(adapter, "setup_engine", side_effect=fake_setup):
+                await adapter.connect()
+        assert call_count[0] == 2
+
+    @pytest.mark.asyncio
+    async def test_connect_with_existing_engine_no_session(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from unittest.mock import MagicMock
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        mock_engine = MagicMock()
+        adapter._engine = mock_engine
+        await adapter.connect()
+        assert adapter._session_factory is not None
+
+
+class TestAdapterRemoteUrl:
+    def test_remote_url(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        url = adapter.remote_url
+        assert "catalog.duckdb" in url
+        assert url.startswith("https://")
+
+
+class TestAdapterClose:
+    @pytest.mark.asyncio
+    async def test_close_disposes_engine(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        from unittest.mock import MagicMock
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        mock_engine = MagicMock()
+        adapter._engine = mock_engine
+        await adapter.close()
+        mock_engine.dispose.assert_called_once()
+        assert adapter._engine is None
+        assert adapter._session_factory is None
+
+    def test_destructor_no_engine(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        adapter._engine = None
+        adapter.__del__()
+
+
+class TestDatasetAdapter:
+    def test_init(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import DatasetAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = DatasetAdapter(name="sinan", dataset_id=1)
+        assert adapter.dataset_name == "sinan"
+        assert adapter.dataset_id == 1
+        assert "catalog_sinan.duckdb" in str(adapter.db_local)
+
+
+class TestColumnsAdapter:
+    def test_init(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import ColumnsAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = ColumnsAdapter()
+        assert "catalog_columns.duckdb" in str(adapter.db_local)
+
+
+class TestDownloadCatalogForce:
+    @pytest.mark.asyncio
+    async def test_download_catalog_force_bypasses_size_check(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_text("existing")
+
+        with patch("pysus.api.ducklake.catalog.adapters.download_http",
+                   new_callable=AsyncMock) as mock_dl:
+            await adapter._download_catalog(local, "remote/path", force=True)
+        mock_dl.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_download_catalog_local_error_fallback(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_text("data")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {"content-length": "4"}
+        mock_response.raise_for_status = MagicMock()
+
+        async def fake_head(*args, **kwargs):
+            return mock_response
+
+        with patch("httpx.AsyncClient.head", new=fake_head):
+            await adapter._download_catalog(local, "remote/path", force=False)
+
+
+class TestDownloadCatalogErrorCleanup:
+    @pytest.mark.asyncio
+    async def test_download_fails_cleans_up_local_file(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_text("partial download data")
+
+        with patch(
+            "pysus.api.ducklake.catalog.adapters.download_http",
+            side_effect=RuntimeError("download failed"),
+        ):
+            with pytest.raises(RuntimeError, match="download failed"):
+                await adapter._download_catalog(local, "remote/path", force=True)
+        assert not local.exists()
+
+    @pytest.mark.asyncio
+    async def test_download_unlink_os_error_swallowed(self, tmp_path):
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        local = tmp_path / "test.duckdb"
+        local.write_text("partial")
+
+        with patch(
+            "pysus.api.ducklake.catalog.adapters.download_http",
+            side_effect=RuntimeError("fail"),
+        ):
+            with patch("pathlib.Path.unlink", side_effect=OSError):
+                with pytest.raises(RuntimeError):
+                    await adapter._download_catalog(local, "remote/path", force=True)
+

@@ -189,8 +189,7 @@ class BaseAdapter(ABC):
 
         try:
             await download_http(
-                remote_path=remote_path,
-                local_path=local_path,
+                remote_path=remote_path, local_path=local_path,
                 callback=callback,
             )
         except Exception:

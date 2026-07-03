@@ -86,8 +86,8 @@ if __name__ == "__main__":
     examples_page = st.Page("pages/2_examples.py", title="Examples")
 
     st.logo(
-        "https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo_large.svg",
-        icon_image="https://raw.githubusercontent.com/luabida/PySUS/1001b6bf8c294ab20a7432e66434755b6d6250d5/pysus/http/assets/logo.svg",
+        "https://raw.githubusercontent.com/AlertaDengue/PySUS/db96a5ae94e899851490328ce784b3a5afd68a30/pysus/http/assets/logo_large.svg",
+        icon_image="https://raw.githubusercontent.com/AlertaDengue/PySUS/db96a5ae94e899851490328ce784b3a5afd68a30/pysus/http/assets/logo.svg",
     )
 
     pg = st.navigation({"": [home_page, client_page], "docs": [examples_page]})

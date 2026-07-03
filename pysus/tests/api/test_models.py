@@ -554,3 +554,12 @@ async def test_remote_file_download(tmp_path):
 def test_pydantic_validation():
     with pytest.raises(ValidationError):
         MockRemoteFile(path="missing_parent")
+
+
+def test_basefile_fspath(tmp_path):
+    """__fspath__ enables os.fspath and open() on BaseFile subclasses."""
+    import os
+
+    f = MockLocalFile(path=tmp_path / "test.txt")
+    assert os.fspath(f) == str(f.path)
+    assert f.__fspath__() == str(f.path)
