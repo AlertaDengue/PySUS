@@ -297,15 +297,14 @@ def _scan_column(
 
     with open(path, "rb") as fh:
         for row_idx in range(schema.num_records):
-            fh.seek(
-                schema.header_len
-                + row_idx * schema.record_len
-                + field_offset_in_record
-            )
-            chunk = fh.read(field_width)
-
-            if chunk[0:1] in (b"\x00", b"*"):
+            record_start = schema.header_len + row_idx * schema.record_len
+            fh.seek(record_start)
+            delete_flag = fh.read(1)
+            if delete_flag in (b"\x00", b"*"):
                 continue
+
+            fh.seek(record_start + field_offset_in_record)
+            chunk = fh.read(field_width)
 
             stripped = chunk.rstrip(b" ")
             for target in target_bytes:
