@@ -189,10 +189,11 @@ class BaseAdapter(ABC):
 
         try:
             await download_http(
-                remote_path=remote_path, local_path=local_path,
+                remote_path=remote_path,
+                local_path=local_path,
                 callback=callback,
             )
-        except Exception:
+        except Exception:  # noqa: B902
             if local_path.exists():
                 try:
                     local_path.unlink()

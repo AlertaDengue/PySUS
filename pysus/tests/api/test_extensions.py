@@ -649,8 +649,9 @@ async def test_dbf_to_parquet_empty(tmp_dir):
     dbf_path = tmp_dir / "test.dbf"
     _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [])
     obj = DBF(path=dbf_path)
-    with pytest.raises(TypeError):
-        await obj.to_parquet()
+    result = await obj.to_parquet()
+    assert isinstance(result, Parquet)
+    assert result.path.exists()
 
 
 @pytest.mark.asyncio
@@ -1142,6 +1143,7 @@ async def test_zip_to_parquet_no_tabular(tmp_dir):
 async def test_dbc_to_parquet_permission_error_cleanup(tmp_dir):
     """Cover the PermissionError retry in DBC.to_parquet finally block."""
     from unittest.mock import patch
+
     from pysus.api.extensions import DBC
 
     dbf_path = tmp_dir / "test.dbf"
@@ -1162,3 +1164,202 @@ async def test_dbc_to_parquet_permission_error_cleanup(tmp_dir):
             obj = DBC(path=dbc_path)
             result = await obj.to_parquet(output_path=out, chunk_size=10)
     assert result is not None
+
+
+# ---------------------------------------------------------------------------
+# Byte-level reader integration tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("NAME", "C", 10, 0), ("AGE", "N", 3, 0)],
+        [("Alice", "30"), ("Bob", "25")],
+    )
+    obj = DBF(path=dbf_path)
+    df = await obj.load(fast=True)
+    assert len(df) == 2
+    assert list(df.columns) == ["NAME", "AGE"]
+    assert df["NAME"].iloc[0] == "Alice"
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_fast_fallback(tmp_dir):
+    """Invalid DBF file should fall back to dbfread gracefully."""
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "bad.dbf"
+    _create_dbf(
+        dbf_path,
+        [("NAME", "C", 10, 0)],
+        [("test",)],
+    )
+    obj = DBF(path=dbf_path)
+    df = await obj.load(fast=True)
+    assert len(df) == 1
+    assert df["NAME"].iloc[0] == "test"
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_no_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("COL", "C", 5, 0)],
+        [("val1",), ("val2",)],
+    )
+    obj = DBF(path=dbf_path)
+    df = await obj.load(fast=False)
+    assert len(df) == 2
+    assert df["COL"].iloc[0] == "val1"
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("X", "C", 4, 0)],
+        [(f"r{i}",) for i in range(150)],
+    )
+    obj = DBF(path=dbf_path)
+    chunks = await collect_async(obj.stream(chunk_size=50, fast=True))
+    assert len(chunks) == 3
+    assert all(len(c) == 50 for c in chunks[:2])
+    assert len(chunks[2]) == 50
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_fast_fallback(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("Y", "C", 3, 0)],
+        [("a",), ("b",), ("c",)],
+    )
+    obj = DBF(path=dbf_path)
+    chunks = await collect_async(obj.stream(chunk_size=2, fast=True))
+    assert len(chunks) == 2
+    assert len(chunks[0]) == 2
+    assert len(chunks[1]) == 1
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_no_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("Z", "C", 4, 0)],
+        [("x",), ("y",)],
+    )
+    obj = DBF(path=dbf_path)
+    chunks = await collect_async(obj.stream(chunk_size=1, fast=False))
+    assert len(chunks) == 2
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("A", "C", 8, 0), ("B", "C", 8, 0)],
+        [("foo", "bar"), ("baz", "qux")],
+    )
+    obj = DBF(path=dbf_path)
+    out = tmp_dir / "out.parquet"
+    result = await obj.to_parquet(output_path=out, fast=True)
+    assert isinstance(result, Parquet)
+    assert out.exists()
+    df = pd.read_parquet(out)
+    assert len(df) == 2
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_fast_fallback(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("K", "C", 6, 0)],
+        [("abc",)],
+    )
+    obj = DBF(path=dbf_path)
+    out = tmp_dir / "out.parquet"
+    result = await obj.to_parquet(output_path=out, fast=True)
+    assert isinstance(result, Parquet)
+    assert out.exists()
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_no_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("V", "C", 5, 0)],
+        [("x",)],
+    )
+    obj = DBF(path=dbf_path)
+    out = tmp_dir / "out.parquet"
+    result = await obj.to_parquet(output_path=out, fast=False)
+    assert isinstance(result, Parquet)
+
+
+@pytest.mark.asyncio
+async def test_dbf_columns_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("F1", "C", 10, 0), ("F2", "N", 5, 0)],
+        [("a", "1")],
+    )
+    obj = DBF(path=dbf_path)
+    cols = obj.columns
+    assert len(cols) == 2
+    assert cols[0].name == "F1"
+    assert cols[1].name == "F2"
+
+
+@pytest.mark.asyncio
+async def test_dbf_rows_fast(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "test.dbf"
+    _create_dbf(
+        dbf_path,
+        [("C1", "C", 5, 0)],
+        [("a",), ("b",), ("c",)],
+    )
+    obj = DBF(path=dbf_path)
+    assert obj.rows == 3
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_fast_empty(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "empty.dbf"
+    _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [])
+    obj = DBF(path=dbf_path)
+    df = await obj.load(fast=True)
+    assert len(df) == 0
+    assert list(df.columns) == ["NAME"]
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_fast_empty(tmp_dir):
+    pytest.importorskip("dbfread")
+    dbf_path = tmp_dir / "empty.dbf"
+    _create_dbf(dbf_path, [("NAME", "C", 10, 0)], [])
+    obj = DBF(path=dbf_path)
+    out = tmp_dir / "out.parquet"
+    result = await obj.to_parquet(output_path=out, fast=True)
+    assert isinstance(result, Parquet)
+    assert out.exists()

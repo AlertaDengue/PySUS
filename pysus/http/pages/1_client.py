@@ -558,7 +558,7 @@ def _parse_and_query(
         return
 
     st.session_state[f"_query_results_{client}"] = files
-    st.session_state[f"_query_dataset_{client}"] = ds_name
+    st.session_state[f"_query_dataset_{client}"] = ds_name.lower()
     st.session_state[f"_query_params_{client}"] = {
         "dataset": ds_name,
         "group": groups,
@@ -808,7 +808,7 @@ def _show_results(pysus: PySUS, client: str) -> None:
 
     remove_indices = selection.selection.get("rows", [])  # type: ignore
 
-    dataset_name = st.session_state.get(f"_query_dataset_{client}", "")
+    dataset_name = st.session_state.get(f"_query_dataset_{client}", "").lower()
     default_dir = str(CACHEPATH / "downloads" / client / (dataset_name or "data"))
 
     dir_key = f"_dl_dir_{client}"

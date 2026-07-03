@@ -40,8 +40,13 @@ async def download_http(
                             if callback:
                                 callback(downloaded, total)
             return
-        except (OSError, httpx.HTTPStatusError, httpx.ConnectError,
-                httpx.ReadError, httpx.RemoteProtocolError) as e:
+        except (
+            OSError,
+            httpx.HTTPStatusError,
+            httpx.ConnectError,
+            httpx.ReadError,
+            httpx.RemoteProtocolError,
+        ) as e:
             if local_path.exists():
                 try:
                     local_path.unlink()
