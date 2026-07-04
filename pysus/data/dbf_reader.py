@@ -93,7 +93,7 @@ def _parse_header(path: str | Path) -> DBFSchema:
     )
 
 
-_ENCODING = "cp1252"
+_ENCODING = "latin-1"
 
 
 def _decode(val: bytes) -> str:
@@ -108,7 +108,7 @@ def read_dbf_schema(path: str | Path) -> DBFSchema:
 def read_dbf_fast(
     path: str | Path,
     columns: list[str] | None = None,
-    encoding: str = "cp1252",
+    encoding: str = "latin-1",
 ) -> pd.DataFrame:
     """Read an entire DBF file into a DataFrame using vectorised byte access.
 
@@ -119,7 +119,8 @@ def read_dbf_fast(
     columns : list[str], optional
         Subset of columns to read.  If *None* all columns are returned.
     encoding : str
-        Text encoding for character fields (default ``cp1252``).
+        Text encoding for character fields (default ``latin-1``, the encoding
+        DATASUS uses).
 
     Returns
     -------
@@ -134,7 +135,12 @@ def read_dbf_fast(
     if n == 0:
         return pd.DataFrame(columns=schema.field_names)
 
-    target = [f for f in schema.fields if columns is None or f.name in columns]
+    cols_lower = None if columns is None else {c.lower() for c in columns}
+    target = [
+        f
+        for f in schema.fields
+        if cols_lower is None or f.name.lower() in cols_lower
+    ]
     dtype = schema.build_dtype()
 
     with open(path, "rb") as fh:
@@ -142,6 +148,12 @@ def read_dbf_fast(
         raw = fh.read(n * schema.record_len)
 
     records: np.ndarray = np.frombuffer(raw, dtype=dtype, count=n)
+    records = records[
+        records["_deleted"] != b"*"
+    ]  # skip deleted rows (matches dbfread)
+    n = len(records)
+    if n == 0:
+        return pd.DataFrame(columns=[f.name for f in target])
 
     data = {}
     for fld in target:
@@ -161,7 +173,7 @@ def read_dbf_filtered(
     column: str,
     values: list[str],
     columns: list[str] | None = None,
-    encoding: str = "cp1252",
+    encoding: str = "latin-1",
     prefix_match: bool = True,
 ) -> pd.DataFrame:
     """Read only DBF records where *column* matches one of *values*.
@@ -199,15 +211,11 @@ def read_dbf_filtered(
 
     filter_field = _find_field(schema, column)
 
-    target_bytes: list[bytes] = []
-    for val in values:
-        b = val.encode(encoding)
-        if prefix_match and len(b) < filter_field.length:
-            target_bytes.append(b)
-        else:
-            target_bytes.append(
-                b.ljust(filter_field.length)[: filter_field.length]
-            )
+    # Bare (unpadded) targets. The prefix-vs-exact decision is made per value
+    # in _scan_column by comparing the value length to the field width, so a
+    # value shorter than the field must NOT be pre-padded: pre-padding broke
+    # exact match (the scanned chunk is stripped of trailing padding first).
+    target_bytes: list[bytes] = [val.encode(encoding) for val in values]
 
     matches = _scan_column(
         path, schema, filter_field, target_bytes, prefix_match
@@ -223,7 +231,7 @@ def read_dbf_filtered(
 def stream_dbf_fast(
     path: str | Path,
     chunk_size: int = 100_000,
-    encoding: str = "cp1252",
+    encoding: str = "latin-1",
 ) -> Iterator[pd.DataFrame]:
     """Stream records from a DBF file in chunks using vectorised byte access.
 
@@ -259,6 +267,8 @@ def stream_dbf_fast(
         records: np.ndarray = np.frombuffer(
             chunk_raw, dtype=dtype, count=chunk_n
         )
+        records = records[records["_deleted"] != b"*"]  # skip deleted rows
+        chunk_n = len(records)
 
         data = {}
         for fld in schema.fields:
@@ -306,7 +316,9 @@ def _scan_column(
             fh.seek(record_start + field_offset_in_record)
             chunk = fh.read(field_width)
 
-            stripped = chunk.rstrip(b" ")
+            stripped = chunk.rstrip(
+                b"\x00 "
+            )  # DATASUS pads with spaces and/or NULs
             for target in target_bytes:
                 if prefix_match and len(target) < field_width:
                     if stripped.startswith(target):
@@ -327,8 +339,11 @@ def _materialize_rows(
     columns: list[str] | None,
 ) -> pd.DataFrame:
     """Read only the specified rows from the DBF and return a DataFrame."""
+    cols_lower = None if columns is None else {c.lower() for c in columns}
     target_fields = [
-        f for f in schema.fields if columns is None or f.name in columns
+        f
+        for f in schema.fields
+        if cols_lower is None or f.name.lower() in cols_lower
     ]
 
     data: dict[str, list[str]] = {f.name: [] for f in target_fields}
