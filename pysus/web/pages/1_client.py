@@ -5,11 +5,10 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 from humanize import naturalsize
-
 from pysus import CACHEPATH
 from pysus.api.client import PySUS
 from pysus.api.models import BaseRemoteFile
-from pysus.http.translations import t
+from pysus.web.translations import t
 
 STATES = [
     "AC",
@@ -169,13 +168,15 @@ def _get_group_options(
 ) -> list[str]:
     if not ds_name:
         return []
-    target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
+    target = next(
+        (d for d in datasets if d.name.upper() == ds_name.upper()), None
+    )
     if target is None:
         return []
 
     if client == "ducklake":
-        from sqlalchemy import select
         from pysus.api.ducklake.catalog.orm.dataset import Group as OrmGroup
+        from sqlalchemy import select
 
         async def _fetch() -> list[str]:
             await target.adapter.connect(callback=callback)
@@ -186,7 +187,7 @@ def _get_group_options(
 
         try:
             return _run_async(_fetch())
-        except Exception as exc:
+        except Exception as exc:  # noqa: B902
             st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
             return []
 
@@ -209,26 +210,30 @@ def _get_year_options(
         return []
     if client != "ducklake":
         return []
-    target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
+    target = next(
+        (d for d in datasets if d.name.upper() == ds_name.upper()), None
+    )
     if target is None:
         return []
 
-    from sqlalchemy import distinct, select
     from pysus.api.ducklake.catalog.orm.dataset import File as OrmFile
+    from sqlalchemy import distinct, select
 
     async def _fetch() -> list[int]:
         await target.adapter.connect(callback=callback)
         with target.adapter.get_session() as session:
             stmt = (
                 select(distinct(OrmFile.year))
-                .filter(OrmFile.dataset_id == target.id, OrmFile.year.isnot(None))
+                .filter(
+                    OrmFile.dataset_id == target.id, OrmFile.year.isnot(None)
+                )
                 .order_by(OrmFile.year)
             )
             return sorted(y for y in session.scalars(stmt).all())
 
     try:
         return _run_async(_fetch())
-    except Exception as exc:
+    except Exception as exc:  # noqa: B902
         st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
         return []
 
@@ -243,31 +248,37 @@ def _get_month_options(
         return []
     if client != "ducklake":
         return []
-    target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
+    target = next(
+        (d for d in datasets if d.name.upper() == ds_name.upper()), None
+    )
     if target is None:
         return []
 
-    from sqlalchemy import distinct, select
     from pysus.api.ducklake.catalog.orm.dataset import File as OrmFile
+    from sqlalchemy import distinct, select
 
     async def _fetch() -> list[int]:
         await target.adapter.connect(callback=callback)
         with target.adapter.get_session() as session:
             stmt = (
                 select(distinct(OrmFile.month))
-                .filter(OrmFile.dataset_id == target.id, OrmFile.month.isnot(None))
+                .filter(
+                    OrmFile.dataset_id == target.id, OrmFile.month.isnot(None)
+                )
                 .order_by(OrmFile.month)
             )
             return sorted(m for m in session.scalars(stmt).all())
 
     try:
         return _run_async(_fetch())
-    except Exception as exc:
+    except Exception as exc:  # noqa: B902
         st.warning(t("catalog_query_failed", _lang(), error=str(exc)))
         return []
 
 
-def _render_year_filter(client: str, year_options: list[int]) -> list[int] | None:
+def _render_year_filter(
+    client: str, year_options: list[int]
+) -> list[int] | None:
     if year_options:
         return (
             st.multiselect(
@@ -288,7 +299,9 @@ def _render_year_filter(client: str, year_options: list[int]) -> list[int] | Non
     return None
 
 
-def _render_month_filter(client: str, month_options: list[int]) -> list[int] | None:
+def _render_month_filter(
+    client: str, month_options: list[int]
+) -> list[int] | None:
     if month_options:
         return (
             st.multiselect(
@@ -333,7 +346,7 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
         try:
             _run_async(pysus.get_ducklake(callback=_on_progress))
             progress.empty()
-        except Exception:
+        except Exception:  # noqa: B902
             progress.empty()
             st.warning(t("catalog_failed", _lang()))
             return
@@ -348,7 +361,7 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
         ds_names,
         index=None,
         placeholder=t("browser_choose", _lang()),
-        key=f"_ds_ducklake",
+        key="_ds_ducklake",
     )
     ds_key = _ds_key(selected_ds)
 
@@ -362,9 +375,15 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
     if not selected_ds:
         return
 
-    group_options = _cached_options_with_progress("ducklake", datasets, ds_key, "group")
-    year_options = _cached_options_with_progress("ducklake", datasets, ds_key, "year")
-    month_options = _cached_options_with_progress("ducklake", datasets, ds_key, "month")
+    group_options = _cached_options_with_progress(
+        "ducklake", datasets, ds_key, "group"
+    )
+    year_options = _cached_options_with_progress(
+        "ducklake", datasets, ds_key, "year"
+    )
+    month_options = _cached_options_with_progress(
+        "ducklake", datasets, ds_key, "month"
+    )
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -379,7 +398,9 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
     with col2:
         state = (
             st.multiselect(
-                t("state", _lang()), STATES, placeholder=t("select_states", _lang())
+                t("state", _lang()),
+                STATES,
+                placeholder=t("select_states", _lang()),
             )
             or None
         )
@@ -396,7 +417,7 @@ def _render_ducklake_filters(pysus: PySUS) -> None:
 def _render_ftp_filters(pysus: PySUS) -> None:
     try:
         datasets = _cached_datasets(pysus, "ftp")
-    except Exception as exc:
+    except Exception as exc:  # noqa: B902
         st.warning(f"{t('ftp_failed', _lang())} {exc}")
         return
     if not datasets:
@@ -407,7 +428,7 @@ def _render_ftp_filters(pysus: PySUS) -> None:
         ds_names,
         index=None,
         placeholder=t("browser_choose", _lang()),
-        key=f"_ds_ftp",
+        key="_ds_ftp",
     )
     ds_key = _ds_key(selected_ds)
 
@@ -436,7 +457,9 @@ def _render_ftp_filters(pysus: PySUS) -> None:
     with col2:
         state = (
             st.multiselect(
-                t("state", _lang()), STATES, placeholder=t("select_states", _lang())
+                t("state", _lang()),
+                STATES,
+                placeholder=t("select_states", _lang()),
             )
             or None
         )
@@ -476,7 +499,7 @@ def _render_dadosgov_filters(pysus: PySUS) -> None:
         ds_names,
         index=None,
         placeholder=t("browser_choose", _lang()),
-        key=f"_ds_dadosgov",
+        key="_ds_dadosgov",
     )
     ds_key = _ds_key(selected_ds)
 
@@ -505,7 +528,9 @@ def _render_dadosgov_filters(pysus: PySUS) -> None:
     with col2:
         state = (
             st.multiselect(
-                t("state", _lang()), STATES, placeholder=t("select_states", _lang())
+                t("state", _lang()),
+                STATES,
+                placeholder=t("select_states", _lang()),
             )
             or None
         )
@@ -549,7 +574,7 @@ def _parse_and_query(
                     month_vals,
                 )
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: B902
             st.error(t("query_failed", _lang(), error=str(exc)))
             return
 
@@ -574,13 +599,19 @@ async def _ftp_dadosgov_search(
 ) -> list[BaseRemoteFile]:
     all_files = await target.search()
     if groups:
-        all_files = [f for f in all_files if getattr(f.group, "name", None) in groups]
+        all_files = [
+            f for f in all_files if getattr(f.group, "name", None) in groups
+        ]
     if states:
-        all_files = [f for f in all_files if getattr(f, "state", None) in states]
+        all_files = [
+            f for f in all_files if getattr(f, "state", None) in states
+        ]
     if years:
         all_files = [f for f in all_files if getattr(f, "year", None) in years]
     if months:
-        all_files = [f for f in all_files if getattr(f, "month", None) in months]
+        all_files = [
+            f for f in all_files if getattr(f, "month", None) in months
+        ]
     return all_files
 
 
@@ -605,12 +636,16 @@ async def _query_client(
     if client == "ftp":
         ftp_client = await pysus.get_ftp()
         datasets = await ftp_client.datasets()
-        target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
+        target = next(
+            (d for d in datasets if d.name.upper() == ds_name.upper()), None
+        )
         if target is None:
             return []
         try:
-            return await _ftp_dadosgov_search(target, groups, states, years, months)
-        except (ConnectionResetError, BrokenPipeError, OSError):
+            return await _ftp_dadosgov_search(
+                target, groups, states, years, months
+            )
+        except OSError:
             await ftp_client.close()
             pysus._ftp = None
             ftp_client = await pysus.get_ftp()
@@ -620,11 +655,15 @@ async def _query_client(
             )
             if target is None:
                 return []
-            return await _ftp_dadosgov_search(target, groups, states, years, months)
+            return await _ftp_dadosgov_search(
+                target, groups, states, years, months
+            )
     else:
         dadosgov_client = await pysus.get_dadosgov(None)
         datasets = await dadosgov_client.datasets()  # type: ignore[assignment]
-        target = next((d for d in datasets if d.name.upper() == ds_name.upper()), None)
+        target = next(
+            (d for d in datasets if d.name.upper() == ds_name.upper()), None
+        )
         if target is None:
             return []
         return await _ftp_dadosgov_search(target, groups, states, years, months)
@@ -679,7 +718,9 @@ def _native_dir_picker(title: str, initialdir: str) -> str:
             ["kdialog", "--getexistingdirectory", initialdir, "--title", title],
         ):
             try:
-                r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                r = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=30
+                )
                 return r.stdout.strip()
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 continue
@@ -701,13 +742,17 @@ $f.SelectedPath
         return r.stdout.strip()
 
     elif system == "Darwin":
-        applescript = f"""
-tell application "System Events"
-    activate
-    set f to choose folder with prompt "{title}" default location POSIX file "{initialdir}"
-    POSIX path of f
-end tell
-"""
+        prompt_line = (
+            'set f to choose folder with prompt "{}"'
+            ' default location POSIX file "{}"'
+        ).format(title, initialdir)
+        applescript = (
+            f'tell application "System Events"\n'
+            f"    activate\n"
+            f"    {prompt_line}\n"
+            f"    POSIX path of f\n"
+            f"end tell"
+        )
         r = subprocess.run(
             ["osascript", "-e", applescript],
             capture_output=True,
@@ -767,8 +812,12 @@ def _show_results(pysus: PySUS, client: str) -> None:
 
     col1, col2 = st.columns([3, 1])
     with col2:
-        if selected_indices and st.button(t("add_to_queue", _lang()), width="stretch"):
-            new_indices = [i for i in selected_indices if i not in queued_indices]
+        if selected_indices and st.button(
+            t("add_to_queue", _lang()), width="stretch"
+        ):
+            new_indices = [
+                i for i in selected_indices if i not in queued_indices
+            ]
             if new_indices:
                 st.session_state[queue_key] = sorted(
                     set(queued_indices) | set(new_indices)
@@ -809,7 +858,9 @@ def _show_results(pysus: PySUS, client: str) -> None:
     remove_indices = selection.selection.get("rows", [])  # type: ignore
 
     dataset_name = st.session_state.get(f"_query_dataset_{client}", "").lower()
-    default_dir = str(CACHEPATH / "downloads" / client / (dataset_name or "data"))
+    default_dir = str(
+        CACHEPATH / "downloads" / client / (dataset_name or "data")
+    )
 
     dir_key = f"_dl_dir_{client}"
     if dir_key not in st.session_state:
@@ -849,7 +900,9 @@ def _show_results(pysus: PySUS, client: str) -> None:
             st.rerun()
     with col3:
         if st.button(t("download", _lang()), width="stretch", type="primary"):
-            _download_selected(pysus, client, download_queue, st.session_state[dir_key])
+            _download_selected(
+                pysus, client, download_queue, st.session_state[dir_key]
+            )
             st.rerun()
 
 
@@ -878,9 +931,16 @@ def _download_selected(
             )
             try:
                 await pysus.download(file=f)
-            except Exception as exc:
+            except Exception as exc:  # noqa: B902
                 failed.add(f.basename)
-                st.error(t("download_failed", _lang(), name=f.basename, error=str(exc)))
+                st.error(
+                    t(
+                        "download_failed",
+                        _lang(),
+                        name=f.basename,
+                        error=str(exc),
+                    )
+                )
 
     _run_async(_download())
     progress.empty()
@@ -950,7 +1010,9 @@ def _build_query_code(client: str) -> str | None:
         "    ds = next(d for d in datasets if d.name == "
         + repr(params["dataset"])
         + ")\n"
-        "    files = await ds.search(\n" + _fmt_args(exclude_dataset=True) + "\n    )\n"
+        "    files = await ds.search(\n"
+        + _fmt_args(exclude_dataset=True)
+        + "\n    )\n"
         "    for f in files:\n"
         "        print(f.basename)\n"
         "        await pysus.download(file=f)\n"

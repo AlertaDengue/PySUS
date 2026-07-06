@@ -8,12 +8,18 @@ EN: Final[dict[str, str]] = {
     "sidebar_title": "Datasets",
     "sidebar_select": "Select a dataset",
     "home_title": "PySUS",
-    "home_subtitle": "Tools for dealing with Brazil's Public health data (SUS — Sistema Único de Saúde).",
+    "home_subtitle": (
+        "Tools for dealing with Brazil's Public health data"
+        " (SUS — Sistema Único de Saúde)."
+    ),
     "coming_soon": "coming soon",
     "datasets": "Datasets",
     "data_sources": "Data sources",
     "about_title": "About PySUS",
-    "about_intro": "PySUS v{version} — Tools for dealing with Brazil's Public health data (SUS — Sistema Único de Saúde).",
+    "about_intro": (
+        "PySUS v{version} — Tools for dealing with Brazil's"
+        " Public health data (SUS — Sistema Único de Saúde)."
+    ),
     "sinan_desc": "Notifiable Diseases Information System",
     "sinasc_desc": "Live Births Information System",
     "sim_desc": "Mortality Information System",
@@ -79,6 +85,84 @@ EN: Final[dict[str, str]] = {
     "download_failed": "Failed: {name} — {error}",
     "download_success": "Downloaded {count} file(s) to {dir}",
     "python_snippet": "📋 Python snippet",
+    "intro_welcome": "PySUS Web",
+    "intro_desc": (
+        "This is a local web interface for browsing, querying,"
+        " and downloading Brazil's public health datasets (SUS)."
+        " Use the sidebar to navigate between sections and select"
+        " your preferred data source."
+    ),
+    "intro_available": "Available Data Sources",
+    "intro_source_ducklake": (
+        "**PySUS s3** — the default backend. Browse and query"
+        " datasets from the PySUS cloud data lake. Fast parquet"
+        " downloads with column selection. Best for programmatic"
+        " access and large-scale analysis."
+    ),
+    "intro_source_ftp": (
+        "**FTP DataSUS** — the legacy DATASUS FTP server."
+        " Download raw DBF files for SINAN, SINASC, SIM, SIH,"
+        " SIA, PNI, CNES, CIHA and more. Covers historical"
+        " data back to the 1990s."
+    ),
+    "intro_source_dadosgov": (
+        "**API DataSUS** — the dados.gov.br open-data portal."
+        " Query datasets via REST API with metadata and"
+        " filtering. Requires a free API token from the"
+        " Brazilian government portal."
+    ),
+    "intro_package": (
+        "PySUS is a Python package. For package documentation,"
+        " API reference, programmatic usage, and this web server,"
+        " visit [pysus.readthedocs.io](https://pysus.readthedocs.io)."
+    ),
+    "intro_github": (
+        "Found an issue or want to contribute?"
+        " Visit the [GitHub repository]"
+        "(https://github.com/AlertaDengue/PySUS)."
+    ),
+    "databases_title": "Available Databases",
+    "databases_desc": (
+        "PySUS provides access to the following DATASUS databases:"
+    ),
+    "databases_source": "Official source",
+    "db_sinan_desc": (
+        "Notifiable Diseases Information System. Data on"
+        " dengue, zika, chikungunya, and other mandatory-report"
+        " diseases."
+    ),
+    "db_sinasc_desc": (
+        "Live Births Information System. Birth records with"
+        " maternal, gestational, and neonatal data."
+    ),
+    "db_sim_desc": (
+        "Mortality Information System. Death records with"
+        " cause, location, and demographic data."
+    ),
+    "db_sih_desc": (
+        "Hospital Information System. Hospital admission"
+        " records funded by SUS."
+    ),
+    "db_sia_desc": (
+        "Ambulatory Information System. Outpatient care"
+        " records from SUS providers."
+    ),
+    "db_pni_desc": (
+        "National Immunization Program. Vaccination coverage"
+        " and doses administered across Brazil."
+    ),
+    "db_cnes_desc": (
+        "National Registry of Health Facilities. Data on"
+        " hospitals, clinics, and health units."
+    ),
+    "db_ciha_desc": (
+        "Hospital Admission Communication. Complementary"
+        " hospital admission and outpatient data."
+    ),
+    "db_ibge_desc": (
+        "Brazilian Institute of Geography and Statistics."
+        " Population estimates and demographic data."
+    ),
 }
 
 PT: Final[dict[str, str]] = {
@@ -87,12 +171,18 @@ PT: Final[dict[str, str]] = {
     "sidebar_title": "Bases de dados",
     "sidebar_select": "Selecione uma base",
     "home_title": "PySUS",
-    "home_subtitle": "Ferramentas para dados públicos de saúde do Brasil (SUS — Sistema Único de Saúde).",
+    "home_subtitle": (
+        "Ferramentas para dados públicos de saúde do Brasil"
+        " (SUS — Sistema Único de Saúde)."
+    ),
     "coming_soon": "em breve",
     "datasets": "Bases de dados",
     "data_sources": "Fontes de dados",
     "about_title": "Sobre o PySUS",
-    "about_intro": "PySUS v{version} — Ferramentas para dados públicos de saúde do Brasil (SUS — Sistema Único de Saúde).",
+    "about_intro": (
+        "PySUS v{version} — Ferramentas para dados públicos"
+        " de saúde do Brasil (SUS — Sistema Único de Saúde)."
+    ),
     "sinan_desc": "Sistema de Informação de Agravos de Notificação",
     "sinasc_desc": "Sistema de Informações sobre Nascidos Vivos",
     "sim_desc": "Sistema de Informação sobre Mortalidade",
@@ -158,6 +248,86 @@ PT: Final[dict[str, str]] = {
     "download_failed": "Falha: {name} — {error}",
     "download_success": "{count} arquivo(s) baixado(s) para {dir}",
     "python_snippet": "📋 Código Python",
+    "intro_welcome": "PySUS Web",
+    "intro_desc": (
+        "Esta é uma interface web local para navegar, consultar"
+        " e baixar bases de dados públicos de saúde do Brasil"
+        " (SUS). Use a barra lateral para navegar entre as"
+        " seções e selecionar sua fonte de dados preferida."
+    ),
+    "intro_available": "Fontes de Dados Disponíveis",
+    "intro_source_ducklake": (
+        "**PySUS s3** — o backend padrão. Navegue e consulte"
+        " bases do data lake do PySUS. Downloads rápidos em"
+        " parquet com seleção de colunas. Ideal para acesso"
+        " programático e análises em larga escala."
+    ),
+    "intro_source_ftp": (
+        "**FTP DataSUS** — o servidor FTP legado do DATASUS."
+        " Baixe arquivos DBF brutos de SINAN, SINASC, SIM,"
+        " SIH, SIA, PNI, CNES, CIHA e outros. Cobre dados"
+        " históricos desde a década de 1990."
+    ),
+    "intro_source_dadosgov": (
+        "**API DataSUS** — o portal de dados abertos"
+        " dados.gov.br. Consulte bases via API REST com"
+        " metadados e filtros. Requer um token gratuito de"
+        " API do portal do governo brasileiro."
+    ),
+    "intro_package": (
+        "PySUS é um pacote Python. Para documentação do pacote,"
+        " referência da API, uso programático e este servidor"
+        " web, acesse [pysus.readthedocs.io]"
+        "(https://pysus.readthedocs.io)."
+    ),
+    "intro_github": (
+        "Encontrou um problema ou quer contribuir?"
+        " Acesse o [repositório no GitHub]"
+        "(https://github.com/AlertaDengue/PySUS)."
+    ),
+    "databases_title": "Bases de Dados Disponíveis",
+    "databases_desc": "O PySUS oferece acesso às seguintes bases do DATASUS:",
+    "databases_source": "Fonte oficial",
+    "db_sinan_desc": (
+        "Sistema de Informação de Agravos de Notificação."
+        " Dados de dengue, zika, chikungunya e outras doenças"
+        " de notificação obrigatória."
+    ),
+    "db_sinasc_desc": (
+        "Sistema de Informações sobre Nascidos Vivos."
+        " Registros de nascimento com dados maternos,"
+        " gestacionais e neonatais."
+    ),
+    "db_sim_desc": (
+        "Sistema de Informação sobre Mortalidade. Registros"
+        " de óbito com dados de causa, local e perfil"
+        " demográfico."
+    ),
+    "db_sih_desc": (
+        "Sistema de Informações Hospitalares. Registros de"
+        " internações financiadas pelo SUS."
+    ),
+    "db_sia_desc": (
+        "Sistema de Informações Ambulatoriais. Registros de"
+        " atendimento ambulatorial do SUS."
+    ),
+    "db_pni_desc": (
+        "Programa Nacional de Imunizações. Cobertura vacinal"
+        " e doses aplicadas em todo o Brasil."
+    ),
+    "db_cnes_desc": (
+        "Cadastro Nacional de Estabelecimentos de Saúde."
+        " Dados de hospitais, clínicas e unidades de saúde."
+    ),
+    "db_ciha_desc": (
+        "Comunicação de Informação Hospitalar e Ambulatorial."
+        " Dados complementares de internação e atendimento"
+        " ambulatorial."
+    ),
+    "db_ibge_desc": (
+        "Instituto Brasileiro de Geografia e Estatística."
+        " Estimativas populacionais e dados demográficos."
+    ),
 }
 
 TRANSLATIONS: Final[dict[str, dict[str, str]]] = {

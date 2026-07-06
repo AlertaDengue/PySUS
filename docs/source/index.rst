@@ -20,6 +20,9 @@ PySUS is a Python package for accessing and analyzing Brazil's public health dat
 and work with health datasets including SINAN (disease notifications), SIM (mortality),
 SINASC (births), SIH (hospitalizations), SIA (ambulatory), CIHA, CNES, PNI, and more.
 
+A local web server (`pysus web`) is included for interactive browsing and downloading
+of datasets through a graphical Streamlit interface.
+
 This documentation covers PySUS 2.0+.
 
 .. toctree::

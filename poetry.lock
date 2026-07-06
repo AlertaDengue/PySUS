@@ -5292,9 +5292,9 @@ files = [
 dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 
 [extras]
-http = []
+web = []
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "2fdd6705ff86f8c17e9ab4a869440f57910087935a3c6a434d9b7ff9e2398208"
+content-hash = "ea50177e1fc511f88ad0bb568c1af13255eee0fa049a3e13bd0e8d0ceac11855"

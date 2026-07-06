@@ -10,7 +10,7 @@ def version():
 
 
 @app.command()
-def http(
+def web(
     port: int = typer.Option(  # noqa: B008
         8501,
         "-p",
@@ -25,13 +25,13 @@ def http(
     except ImportError:
         raise ImportError(
             "The HTTP UI requires extra dependencies. "
-            "Install them with: pip install pysus[http]"
+            "Install them with: pip install pysus[web]"
         )
     import os
     import sys
     import webbrowser
 
-    app_path = os.path.join(os.path.dirname(__file__), "..", "http", "app.py")
+    app_path = os.path.join(os.path.dirname(__file__), "..", "web", "app.py")
     app_path = os.path.abspath(app_path)
 
     from streamlit.web import cli as stcli

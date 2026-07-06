@@ -2,10 +2,8 @@ import struct
 from datetime import date
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
-
 from pysus.data.dbf_reader import (
     _parse_header,
     read_dbf_fast,
@@ -13,7 +11,6 @@ from pysus.data.dbf_reader import (
     read_dbf_schema,
     stream_dbf_fast,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -85,9 +82,7 @@ def simple_dbf(tmp_dir):
 def wide_dbf(tmp_dir):
     dbf_path = tmp_dir / "wide.dbf"
     fields = [(f"COL{i}", "C", 8, 0) for i in range(20)]
-    records = [
-        tuple(f"val{i}_{j}" for j in range(20)) for i in range(100)
-    ]
+    records = [tuple(f"val{i}_{j}" for j in range(20)) for i in range(100)]
     _create_dbf(dbf_path, fields, records)
     return dbf_path
 
@@ -200,7 +195,6 @@ def test_read_fast_wide(wide_dbf):
 def test_read_fast_strips_nul_bytes(tmp_dir):
     dbf_path = tmp_dir / "nuls.dbf"
     today = date.today()
-    fields = [("VAL", "C", 8, 0)]
     buf = bytearray()
     buf.append(0x03)
     buf.append(today.year - 1900)
@@ -289,15 +283,11 @@ def test_read_filtered_column_subset(disease_dbf):
 
 def test_read_filtered_missing_column(disease_dbf):
     with pytest.raises(KeyError, match="not found"):
-        read_dbf_filtered(
-            disease_dbf, column="NONEXISTENT", values=["X"]
-        )
+        read_dbf_filtered(disease_dbf, column="NONEXISTENT", values=["X"])
 
 
 def test_read_filtered_empty_file(empty_dbf):
-    df = read_dbf_filtered(
-        empty_dbf, column="NAME", values=["X"]
-    )
+    df = read_dbf_filtered(empty_dbf, column="NAME", values=["X"])
     assert len(df) == 0
 
 
@@ -378,9 +368,7 @@ def test_large_record_count(tmp_dir):
 
 
 def test_field_name_lowercase_match():
-    from pysus.data.dbf_reader import _find_field
-
-    from pysus.data.dbf_reader import DBFSchema, DBFField
+    from pysus.data.dbf_reader import DBFField, DBFSchema, _find_field
 
     schema = DBFSchema(
         num_records=1,

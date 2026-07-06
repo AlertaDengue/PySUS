@@ -12,7 +12,6 @@ exclude = [
   "pysus/tests/**",
   "pysus/management",
   "pysus/management/**",
-  "pysus/http/**",
 ]
 
 [tool.poetry.dependencies]
@@ -47,7 +46,7 @@ typer = "^0.24.1"
 humanize = "^4.8.0"
 
 [tool.poetry.extras]
-http = ["streamlit"]
+web = ["streamlit"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.1.0"
@@ -106,7 +105,7 @@ exclude = ["*.git", "docs/"]
 omit = [
     "pysus/management/client.py",
     "pysus/tui/*",
-    "pysus/http/*",
+    "pysus/web/*",
     "pysus/cli/*",
 ]
 
