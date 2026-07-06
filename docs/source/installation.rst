@@ -60,6 +60,25 @@ Using Poetry:
 
    poetry install
 
+Web Interface
+-------------
+
+PySUS includes a local Streamlit-based web server for browsing and downloading
+datasets interactively. Start it with:
+
+.. code-block:: bash
+
+   pysus web
+
+Or directly:
+
+.. code-block:: bash
+
+   streamlit run pysus/web/app.py
+
+This opens a browser at ``http://localhost:8501`` with a graphical interface for
+querying PySUS s3, DATASUS FTP, and dados.gov.br sources.
+
 Configuration
 -------------
 

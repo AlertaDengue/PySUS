@@ -23,7 +23,7 @@ pip install pysus
 
 For the local Streamlit web interface:
 ```bash
-pip install pysus[http]
+pip install pysus[web]
 ```
 
 ### Docker
@@ -129,19 +129,19 @@ async def main():
 Launch the local web interface:
 
 ```bash
-pysus http
+pysus web
 ```
 
 Or with a custom port:
 
 ```bash
-pysus http -p 8080
+pysus web -p 8080
 ```
 
 Or run directly with Streamlit:
 
 ```bash
-streamlit run pysus/http/app.py
+streamlit run pysus/web/app.py
 ```
 
 The web interface provides three data sources:
