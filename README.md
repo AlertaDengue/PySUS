@@ -266,6 +266,19 @@ conda activate pysus
 poetry install
 ```
 
+### Conda-Forge Recipe
+
+The conda recipe is **auto-generated from `pyproject.toml`**. After releasing a new version,
+checkout to the main branch and run:
+
+```bash
+python conda/generate_recipe.py
+```
+
+This reads `pyproject.toml` and writes `conda/recipe/meta.yaml` with the correct conda-forge package names, version constraints, and the current SHA256 (fetched from PyPI). Never edit `meta.yaml` by hand.
+
+To submit or update the recipe, copy it into the [pysus-feedstock](https://github.com/conda-forge/pysus-feedstock) repo.
+
 ### Running Tests
 
 Run code linters:

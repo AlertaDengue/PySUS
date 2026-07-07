@@ -3,7 +3,8 @@ name = "pysus"
 version = "2.6.3"  # changed by semantic-release
 description = "Tools for dealing with Brazil's Public health data"
 authors = ["Flavio Codeco Coelho <fccoelho@gmail.com>", "Luã Bida Vacaro <luabidaa@gmail.com>"]
-license = "GPL"
+license = "GPL-3.0-only"
+readme = "README.md"
 
 packages = [{ include = "pysus"}]
 
