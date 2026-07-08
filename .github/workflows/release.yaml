@@ -101,7 +101,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install poetry wget
+        pip install poetry
         poetry config virtualenvs.create false
         poetry install --no-root --with docs
 
