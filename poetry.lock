@@ -5265,17 +5265,6 @@ optional = ["python-socks", "wsaccel"]
 test = ["pytest", "websockets"]
 
 [[package]]
-name = "wget"
-version = "3.2"
-description = "pure python download utility"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "wget-3.2.zip", hash = "sha256:35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061"},
-]
-
-[[package]]
 name = "win32-setctime"
 version = "1.2.0"
 description = "A small Python utility to set file creation time on Windows"
@@ -5297,4 +5286,4 @@ web = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "ea50177e1fc511f88ad0bb568c1af13255eee0fa049a3e13bd0e8d0ceac11855"
+content-hash = "1036baf1ddcc1e53fab8f168ad5ce713f85370f19d46462af0b36e360be37733"
