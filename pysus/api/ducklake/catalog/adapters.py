@@ -158,7 +158,8 @@ class BaseAdapter(ABC):
         force: bool = False,
         callback: Callable[[int, int], None] | None = None,
     ) -> None:
-        url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
+        remote = str(remote_path).replace("\\", "/")
+        url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote}"
 
         if local_path.exists() and not force:
             try:
@@ -170,7 +171,17 @@ class BaseAdapter(ABC):
 
         remote_size = 0
         if local_size != -1:
-            async with httpx.AsyncClient(follow_redirects=True) as client:
+            headers = {
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                ),
+                "Referer": "https://github.com/AlertaDengue/PySUS",
+            }
+            async with httpx.AsyncClient(
+                headers=headers, follow_redirects=True
+            ) as client:
                 try:
                     head = await client.head(url)
 
@@ -189,7 +200,7 @@ class BaseAdapter(ABC):
 
         try:
             await download_http(
-                remote_path=remote_path,
+                remote_path=remote,
                 local_path=local_path,
                 callback=callback,
             )

@@ -14,15 +14,25 @@ async def download_http(
     local_path: Path,
     callback: Callable[[int, int], None] | None = None,
 ) -> None:
+    remote_path = str(remote_path).replace("\\", "/")
     url = f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{remote_path}"
     max_retries = 5
 
     timeout = httpx.Timeout(15.0, read=60.0, write=20.0, connect=15.0)
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Referer": "https://github.com/AlertaDengue/PySUS",
+    }
 
     for attempt in range(max_retries):
         try:
             async with httpx.AsyncClient(
+                headers=headers,
                 follow_redirects=True,
                 verify=False,
                 limits=limits,
