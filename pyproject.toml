@@ -30,8 +30,6 @@ pydantic = "^2.12.5"
 duckdb = "^1.4.4"
 duckdb-engine = "^0.17.0"
 sqlalchemy = "^2.0.48"
-python-magic = { version = "*", platform = "!=win32" }
-python-magic-bin = { version = "*", platform = "win32" }
 chardet = "^7.4.0.post2"
 anyio = "^4.13.0"
 httpx = ">=0.28.0"
@@ -43,6 +41,7 @@ dotenv = "^0.9.9"
 boto3 = "^1.42.89"
 typer = "^0.24.1"
 humanize = "^4.8.0"
+streamlit = {version = ">=1.30.0", optional = true}
 
 [tool.poetry.extras]
 web = ["streamlit"]

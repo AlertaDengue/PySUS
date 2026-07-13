@@ -4,7 +4,6 @@ import asyncio
 import csv
 import gzip
 import shutil
-import sys
 import tarfile
 import zipfile
 from collections.abc import AsyncGenerator, Callable
@@ -963,6 +962,39 @@ class Tar(BaseCompressedFile):
         return list(await asyncio.gather(*tasks))
 
 
+def _detect_mime(path: str) -> str:
+    """Detect MIME type by reading magic bytes and validating content."""
+    import json as _json
+
+    with open(path, "rb") as f:
+        header = f.read(262)
+
+    # ZIP: starts with PK\x03\x04
+    if len(header) >= 4 and header[:4] == b"\x50\x4b\x03\x04":
+        return "application/zip"
+    # GZip: starts with \x1f\x8b
+    if len(header) >= 2 and header[:2] == b"\x1f\x8b":
+        return "application/x-gzip"
+    # PDF: starts with %PDF-
+    if len(header) >= 5 and header[:5] == b"%PDF-":
+        return "application/pdf"
+    # TAR: POSIX header has "ustar" at offset 257
+    if len(header) >= 262 and header[257:262] == b"ustar":
+        return "application/x-tar"
+    # Parquet: starts with PAR1
+    if len(header) >= 4 and header[:4] == b"PAR1":
+        return "application/parquet"
+    # JSON: starts with { or [, then validate by parsing
+    if len(header) >= 1 and header[:1] in (b"{", b"["):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                _json.load(f)
+            return "application/json"
+        except (_json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            pass
+    return ""
+
+
 class ExtensionFactory:
     """Factory that maps file extensions and MIME types to handler classes."""
 
@@ -970,7 +1002,7 @@ class ExtensionFactory:
         "application/zip": Zip,
         "application/x-gzip": GZip,
         "application/x-tar": Tar,
-        "text/csv": CSV,
+        "application/parquet": Parquet,
         "application/pdf": PDF,
         "application/json": JSON,
     }
@@ -989,26 +1021,13 @@ class ExtensionFactory:
         ".json": JSON,
     }
 
-    _magic_available: bool = sys.platform != "win32"
-
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
-        """Identify the file class by its MIME type."""
-        if not cls._magic_available:
-            return None
+        """Identify the file class by reading magic bytes."""
         try:
-            import magic
-        except (ImportError, OSError):
-            cls._magic_available = False
-            return None
-        try:
-            mime = await to_thread.run_sync(
-                magic.from_file,
-                str(path),
-                True,
-            )
+            mime = await to_thread.run_sync(_detect_mime, str(path))
             return cls._mime.get(mime)
-        except (magic.MagicException, OSError):
+        except OSError:
             return None
 
     @classmethod

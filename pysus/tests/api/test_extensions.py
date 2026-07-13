@@ -1,4 +1,3 @@
-import builtins
 import gzip
 import json
 import struct
@@ -25,6 +24,7 @@ from pysus.api.extensions import (
     Parquet,
     Tar,
     Zip,
+    _detect_mime,
     _map_dtype,
 )
 from pysus.api.models import BaseLocalFile
@@ -691,8 +691,9 @@ async def test_dbf_to_parquet_non_parquet_extension(tmp_dir):
     obj = DBF(path=dbf_path)
 
     out = tmp_dir / "out.custom"
-    with pytest.raises(ConversionError, match="Could not parse"):
-        await obj.to_parquet(output_path=out)
+    result = await obj.to_parquet(output_path=out)
+    assert isinstance(result, Parquet)
+    assert out.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -924,63 +925,86 @@ async def test_tar_load(tmp_dir):
 
 
 @pytest.mark.asyncio
-async def test_extension_factory_identify_magic_not_available(tmp_dir):
-    orig = ExtensionFactory._magic_available
-    ExtensionFactory._magic_available = False
-    try:
-        path = tmp_dir / "test.csv"
-        path.write_text("a,b\n1,2")
-        result = await ExtensionFactory._identify(path)
-        assert result is None
-    finally:
-        ExtensionFactory._magic_available = orig
+async def test_extension_factory_identify_oserror(tmp_dir):
+    path = tmp_dir / "nonexistent.csv"
+    result = await ExtensionFactory._identify(path)
+    assert result is None
 
 
 @pytest.mark.asyncio
-async def test_extension_factory_identify_magic_import_error(
-    monkeypatch, tmp_dir
-):
-    orig_available = ExtensionFactory._magic_available
-    ExtensionFactory._magic_available = True
-    try:
-        path = tmp_dir / "test.csv"
-        path.write_text("a,b\n1,2")
-
-        original_import = builtins.__import__
-
-        def mock_import(name, globals=None, locals=None, fromlist=(), level=0):
-            if name == "magic":
-                raise ImportError("Mock error")
-            return original_import(name, globals, locals, fromlist, level)
-
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-
-        result = await ExtensionFactory._identify(path)
-        assert result is None
-        assert not ExtensionFactory._magic_available
-    finally:
-        ExtensionFactory._magic_available = orig_available
+async def test_extension_factory_identify_csv_falls_back(tmp_dir):
+    path = tmp_dir / "test.csv"
+    path.write_text("a,b\n1,2")
+    result = await ExtensionFactory._identify(path)
+    assert result is None
+    cls = await ExtensionFactory.get_file_class(path)
+    assert cls is CSV
 
 
 @pytest.mark.asyncio
-async def test_extension_factory_identify_magic_exception(monkeypatch, tmp_dir):
-    magic = pytest.importorskip("magic")
-    orig_available = ExtensionFactory._magic_available
-    ExtensionFactory._magic_available = True
-    try:
-        path = tmp_dir / "test.csv"
-        path.write_text("a,b\n1,2")
+async def test_extension_factory_identify_zip(tmp_dir):
+    path = tmp_dir / "test.zip"
+    path.write_bytes(b"PK\x03\x04" + b"\x00" * 10)
+    result = await ExtensionFactory._identify(path)
+    assert result is Zip
 
-        def mock_from_file(*args, **kwargs):
-            raise magic.MagicException("Mock error")
 
-        monkeypatch.setattr(magic, "from_file", mock_from_file)
+@pytest.mark.asyncio
+async def test_extension_factory_identify_gzip(tmp_dir):
+    path = tmp_dir / "test.gz"
+    path.write_bytes(b"\x1f\x8b" + b"\x00" * 10)
+    result = await ExtensionFactory._identify(path)
+    assert result is GZip
 
-        result = await ExtensionFactory._identify(path)
-        assert result is None
-        assert ExtensionFactory._magic_available
-    finally:
-        ExtensionFactory._magic_available = orig_available
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_pdf(tmp_dir):
+    path = tmp_dir / "test.pdf"
+    path.write_bytes(b"%PDF-1.4" + b"\x00" * 10)
+    result = await ExtensionFactory._identify(path)
+    assert result is PDF
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_json(tmp_dir):
+    path = tmp_dir / "test.json"
+    path.write_text('{"key": "value"}')
+    result = await ExtensionFactory._identify(path)
+    assert result is JSON
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_json_array(tmp_dir):
+    path = tmp_dir / "test.json"
+    path.write_text('[1, 2, 3]')
+    result = await ExtensionFactory._identify(path)
+    assert result is JSON
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_json_false_positive(tmp_dir):
+    path = tmp_dir / "test.bin"
+    path.write_text("{not valid json {{{")
+    result = await ExtensionFactory._identify(path)
+    assert result is None
+    cls = await ExtensionFactory.get_file_class(path)
+    assert cls is File
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_parquet(tmp_dir):
+    path = tmp_dir / "test.parquet"
+    path.write_bytes(b"PAR1" + b"\x00" * 10)
+    result = await ExtensionFactory._identify(path)
+    assert result is Parquet
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_unknown(tmp_dir):
+    path = tmp_dir / "test.bin"
+    path.write_bytes(b"\x00\x01\x02\x03")
+    result = await ExtensionFactory._identify(path)
+    assert result is None
 
 
 # ---------------------------------------------------------------------------
