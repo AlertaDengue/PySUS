@@ -3,6 +3,7 @@
 import asyncio
 import csv
 import gzip
+import json
 import shutil
 import tarfile
 import zipfile
@@ -128,11 +129,15 @@ class CSV(BaseTabularFile):
     type: FileType = Field("CSV")
     _encoding: str | None = PrivateAttr(default=None)
     _sep: str | None = PrivateAttr(default=None)
+    _columns_cache: list["Column"] | None = PrivateAttr(default=None)
+    _rows_cache: int | None = PrivateAttr(default=None)
 
     @property
     def columns(self) -> list["Column"]:
         """Return the column metadata from the CSV header row."""
 
+        if self._columns_cache is not None:
+            return self._columns_cache
         if self._encoding is not None:
             enc = self._encoding
         else:
@@ -145,20 +150,39 @@ class CSV(BaseTabularFile):
                 else raw_enc
             )
             self._encoding = enc
-        df = pd.read_csv(self.path, sep=",", nrows=0, encoding=enc)
-        return [
+        if self._sep is not None:
+            sep = self._sep
+        else:
+            try:
+                with open(self.path, encoding=enc) as f:
+                    sample = f.read(1024 * 10)
+                    dialect = csv.Sniffer().sniff(sample)
+                    sep = dialect.delimiter
+            except ValueError:
+                sep = ","
+            self._sep = sep
+        df = pd.read_csv(self.path, sep=sep, nrows=0, encoding=enc)
+        result = [
             Column.from_schema(name=col, dtype=_map_dtype(str(dt)))
             for col, dt in zip(df.columns, df.dtypes)
         ]
+        self._columns_cache = result
+        return result
 
     @property
     def rows(self) -> int:
         """Return the number of data rows in the file."""
+        if self._rows_cache is not None:
+            return self._rows_cache
         count = 0
         with open(self.path, "rb") as f:
-            for _ in f:
+            reader = csv.reader(
+                line.decode("latin-1", errors="replace") for line in f
+            )
+            for _ in reader:
                 count += 1
-        return max(0, count - 1)
+        self._rows_cache = max(0, count - 1)
+        return self._rows_cache
 
     async def _get_encoding(self) -> str:
         """Detect and cache the file's character encoding."""
@@ -237,28 +261,40 @@ class Parquet(BaseTabularFile):
 
     type: FileType = Field("PARQUET")
     add_dv: bool = True
+    _schema_cache: pa.Schema | None = PrivateAttr(default=None)
+    _metadata_cache: object | None = PrivateAttr(default=None)
+    _columns_cache: list["Column"] | None = PrivateAttr(default=None)
+    _rows_cache: int | None = PrivateAttr(default=None)
 
     @property
     def schema(self) -> pa.Schema:
         """Return the Parquet schema as a PyArrow Schema object."""
-        return pq.read_schema(self.path)
+        if self._schema_cache is None:
+            self._schema_cache = pq.read_schema(self.path)
+        return self._schema_cache
 
     @property
     def columns(self) -> list["Column"]:
         """Return the column metadata from the Parquet schema."""
 
-        schema = pq.read_schema(self.path)
-        return [
+        if self._columns_cache is not None:
+            return self._columns_cache
+        result = [
             Column.from_schema(
                 name=field.name, dtype=_map_dtype(str(field.type))
             )
-            for field in schema
+            for field in self.schema
         ]
+        self._columns_cache = result
+        return result
 
     @property
     def rows(self) -> int:
         """Return the number of rows from the Parquet metadata."""
-        return pq.read_metadata(self.path).num_rows
+        if self._rows_cache is not None:
+            return self._rows_cache
+        self._rows_cache = pq.read_metadata(self.path).num_rows
+        return self._rows_cache
 
     @staticmethod
     def _apply_add_dv(df: pd.DataFrame) -> pd.DataFrame:
@@ -340,51 +376,46 @@ class DBF(BaseTabularFile):
     """Represents a dBASE (DBF) file."""
 
     type: FileType = Field("DBF")
+    _columns_cache: list["Column"] | None = PrivateAttr(default=None)
+    _rows_cache: int | None = PrivateAttr(default=None)
 
     @property
     def columns(self) -> list["Column"]:
         """Return the column metadata from the DBF file."""
 
+        if self._columns_cache is not None:
+            return self._columns_cache
         try:
             schema = read_dbf_schema(self.path)
-        except Exception:  # noqa: B902 — fallback to dbfread
+        except Exception:  # noqa: BLE001
             reader = DBFReader(self.path, load=False)
-            _DBF_DTYPE = {
-                "C": "VARCHAR",
-                "N": "INTEGER",
-                "F": "FLOAT",
-                "D": "DATE",
-                "L": "BOOLEAN",
-                "M": "VARCHAR",
-            }
-            return [
+            result = [
                 Column.from_schema(
                     name=f.name, dtype=_DBF_DTYPE.get(f.type, "VARCHAR")
                 )
                 for f in reader.fields
             ]
-        _DBF_DTYPE = {
-            "C": "VARCHAR",
-            "N": "INTEGER",
-            "F": "FLOAT",
-            "D": "DATE",
-            "L": "BOOLEAN",
-            "M": "VARCHAR",
-        }
-        return [
-            Column.from_schema(
-                name=f.name, dtype=_DBF_DTYPE.get(f.type_, "VARCHAR")
-            )
-            for f in schema.fields
-        ]
+        else:
+            result = [
+                Column.from_schema(
+                    name=f.name,
+                    dtype=_DBF_DTYPE.get(f.type_, "VARCHAR"),
+                )
+                for f in schema.fields
+            ]
+        self._columns_cache = result
+        return result
 
     @property
     def rows(self) -> int:
         """Return the number of records in the DBF file."""
+        if self._rows_cache is not None:
+            return self._rows_cache
         try:
-            return read_dbf_schema(self.path).num_records
-        except Exception:  # noqa: B902 — fallback to dbfread
-            return len(DBFReader(self.path, load=False))
+            self._rows_cache = read_dbf_schema(self.path).num_records
+        except Exception:  # noqa: BLE001
+            self._rows_cache = len(DBFReader(self.path, load=False))
+        return self._rows_cache
 
     def decode_column(self, value):
         """Decode a raw DBF value, handling byte strings and null bytes.
@@ -595,7 +626,9 @@ class DBF(BaseTabularFile):
                     callback(total_rows, total_rows)
 
             if writer is None:
-                df_empty = pd.DataFrame(columns=pd.Index(self.columns))
+                df_empty = pd.DataFrame(
+                    columns=pd.Index([c.name for c in self.columns])
+                )
                 table_empty = pa.Table.from_pandas(df_empty)
                 writer = pq.ParquetWriter(str(out), table_empty.schema)
 
@@ -700,11 +733,21 @@ class JSON(BaseTabularFile):
     def columns(self) -> list["Column"]:
         """Return the column metadata from the JSON file."""
 
-        df = (
-            pd.read_json(self.path, nrows=0)
-            if self.path.stat().st_size > 0
-            else pd.DataFrame()
-        )
+        if self.path.stat().st_size == 0:
+            return []
+        with open(self.path, encoding="utf-8") as f:
+            data = json.load(f)
+        if (
+            isinstance(data, list)
+            and len(data) > 0
+            and isinstance(data[0], dict)
+        ):
+            sample = data[0]
+        elif isinstance(data, dict):
+            sample = data
+        else:
+            return []
+        df = pd.DataFrame([sample])
         return [
             Column.from_schema(name=col, dtype=_map_dtype(str(dt)))
             for col, dt in zip(df.columns, df.dtypes)
@@ -796,7 +839,19 @@ class Zip(BaseCompressedFile):
 
         def _extract_sync():
             """Extract ZIP contents synchronously in a thread."""
+            root = target_dir.resolve()
             with zipfile.ZipFile(self.path) as z:
+                for info in z.infolist():
+                    unix_mode = info.external_attr >> 16
+                    if unix_mode and unix_mode & 0o170000 == 0o120000:
+                        raise ValueError(f"Symlink blocked: {info.filename}")
+                    member_path = (target_dir / info.filename).resolve()
+                    try:
+                        member_path.relative_to(root)
+                    except ValueError:
+                        raise ValueError(
+                            f"Path traversal blocked: {info.filename}"
+                        )
                 z.extractall(target_dir)
 
         await to_thread.run_sync(_extract_sync)
@@ -843,22 +898,19 @@ class Zip(BaseCompressedFile):
     async def _safe_cleanup(self, directory: Path):
         """Remove a temporary directory and its contents."""
 
+        def _rmdir_recursive(d: Path):
+            """Recursively remove a directory tree."""
+            for item in d.iterdir():
+                if item.is_dir():
+                    _rmdir_recursive(item)
+                else:
+                    item.unlink(missing_ok=True)
+            d.rmdir()
+
         def _cleanup():
-            """Remove directory contents synchronously in a thread."""
-            if not directory.exists():
-                return
-
-            for item in directory.iterdir():
-                if item.is_file():
-                    item.unlink()
-                elif item.is_dir():
-                    for subitem in item.iterdir():
-                        if subitem.is_file():
-                            subitem.unlink()
-                    item.rmdir()
-
+            """Remove directory synchronously in a thread."""
             if directory.exists():
-                directory.rmdir()
+                _rmdir_recursive(directory)
 
         await to_thread.run_sync(_cleanup)
 
@@ -866,7 +918,7 @@ class Zip(BaseCompressedFile):
 class GZip(BaseCompressedFile):
     """Represents a GZip-compressed file."""
 
-    type: FileType = Field("ZIP")
+    type: FileType = Field("GZIP")
 
     async def load(self) -> bytes:
         """Decompress and read the entire file contents into memory."""
@@ -915,7 +967,7 @@ class GZip(BaseCompressedFile):
 class Tar(BaseCompressedFile):
     """Represents a Tar archive file."""
 
-    type: FileType = Field("ZIP")
+    type: FileType = Field("TAR")
 
     async def load(self) -> tarfile.TarFile:
         """Open and return the tar archive."""
@@ -954,7 +1006,20 @@ class Tar(BaseCompressedFile):
 
         def _extract():
             """Extract Tar contents synchronously in a thread."""
+            root = target_dir.resolve()
             with tarfile.open(self.path) as t:
+                for member in t.getmembers():
+                    if member.issym() or member.islnk():
+                        raise ValueError(
+                            f"Symlink/hardlink blocked: {member.name}"
+                        )
+                    member_path = (target_dir / member.name).resolve()
+                    try:
+                        member_path.relative_to(root)
+                    except ValueError:
+                        raise ValueError(
+                            f"Path traversal blocked: {member.name}"
+                        )
                 t.extractall(target_dir)
 
         await to_thread.run_sync(_extract)
@@ -962,50 +1027,118 @@ class Tar(BaseCompressedFile):
         return list(await asyncio.gather(*tasks))
 
 
-def _detect_mime(path: str) -> str:
-    """Detect MIME type by reading magic bytes and validating content."""
-    import json as _json
+_DBF_SIGNATURES = frozenset(
+    {0x02, 0x03, 0x04, 0x05, 0x30, 0x31, 0x43, 0x63, 0x83, 0x8B, 0x8E, 0xF5}
+)
 
-    with open(path, "rb") as f:
-        header = f.read(262)
+_DBF_DTYPE = {
+    "C": "VARCHAR",
+    "N": "INTEGER",
+    "F": "FLOAT",
+    "D": "DATE",
+    "L": "BOOLEAN",
+    "M": "VARCHAR",
+}
 
-    # ZIP: starts with PK\x03\x04
-    if len(header) >= 4 and header[:4] == b"\x50\x4b\x03\x04":
-        return "application/zip"
-    # GZip: starts with \x1f\x8b
-    if len(header) >= 2 and header[:2] == b"\x1f\x8b":
-        return "application/x-gzip"
-    # PDF: starts with %PDF-
-    if len(header) >= 5 and header[:5] == b"%PDF-":
-        return "application/pdf"
-    # TAR: POSIX header has "ustar" at offset 257
+
+def _detect_parquet(path: Path, header: bytes) -> type[Parquet] | None:
+    if header[:4] != b"PAR1":
+        return None
+    try:
+        pq.read_metadata(str(path))
+        return Parquet
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _detect_pdf(path: Path, header: bytes) -> type[PDF] | None:
+    if header[:5] == b"%PDF-":
+        return PDF
+    return None
+
+
+def _detect_zip(path: Path, header: bytes) -> type[Zip] | None:
+    if header[:4] in (
+        b"PK\x03\x04",
+        b"PK\x05\x06",
+        b"PK\x07\x08",
+    ):
+        if zipfile.is_zipfile(path):
+            return Zip
+    return None
+
+
+def _detect_gzip(path: Path, header: bytes) -> type[GZip] | None:
+    if header[:2] != b"\x1f\x8b":
+        return None
+    try:
+        with gzip.open(path) as f:
+            f.read(1)
+        return GZip
+    except OSError:
+        return None
+
+
+def _detect_tar(path: Path, header: bytes) -> type[Tar] | None:
     if len(header) >= 262 and header[257:262] == b"ustar":
-        return "application/x-tar"
-    # Parquet: starts with PAR1
-    if len(header) >= 4 and header[:4] == b"PAR1":
-        return "application/parquet"
-    # JSON: starts with { or [, then validate by parsing
-    if len(header) >= 1 and header[:1] in (b"{", b"["):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                _json.load(f)
-            return "application/json"
-        except (_json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            pass
-    return ""
+        if tarfile.is_tarfile(path):
+            return Tar
+    return None
+
+
+def _detect_dbf(path: Path, header: bytes) -> type[DBF] | None:
+    if not header or header[0] not in _DBF_SIGNATURES:
+        return None
+    try:
+        schema = read_dbf_schema(path)
+        expected_size = (
+            schema.header_len + schema.num_records * schema.record_len
+        )
+        actual_size = path.stat().st_size
+        if expected_size <= actual_size + schema.record_len:
+            return DBF
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def _detect_json(path: Path, header: bytes) -> type[JSON] | None:
+    prefix = header.lstrip()
+    if prefix[:1] not in (b"{", b"["):
+        return None
+    try:
+        json.loads(prefix)
+        return JSON
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
+_DETECTORS = [
+    _detect_parquet,
+    _detect_pdf,
+    _detect_zip,
+    _detect_gzip,
+    _detect_tar,
+    _detect_dbf,
+    _detect_json,
+]
+
+
+def _detect_type(path: Path) -> type[BaseLocalFile] | None:
+    try:
+        with open(path, "rb") as f:
+            header = f.read(4096)
+    except OSError:
+        return None
+    for detector in _DETECTORS:
+        result = detector(path, header)
+        if result is not None:
+            return result
+    return None
 
 
 class ExtensionFactory:
-    """Factory that maps file extensions and MIME types to handler classes."""
-
-    _mime: dict[str, type[BaseLocalFile]] = {
-        "application/zip": Zip,
-        "application/x-gzip": GZip,
-        "application/x-tar": Tar,
-        "application/parquet": Parquet,
-        "application/pdf": PDF,
-        "application/json": JSON,
-    }
+    """Factory that maps file content and extensions to handler classes."""
 
     _extensions: dict[str, type[BaseLocalFile]] = {
         ".zip": Zip,
@@ -1021,20 +1154,34 @@ class ExtensionFactory:
         ".json": JSON,
     }
 
+    _detection_cache: dict[str, type[BaseLocalFile] | None] = {}
+
+    @classmethod
+    def _cache_key(cls, path: Path) -> str:
+        stat = path.stat()
+        return f"{path.resolve()}:{stat.st_size}:{stat.st_mtime_ns}"
+
     @classmethod
     async def _identify(cls, path: Path) -> type[BaseLocalFile] | None:
-        """Identify the file class by reading magic bytes."""
+        """Identify the file type by attempting to parse it."""
         try:
-            mime = await to_thread.run_sync(_detect_mime, str(path))
-            return cls._mime.get(mime)
+            key = cls._cache_key(path)
         except OSError:
             return None
+        if key in cls._detection_cache:
+            return cls._detection_cache[key]
+        try:
+            result = await to_thread.run_sync(_detect_type, path)
+        except OSError:
+            result = None
+        cls._detection_cache[key] = result
+        return result
 
     @classmethod
     async def get_file_class(cls, path: Path) -> type[BaseLocalFile]:
-        """Return the file handler class for a given path.
+        """Return the handler class for a given path.
 
-        First attempts MIME-type identification; falls back to extension
+        First attempts content-based identification; falls back to extension
         matching.
 
         Parameters

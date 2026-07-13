@@ -24,7 +24,6 @@ from pysus.api.extensions import (
     Parquet,
     Tar,
     Zip,
-    _detect_mime,
     _map_dtype,
 )
 from pysus.api.models import BaseLocalFile
@@ -773,8 +772,10 @@ def test_json_columns(tmp_dir):
     path = tmp_dir / "data.json"
     path.write_text('[{"a": 1, "b": "x"}]')
     obj = JSON(path=path)
-    with pytest.raises(ValueError, match="nrows can only be passed"):
-        _ = obj.columns
+    cols = obj.columns
+    assert len(cols) == 2
+    assert cols[0].name == "a"
+    assert cols[1].name == "b"
 
 
 def test_json_columns_empty(tmp_dir):
@@ -944,7 +945,8 @@ async def test_extension_factory_identify_csv_falls_back(tmp_dir):
 @pytest.mark.asyncio
 async def test_extension_factory_identify_zip(tmp_dir):
     path = tmp_dir / "test.zip"
-    path.write_bytes(b"PK\x03\x04" + b"\x00" * 10)
+    with zipfile.ZipFile(path, "w") as zf:
+        zf.writestr("file.txt", "hello")
     result = await ExtensionFactory._identify(path)
     assert result is Zip
 
@@ -952,9 +954,24 @@ async def test_extension_factory_identify_zip(tmp_dir):
 @pytest.mark.asyncio
 async def test_extension_factory_identify_gzip(tmp_dir):
     path = tmp_dir / "test.gz"
-    path.write_bytes(b"\x1f\x8b" + b"\x00" * 10)
+    with gzip.open(path, "wb") as f:
+        f.write(b"hello")
     result = await ExtensionFactory._identify(path)
     assert result is GZip
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_tar(tmp_dir):
+    path = tmp_dir / "test.tar"
+    with tarfile.open(path, "w") as tf:
+        info = tarfile.TarInfo(name="file.txt")
+        data = b"hello"
+        info.size = len(data)
+        import io
+
+        tf.addfile(info, io.BytesIO(data))
+    result = await ExtensionFactory._identify(path)
+    assert result is Tar
 
 
 @pytest.mark.asyncio
@@ -976,7 +993,7 @@ async def test_extension_factory_identify_json(tmp_dir):
 @pytest.mark.asyncio
 async def test_extension_factory_identify_json_array(tmp_dir):
     path = tmp_dir / "test.json"
-    path.write_text('[1, 2, 3]')
+    path.write_text("[1, 2, 3]")
     result = await ExtensionFactory._identify(path)
     assert result is JSON
 
@@ -994,7 +1011,11 @@ async def test_extension_factory_identify_json_false_positive(tmp_dir):
 @pytest.mark.asyncio
 async def test_extension_factory_identify_parquet(tmp_dir):
     path = tmp_dir / "test.parquet"
-    path.write_bytes(b"PAR1" + b"\x00" * 10)
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.table({"a": [1, 2, 3]})
+    pq.write_table(table, path)
     result = await ExtensionFactory._identify(path)
     assert result is Parquet
 
@@ -1005,6 +1026,30 @@ async def test_extension_factory_identify_unknown(tmp_dir):
     path.write_bytes(b"\x00\x01\x02\x03")
     result = await ExtensionFactory._identify(path)
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_dbf(tmp_dir):
+    pytest.importorskip("dbfread")
+    path = tmp_dir / "test.dbf"
+    _create_dbf(path, [("NAME", "C", 10, 0)], [("Alice",)])
+    result = await ExtensionFactory._identify(path)
+    assert result is DBF
+
+
+@pytest.mark.asyncio
+async def test_extension_factory_identify_wrong_extension(tmp_dir):
+    """Parquet content with .txt extension is detected by content."""
+    path = tmp_dir / "data.txt"
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    table = pa.table({"a": [1, 2, 3]})
+    pq.write_table(table, path)
+    result = await ExtensionFactory._identify(path)
+    assert result is Parquet
+    cls = await ExtensionFactory.get_file_class(path)
+    assert cls is Parquet
 
 
 # ---------------------------------------------------------------------------
@@ -1387,3 +1432,201 @@ async def test_dbf_to_parquet_fast_empty(tmp_dir):
     result = await obj.to_parquet(output_path=out, fast=True)
     assert isinstance(result, Parquet)
     assert out.exists()
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for bugs found during review
+# ---------------------------------------------------------------------------
+
+
+def test_json_columns_reads_keys_correctly(tmp_dir):
+    """JSON.columns must parse first record's keys, not use nrows=0."""
+    path = tmp_dir / "data.json"
+    path.write_text(
+        '[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]'
+    )
+    obj = JSON(path=path)
+    cols = obj.columns
+    assert len(cols) == 2
+    names = {c.name for c in cols}
+    assert names == {"name", "age"}
+
+
+def test_json_columns_dict_object(tmp_dir):
+    """JSON.columns must handle top-level dict objects."""
+    path = tmp_dir / "data.json"
+    path.write_text('{"name": "Alice", "age": 30}')
+    obj = JSON(path=path)
+    cols = obj.columns
+    assert len(cols) == 2
+    names = {c.name for c in cols}
+    assert names == {"name", "age"}
+
+
+def test_json_columns_nested_list(tmp_dir):
+    """JSON.columns must return empty for nested structures with no keys."""
+    path = tmp_dir / "data.json"
+    path.write_text("[1, 2, 3]")
+    obj = JSON(path=path)
+    cols = obj.columns
+    assert cols == []
+
+
+@pytest.mark.asyncio
+async def test_tar_path_traversal_blocked(tmp_dir):
+    """Tar.extract() must reject members with path traversal."""
+    path = tmp_dir / "evil.tar"
+    with tarfile.open(path, "w") as t:
+        info = tarfile.TarInfo(name="../../etc/passwd")
+        data = b"evil"
+        info.size = len(data)
+        import io
+
+        t.addfile(info, io.BytesIO(data))
+    obj = Tar(path=path)
+    with pytest.raises(ValueError, match="Path traversal"):
+        await obj.extract(target_dir=tmp_dir / "out")
+
+
+@pytest.mark.asyncio
+async def test_zip_path_traversal_blocked(tmp_dir):
+    """Zip.extract() must reject members with path traversal."""
+    path = tmp_dir / "evil.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("../../etc/passwd", "evil")
+    obj = Zip(path=path)
+    with pytest.raises(ValueError, match="Path traversal"):
+        await obj.extract(target_dir=tmp_dir / "out")
+
+
+@pytest.mark.asyncio
+async def test_csv_columns_semicolon_delimiter(tmp_dir):
+    """CSV.columns must use detected delimiter, not hardcode comma."""
+    path = tmp_dir / "data.csv"
+    path.write_text("name;age\nAlice;30\n")
+    obj = CSV(path=path)
+    await obj._get_sep()
+    cols = obj.columns
+    assert len(cols) == 2
+    names = {c.name for c in cols}
+    assert names == {"name", "age"}
+
+
+def test_csv_rows_quoted_newlines(tmp_dir):
+    """CSV.rows must not count newlines inside quoted fields."""
+    path = tmp_dir / "data.csv"
+    path.write_text('name,bio\nAlice,"line1\nline2"\nBob,x\n')
+    obj = CSV(path=path)
+    assert obj.rows == 2
+
+
+@pytest.mark.asyncio
+async def test_tar_type_is_tar(tmp_dir):
+    """Tar.type must be 'TAR', not 'ZIP'."""
+    path = tmp_dir / "test.tar"
+    with tarfile.open(path, "w") as t:
+        info = tarfile.TarInfo(name="file.txt")
+        data = b"hello"
+        info.size = len(data)
+        import io
+
+        t.addfile(info, io.BytesIO(data))
+    obj = Tar(path=path)
+    assert obj.type == "TAR"
+
+
+@pytest.mark.asyncio
+async def test_gzip_type_is_gzip(tmp_dir):
+    """GZip.type must be 'GZIP', not 'ZIP'."""
+    path = tmp_dir / "test.gz"
+    with gzip.open(path, "wb") as f:
+        f.write(b"hello")
+    obj = GZip(path=path)
+    assert obj.type == "GZIP"
+
+
+@pytest.mark.asyncio
+async def test_safe_cleanup_nested_directories(tmp_dir):
+    """Zip._safe_cleanup must handle nested directory structures."""
+    nested = tmp_dir / "a" / "b" / "c"
+    nested.mkdir(parents=True)
+    (nested / "file.txt").write_text("data")
+    (tmp_dir / "a" / "file2.txt").write_text("data2")
+
+    zip_path = tmp_dir / "test.zip"
+    with zipfile.ZipFile(zip_path, "w") as z:
+        z.writestr("a/b/c/file.txt", "data")
+        z.writestr("a/file2.txt", "data2")
+
+    obj = Zip(path=zip_path)
+    result = await obj.extract(target_dir=tmp_dir / "out")
+    assert len(result) > 0
+
+    await obj._safe_cleanup(tmp_dir / "out")
+    assert not (tmp_dir / "out").exists()
+
+
+@pytest.mark.asyncio
+async def test_tar_symlink_blocked(tmp_dir):
+    """Tar.extract() must reject symlinks."""
+    path = tmp_dir / "evil.tar"
+    with tarfile.open(path, "w") as t:
+        link = tarfile.TarInfo(name="link")
+        link.type = tarfile.SYMTYPE
+        link.linkname = "/etc/passwd"
+        t.addfile(link)
+    obj = Tar(path=path)
+    with pytest.raises(ValueError, match="Symlink"):
+        await obj.extract(target_dir=tmp_dir / "out")
+
+
+@pytest.mark.asyncio
+async def test_json_detect_valid(tmp_dir):
+    """JSON detection must succeed for valid small JSON."""
+    path = tmp_dir / "data.json"
+    path.write_text('{"a": 1, "b": 2}')
+    result = await ExtensionFactory._identify(path)
+    assert result is JSON
+
+
+@pytest.mark.asyncio
+async def test_json_detect_rejects_binary_starting_with_brace(tmp_dir):
+    """JSON detection must reject binary files starting with {."""
+    path = tmp_dir / "data.bin"
+    path.write_bytes(b"{\x00\x01\x02\x03}")
+    result = await ExtensionFactory._identify(path)
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_parquet_columns_cached(tmp_dir):
+    """Parquet.columns must return the same list on repeated access."""
+    path = tmp_dir / "test.parquet"
+    table = pa.table({"x": [1, 2], "y": ["a", "b"]})
+    pq.write_table(table, path)
+    obj = Parquet(path=path)
+    first = obj.columns
+    second = obj.columns
+    assert first is second
+
+
+@pytest.mark.asyncio
+async def test_csv_columns_cached(tmp_dir):
+    """CSV.columns must return the same list on repeated access."""
+    path = tmp_dir / "test.csv"
+    path.write_text("a,b\n1,2\n")
+    obj = CSV(path=path)
+    first = obj.columns
+    second = obj.columns
+    assert first is second
+
+
+@pytest.mark.asyncio
+async def test_csv_rows_cached(tmp_dir):
+    """CSV.rows must return the same int on repeated access."""
+    path = tmp_dir / "test.csv"
+    path.write_text("a,b\n1,2\n3,4\n")
+    obj = CSV(path=path)
+    first = obj.rows
+    second = obj.rows
+    assert first == second
