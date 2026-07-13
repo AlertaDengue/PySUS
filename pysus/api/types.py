@@ -49,6 +49,8 @@ def _validate_file_type(v: str) -> str:
         "DBC",
         "DBF",
         "ZIP",
+        "TAR",
+        "GZIP",
     )
     assert v in valid, f"Invalid file type: {v!r}"
     return v
