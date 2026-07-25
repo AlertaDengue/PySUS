@@ -224,7 +224,6 @@ df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100").df()
 ### Cache Directory
 
 ```python
-from pysus import CACHEPATH
 import os
 
 os.environ['PYSUS_CACHEPATH'] = '/my/custom/path'
