@@ -184,6 +184,7 @@ class TestDuckLakeDownload:
 
         mock_http = MagicMock()
         mock_http.__aenter__.return_value = mock_http
+        mock_http.head = AsyncMock()
         httpx_patcher = patch(
             "pysus.api.ducklake.functional.httpx.AsyncClient",
             return_value=mock_http,
@@ -239,6 +240,7 @@ class TestDuckLakeDownload:
 
         mock_http = MagicMock()
         mock_http.__aenter__.return_value = mock_http
+        mock_http.head = AsyncMock()
         httpx_patcher = patch(
             "pysus.api.ducklake.functional.httpx.AsyncClient",
             return_value=mock_http,
@@ -275,6 +277,7 @@ class TestDuckLakeDownload:
 
         mock_http = MagicMock()
         mock_http.__aenter__.return_value = mock_http
+        mock_http.head = AsyncMock()
 
         stream_cm = MagicMock()
 

@@ -36,10 +36,11 @@ class BaseAdapter(ABC):
         **data,
     ) -> None:
         self._engine = engine
-        self._session_factory = None
+        self._session_factory: sessionmaker[Session] | None = None
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.credentials = credentials
         self.update_on_close = update_on_close
+        self._local_dirty = False
 
     @property
     def remote_url(self) -> str:
@@ -79,6 +80,12 @@ class BaseAdapter(ABC):
                 force=True,
                 callback=callback,
             )
+            self._local_dirty = False
+            self._engine = await to_thread.run_sync(self.setup_engine)
+            self._session_factory = sessionmaker(bind=self._engine)
+            return
+
+        if self._local_dirty:
             self._engine = await to_thread.run_sync(self.setup_engine)
             self._session_factory = sessionmaker(bind=self._engine)
             return
@@ -229,8 +236,9 @@ class BaseAdapter(ABC):
         )
 
     async def close(self, update: bool = False) -> None:
-        if update:
+        if update and self._local_dirty:
             await self._upload_catalog()
+            self._local_dirty = False
 
         if self._engine:
             await to_thread.run_sync(self._engine.dispose)
