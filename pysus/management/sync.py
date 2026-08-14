@@ -148,12 +148,30 @@ class SyncEngine:
     def _pid_alive(pid: int) -> bool:
         import os
 
+        if os.name == "nt":
+            try:
+                import ctypes
+
+                process_query_limited = 0x1000
+                handle = ctypes.windll.kernel32.OpenProcess(
+                    process_query_limited, False, pid
+                )
+                if not handle:
+                    return False
+                ctypes.windll.kernel32.CloseHandle(handle)
+                return True
+            except Exception:  # noqa
+                return False
+
         try:
             os.kill(pid, 0)
         except ProcessLookupError:
             return False
         except PermissionError:
             return True
+        except OSError:
+            # invalid/out-of-range pid on some platforms
+            return False
         return True
 
     def _release_sync_lock(self) -> None:
