@@ -22,12 +22,15 @@ import asyncio
 from collections.abc import Callable
 from datetime import datetime
 from logging import error
-from typing import TYPE_CHECKING, Any, cast
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
+import httpx
+from pysus import CACHEPATH
 from pysus.api.dadosgov.models import File as APIFile
 from pysus.api.ducklake.functional import upload_s3
 from pysus.api.errors import AuthenticationError, ConnectionError
-from pysus.api.extensions import Parquet
 from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
 
@@ -47,22 +50,13 @@ if TYPE_CHECKING:  # pragma: no cover
     from pysus.api.client import PySUS
     from pysus.api.ducklake.client import DuckLake
 
-_RETRYABLE = (ConnectionResetError, ConnectionRefusedError, TimeoutError)
-
-
-class _DatasetStub:
-    """Registry entry for a per-dataset adapter without a full DuckDataset.
-
-    ``DuckLake.close`` iterates ``_datasets`` and calls ``ds.close``;
-    the stub delegates to its adapter so the catalog is uploaded on close.
-    """
-
-    def __init__(self, name: str, adapter):
-        self.name = name
-        self.adapter = adapter
-
-    async def close(self, update_catalog: bool | None = None) -> None:
-        await self.adapter.close(update=bool(update_catalog))
+_RETRYABLE = (
+    ConnectionResetError,
+    ConnectionRefusedError,
+    TimeoutError,
+    BrokenPipeError,
+    OSError,
+)
 
 
 class SyncEngine:
@@ -123,13 +117,58 @@ class SyncEngine:
                 access_key=self.access_key,
                 secret_key=self.secret_key,
             )
+        self._acquire_sync_lock()
         return self
+
+    def _acquire_sync_lock(self) -> None:
+        """Guarantee a single sync process owns the catalogs at a time.
+
+        DuckDB catalog files allow one writer process; concurrent syncs
+        corrupt each other's state. The lock file carries the PID and is
+        stolen only when that PID is no longer alive.
+        """
+        import os
+
+        lock_path = Path(CACHEPATH) / "ducklake" / ".sync.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        if lock_path.exists():
+            try:
+                owner = int(lock_path.read_text().strip() or "0")
+            except ValueError:
+                owner = 0
+            alive = owner > 0 and self._pid_alive(owner)
+            if alive:
+                raise ConnectionError(
+                    "another sync process (PID "
+                    f"{owner}) holds the catalog lock"
+                )
+        lock_path.write_text(str(os.getpid()))
+
+    @staticmethod
+    def _pid_alive(pid: int) -> bool:
+        import os
+
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        return True
+
+    def _release_sync_lock(self) -> None:
+        lock_path = Path(CACHEPATH) / "ducklake" / ".sync.lock"
+        try:
+            lock_path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         try:
             if not exc_type and self._ducklake:
                 await self._ducklake.close(update_catalog=self._changed_catalog)
         finally:
+            self._release_sync_lock()
             if self.pysus is not None:
                 await self.pysus.__aexit__(exc_type, exc_val, exc_tb)
 
@@ -154,6 +193,7 @@ class SyncEngine:
         file: FTPFile | APIFile,
         callback: Callable[[int, int], None] | None = None,
         force: bool = False,
+        ftp_client: Any | None = None,
     ) -> bool:
         """Download *file*, convert to parquet, upload and catalog it.
 
@@ -162,8 +202,23 @@ class SyncEngine:
         per-dataset ``catalog_<name>.duckdb``, and the column definitions
         into ``catalog_columns.duckdb``.
 
-        Returns True if the file was processed; False when the catalog
-        already holds an equally recent artifact (skip).
+        ``ftp_client`` (optional) is used instead of the file's client
+        for the raw download, allowing a pool of FTP connections to be
+        shared safely across parallel workers.
+
+        Content-veto (no mismatch possible — byte-exact hashes):
+
+        * if the source ``modified`` is not newer than the catalog's
+          ``origin_modified`` → skip without downloading;
+        * else the raw file is downloaded (cache bypassed) and hashed:
+          same raw ``sha256`` as the stored ``source_sha256`` → only the
+          origin metadata is touched, no conversion/upload;
+        * else the parquet is converted and hashed: same parquet
+          ``sha256`` as stored → only metadata is touched, no upload;
+        * otherwise the artifact is uploaded and both hashes stored.
+
+        Returns True if the file was (re)processed; False when the
+        existing artifact is current or content-identical.
         """
         if self._ducklake is None:
             raise ConnectionError("DuckLake is not connected")
@@ -172,16 +227,16 @@ class SyncEngine:
         writer = self.writer
 
         dataset_adapter = self._dataset_adapter(file)
-        central_adapter = self._ducklake._catalog_adap
-        columns_adapter = self._ducklake._columns_adap
+        central_adapter = self._ducklake.catalog_adapter
+        columns_adapter = self._ducklake.columns_adapter
 
         await central_adapter.connect()
         await columns_adapter.connect()
         await dataset_adapter.connect()
 
-        central_conn = central_adapter._engine.raw_connection()
-        dataset_conn = dataset_adapter._engine.raw_connection()
-        columns_conn = columns_adapter._engine.raw_connection()
+        central_conn = central_adapter.raw_connection()
+        dataset_conn = dataset_adapter.raw_connection()
+        columns_conn = columns_adapter.raw_connection()
 
         connections = (central_conn, dataset_conn, columns_conn)
         try:
@@ -192,33 +247,65 @@ class SyncEngine:
 
                 writer._ensure_management_columns(dataset_cursor)
 
-                existing = writer.get_file(dataset_cursor, s3_key)
+                existing = writer.get_file_full(dataset_cursor, s3_key)
                 if existing and not force:
-                    _, origin_modified = existing
+                    _, origin_modified, _, _, _ = existing
                     if self._is_current(file, origin_modified):
                         return False
 
-                dataset_id = writer.ensure_dataset(
-                    central_cursor,
-                    file.dataset.name,
-                    file.dataset.long_name,
-                    getattr(file.dataset, "description", None),
+                raw_path = await self._download_raw_with_retry(
+                    file, ftp_client=ftp_client
                 )
+                raw_digest = sha256_of(raw_path)
 
-                group = getattr(file, "group", None)
-                group_name = (
-                    getattr(group, "name", None) if group is not None else None
-                )
-                group_name = str(group_name) if group_name else None
-                group_id = writer.ensure_group(
-                    dataset_cursor,
-                    dataset_id,
-                    group_name,
-                    getattr(group, "long_name", None) if group else None,
-                    getattr(group, "description", None) if group else None,
-                )
+                if existing and not force:
+                    file_id = existing[0]
+                    stored_source = existing[4]
+                    if stored_source and raw_digest == stored_source:
+                        writer.touch_file(
+                            dataset_cursor,
+                            file_id,
+                            self._safe_modify(file),
+                            self._safe_size(file),
+                        )
+                        dataset_conn.commit()
+                        dataset_cursor.execute("CHECKPOINT")
+                        dataset_adapter.mark_dirty()
+                        self._changed_catalog = True
+                        self._cleanup_local(raw_path)
+                        return False
 
-                parquet_file = await self._download_with_retry(file, callback)
+                from pysus.api.extensions import ExtensionFactory
+
+                local_file = await ExtensionFactory.instantiate(raw_path)
+                if not hasattr(local_file, "to_parquet"):
+                    raise RuntimeError(
+                        f"{file.basename}: cannot convert to parquet"
+                    )
+                parquet_file = await local_file.to_parquet(
+                    callback=callback,
+                )
+                parquet_digest = sha256_of(parquet_file.path)
+
+                if existing and not force:
+                    file_id = existing[0]
+                    stored_sha = existing[3]
+                    if stored_sha and parquet_digest == stored_sha:
+                        writer.touch_file(
+                            dataset_cursor,
+                            file_id,
+                            self._safe_modify(file),
+                            self._safe_size(file),
+                            source_sha256=raw_digest,
+                        )
+                        dataset_conn.commit()
+                        dataset_cursor.execute("CHECKPOINT")
+                        dataset_adapter.mark_dirty()
+                        self._changed_catalog = True
+                        self._cleanup_local(raw_path)
+                        self._cleanup_local(parquet_file.path)
+                        return False
+
                 await upload_s3(
                     local_path=parquet_file.path,
                     remote_path=s3_key,
@@ -227,36 +314,20 @@ class SyncEngine:
                     callback=callback,
                 )
 
-                digest = sha256_of(parquet_file.path)
-                writer.upsert_file(
-                    dataset_cursor,
-                    dataset_id=dataset_id,
-                    group_id=group_id,
-                    path=s3_key,
-                    size=parquet_file.size,
-                    rows=parquet_file.rows,
-                    modified=datetime.now(),
-                    origin_modified=self._safe_modify(file),
-                    origin_size=self._safe_size(file),
-                    origin_path=str(file.path),
-                    year=file.year,
-                    month=file.month,
-                    state=file.state,
-                    origin=file.client.name.lower(),
-                    format="parquet",
-                    sha256=digest,
-                    file_type="PARQUET",
-                )
-
-                inserted = writer.get_file(dataset_cursor, s3_key)
-                assert inserted is not None
-                file_id, _ = inserted
-                writer.link_columns(
+                payload = {
+                    "s3_key": s3_key,
+                    "size": parquet_file.path.stat().st_size,
+                    "rows": parquet_file.rows,
+                    "schema": parquet_file.schema,
+                    "raw_digest": raw_digest,
+                    "parquet_digest": parquet_digest,
+                }
+                self._catalog_rows(
+                    central_cursor,
                     dataset_cursor,
                     columns_cursor,
-                    file_id,
-                    parquet_file.schema,
-                    dataset_id,
+                    file,
+                    payload,
                 )
 
                 central_conn.commit()
@@ -265,10 +336,12 @@ class SyncEngine:
                 dataset_cursor.execute("CHECKPOINT")
                 columns_cursor.execute("CHECKPOINT")
 
-                central_adapter._local_dirty = True
-                dataset_adapter._local_dirty = True
-                columns_adapter._local_dirty = True
+                central_adapter.mark_dirty()
+                dataset_adapter.mark_dirty()
+                columns_adapter.mark_dirty()
                 self._changed_catalog = True
+                self._cleanup_local(raw_path)
+                self._cleanup_local(parquet_file.path)
                 return True
         except BaseException as exc:  # noqa
             # the connection context managers roll back on exit
@@ -279,49 +352,39 @@ class SyncEngine:
                     pass
             raise exc
 
+    def _dataset_adapter_by_name(self, dataset_name: str):
+        """Return (and register) the per-dataset adapter for *name*."""
+        return self._require_ducklake().get_dataset_adapter(dataset_name)
+
     def _dataset_adapter(self, file: BaseRemoteFile):
         """Return (and register) the per-dataset adapter for *file*."""
-        ducklake = self._require_ducklake()
-        dataset_name = file.dataset.name.lower()
-        for ds in ducklake._datasets:
-            if getattr(ds, "name", "").lower() == dataset_name:
-                return ds.adapter
+        return self._dataset_adapter_by_name(file.dataset.name)
 
-        from pysus.api.ducklake.catalog.adapters import DatasetAdapter
-
-        adapter = DatasetAdapter(
-            name=dataset_name,
-            dataset_id=0,
-            credentials=ducklake.credentials,
-            update_on_close=ducklake.update_on_close,
-        )
-        ducklake._datasets.append(
-            cast(Any, _DatasetStub(dataset_name, adapter))
-        )
-        return adapter
-
-    async def _download_with_retry(
+    async def _download_raw_with_retry(
         self,
         file: FTPFile | APIFile,
-        callback: Callable[[int, int], None] | None = None,
-        max_retries: int = 3,
-    ) -> Parquet:
+        max_retries: int = 5,
+        ftp_client: Any | None = None,
+    ) -> Path:
+        """Download the raw artifact bypassing the local cache.
+
+        The PySUS local cache matches on size only, which could serve
+        stale bytes for a same-size update — the content veto must hash
+        exactly what the client serves now. ``ftp_client`` overrides the
+        file's own FTP connection (pooled clients are not shared).
+        """
+        raw_dir = Path(CACHEPATH) / "management" / "tmp"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        output = raw_dir / f"{uuid4().hex[:8]}-{file.basename}"
+
         last_error: Exception | None = None
-        token = (
-            self.dadosgov_token
-            if file.client.name.lower() == "dadosgov"
-            else None
-        )
         for attempt in range(max_retries):
             try:
-                return await self._require_pysus().download_to_parquet(
-                    file=file,
-                    token=token,
-                    callback=callback,
-                )
+                await self._download_once(file, output, ftp_client)
+                return output
             except _RETRYABLE as exc:
                 last_error = exc
-                wait_time = 2**attempt
+                wait_time = 2**attempt + (attempt * 2)
                 error(
                     f"Download attempt {attempt + 1}/{max_retries} failed "
                     f"for {file.basename}: {exc}. Retrying in {wait_time}s..."
@@ -332,6 +395,66 @@ class SyncEngine:
             f"Failed to download {file.basename} after {max_retries} "
             f"attempts: {last_error}"
         ) from last_error
+
+    async def _download_once(
+        self,
+        file: BaseRemoteFile,
+        output: Path,
+        ftp_client: Any | None = None,
+    ) -> None:
+        """Perform one raw download to *output*."""
+        from anyio import to_thread
+
+        client = ftp_client if ftp_client is not None else file.client
+        ftp = getattr(client, "ftp", None)
+        if ftp_client is not None:
+            # never fall back to the shared client: reconnect the pooled
+            # session instead
+            if ftp is None:
+                await client.connect()
+                ftp = getattr(client, "ftp", None)
+            assert ftp is not None
+            remote_path = str(file.path)
+
+            def _retr():
+                total = ftp.size(remote_path) or 0
+                with open(output, "wb") as f:
+                    ftp.retrbinary(
+                        f"RETR {remote_path}", lambda chunk: f.write(chunk)
+                    )
+                return total
+
+            try:
+                await to_thread.run_sync(_retr)
+                return
+            except Exception:  # noqa
+                try:
+                    ftp.quit()
+                except Exception:  # noqa
+                    pass
+                setattr(  # noqa: B010 — reset pooled FTP session
+                    client, "_ftp", None
+                )
+                raise
+        if ftp is not None:
+            remote_path = str(file.path)
+
+            def _direct_retr():
+                with open(output, "wb") as f:
+                    ftp.retrbinary(
+                        f"RETR {remote_path}", lambda chunk: f.write(chunk)
+                    )
+
+            await to_thread.run_sync(_direct_retr)
+            return
+        await file._download(output=output)
+
+    @staticmethod
+    def _cleanup_local(path: Path) -> None:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
     @staticmethod
     def _is_current(
@@ -371,28 +494,43 @@ class SyncEngine:
         save_snapshots: bool = True,
         checkpoint_every: int | None = None,
         on_outcome: Callable[[SyncOutcome], None] | None = None,
+        workers: int = 16,
+        ftp_connections: int = 6,
     ) -> SyncReport:
         """Run the full pipeline and return a :class:`SyncReport`.
 
-        Files already on S3 (ducklake artifacts) are skipped; FTP is
-        preferred over DadosGov, which requires ``dadosgov_token``.
-        Files whose non-S3 artifact is newer than the S3 copy are
-        reprocessed (most-updated policy).
+        Files already on S3 (ducklake artifacts) are skipped unless
+        ``force`` or the source size proves a change (trust-the-catalog
+        policy); FTP is preferred over DadosGov, which requires
+        ``dadosgov_token``.
+
+        Missing files are ingested in parallel: ``workers`` asyncio tasks
+        download (via a pool of ``ftp_connections`` FTP clients), convert
+        and upload concurrently; catalog writes stay serialized and
+        checkpoints only run when all workers are quiescent.
 
         ``checkpoint_every`` uploads the modified catalogs to S3 every N
-        successful uploads, making long runs resumable (files already
-        cataloged are skipped on the next run). ``on_outcome`` is called
-        once per processed logical file (e.g. for progress logging).
+        successful uploads, making long runs resumable. ``on_outcome`` is
+        called once per processed logical file.
         """
         report = SyncReport(dataset=",".join(datasets) if datasets else None)
 
+        async def collect_with_retry(origin: str, datasets=None, **kwargs):
+            for attempt in range(3):
+                try:
+                    return await self.inventory.collect(origin, **kwargs)
+                except (*_RETRYABLE, httpx.HTTPError):
+                    if attempt == 2:
+                        raise
+                    await asyncio.sleep(2**attempt)
+
         records: dict[str, list[FileRecord]] = {
-            "ducklake": await self.inventory.collect("ducklake", datasets),
-            "ftp": await self.inventory.collect("ftp", datasets),
+            "ducklake": await collect_with_retry("ducklake", datasets),
+            "ftp": await collect_with_retry("ftp", datasets),
         }
         records["dadosgov"] = []
         if self.dadosgov_token:
-            records["dadosgov"] = await self.inventory.collect(
+            records["dadosgov"] = await collect_with_retry(
                 "dadosgov", datasets, dadosgov_token=self.dadosgov_token
             )
 
@@ -400,24 +538,217 @@ class SyncEngine:
             records["ducklake"] + records["ftp"] + records["dadosgov"]
         )
 
-        uploaded_since_checkpoint = 0
-        for comparison in comparisons:
-            outcome = await self._process_comparison(
-                comparison, force=force, callback=callback
-            )
-            report.outcomes.append(outcome)
-            if on_outcome:
-                on_outcome(outcome)
+        # Pre-connect every adapter involved so concurrent workers never
+        # race the initial catalog download.
+        await self._preconnect_adapters(records)
 
-            if (
-                outcome.status == "uploaded"
-                and checkpoint_every
-                and self._changed_catalog
+        parallel: list[tuple[FileComparison, FileRecord]] = []
+        for comparison in comparisons:
+            if comparison.is_on_s3 and not (
+                force or self._s3_is_stale(comparison)
             ):
-                uploaded_since_checkpoint += 1
-                if uploaded_since_checkpoint >= checkpoint_every:
-                    await self._checkpoint()
-                    uploaded_since_checkpoint = 0
+                outcome = SyncOutcome(
+                    key=comparison.key,
+                    origin="ducklake",
+                    status="skipped",
+                )
+                report.outcomes.append(outcome)
+                if on_outcome:
+                    on_outcome(outcome)
+                continue
+            record = self._pick_source(comparison)
+            if record is None:
+                outcome = await self._process_comparison(
+                    comparison, force=force, callback=callback
+                )
+                report.outcomes.append(outcome)
+                if on_outcome:
+                    on_outcome(outcome)
+                continue
+            parallel.append((comparison, record))
+
+        ftp_items = [(c, r) for c, r in parallel if r.origin == "ftp"]
+        gov_items = [(c, r) for c, r in parallel if r.origin != "ftp"]
+
+        ftp_pool: list[Any] = []
+        if ftp_items:
+            from pysus.api.ftp.client import FTP
+
+            for _ in range(ftp_connections):
+                client = FTP()
+                await client.connect()
+                ftp_pool.append(client)
+
+        raw_queue: asyncio.Queue = asyncio.Queue(maxsize=workers * 2)
+        write_queue: asyncio.Queue = asyncio.Queue(maxsize=workers * 2)
+
+        async def ftp_downloader(
+            client: Any, items: list[tuple[FileComparison, FileRecord]]
+        ) -> None:
+            for comparison, record in items:
+                try:
+                    raw = await self._download_raw_with_retry(
+                        record.file, ftp_client=client
+                    )
+                    await raw_queue.put((comparison, record, raw, None))
+                except Exception as exc:  # noqa
+                    await raw_queue.put((comparison, record, None, str(exc)))
+            await raw_queue.put(None)
+
+        async def raw_processor() -> None:
+            while True:
+                entry = await raw_queue.get()
+                try:
+                    if entry is None:
+                        return
+                    comparison, record, raw, err = entry
+                    if err is not None:
+                        await write_queue.put((comparison, record, None, err))
+                        continue
+                    payload = await self._convert_and_upload(
+                        record.file, raw, callback=callback
+                    )
+                    await write_queue.put((comparison, record, payload, None))
+                except Exception as exc:  # noqa
+                    comparison, record, _, _ = entry
+                    await write_queue.put((comparison, record, None, str(exc)))
+                finally:
+                    raw_queue.task_done()
+
+        async def gov_worker() -> None:
+            while gov_items:
+                comparison, record = gov_items.pop()
+                try:
+                    raw = await self._download_raw_with_retry(record.file)
+                    payload = await self._convert_and_upload(
+                        record.file, raw, callback=callback
+                    )
+                    await write_queue.put((comparison, record, payload, None))
+                except Exception as exc:  # noqa
+                    await write_queue.put((comparison, record, None, str(exc)))
+
+        async def catalog_writer() -> None:
+            """Serial consumer: catalog rows + outcomes + checkpoints."""
+            uploaded_since_checkpoint = 0
+
+            ducklake = self._require_ducklake()
+            central_adapter = ducklake.catalog_adapter
+            columns_adapter = ducklake.columns_adapter
+            await central_adapter.connect()
+            await columns_adapter.connect()
+            dataset_adapters: dict[str, Any] = {}
+
+            done_writers = 0
+            while True:
+                entry = await write_queue.get()
+                try:
+                    if entry is None:
+                        done_writers += 1
+                        if done_writers >= writers_total:
+                            break
+                        continue
+
+                    comparison, record, payload, err = entry
+                    if err is not None:
+                        outcome = SyncOutcome(
+                            key=comparison.key,
+                            origin=record.origin,
+                            status="failed",
+                            detail=f"{self._label(comparison)}: {err}",
+                        )
+                    else:
+                        try:
+                            adapter = dataset_adapters.get(
+                                record.dataset.lower()
+                            )
+                            if adapter is None:
+                                adapter = self._dataset_adapter_by_name(
+                                    record.dataset
+                                )
+                            dataset_adapters[record.dataset.lower()] = adapter
+                            self._catalog_write_entry(
+                                adapter,
+                                central_adapter,
+                                columns_adapter,
+                                record.file,
+                                payload,
+                            )
+                            adapter.mark_dirty()
+                            central_adapter.mark_dirty()
+                            columns_adapter.mark_dirty()
+                            self._changed_catalog = True
+                            outcome = SyncOutcome(
+                                key=comparison.key,
+                                origin=record.origin,
+                                status="uploaded",
+                                detail=self._label(comparison),
+                            )
+                        except Exception as exc:  # noqa
+                            import traceback
+
+                            error(
+                                "catalog write failed for "
+                                f"{self._label(comparison)}: {exc}"
+                            )
+                            error(traceback.format_exc())
+                            outcome = SyncOutcome(
+                                key=comparison.key,
+                                origin=record.origin,
+                                status="failed",
+                                detail=(
+                                    f"{self._label(comparison)}: "
+                                    f"catalog write: {exc}"
+                                ),
+                            )
+
+                    report.outcomes.append(outcome)
+                    if on_outcome:
+                        on_outcome(outcome)
+                    if (
+                        outcome.status == "uploaded"
+                        and checkpoint_every
+                        and self._changed_catalog
+                    ):
+                        uploaded_since_checkpoint += 1
+                        if uploaded_since_checkpoint >= checkpoint_every:
+                            await self._checkpoint()
+                            uploaded_since_checkpoint = 0
+                finally:
+                    write_queue.task_done()
+
+        processor_tasks = [
+            asyncio.create_task(raw_processor()) for _ in range(workers)
+        ]
+        # Heavy sources (DadosGov multi-million-row archives) are
+        # processed one at a time to bound peak memory; FTP files are
+        # small and flow through the processor pool.
+        gov_workers_tasks = [
+            asyncio.create_task(gov_worker())
+            for _ in range(2 if gov_items else 0)
+        ]
+        ftp_tasks = []
+        if ftp_pool:
+            step = max(1, len(ftp_pool))
+            ftp_tasks = [
+                asyncio.create_task(ftp_downloader(client, ftp_items[i::step]))
+                for i, client in enumerate(ftp_pool)
+            ]
+        else:
+            for _ in range(workers):
+                await raw_queue.put(None)
+        if not ftp_tasks and not gov_workers_tasks:
+            for _ in range(workers):
+                await write_queue.put(None)
+
+        writers_total = len(gov_workers_tasks)
+        writer_task = asyncio.create_task(catalog_writer())
+        await asyncio.gather(*ftp_tasks, *gov_workers_tasks)
+        for _ in processor_tasks:
+            await raw_queue.put(None)
+        await asyncio.gather(*processor_tasks)
+        for _ in range(writers_total):
+            await write_queue.put(None)
+        await writer_task
 
         if self._changed_catalog and checkpoint_every is not None:
             await self._checkpoint()
@@ -428,15 +759,187 @@ class SyncEngine:
 
         return report
 
+    async def _convert_and_upload(
+        self,
+        file: BaseRemoteFile,
+        raw_path: Path,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> dict:
+        """Convert a downloaded raw file, upload it, return the payload.
+
+        The payload carries everything the catalog writer needs after the
+        local files are removed.
+        """
+        from anyio import to_thread
+        from pysus.api.extensions import ExtensionFactory
+
+        s3_key = self.s3_key_for(file)
+        raw_digest = await to_thread.run_sync(sha256_of, raw_path)
+
+        local_file = await ExtensionFactory.instantiate(raw_path)
+        if not hasattr(local_file, "to_parquet"):
+            raise RuntimeError(f"{file.basename}: cannot convert to parquet")
+        parquet_file = await local_file.to_parquet(callback=callback)
+        try:
+            parquet_digest = await to_thread.run_sync(
+                sha256_of, parquet_file.path
+            )
+            payload = {
+                "s3_key": s3_key,
+                "size": parquet_file.path.stat().st_size,
+                "rows": parquet_file.rows,
+                "schema": parquet_file.schema,
+                "raw_digest": raw_digest,
+                "parquet_digest": parquet_digest,
+            }
+            await upload_s3(
+                local_path=parquet_file.path,
+                remote_path=s3_key,
+                access_key=str(self.access_key),
+                secret_key=str(self.secret_key),
+                callback=callback,
+            )
+            return payload
+        finally:
+            self._cleanup_local(raw_path)
+            self._cleanup_local(parquet_file.path)
+
+    def _catalog_write_entry(
+        self,
+        adapter,
+        central_adapter,
+        columns_adapter,
+        file: BaseRemoteFile,
+        payload: dict,
+    ) -> None:
+        """Write one artifact's catalog rows in short transactions.
+
+        All three catalogs are touched through short-lived direct
+        DuckDB connections (``transaction()``), completely decoupled
+        from engine lifecycles — DuckDB tears down the shared in-process
+        database instance when its last connection closes, so no
+        connection is ever held across operations here.
+        """
+        with central_adapter.transaction() as (
+            central_conn,
+            central_cursor,
+        ):
+            with columns_adapter.transaction() as (
+                columns_conn,
+                columns_cursor,
+            ):
+                with adapter.transaction() as (conn, dataset_cursor):
+                    self.writer._ensure_management_columns(dataset_cursor)
+                    self._catalog_rows(
+                        central_cursor,
+                        dataset_cursor,
+                        columns_cursor,
+                        file,
+                        payload,
+                    )
+                    conn.commit()
+                    dataset_cursor.execute("CHECKPOINT")
+                columns_conn.commit()
+            central_conn.commit()
+
+    def _catalog_rows(
+        self,
+        central_cursor,
+        dataset_cursor,
+        columns_cursor,
+        file: BaseRemoteFile,
+        payload: dict,
+    ) -> None:
+        """Write dataset/group/file/column rows for an uploaded artifact."""
+        writer = self.writer
+        dataset_id = writer.ensure_dataset(
+            central_cursor,
+            file.dataset.name,
+            file.dataset.long_name,
+            getattr(file.dataset, "description", None),
+        )
+
+        group = getattr(file, "group", None)
+        group_name = getattr(group, "name", None) if group is not None else None
+        group_name = str(group_name) if group_name else None
+        group_id = writer.ensure_group(
+            dataset_cursor,
+            dataset_id,
+            group_name,
+            getattr(group, "long_name", None) if group else None,
+            getattr(group, "description", None) if group else None,
+        )
+
+        writer.upsert_file(
+            dataset_cursor,
+            dataset_id=dataset_id,
+            group_id=group_id,
+            path=payload["s3_key"],
+            size=payload["size"],
+            rows=payload["rows"],
+            modified=datetime.now(),
+            origin_modified=self._safe_modify(file),
+            origin_size=self._safe_size(file),
+            origin_path=str(file.path),
+            year=file.year,
+            month=file.month,
+            state=file.state,
+            origin=file.client.name.lower(),
+            format="parquet",
+            sha256=payload["parquet_digest"],
+            source_sha256=payload["raw_digest"],
+            file_type="PARQUET",
+        )
+
+        inserted = writer.get_file(dataset_cursor, payload["s3_key"])
+        assert inserted is not None
+        file_id, _ = inserted
+        writer.link_columns(
+            dataset_cursor,
+            columns_cursor,
+            file_id,
+            payload["schema"],
+            dataset_id,
+        )
+
+    async def _preconnect_adapters(
+        self, records: dict[str, list[FileRecord]]
+    ) -> None:
+        """Ensure all adapters are connected before parallel ingestion."""
+        ducklake = self._require_ducklake()
+        await ducklake.catalog_adapter.ensure_connected()
+        await ducklake.columns_adapter.ensure_connected()
+        datasets = {
+            r.dataset.lower()
+            for items in records.values()
+            for r in items
+            if r.origin in ("ftp", "dadosgov")
+        }
+        for name in datasets:
+            await self._dataset_adapter_by_name(name).ensure_connected()
+
+    @staticmethod
+    def _pick_source(comparison: FileComparison) -> FileRecord | None:
+        """Return the artifact to ingest (ftp over dadosgov), if any."""
+        record = comparison._pick("ftp")
+        if record is None or record.file is None:
+            record = comparison._pick("dadosgov")
+        if record is None or record.file is None:
+            return None
+        return record
+
+    @staticmethod
+    def _label(comparison: FileComparison) -> str:
+        key = comparison.key
+        return (
+            f"{key.dataset}/{key.group or '-'}/"
+            f"{key.year or '-'}/{key.month or '-'}/{key.stem}"
+        )
+
     async def _checkpoint(self) -> None:
         """Upload all dirty catalogs to S3 and reconnect the adapters."""
         ducklake = self._require_ducklake()
-        for ds in ducklake._datasets:
-            await ds.close(update_catalog=True)
-        await ducklake._catalog_adap.close(update=True)
-        await ducklake._columns_adap.close(update=True)
-        await ducklake._catalog_adap.connect()
-        await ducklake._columns_adap.connect()
+        await ducklake.flush_catalogs(update=True)
         self._changed_catalog = False
 
     async def _process_comparison(
@@ -460,20 +963,31 @@ class SyncEngine:
 
     @staticmethod
     def _s3_is_stale(comparison: FileComparison) -> bool:
-        """True when any non-S3 artifact is newer than the S3 copy."""
+        """True when a non-S3 artifact certainly differs from the S3 copy.
+
+        Trust-the-catalog policy: legacy ``origin_modified`` values are
+        upload timestamps (unreliable for freshness), so modification
+        dates are ignored on this pass. A file on S3 is only re-checked
+        when the source *size* is known to differ from the recorded
+        ``origin_size`` — size inequality proves the content changed,
+        so no false skips are possible. Equal sizes (or unknown legacy
+        sizes) trust the catalog; the content veto still guards any
+        re-check that does happen.
+        """
         s3_record = comparison._pick("ducklake")
         if s3_record is None:
             return False
 
-        s3_source_modified = s3_record.source_modified or s3_record.modified
-        if s3_source_modified is None:
+        # origin_size is the raw source size recorded at upload time;
+        # the parquet size can never equal the raw size.
+        s3_size = s3_record.source_size
+        if not s3_size:
             return False
 
         for record in comparison.records:
             if record.origin == "ducklake":
                 continue
-            modified = record.modified
-            if modified and modified > s3_source_modified:
+            if record.size and record.size != s3_size:
                 return True
         return False
 

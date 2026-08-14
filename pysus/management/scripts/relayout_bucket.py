@@ -123,7 +123,10 @@ def main() -> int:
         print(f"  applying {name}...", flush=True)
         aliases.update(
             normalizer.apply_renames_with_aliases(
-                plan.object_renames, dry_run=False
+                plan.object_renames,
+                dry_run=False,
+                object_sizes=object_sizes,
+                workers=48,
             )
         )
         normalizer.apply_objects([], plan.object_deletes, dry_run=False)

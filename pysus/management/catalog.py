@@ -108,6 +108,9 @@ class CatalogWriter:
     def _ensure_management_columns(self, catalog_cursor) -> None:
         self._ensure_column(catalog_cursor, "files", "origin", "VARCHAR")
         self._ensure_column(catalog_cursor, "files", "format", "VARCHAR")
+        self._ensure_column(
+            catalog_cursor, "files", "source_sha256", "VARCHAR(64)"
+        )
 
     # ------------------------------------------------------------------
     # datasets & groups
@@ -200,6 +203,45 @@ class CatalogWriter:
             return None
         return int(row[0]), row[1]
 
+    def get_file_full(
+        self,
+        cursor,
+        path: str,
+    ) -> tuple[int, datetime | None, int, str | None, str | None] | None:
+        """Return ``(id, origin_modified, origin_size, sha256,
+        source_sha256)`` for the S3 *path*, if present."""
+        cursor.execute(
+            "SELECT id, origin_modified, origin_size, sha256, "
+            "source_sha256 FROM pysus.files WHERE path = ?",
+            (path,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return int(row[0]), row[1], int(row[2] or 0), row[3], row[4]
+
+    def touch_file(
+        self,
+        cursor,
+        file_id: int,
+        origin_modified: datetime | None,
+        origin_size: int,
+        source_sha256: str | None = None,
+    ) -> None:
+        """Update origin metadata without replacing the artifact."""
+        if source_sha256 is not None:
+            cursor.execute(
+                "UPDATE pysus.files SET origin_modified = ?, "
+                "origin_size = ?, source_sha256 = ? WHERE id = ?",
+                (origin_modified, origin_size, source_sha256, file_id),
+            )
+        else:
+            cursor.execute(
+                "UPDATE pysus.files SET origin_modified = ?, "
+                "origin_size = ? WHERE id = ?",
+                (origin_modified, origin_size, file_id),
+            )
+
     def delete_file(self, cursor, file_id: int) -> None:
         cursor.execute(
             "DELETE FROM pysus.file_columns WHERE file_id = ?", (file_id,)
@@ -225,6 +267,7 @@ class CatalogWriter:
         origin: str | None = None,
         format: str | None = None,
         sha256: str | None = None,
+        source_sha256: str | None = None,
         file_type: str | None = None,
     ) -> tuple[int, bool]:
         """Insert or update the file row keyed on S3 *path*.
@@ -265,6 +308,9 @@ class CatalogWriter:
             if sha256 is not None:
                 sets.append("sha256 = ?")
                 update_values.append(sha256)
+            if source_sha256 is not None:
+                sets.append("source_sha256 = ?")
+                update_values.append(source_sha256)
             if file_type is not None:
                 sets.append("type = ?")
                 update_values.append(file_type)
@@ -303,6 +349,9 @@ class CatalogWriter:
         if sha256 is not None:
             columns.append("sha256")
             values.append(sha256)
+        if source_sha256 is not None:
+            columns.append("source_sha256")
+            values.append(source_sha256)
         if file_type is not None:
             columns.append("type")
             values.append(file_type)

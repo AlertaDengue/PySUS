@@ -721,7 +721,8 @@ class TestAdapterRemoteUrl:
 
 class TestAdapterClose:
     @pytest.mark.asyncio
-    async def test_close_disposes_engine(self, tmp_path):
+    async def test_close_keeps_shared_engine(self, tmp_path):
+        """Engines are shared per file and must outlive adapters."""
         from unittest.mock import MagicMock
 
         from pysus.api.ducklake.catalog.adapters import CatalogAdapter
@@ -731,9 +732,27 @@ class TestAdapterClose:
         mock_engine = MagicMock()
         adapter._engine = mock_engine
         await adapter.close()
-        mock_engine.dispose.assert_called_once()
+        mock_engine.dispose.assert_not_called()
         assert adapter._engine is None
         assert adapter._session_factory is None
+
+    @pytest.mark.asyncio
+    async def test_reconnect_disposes_shared_engine(self, tmp_path):
+        from unittest.mock import patch
+
+        from pysus.api.ducklake.catalog.adapters import CatalogAdapter
+
+        with patch("pysus.api.ducklake.catalog.adapters.CACHEPATH", tmp_path):
+            adapter = CatalogAdapter()
+        with patch.object(
+            adapter, "connect", new_callable=AsyncMock
+        ) as mock_connect:
+            with patch(
+                "pysus.api.ducklake.catalog.adapters._dispose_shared"
+            ) as mock_dispose:
+                await adapter.reconnect()
+        mock_dispose.assert_called_once_with(adapter.db_local)
+        assert mock_connect.called
 
     def test_destructor_no_engine(self, tmp_path):
         from pysus.api.ducklake.catalog.adapters import CatalogAdapter

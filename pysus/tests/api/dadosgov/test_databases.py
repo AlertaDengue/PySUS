@@ -401,8 +401,12 @@ class TestCOVID19(BaseDatasetMixin):
 
 class TestAVAILABLEDATABASES:
     def test_contains_all_databases(self):
-        expected = {CNES, PNI, SIA, SINAN, SIM, SINASC, COVID19}
+        expected = {CNES, PNI, SINAN, SIM, SINASC, COVID19}
         assert set(AVAILABLE_DATABASES) == expected
+
+    def test_sia_excluded(self):
+        # Fortaleza municipal SIA is unstable and excluded from sync
+        assert SIA not in AVAILABLE_DATABASES
 
     def test_all_can_be_instantiated(self):
         for db_class in AVAILABLE_DATABASES:

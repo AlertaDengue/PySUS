@@ -626,7 +626,9 @@ class COVID19(Dataset):
 AVAILABLE_DATABASES: list[type[Dataset]] = [
     CNES,
     PNI,
-    SIA,
+    # SIA excluded: its only dataset (Fortaleza municipal) is served from
+    # dados.fortaleza.ce.gov.br, which is unstable (frequent 504s) and is
+    # not national SIA data. See SIA class below.
     SIM,
     SINAN,
     SINASC,

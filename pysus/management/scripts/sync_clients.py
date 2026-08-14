@@ -30,7 +30,9 @@ def load_env(path: str = ".env") -> dict[str, str]:
     return env
 
 
-async def run(datasets, checkpoint_every, force) -> dict:
+async def run(
+    datasets, checkpoint_every, force, workers, ftp_connections
+) -> dict:
     env = load_env()
     engine = SyncEngine(
         access_key=env.get("ACCESS_KEY"),
@@ -54,6 +56,8 @@ async def run(datasets, checkpoint_every, force) -> dict:
             force=force,
             checkpoint_every=checkpoint_every,
             on_outcome=on_outcome,
+            workers=workers,
+            ftp_connections=ftp_connections,
         )
     return report.summary()
 
@@ -77,11 +81,31 @@ def main() -> int:
         action="store_true",
         help="Reprocess files even when the catalog is current",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=16,
+        help="Concurrent ingestion workers",
+    )
+    parser.add_argument(
+        "--ftp-connections",
+        type=int,
+        default=6,
+        help="FTP connection pool size",
+    )
     args = parser.parse_args()
 
     datasets = [d.upper() for d in args.datasets] if args.datasets else None
 
-    summary = asyncio.run(run(datasets, args.checkpoint_every, args.force))
+    summary = asyncio.run(
+        run(
+            datasets,
+            args.checkpoint_every,
+            args.force,
+            args.workers,
+            args.ftp_connections,
+        )
+    )
     print(summary)
     return 0
 

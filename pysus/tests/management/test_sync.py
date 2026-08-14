@@ -94,9 +94,7 @@ class TestSyncEngine:
         assert not engine._is_current(file, datetime(2026, 1, 1))
         assert not engine._is_current(file, None)
 
-    def test_s3_is_stale_when_ftp_newer(self):
-        from datetime import datetime
-
+    def test_s3_is_stale_when_source_size_differs(self):
         from pysus.management.records import FileComparison, FileRecord
 
         ftp = FileRecord(
@@ -104,7 +102,8 @@ class TestSyncEngine:
             dataset="SINAN",
             name="DENGBR25.dbc",
             path="ftp/x",
-            modified=datetime(2026, 6, 1),
+            size=200,
+            modified=None,
             group="DENG",
             year=2025,
         )
@@ -113,17 +112,15 @@ class TestSyncEngine:
             dataset="SINAN",
             name="DENGBR25.parquet",
             path="s3/x",
-            modified=datetime(2026, 1, 1),
-            source_modified=datetime(2026, 1, 1),
+            size=5000,
+            source_size=100,
             group="DENG",
             year=2025,
         )
         comparison = FileComparison(key=ftp.identity_key(), records=[ftp, s3])
         assert SyncEngine._s3_is_stale(comparison)
 
-    def test_s3_not_stale_when_equal(self):
-        from datetime import datetime
-
+    def test_s3_not_stale_when_sizes_equal(self):
         from pysus.management.records import FileComparison, FileRecord
 
         ftp = FileRecord(
@@ -131,7 +128,7 @@ class TestSyncEngine:
             dataset="SINAN",
             name="DENGBR25.dbc",
             path="ftp/x",
-            modified=datetime(2026, 1, 1),
+            size=100,
             group="DENG",
             year=2025,
         )
@@ -140,8 +137,58 @@ class TestSyncEngine:
             dataset="SINAN",
             name="DENGBR25.parquet",
             path="s3/x",
-            modified=datetime(2026, 1, 2),
-            source_modified=datetime(2026, 1, 1),
+            size=5000,
+            source_size=100,
+            group="DENG",
+            year=2025,
+        )
+        comparison = FileComparison(key=ftp.identity_key(), records=[ftp, s3])
+        assert not SyncEngine._s3_is_stale(comparison)
+
+    def test_s3_not_stale_when_origin_size_unknown(self):
+        from pysus.management.records import FileComparison, FileRecord
+
+        ftp = FileRecord(
+            origin="ftp",
+            dataset="SINAN",
+            name="DENGBR25.dbc",
+            path="ftp/x",
+            size=100,
+            group="DENG",
+            year=2025,
+        )
+        s3 = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="s3/x",
+            size=5000,
+            source_size=0,
+            group="DENG",
+            year=2025,
+        )
+        comparison = FileComparison(key=ftp.identity_key(), records=[ftp, s3])
+        assert not SyncEngine._s3_is_stale(comparison)
+
+    def test_s3_not_stale_when_source_size_zero(self):
+        from pysus.management.records import FileComparison, FileRecord
+
+        ftp = FileRecord(
+            origin="dadosgov",
+            dataset="SINAN",
+            name="DENGBR25.csv.zip",
+            path="api/x",
+            size=0,
+            group="DENG",
+            year=2025,
+        )
+        s3 = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="s3/x",
+            size=5000,
+            source_size=100,
             group="DENG",
             year=2025,
         )
