@@ -31,6 +31,7 @@ This documentation covers PySUS 2.0+.
 
    Installation <installation>
    Data Sources <databases/data-sources>
+   Working with DATASUS data <working-with-datasus-data>
    Tutorials <tutorials>
    API Reference <api>
 
