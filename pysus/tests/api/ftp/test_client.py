@@ -207,3 +207,24 @@ async def test_list_directory_calls_ftp_methods(ftp_client):
 
         mock_ftp_internal.cwd.assert_called_once_with("/test/path")
         mock_ftp_internal.retrlines.assert_called_once()
+
+
+def test_ftp_init_does_not_connect():
+    """Verify that instantiating FTP does not open an FTP connection."""
+    with patch("pysus.api.ftp.client.FTPLib") as mock_ftplib:
+        client = FTP()
+        assert client.ftp is None
+        mock_ftplib.assert_not_called()
+
+
+def test_import_does_not_connect_ftp():
+    """Verify importing pysus modules does not connect to FTP server."""
+    with patch("ftplib.FTP") as mock_ftplib:
+        import pysus  # noqa: F401
+        import pysus.api  # noqa: F401
+        import pysus.api.ftp  # noqa: F401
+        from pysus.api.client import PySUS
+
+        pysus_instance = PySUS()
+        assert pysus_instance._ftp is None
+        mock_ftplib.assert_not_called()
