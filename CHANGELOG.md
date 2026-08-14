@@ -1,6 +1,8 @@
 Release Notes
 ---
 
+## [2.8.0](https://github.com/AlertaDengue/PySUS/compare/2.7.0...2.8.0) (2026-08-14)
+
 ## [2.7.0](https://github.com/AlertaDengue/PySUS/compare/2.6.5...2.7.0) (2026-07-13)
 
 ## [2.6.5](https://github.com/AlertaDengue/PySUS/compare/2.6.4...2.6.5) (2026-07-09)
