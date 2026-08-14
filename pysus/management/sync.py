@@ -152,13 +152,16 @@ class SyncEngine:
             try:
                 import ctypes
 
+                windll = getattr(ctypes, "windll", None)
+                if windll is None:
+                    return False
                 process_query_limited = 0x1000
-                handle = ctypes.windll.kernel32.OpenProcess(
+                handle = windll.kernel32.OpenProcess(
                     process_query_limited, False, pid
                 )
                 if not handle:
                     return False
-                ctypes.windll.kernel32.CloseHandle(handle)
+                windll.kernel32.CloseHandle(handle)
                 return True
             except Exception:  # noqa
                 return False
