@@ -24,3 +24,4 @@ version: str = get_version()
 __version__: str = version
 
 from pysus.api._impl.databases import *  # noqa
+from pysus.api.client import PySUS  # noqa

@@ -121,7 +121,7 @@ async def main():
         # Read multiple parquet files
         import glob
         paths = glob.glob("/cache/sinan/**/*.parquet")
-        df = pysus.read_parquet(paths, mode="union").df()
+        df = pysus.read_parquet(paths, mode="union")
 ```
 
 ### Using the Streamlit Web UI (experimental feature)
@@ -207,16 +207,16 @@ async with PySUS() as pysus:
 
 ```python
 # Union mode (default) - includes all columns from any file
-df = pysus.read_parquet(paths, mode="union").df()
+df = pysus.read_parquet(paths, mode="union")
 
 # Intersection mode - only common columns across all files
-df = pysus.read_parquet(paths, mode="intersection").df()
+df = pysus.read_parquet(paths, mode="intersection")
 
 # Strict mode - raises error if schemas don't match
-df = pysus.read_parquet(paths, mode="strict").df()
+df = pysus.read_parquet(paths, mode="strict")
 
 # With custom SQL
-df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100").df()
+df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100")
 ```
 
 ## Configuration
@@ -235,19 +235,23 @@ pysus = PySUS(db_path='/my/config.db')
 ### Environment Variables
 
 - `PYSUS_CACHEPATH`: Directory for cached files
+- `DADOSGOV_TOKEN`: API token for the dados.gov.br client
+  (required for DadosGov downloads)
+- `ACCESS_KEY` / `SECRET_KEY`: S3 credentials for writing to the
+  PySUS bucket (catalog sync/maintenance)
 
 ## Data Sources
 
 | Dataset | Description | Source |
 |---------|-------------|--------|
-| SINAN | Disease Notifications | FTP / DuckLake |
-| SIM | Mortality | FTP / DuckLake |
-| SINASC | Births | FTP / DuckLake |
+| SINAN | Disease Notifications | FTP / DuckLake / DadosGov |
+| SIM | Mortality | FTP / DuckLake / DadosGov |
+| SINASC | Births | FTP / DuckLake / DadosGov |
 | SIH | Hospitalizations | FTP / DuckLake |
 | SIA | Ambulatory | FTP / DuckLake |
 | CIHA | Hospital Admissions | FTP / DuckLake |
-| CNES | Health Facilities | FTP / DuckLake |
-| PNI | Immunizations | FTP / DuckLake |
+| CNES | Health Facilities | FTP / DuckLake / DadosGov |
+| PNI | Immunizations | FTP / DuckLake / DadosGov |
 | IBGE | Geographic Data | FTP / DuckLake |
 
 
@@ -275,7 +279,7 @@ pre-commit run --all-files
 
 Run tests:
 ```bash
-pytest tests/
+pytest pysus/tests/
 ```
 
 Run tests inside the Docker container:
