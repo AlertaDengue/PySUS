@@ -322,7 +322,9 @@ class Group(BaseRemoteGroup):
             filename = (
                 recurso.file_name or recurso.url.split("/")[-1].split("?")[0]
             )
-            if filename.lower().endswith(".pdf") or filename.startswith("get_"):
+            if filename.lower().endswith(
+                (".pdf", ".xlsx")
+            ) or filename.startswith("get_"):
                 continue
             metadata = {}
             if self._formatter:

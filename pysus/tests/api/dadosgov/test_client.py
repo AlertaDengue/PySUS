@@ -269,7 +269,7 @@ class TestDadosGov:
                 "User-Agent": f"PySUS/{__version__}",
                 "chave-api-dados-abertos": "test-token-123",
             },
-            timeout=30.0,
+            timeout=httpx.Timeout(120.0, connect=30.0),
             follow_redirects=True,
         )
 

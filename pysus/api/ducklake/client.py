@@ -72,6 +72,47 @@ class DuckLake(BaseRemoteClient):
     def columns_path(self) -> Path:
         return self._columns_adap.db_local
 
+    @property
+    def catalog_adapter(self) -> CatalogAdapter:
+        """The central dataset-registry adapter (``catalog.duckdb``)."""
+        return self._catalog_adap
+
+    @property
+    def columns_adapter(self) -> ColumnsAdapter:
+        """The column-definitions adapter (``catalog_columns.duckdb``)."""
+        return self._columns_adap
+
+    def get_dataset_adapter(self, name: str) -> DatasetAdapter:
+        """Return (and register) the per-dataset adapter for *name*.
+
+        Creates a fresh adapter for datasets not yet seen by this client.
+        """
+        wanted = str(name).lower()
+        for dataset in self._datasets:
+            if getattr(dataset, "name", "").lower() == wanted:
+                return dataset.adapter
+
+        adapter = DatasetAdapter(
+            name=wanted,
+            dataset_id=0,
+            credentials=self.credentials,
+            update_on_close=self.update_on_close,
+        )
+        self._datasets.append(
+            type(
+                "_DatasetEntry",
+                (),
+                {
+                    "name": wanted,
+                    "adapter": adapter,
+                    "close": lambda self_, update_catalog=None: (
+                        self_.adapter.close(update=bool(update_catalog))
+                    ),
+                },
+            )()
+        )
+        return adapter
+
     async def datasets(self, **kwargs) -> list[DuckDataset]:
         def _fetch():
             with self._catalog_adap.get_session() as session:
@@ -139,6 +180,19 @@ class DuckLake(BaseRemoteClient):
 
         await self._catalog_adap.close(update=should_update)
         await self._columns_adap.close(update=should_update)
+
+    async def flush_catalogs(self, update: bool = True) -> None:
+        """Upload dirty catalogs (if *update*) and reopen the adapters.
+
+        Long-running writers use this to checkpoint: modified local
+        databases are pushed to S3 and the adapters are reconnected.
+        """
+        for ds in self._datasets:
+            await ds.close(update_catalog=update)
+        await self._catalog_adap.close(update=update)
+        await self._columns_adap.close(update=update)
+        await self._catalog_adap.connect()
+        await self._columns_adap.connect()
 
     async def download(
         self,

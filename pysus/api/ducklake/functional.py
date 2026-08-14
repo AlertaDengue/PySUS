@@ -8,6 +8,35 @@ from botocore import UNSIGNED
 from botocore.config import Config
 from pysus.api import types
 
+ALIAS_META_HEADER = "x-amz-meta-pysus-alias"
+MAX_ALIAS_HOPS = 5
+
+
+def alias_marker(target_key: str) -> str:
+    """Return the alias marker content pointing to *target_key*."""
+    import json
+
+    return json.dumps({"pysus-alias": target_key})
+
+
+def _url_for_key(key: str) -> str:
+    key = str(key).replace("\\", "/")
+    return f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{key}"
+
+
+async def _resolve_alias(url: str, client: httpx.AsyncClient) -> str:
+    """Follow ``pysus-alias`` marker objects up to ``MAX_ALIAS_HOPS``."""
+    for _ in range(MAX_ALIAS_HOPS):
+        head = await client.head(url)
+        if head.status_code == 404:
+            return url
+        head.raise_for_status()
+        target = head.headers.get(ALIAS_META_HEADER)
+        if not target or not isinstance(target, str):
+            return url
+        url = _url_for_key(target)
+    raise RuntimeError(f"Too many alias hops resolving {url}")
+
 
 async def download_http(
     remote_path: str,
@@ -38,6 +67,7 @@ async def download_http(
                 limits=limits,
                 timeout=timeout,
             ) as client:
+                url = await _resolve_alias(url, client)
                 async with client.stream("GET", url) as r:
                     r.raise_for_status()
                     total = int(r.headers.get("Content-Length", 0))

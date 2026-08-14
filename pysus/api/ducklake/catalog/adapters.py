@@ -2,6 +2,7 @@ import asyncio
 import os
 from abc import ABC
 from collections.abc import Callable
+from contextlib import contextmanager
 from pathlib import Path
 
 import httpx
@@ -23,6 +24,26 @@ class DuckLakeCredentials(BaseModel):
     secret_key: SecretStr
 
 
+_SHARED_ENGINES: dict[str, Engine] = {}
+
+
+def _dispose_shared(db_local: Path) -> None:
+    """Dispose and forget the shared engine for *db_local*, if any.
+
+    The shared engine is also the process-lifetime anchor: its pooled
+    connection keeps the DuckDB instance alive, so every other adapter
+    attached to the same file stays valid. Dispose only happens right
+    before the file is replaced by a re-download.
+    """
+    key = str(db_local.resolve())
+    engine = _SHARED_ENGINES.pop(key, None)
+    if engine is not None:
+        try:
+            engine.dispose()
+        except Exception:  # noqa
+            pass
+
+
 class BaseAdapter(ABC):
     cache_dir: Path = Path(CACHEPATH) / "ducklake"
     db_local: Path
@@ -36,14 +57,101 @@ class BaseAdapter(ABC):
         **data,
     ) -> None:
         self._engine = engine
-        self._session_factory = None
+        self._session_factory: sessionmaker[Session] | None = None
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.credentials = credentials
         self.update_on_close = update_on_close
+        self._local_dirty = False
 
     @property
     def remote_url(self) -> str:
         return f"https://{types.S3_ENDPOINT}/{types.S3_BUCKET}/{self.db_remote}"
+
+    @property
+    def connected(self) -> bool:
+        """True when the database engine is initialized."""
+        return self._engine is not None
+
+    @property
+    def local_dirty(self) -> bool:
+        """True when the local database has unsaved changes."""
+        return self._local_dirty
+
+    def mark_dirty(self) -> None:
+        """Flag the local database as modified (upload on close)."""
+        self._local_dirty = True
+
+    async def ensure_connected(
+        self,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> None:
+        """Connect the engine if it is not already connected.
+
+        The shared engine doubles as the process-lifetime anchor, so the
+        DuckDB instance can never be torn down by other lifecycle paths.
+        """
+        if self._engine is not None:
+            return
+        await self.connect(callback=callback)
+
+    def checkpoint(self) -> None:
+        """Force a WAL checkpoint, persisting writes to ``db_local``."""
+        self.setup_engine().raw_connection().execute("CHECKPOINT")
+
+    async def reconnect(self) -> None:
+        """Dispose the shared engine and reinitialize from scratch.
+
+        Used after the database file is found broken or right before it
+        is replaced by a fresh download.
+        """
+        _dispose_shared(self.db_local)
+        self._engine = None
+        self._session_factory = None
+        await self.connect(force=True)
+
+    def raw_connection(self):
+        """Return a raw DuckDB connection to the catalog database.
+
+        Raises
+        ------
+        CatalogError
+            If the engine is not initialized (call
+            :meth:`ensure_connected` first).
+        """
+        if self._engine is None:
+            raise CatalogError(
+                "Database engine not initialized. "
+                "Call ensure_connected() first."
+            )
+        return self._engine.raw_connection()
+
+    @contextmanager
+    def transaction(self):
+        """Yield ``(connection, cursor)`` for a committed transaction.
+
+        Uses the shared engine's pooled connection — the only way to
+        guarantee every connection to a DuckDB file carries identical
+        configuration (DuckDB rejects mixed-configuration opens) and to
+        keep the process-lifetime instance anchored. The connection is
+        *not* closed (it is the shared anchor); the transaction is
+        committed on success and rolled back on error.
+        """
+        engine = self.setup_engine()
+        conn = engine.raw_connection()
+        try:
+            probe = conn.cursor()
+            try:
+                probe.execute("SELECT 1")
+                probe.fetchone()
+            except Exception as exc:  # noqa
+                raise CatalogError(
+                    f"Catalog connection is broken: {exc}"
+                ) from exc
+            with conn:
+                cursor = conn.cursor()
+                yield conn, cursor
+        finally:
+            pass
 
     def get_session(self) -> Session:
         if not self._session_factory:
@@ -73,12 +181,19 @@ class BaseAdapter(ABC):
             return
 
         if force:
+            _dispose_shared(self.db_local)
             await self._download_catalog(
                 self.db_local,
                 str(self.db_remote),
                 force=True,
                 callback=callback,
             )
+            self._local_dirty = False
+            self._engine = await to_thread.run_sync(self.setup_engine)
+            self._session_factory = sessionmaker(bind=self._engine)
+            return
+
+        if self._local_dirty:
             self._engine = await to_thread.run_sync(self.setup_engine)
             self._session_factory = sessionmaker(bind=self._engine)
             return
@@ -93,6 +208,7 @@ class BaseAdapter(ABC):
             self._engine = await to_thread.run_sync(self.setup_engine)
             self._session_factory = sessionmaker(bind=self._engine)
         except Exception:  # noqa
+            _dispose_shared(self.db_local)
             if self.db_local.exists():
                 try:
                     os.remove(self.db_local)
@@ -111,7 +227,21 @@ class BaseAdapter(ABC):
     def setup_engine(
         self, access_key: str | None = None, secret_key: str | None = None
     ) -> Engine:
-        engine: Engine = create_engine(
+        """Return the shared engine for this adapter's database file.
+
+        DuckDB keeps one database instance per file per process; opening
+        the file again merely attaches to it, and disposing one engine's
+        connection tears the shared instance down for everyone else.
+        Adapters therefore share one engine per file (process-wide) that
+        is only disposed via :func:`_dispose_shared` — right before the
+        file itself is replaced by a re-download.
+        """
+        key = str(self.db_local.resolve())
+        engine = _SHARED_ENGINES.get(key)
+        if engine is not None:
+            return engine
+
+        engine = create_engine(
             f"duckdb:///{self.db_local}",
             poolclass=StaticPool,
         )
@@ -119,36 +249,10 @@ class BaseAdapter(ABC):
         with engine.connect() as conn:
             conn.exec_driver_sql("INSTALL ducklake; LOAD ducklake;")
             conn.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS pysus;")
-
-            has_pysus = conn.exec_driver_sql(
-                statement=(
-                    "SELECT 1 FROM information_schema.schemata "
-                    "WHERE schema_name = 'pysus'"
-                )
-            ).fetchone()
-
-            if has_pysus:
-                conn.exec_driver_sql("SET search_path='pysus,main';")
-            else:
-                conn.exec_driver_sql("SET search_path='main';")
-
-            s3_cfg = {
-                "s3_endpoint": types.S3_ENDPOINT,
-                "s3_region": types.S3_REGION,
-                "s3_url_style": "path",
-                "s3_use_ssl": "true",
-            }
-
-            if access_key and secret_key:
-                s3_cfg["s3_access_key_id"] = access_key
-                s3_cfg["s3_secret_access_key"] = secret_key
-
-            for key, value in s3_cfg.items():
-                conn.exec_driver_sql(f"SET {key}='{value}'")
-
             conn.commit()
 
         DatasetBase.metadata.create_all(bind=engine)
+        _SHARED_ENGINES[key] = engine
         return engine
 
     async def _download_catalog(
@@ -221,6 +325,9 @@ class BaseAdapter(ABC):
         if not self.db_local.exists():
             raise FileNotFoundError("catalog file not found")
 
+        # persist pending writes before uploading the file
+        self.checkpoint()
+
         await upload_s3(
             local_path=self.db_local,
             remote_path=str(self.db_remote),
@@ -229,13 +336,18 @@ class BaseAdapter(ABC):
         )
 
     async def close(self, update: bool = False) -> None:
-        if update:
+        if update and self._local_dirty:
             await self._upload_catalog()
+            self._local_dirty = False
 
-        if self._engine:
-            await to_thread.run_sync(self._engine.dispose)
-            self._engine = None
-            self._session_factory = None
+        # The engine is shared process-wide per database file and is
+        # never disposed here: DuckDB tears down the in-process database
+        # instance when its last connection closes, which would break
+        # every other adapter attached to the same file. The shared
+        # registry releases engines only via _dispose_shared() right
+        # before a file is replaced.
+        self._engine = None
+        self._session_factory = None
 
     def __del__(self) -> None:
         if not hasattr(self, "_engine") or not self._engine:

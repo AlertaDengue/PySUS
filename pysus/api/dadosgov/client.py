@@ -151,7 +151,7 @@ class DadosGov(BaseRemoteClient):
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             headers=headers,
-            timeout=30.0,
+            timeout=httpx.Timeout(120.0, connect=30.0),
             follow_redirects=True,
         )
 
