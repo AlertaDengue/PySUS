@@ -1,9 +1,23 @@
 """DATASUS FTP dataset definitions with filename parsers for each database."""
 
+import re
 from typing import Any
 
 from pysus.api.ftp.models import Dataset, Directory
 from pysus.utils import zfill_year
+
+
+def _parse_month(value: str) -> int | None:
+    """Parse a month token, returning None unless it is a valid month.
+
+    Filename glitches (e.g. part suffixes like ``2504_2``) must never
+    produce values outside ``1..12``.
+    """
+    try:
+        month = int(value)
+    except (TypeError, ValueError):
+        return None
+    return month if 1 <= month <= 12 else None
 
 
 class CIHA(Dataset):
@@ -74,7 +88,9 @@ class CIHA(Dataset):
             group_code = name[:4]
             state = name[4:6]
             year_short = name[6:8]
-            month = name[8:10]
+            month = _parse_month(name[8:10])
+            if month is None:
+                raise ValueError(f"invalid month in {name}")
 
             group_info = None
             if group_code in self.group_definitions:
@@ -88,7 +104,7 @@ class CIHA(Dataset):
                 "group": group_info,
                 "state": state,
                 "year": int(zfill_year(year_short)),
-                "month": int(month),
+                "month": month,
             }
         except (IndexError, ValueError):
             return {"group": None, "state": None, "year": None, "month": None}
@@ -172,7 +188,9 @@ class CNES(Dataset):
             group_code = name[:2]
             state = name[2:4]
             year_short = name[4:6]
-            month = name[6:8]
+            month = _parse_month(name[6:8])
+            if month is None:
+                raise ValueError(f"invalid month in {name}")
 
             group_info = None
             if group_code in self.group_definitions:
@@ -185,7 +203,7 @@ class CNES(Dataset):
                 "group": group_info,
                 "state": state,
                 "year": int(zfill_year(year_short)),
-                "month": int(month),
+                "month": month,
             }
         except (IndexError, ValueError):
             return {"group": None, "state": None, "year": None, "month": None}
@@ -565,6 +583,10 @@ class SIA(Dataset):
     def formatter(self, filename: str) -> dict[str, Any]:
         """Parse an SIA filename into group, state, year and month metadata.
 
+        Handles DATASUS part-split files: ``BIRJ2504_2.dbc`` is the
+        second part of group BI, state RJ, 2025-04 — the ``_2`` suffix
+        must not leak into the month.
+
         Parameters
         ----------
         filename : str
@@ -578,13 +600,21 @@ class SIA(Dataset):
         """
         try:
             name = filename.split(".")[0].upper()
-            digits = "".join([d for d in name if d.isdigit()])
-            chars = name.split(digits)[0]
+            match = re.match(r"^([A-Z]+)(\d{2})(\d{2})(?:_\d+)?$", name)
+            if not match:
+                raise ValueError(f"unrecognized SIA filename: {name}")
 
+            chars, year_short, month = match.group(1, 2, 3)
+            parsed_month = _parse_month(month)
+            if parsed_month is None:
+                return {
+                    "group": None,
+                    "state": None,
+                    "year": None,
+                    "month": None,
+                }
             group_code = chars[:-2]
             state = chars[-2:]
-            year_short = digits[:2]
-            month = digits[2:]
 
             group_info = None
             if group_code in self.group_definitions:
@@ -597,7 +627,7 @@ class SIA(Dataset):
                 "group": group_info,
                 "state": state,
                 "year": int(zfill_year(year_short)),
-                "month": int(month),
+                "month": parsed_month,
             }
         except (IndexError, ValueError):
             return {"group": None, "state": None, "year": None, "month": None}
@@ -671,7 +701,9 @@ class SIH(Dataset):
             group_code = name[:2]
             state = name[2:4]
             year_short = name[4:6]
-            month = name[6:8]
+            month = _parse_month(name[6:8])
+            if month is None:
+                raise ValueError(f"invalid month in {name}")
 
             return {
                 "group": {
@@ -680,7 +712,7 @@ class SIH(Dataset):
                 },
                 "state": state,
                 "year": int(zfill_year(year_short)),
-                "month": int(month),
+                "month": month,
             }
         except (IndexError, ValueError):
             return {"group": None, "state": None, "year": None, "month": None}

@@ -171,3 +171,38 @@ def test_sinan_formatter_exception(mock_client):
     db = SINAN(client=mock_client)
     result = db.formatter("A")
     assert result == {"group": None, "year": None}
+
+
+class TestPartFiles:
+    """DATASUS part-split files must never corrupt month metadata."""
+
+    def test_sia_part_file_month(self):
+        from pysus.api.ftp.databases import SIA
+
+        formatter = SIA.model_construct().formatter
+        parsed = formatter("BIRJ2504_2.dbc")
+        assert parsed["group"]["name"] == "BI"
+        assert parsed["state"] == "RJ"
+        assert parsed["year"] == 2025
+        assert parsed["month"] == 4
+
+    def test_sia_plain_file(self):
+        from pysus.api.ftp.databases import SIA
+
+        formatter = SIA.model_construct().formatter
+        parsed = formatter("PAAC2501.dbc")
+        assert parsed["group"]["name"] == "PA"
+        assert parsed["state"] == "AC"
+        assert parsed["month"] == 1
+
+    def test_invalid_month_rejected(self):
+        from pysus.api.ftp.databases import SIA
+
+        formatter = SIA.model_construct().formatter
+        parsed = formatter("PAAC2599.dbc")
+        assert parsed == {
+            "group": None,
+            "state": None,
+            "year": None,
+            "month": None,
+        }

@@ -568,6 +568,10 @@ class SyncEngine:
         # one — the bucket must never hold duplicate copies.
         await self._dedupe_s3_artifacts(records["ducklake"])
 
+        # Repair rows cataloged by the old SIA formatter, which merged
+        # part suffixes into the month (e.g. BIRJ2504_2 -> month 42).
+        await self._fix_misparsed_metadata(records["ducklake"])
+
         parallel: list[tuple[FileComparison, FileRecord]] = []
         for comparison in comparisons:
             if comparison.is_on_s3 and not (
@@ -1014,6 +1018,123 @@ class SyncEngine:
                     )
                 except Exception as exc:  # noqa
                     error(f"dedup failed for {old.path}: {exc}")
+
+    async def _fix_misparsed_metadata(
+        self,
+        ducklake_records: list[FileRecord],
+    ) -> None:
+        """Repair rows whose parsed month is invalid (part-file bug).
+
+        The old SIA formatter glued part suffixes onto the month
+        (``BIRJ2504_2`` → month ``42``). Such rows are reparsed from
+        ``source_path`` with the fixed formatter; the object is moved to
+        the corrected hierarchical key (alias kept at the old key) and
+        the catalog row is updated.
+        """
+        import boto3
+        from botocore.config import Config
+
+        from .normalize import formatter_for
+        from .records import compose_s3_key
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="https://nbg1.your-objectstorage.com",
+            region_name="nbg1",
+            aws_access_key_id=str(self.access_key),
+            aws_secret_access_key=str(self.secret_key),
+            config=Config(signature_version="s3v4"),
+        )
+        ducklake = self._require_ducklake()
+
+        for record in ducklake_records:
+            if record.month is None or record.month <= 12:
+                continue
+            formatter = formatter_for("ftp", record.dataset)
+            if formatter is None:
+                continue
+            source_name = (
+                Path(record.source_path).name
+                if record.source_path
+                else Path(record.path).name
+            )
+            try:
+                parsed = formatter(source_name)
+            except Exception:  # noqa
+                continue
+            group = parsed.get("group")
+            if isinstance(group, dict):
+                group = group.get("name")
+            month = parsed.get("month")
+            if month is None or int(month) > 12:
+                continue
+
+            new_key = compose_s3_key(
+                origin="ftp",
+                dataset=record.dataset,
+                name=source_name,
+                group=group or record.group,
+                year=parsed.get("year") or record.year,
+                month=int(month),
+                state=parsed.get("state") or record.state,
+            )
+            if new_key == record.path:
+                continue
+
+            adapter = ducklake.get_dataset_adapter(record.dataset)
+            try:
+                s3.copy_object(
+                    Bucket="pysus",
+                    CopySource={
+                        "Bucket": "pysus",
+                        "Key": str(record.path),
+                    },
+                    Key=new_key,
+                )
+                from pysus.api.ducklake.functional import alias_marker
+
+                s3.put_object(
+                    Bucket="pysus",
+                    Key=str(record.path),
+                    Body=alias_marker(new_key).encode(),
+                    Metadata={"pysus-alias": new_key},
+                )
+                with adapter.transaction() as (conn, cursor):
+                    cursor.execute(
+                        "SELECT dataset_id FROM pysus.files WHERE path = ?",
+                        (record.path,),
+                    )
+                    row = cursor.fetchone()
+                    dataset_id = row[0] if row else 0
+                    group_id = self.writer.ensure_group(
+                        cursor,
+                        dataset_id,
+                        str(group) if group else None,
+                        None,
+                    )
+                    cursor.execute(
+                        "UPDATE pysus.files SET path = ?, month = ?, "
+                        "year = ?, state = ?, group_id = ? "
+                        "WHERE path = ?",
+                        (
+                            new_key,
+                            int(month),
+                            parsed.get("year"),
+                            (parsed.get("state") or record.state),
+                            group_id,
+                            record.path,
+                        ),
+                    )
+                    conn.commit()
+                    cursor.execute("CHECKPOINT")
+                adapter.mark_dirty()
+                self._changed_catalog = True
+                print(
+                    f"[repaired] {record.path} -> {new_key}",
+                    flush=True,
+                )
+            except Exception as exc:  # noqa
+                error(f"repair failed for {record.path}: {exc}")
 
     @staticmethod
     def _pick_source(comparison: FileComparison) -> FileRecord | None:
