@@ -340,3 +340,66 @@ class TestCatalogWriteEntry:
 
         adapter.transaction.assert_called_once()
         writer._ensure_management_columns.assert_called_once()
+
+
+class TestDedupeS3Artifacts:
+    @pytest.mark.asyncio
+    async def test_keeps_newest_deletes_others(self, engine):
+        from datetime import datetime
+
+        from pysus.api.ducklake.catalog.adapters import DatasetAdapter
+
+        older = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/ftp/sinan/DENG/2025/_/BR/DENGBR25.parquet",
+            year=2025,
+            source_modified=datetime(2026, 1, 1),
+            size=100,
+        )
+        newer = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
+            "DENGBR25.parquet",
+            year=2025,
+            source_modified=datetime(2026, 5, 16),
+            size=200,
+        )
+
+        class _Ctx:
+            def __init__(self, conn):
+                self.conn = conn
+
+            def __enter__(self):
+                return self.conn, self.conn
+
+            def __exit__(self, *a):
+                return False
+
+        conn = MagicMock()
+        adapter = MagicMock(spec=DatasetAdapter)
+        adapter.transaction = MagicMock(return_value=_Ctx(conn))
+
+        ducklake = MagicMock()
+        ducklake.get_dataset_adapter.return_value = adapter
+        engine._ducklake = ducklake
+
+        import boto3
+
+        mock_s3 = MagicMock()
+        with patch.object(boto3, "client", return_value=mock_s3):
+            await engine._dedupe_s3_artifacts([older, newer])
+
+        # newer (dadosgov path) survives; older object deleted
+        deleted_keys = [
+            c.kwargs["Key"] for c in mock_s3.delete_object.call_args_list
+        ]
+        assert deleted_keys == [older.path]
+        cursor_calls = conn.execute.call_args_list
+        assert any(
+            "DELETE FROM pysus.files" in str(c.args[0]) for c in cursor_calls
+        )
+        assert adapter.mark_dirty.called

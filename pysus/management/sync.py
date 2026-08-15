@@ -563,6 +563,11 @@ class SyncEngine:
         # race the initial catalog download.
         await self._preconnect_adapters(records)
 
+        # Deduplicate: when the same logical file has artifacts from more
+        # than one origin on S3 (legacy ETL), keep only the most updated
+        # one — the bucket must never hold duplicate copies.
+        await self._dedupe_s3_artifacts(records["ducklake"])
+
         parallel: list[tuple[FileComparison, FileRecord]] = []
         for comparison in comparisons:
             if comparison.is_on_s3 and not (
@@ -938,6 +943,77 @@ class SyncEngine:
         }
         for name in datasets:
             await self._dataset_adapter_by_name(name).ensure_connected()
+
+    async def _dedupe_s3_artifacts(
+        self,
+        ducklake_records: list[FileRecord],
+    ) -> None:
+        """Keep only the most updated S3 artifact per logical file.
+
+        Legacy ETL runs stored the same logical file under multiple
+        origin paths (e.g. ``public/data/ftp/...`` and
+        ``public/data/dadosgov/...``). Grouping runs on the raw S3
+        records — the comparator collapses same-origin entries, which
+        would hide these duplicates. The newest artifact (by source
+        modification date) survives; the others are deleted from the
+        bucket and the catalog.
+        """
+        import boto3
+        from botocore.config import Config
+
+        groups: dict[tuple, list[FileRecord]] = {}
+        for record in ducklake_records:
+            key = (record.dataset.lower(), record.year, record.stem)
+            groups.setdefault(key, []).append(record)
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url="https://nbg1.your-objectstorage.com",
+            region_name="nbg1",
+            aws_access_key_id=str(self.access_key),
+            aws_secret_access_key=str(self.secret_key),
+            config=Config(signature_version="s3v4"),
+        )
+
+        ducklake = self._require_ducklake()
+        for (dataset, _, _), artifacts in groups.items():
+            if len(artifacts) < 2:
+                continue
+
+            newest = max(
+                artifacts,
+                key=lambda r: (
+                    r.source_modified or r.modified or datetime.min,
+                    r.size,
+                ),
+            )
+            for old in artifacts:
+                if old is newest:
+                    continue
+                adapter = ducklake.get_dataset_adapter(dataset)
+                try:
+                    with adapter.transaction() as (conn, cursor):
+                        cursor.execute(
+                            "DELETE FROM pysus.file_columns "
+                            "WHERE file_id IN (SELECT id FROM pysus.files "
+                            "WHERE path = ?)",
+                            (old.path,),
+                        )
+                        cursor.execute(
+                            "DELETE FROM pysus.files WHERE path = ?",
+                            (old.path,),
+                        )
+                        conn.commit()
+                        cursor.execute("CHECKPOINT")
+                    adapter.mark_dirty()
+                    s3.delete_object(Bucket="pysus", Key=str(old.path))
+                    self._changed_catalog = True
+                    print(
+                        f"[deduped] removed {old.path} kept " f"{newest.path}",
+                        flush=True,
+                    )
+                except Exception as exc:  # noqa
+                    error(f"dedup failed for {old.path}: {exc}")
 
     @staticmethod
     def _pick_source(comparison: FileComparison) -> FileRecord | None:
