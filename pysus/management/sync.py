@@ -1063,7 +1063,9 @@ class SyncEngine:
             except Exception:  # noqa
                 continue
             group = parsed.get("group")
+            group_long_name = None
             if isinstance(group, dict):
+                group_long_name = group.get("long_name")
                 group = group.get("name")
             month = parsed.get("month")
             if month is None or int(month) > 12:
@@ -1083,22 +1085,29 @@ class SyncEngine:
 
             adapter = ducklake.get_dataset_adapter(record.dataset)
             try:
-                s3.copy_object(
-                    Bucket="pysus",
-                    CopySource={
-                        "Bucket": "pysus",
-                        "Key": str(record.path),
-                    },
-                    Key=new_key,
-                )
-                from pysus.api.ducklake.functional import alias_marker
+                already_alias = None
+                try:
+                    head = s3.head_object(Bucket="pysus", Key=str(record.path))
+                    already_alias = head.get("Metadata", {}).get("pysus-alias")
+                except Exception:  # noqa
+                    pass
+                if already_alias != new_key:
+                    s3.copy_object(
+                        Bucket="pysus",
+                        CopySource={
+                            "Bucket": "pysus",
+                            "Key": str(record.path),
+                        },
+                        Key=new_key,
+                    )
+                    from pysus.api.ducklake.functional import alias_marker
 
-                s3.put_object(
-                    Bucket="pysus",
-                    Key=str(record.path),
-                    Body=alias_marker(new_key).encode(),
-                    Metadata={"pysus-alias": new_key},
-                )
+                    s3.put_object(
+                        Bucket="pysus",
+                        Key=str(record.path),
+                        Body=alias_marker(new_key).encode(),
+                        Metadata={"pysus-alias": new_key},
+                    )
                 with adapter.transaction() as (conn, cursor):
                     cursor.execute(
                         "SELECT dataset_id FROM pysus.files WHERE path = ?",
@@ -1110,7 +1119,7 @@ class SyncEngine:
                         cursor,
                         dataset_id,
                         str(group) if group else None,
-                        None,
+                        group_long_name or (str(group) if group else None),
                     )
                     cursor.execute(
                         "UPDATE pysus.files SET path = ?, month = ?, "
