@@ -30,6 +30,8 @@ This documentation covers PySUS 2.0+.
    :caption: Contents
 
    Installation <installation>
+   Quickstart <quickstart>
+   Guides <guides/index>
    Data Sources <databases/data-sources>
    Tutorials <tutorials>
    API Reference <api>
