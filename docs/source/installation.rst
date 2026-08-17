@@ -14,12 +14,6 @@ The simplest way to install PySUS is via pip:
 Extras
 ^^^^^^
 
-For the local web interface:
-
-.. code-block:: bash
-
-   pip install pysus[web]
-
 For the terminal user interface (TUI):
 
 .. code-block:: bash
@@ -42,7 +36,7 @@ Or build locally and start the container:
 
    docker compose up --build
 
-Then open the JupyterLab interface at port 8888 in your browser.
+Then open http://127.0.0.1:8888/lab in your browser.
 
 Stop the container with:
 
@@ -87,25 +81,6 @@ querying PySUS s3, DATASUS FTP, and dados.gov.br sources.
 
 Configuration
 -------------
-
-.. _environment-variables:
-
-Environment Variables
-^^^^^^^^^^^^^^^^^^^^^
-
-.. list-table::
-   :header-rows: 1
-
-   * - Variable
-     - Purpose
-   * - ``PYSUS_CACHEPATH``
-     - Directory for cached files and local catalogs (default ``~/pysus``)
-   * - ``DADOSGOV_TOKEN``
-     - API token for the dados.gov.br client (required for DadosGov downloads)
-   * - ``ACCESS_KEY``
-     - S3 access key for writing to the PySUS bucket (catalog maintenance)
-   * - ``SECRET_KEY``
-     - S3 secret key for writing to the PySUS bucket (catalog maintenance)
 
 Cache Directory
 ^^^^^^^^^^^^^^^

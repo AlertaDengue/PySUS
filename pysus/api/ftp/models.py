@@ -458,29 +458,3 @@ class Dataset(BaseRemoteDataset, ABC):
             The dataset short name.
         """
         return self.name
-
-
-# Rebuild pydantic models with postponed annotations so their fields are
-# fully defined (validation and introspection — incl. sphinx autodoc —
-# fail on half-built models).
-import typing  # noqa: E402
-
-import pydantic  # noqa: E402
-
-for _model in list(globals().values()):
-    if (
-        isinstance(_model, type)
-        and issubclass(_model, pydantic.BaseModel)
-        and _model.__module__ == __name__
-    ):
-        try:
-            _model.model_rebuild(
-                _types_namespace={
-                    "Dict": dict,
-                    "List": list,
-                    "Optional": typing.Optional,
-                    "Union": typing.Union,
-                }
-            )
-        except Exception:  # noqa: B902 — rebuild best effort
-            pass

@@ -2,11 +2,6 @@
 Data Sources
 =============
 
-.. toctree::
-   :hidden:
-
-   getting_started_pysus
-
 PySUS provides simplified functions that return pandas DataFrames directly:
 
 .. code-block:: python

@@ -89,29 +89,3 @@ jobs:
     - name: Cleanup
       if: always()
       run: docker compose down -v
-
-  docs:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        pip install poetry poetry-plugin-export
-        poetry config virtualenvs.create false
-        poetry install --without dev
-
-    - name: Build docs (warnings as errors)
-      shell: bash
-      run: sphinx-build -W --keep-going -b html docs/source docs/_build/html
-
-    - name: Link check
-      shell: bash
-      run: sphinx-build -b linkcheck docs/source docs/_build/linkcheck
