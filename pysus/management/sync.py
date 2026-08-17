@@ -1013,7 +1013,7 @@ class SyncEngine:
                     s3.delete_object(Bucket="pysus", Key=str(old.path))
                     self._changed_catalog = True
                     print(
-                        f"[deduped] removed {old.path} kept " f"{newest.path}",
+                        f"[deduped] removed {old.path} kept {newest.path}",
                         flush=True,
                     )
                 except Exception as exc:  # noqa
