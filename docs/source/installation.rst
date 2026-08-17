@@ -42,7 +42,7 @@ Or build locally and start the container:
 
    docker compose up --build
 
-Then open http://127.0.0.1:8888/lab in your browser.
+Then open the JupyterLab interface at port 8888 in your browser.
 
 Stop the container with:
 
