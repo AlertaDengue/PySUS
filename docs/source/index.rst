@@ -35,6 +35,8 @@ This documentation covers PySUS 2.0+.
    Data Sources <databases/data-sources>
    Tutorials <tutorials>
    API Reference <api>
+   Migration <migration>
+   Contributing <contributing-docs>
 
 
 
