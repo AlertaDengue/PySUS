@@ -10,4 +10,5 @@ Guides
    dadosgov
    ducklake
    files-and-formats
+   datasets
    web-ui
