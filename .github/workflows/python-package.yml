@@ -101,6 +101,9 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Install pandoc
+      run: sudo apt-get update && sudo apt-get install -y pandoc
+
     - name: Install dependencies
       shell: bash
       run: |
