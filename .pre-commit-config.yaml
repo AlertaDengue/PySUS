@@ -31,11 +31,11 @@ repos:
         args: [--max-line-length=80, --extend-ignore=E203]
         exclude: ^docs/|^pysus/http/
         additional_dependencies: [
-            'flake8-blind-except',
-            'flake8-bugbear',
-            'flake8-comprehensions',
-            'flake8-implicit-str-concat',
-            'pydocstyle>=6.3.0',
+            'flake8-blind-except==0.2.1',
+            'flake8-bugbear==24.2.6',
+            'flake8-comprehensions==3.14.0',
+            'flake8-implicit-str-concat==0.4.0',
+            'pydocstyle==6.3.0',
         ]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -43,10 +43,10 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: [
-            'types-python-dateutil',
-            'types-requests',
-            'types-setuptools',
-            'pandas-stubs',
+            'types-python-dateutil>=2.9.0',
+            'types-requests>=2.31.0',
+            'types-setuptools>=69.0.0',
+            'pandas-stubs>=2.2.0',
             'pydantic>=2.0.0',
         ]
         args: [--ignore-missing-imports, --explicit-package-bases]
