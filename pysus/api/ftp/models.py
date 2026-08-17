@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import PrivateAttr
 from pysus import CACHEPATH
@@ -20,11 +20,13 @@ from pysus.api.models import (
 from pysus.api.types import State
 
 from .client import FTP, FTPFileInfo
+from .metadata import FtpDatasetExtractor, FtpFileExtractor, FtpGroupExtractor
 
 
 class File(BaseRemoteFile):
     """A single file on the DATASUS FTP server with parsed metadata."""
 
+    extractor_types: ClassVar[list] = [FtpFileExtractor]
     _info: FTPFileInfo = PrivateAttr()
 
     def __init__(self, **data):
@@ -265,6 +267,7 @@ class Directory:
 class Group(BaseRemoteGroup):
     """A group of related files within a dataset (e.g. all files of a type)."""
 
+    extractor_types: ClassVar[list] = [FtpGroupExtractor]
     path: str
     _name: str = PrivateAttr()
     _long_name: str = PrivateAttr()
@@ -364,6 +367,7 @@ class Group(BaseRemoteGroup):
 class Dataset(BaseRemoteDataset, ABC):
     """Abstract base for a DATASUS dataset, providing file discovery via FTP."""
 
+    extractor_types: ClassVar[list] = [FtpDatasetExtractor]
     paths: list[Directory] = []
     group_definitions: dict[str, str] = {}
 

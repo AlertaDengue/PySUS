@@ -8,7 +8,9 @@ Guides
    pysus-orchestrator
    ftp
    dadosgov
+   saude
    ducklake
+   metadata
    files-and-formats
    datasets
    web-ui

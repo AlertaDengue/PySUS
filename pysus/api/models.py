@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable, Sequence
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
 import pyarrow as pa
@@ -23,6 +23,13 @@ import pyarrow.parquet as pq
 from anyio import to_thread
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from pysus import CACHEPATH
+from pysus.api.metadata.models import (
+    AccessFacet,
+    MetadataBag,
+    ProvenanceFacet,
+    StructureFacet,
+    merge_bags,
+)
 from tqdm.asyncio import tqdm
 
 from .errors import ConversionError
@@ -30,6 +37,7 @@ from .types import FileType, State
 
 if TYPE_CHECKING:  # pragma: no cover
     from extensions import Parquet
+    from pysus.api.metadata.extractors import MetadataExtractor
     from pysus.api.metadata.models import Column
 
 
@@ -158,6 +166,26 @@ class BaseTabularFile(BaseLocalFile, ABC):
 
     Subclasses must implement *columns*, *rows*, *load*, and *stream*.
     """
+
+    @property
+    def metadata(self) -> MetadataBag:
+        """Return structure/access metadata computed from the file.
+
+        Columns come from the concrete ``columns`` property; row count
+        and size from the local filesystem. No network is involved.
+        """
+        return MetadataBag(
+            provenance=ProvenanceFacet(origin="local"),
+            structure=StructureFacet(
+                columns=list(self.columns),
+                row_count=self.rows,
+                format=str(self.type) if self.type else "",
+            ),
+            access=AccessFacet(
+                url=str(self.path),
+                size_bytes=self.size,
+            ),
+        )
 
     @property
     @abstractmethod
@@ -319,7 +347,69 @@ class SearchableMixin:
         return True
 
 
-class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
+class MetadataMixin:
+    """Mixin providing the ``.metadata`` / ``.ametadata()`` contract.
+
+    Shared by :class:`BaseRemoteFile` and :class:`BaseRemoteObject` so
+    every remote entity (client, dataset, group, file) surfaces the
+    same merged :class:`~pysus.api.metadata.models.MetadataBag`.
+
+    Concrete subclasses declare their extractors via
+    :attr:`extractor_types`; the mixin only knows that *some*
+    extractors exist and merges their output with the default
+    cross-origin precedence.
+    """
+
+    #: Extractor classes the concrete subclass wants applied. Each
+    #: client module (ftp/dadosgov/ducklake/saude) overrides this.
+    extractor_types: ClassVar[list[type[MetadataExtractor]]] = []
+
+    @property
+    def metadata(self) -> MetadataBag:
+        """Return the merged metadata bag for this entity.
+
+        Runs every registered extractor synchronously, merges the
+        bags with the default cross-origin precedence and caches the
+        result. Extractor failures are ignored (best-effort).
+
+        Returns
+        -------
+        MetadataBag
+            The merged metadata bag.
+        """
+        cached = getattr(self, "_metadata_cache", None)
+        if cached is not None:
+            return cached
+        extractors = getattr(self, "_extractors", None) or [
+            cls() for cls in self.extractor_types
+        ]
+        bags: list[MetadataBag] = []
+        for extractor in extractors:
+            try:
+                bags.append(extractor.extract(self))
+            except Exception:  # noqa: B902 — best-effort metadata
+                continue
+        merged = merge_bags(bags) if bags else MetadataBag()
+        self._metadata_cache = merged
+        return merged
+
+    async def ametadata(self) -> MetadataBag:
+        """Async variant of :meth:`metadata` (may hit the network)."""
+        extractors = getattr(self, "_extractors", None) or [
+            cls() for cls in self.extractor_types
+        ]
+        bags: list[MetadataBag] = []
+        for extractor in extractors:
+            try:
+                bags.append(await extractor.aextract(self))
+            except Exception:  # noqa: B902 — best-effort metadata
+                continue
+        merged = merge_bags(bags) if bags else MetadataBag()
+        self._metadata_cache = merged
+        return merged
+
+
+class BaseRemoteFile(BaseFile, SearchableMixin, MetadataMixin, ABC):
     """Abstract base for a file stored on a remote server.
 
     Subclasses must implement *_download*.  *dataset* and *group* link back
@@ -394,7 +484,7 @@ class BaseRemoteFile(BaseFile, SearchableMixin, ABC):
         return await ExtensionFactory.instantiate(local_path)
 
 
-class BaseRemoteObject(BaseModel, ABC):
+class BaseRemoteObject(MetadataMixin, BaseModel, ABC):
     """Abstract base for a named remote entity with a description.
 
     Subclasses must implement *name*, *long_name*, and *description*.

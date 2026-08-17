@@ -3,6 +3,11 @@ Release Notes
 
 ## [2.9.0](https://github.com/AlertaDengue/PySUS/compare/2.8.0...2.9.0) (2026-08-17)
 
+### Features
+
+* **metadata:** unified metadata layer (`MetadataBag`, `MetadataExtractor`) with per-client extractors for FTP, DadosGov, DuckLake and Saude; every remote entity now exposes a merged `.metadata` bag
+* **saude:** add OpenDataSUS catalog client (`pysus.api.saude`) with Next.js buildId discovery, catalog listing, full CKAN package metadata and resource downloads (stage 1 of the dadosabertos.saude.gov.br integration)
+
 ## [2.8.0](https://github.com/AlertaDengue/PySUS/compare/2.7.0...2.8.0) (2026-08-14)
 
 ## [2.7.0](https://github.com/AlertaDengue/PySUS/compare/2.6.5...2.7.0) (2026-07-13)
