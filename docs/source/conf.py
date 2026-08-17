@@ -16,9 +16,35 @@ extensions = [
     "nbsphinx",
 ]
 
+# pydantic v2 internals are not documentable; excluding them keeps the
+# build warning-free under -W
+autodoc_default_options = {
+    "exclude-members": (
+        "__pydantic_validator__,__pydantic_serializer__,"
+        "model_config,model_fields"
+    ),
+}
+
+
+def _skip_pydantic_internals(app, what, name, obj, skip, options):
+    """Never document pydantic's runtime internals."""
+    if name.startswith("__pydantic_"):
+        return True
+    return skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", _skip_pydantic_internals)
+    print("DEBUG: skip-member handler registered", flush=True)
+
 intersphinx_mapping = {
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),
 }
+
+# Ambiguous short cross-references (e.g. 'Dataset' exists in the ftp and
+# dadosgov models) and other python-domain resolution noise are
+# suppressed; fully-qualified references are used in new docstrings.
+suppress_warnings = ["ref.python"]
 
 templates_path = ["_templates"]
 

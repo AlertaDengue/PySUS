@@ -2,12 +2,13 @@
 Tutorials
 =========
 
-Jupyter notebooks with usage examples are available in the source repository:
+Step-by-step usage examples.
 
-* `API Overview <https://github.com/AlertaDengue/PySUS/blob/main/pysus/api/README.ipynb>`_
-* `DuckLake Client <https://github.com/AlertaDengue/PySUS/blob/main/pysus/api/ducklake/README.ipynb>`_
-* `FTP Client <https://github.com/AlertaDengue/PySUS/blob/main/pysus/api/ftp/README.ipynb>`_
-* `DadosGov Client <https://github.com/AlertaDengue/PySUS/blob/main/pysus/api/dadosgov/README.ipynb>`_
+.. note::
+
+   Interactive Jupyter notebooks for each client (API overview, DuckLake,
+   FTP and DadosGov) are being added — see the
+   ``docs/ROADMAP.md`` stage 4.
 
 Quick Start
 -----------
@@ -71,7 +72,7 @@ Using the PySUS Client
            # Read multiple parquet files
            import glob
            paths = glob.glob("/cache/sinan/**/*.parquet")
-           df = pysus.read_parquet(paths, mode="union").df()
+           df = pysus.read_parquet(paths, mode="union")
 
 read_parquet Modes
 ^^^^^^^^^^^^^^^^^^
@@ -79,28 +80,13 @@ read_parquet Modes
 .. code-block:: python
 
    # Union (default) - all columns from any file
-   df = pysus.read_parquet(paths, mode="union").df()
+   df = pysus.read_parquet(paths, mode="union")
 
    # Intersection - only common columns across all files
-   df = pysus.read_parquet(paths, mode="intersection").df()
+   df = pysus.read_parquet(paths, mode="intersection")
 
    # Strict - raises error if schemas don't match
-   df = pysus.read_parquet(paths, mode="strict").df()
+   df = pysus.read_parquet(paths, mode="strict")
 
    # With custom SQL filter
-   df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100").df()
-
-Terminal User Interface (TUI)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: bash
-
-   pysus tui -l pt
-
-Or from Python:
-
-.. code-block:: python
-
-   from pysus.tui.app import PySUS
-   app = PySUS(lang="pt")
-   app.run()
+   df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100")
