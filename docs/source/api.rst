@@ -142,3 +142,70 @@ DadosGov Client
    :members:
    :undoc-members:
    :show-inheritance:
+
+Package Root
+------------
+
+.. automodule:: pysus
+   :members:
+   :undoc-members:
+
+Exceptions
+----------
+
+.. automodule:: pysus.api.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Metadata Models
+---------------
+
+.. automodule:: pysus.api.metadata.models
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.metadata.report
+   :members:
+   :undoc-members:
+
+DuckLake Internals
+------------------
+
+.. automodule:: pysus.api.ducklake.functional
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.ducklake.catalog.adapters
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.ducklake.catalog.orm.default
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.ducklake.catalog.orm.dataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.ducklake.catalog.orm.columns
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Legacy Data Readers
+-------------------
+
+.. automodule:: pysus.data.dbf_reader
+   :members:
+   :undoc-members:
+
+Command Line Interface
+----------------------
+
+.. automodule:: pysus.cli
+   :members:
+   :undoc-members:
