@@ -48,6 +48,22 @@ jobs:
         poetry config pypi-token.pypi ${PYPI_TOKEN}
         make release
 
+    - name: Bump version on main
+      if: ${{ github.event_name == 'workflow_dispatch' }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION=$(git tag --sort=-v:refname | head -1)
+        git checkout main
+        git pull origin main
+        sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+        sed -i "s/^return \".*\"/return \"$VERSION\"/" pysus/__init__.py
+        git checkout -b "chore/release-$VERSION"
+        git add pysus/__init__.py pyproject.toml
+        git commit -m "chore(release): $VERSION"
+        git push -u origin "chore/release-$VERSION"
+        gh pr create --title "chore(release): $VERSION" --body "Automated version bump to $VERSION" --base main
+
   docker-push:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

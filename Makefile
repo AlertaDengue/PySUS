@@ -32,7 +32,6 @@ SEMANTIC_RELEASE = npx --yes \
           -p "@semantic-release/changelog" \
           -p "@semantic-release/exec" \
           -p "@semantic-release/github" \
-          -p "@semantic-release/git" \
           -p "semantic-release-replace-plugin" \
           semantic-release
 

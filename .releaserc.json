@@ -12,8 +12,8 @@
         "replacements": [
           {
             "files": ["pysus/__init__.py"],
-            "from": "return \".*\"  # changed by semantic-release",
-            "to": "return \"${nextRelease.version}\"  # changed by semantic-release",
+            "from": "return \".*\"",
+            "to": "return \"${nextRelease.version}\"",
             "results": [
               {
                 "file": "pysus/__init__.py",
@@ -26,8 +26,8 @@
           },
           {
             "files": ["pyproject.toml"],
-            "from": "version = \".*\"  # changed by semantic-release",
-            "to": "version = \"${nextRelease.version}\"  # changed by semantic-release",
+            "from": "version = \".*\"",
+            "to": "version = \"${nextRelease.version}\"",
             "results": [
               {
                 "file": "pyproject.toml",
@@ -63,17 +63,6 @@
       "@semantic-release/github",
       {
         "assets": ["dist/*.whl", "dist/*.tar.gz"]
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": [
-          "pyproject.toml",
-          "CHANGELOG.md",
-          "pysus/__init__.py"
-        ],
-        "message": "chore(release): ${nextRelease.version}"
       }
     ]
   ]
