@@ -19,7 +19,7 @@ def _validate_s3_bucket(v: str) -> str:
 
 
 def _validate_origin(v: str) -> str:
-    valid = (FTP, DADOSGOV, DUCKLAKE)
+    valid = (FTP, DADOSGOV, DUCKLAKE, SAUDE)
     assert v in valid, f"Invalid origin: {v!r}"
     return v
 
@@ -67,6 +67,24 @@ def _validate_dataset_name(v: str) -> str:
         "IBGE",
         "CNES",
         "CIHA",
+        "ARBOVIROSES",
+        "ASSISTENCIASAUDE",
+        "ATENCAOPRIMARIA",
+        "BNAFAR",
+        "CIENCIATECNOLOGIA",
+        "DIAGNOSTICOSTRATAMENTOS",
+        "ECONOMIASAUDE",
+        "EDUCACAOSAUDE",
+        "MACROSAUDE",
+        "OUVIDORIA",
+        "OUTROSTEMAS",
+        "PDA",
+        "PREVENCAOPROMOCAO",
+        "SISAGUA",
+        "SISVAN",
+        "SAUDEINDIGENA",
+        "VACINACAO",
+        "VIGILANCIAMEIOAMBIENTE",
     )
     assert v in valid, f"Invalid dataset name: {v!r}"
     return v
@@ -109,6 +127,7 @@ def _validate_state(v: str) -> str:
 FTP: Annotated[str, AfterValidator(_validate_origin)] = "FTP"
 DADOSGOV: Annotated[str, AfterValidator(_validate_origin)] = "DadosGov"
 DUCKLAKE: Annotated[str, AfterValidator(_validate_origin)] = "DuckLake"
+SAUDE: Annotated[str, AfterValidator(_validate_origin)] = "Saude"
 
 S3_ENDPOINT: Annotated[str, AfterValidator(_validate_s3_endpoint)] = (
     "nbg1.your-objectstorage.com"
@@ -143,6 +162,48 @@ PNI: Annotated[str, AfterValidator(_validate_dataset_name)] = "PNI"
 IBGE: Annotated[str, AfterValidator(_validate_dataset_name)] = "IBGE"
 CNES: Annotated[str, AfterValidator(_validate_dataset_name)] = "CNES"
 CIHA: Annotated[str, AfterValidator(_validate_dataset_name)] = "CIHA"
+ARBOVIROSES: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "ARBOVIROSES"
+)
+ASSISTENCIASAUDE: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "ASSISTENCIASAUDE"
+)
+ATENCAOPRIMARIA: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "ATENCAOPRIMARIA"
+)
+BNAFAR: Annotated[str, AfterValidator(_validate_dataset_name)] = "BNAFAR"
+CIENCIATECNOLOGIA: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "CIENCIATECNOLOGIA"
+)
+DIAGNOSTICOSTRATAMENTOS: Annotated[
+    str, AfterValidator(_validate_dataset_name)
+] = "DIAGNOSTICOSTRATAMENTOS"
+ECONOMIASAUDE: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "ECONOMIASAUDE"
+)
+EDUCACAOSAUDE: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "EDUCACAOSAUDE"
+)
+MACROSAUDE: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "MACROSAUDE"
+)
+OUVIDORIA: Annotated[str, AfterValidator(_validate_dataset_name)] = "OUVIDORIA"
+OUTROSTEMAS: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "OUTROSTEMAS"
+)
+PDA: Annotated[str, AfterValidator(_validate_dataset_name)] = "PDA"
+PREVENCAOPROMOCAO: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "PREVENCAOPROMOCAO"
+)
+SISAGUA: Annotated[str, AfterValidator(_validate_dataset_name)] = "SISAGUA"
+SISVAN: Annotated[str, AfterValidator(_validate_dataset_name)] = "SISVAN"
+SAUDEINDIGENA: Annotated[str, AfterValidator(_validate_dataset_name)] = (
+    "SAUDEINDIGENA"
+)
+VACINACAO: Annotated[str, AfterValidator(_validate_dataset_name)] = "VACINACAO"
+VIGILANCIAMEIOAMBIENTE: Annotated[
+    str, AfterValidator(_validate_dataset_name)
+] = "VIGILANCIAMEIOAMBIENTE"
 
 Origin: TypeAlias = Annotated[str, AfterValidator(_validate_origin)]
 ColumnType: TypeAlias = Annotated[str, AfterValidator(_validate_column_type)]

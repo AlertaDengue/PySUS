@@ -32,7 +32,17 @@ from pysus.api.metadata.models import (
 
 
 class SaudeDatasetExtractor(MetadataExtractor):
-    """Build a dataset-level bag from a CKAN package."""
+    """Build a dataset-level bag from a CKAN package or a theme spec.
+
+    Two input shapes are accepted:
+
+    - a :class:`~pysus.api.saude.resources.CKANPackage` (a concrete
+      catalog dataset) — full facets incl. license, periodicity and
+      the cross-origin CKAN UUID;
+    - a spec-backed :class:`~pysus.api.saude.models.SaudeDataset`
+      (a theme grouping several packages) — identity/description only,
+      since a theme is not a single CKAN record.
+    """
 
     origin = "saude"
 
@@ -47,8 +57,11 @@ class SaudeDatasetExtractor(MetadataExtractor):
         }
 
     def _extract(self, obj: Any) -> MetadataBag:
-        package = obj
+        if hasattr(obj, "metadata_created"):
+            return self._from_package(obj)
+        return self._from_spec(obj)
 
+    def _from_package(self, package: Any) -> MetadataBag:
         organization = ""
         if package.organization is not None:
             organization = (
@@ -101,6 +114,32 @@ class SaudeDatasetExtractor(MetadataExtractor):
             ),
         )
 
+    def _from_spec(self, dataset: Any) -> MetadataBag:
+        spec = dataset.spec
+        return MetadataBag(
+            identity=IdentityFacet(
+                name=spec.name,
+                slug=spec.name.lower(),
+                aliases=list(spec.demas_tags),
+            ),
+            description=DescriptionFacet(
+                title=spec.long_name,
+                long_name=spec.long_name,
+                description=spec.description,
+                themes=[
+                    spec.ckan_group.replace("-", " ") if spec.ckan_group else ""
+                ],
+            ),
+            provenance=ProvenanceFacet(
+                origin=self.origin,
+                organization="Ministério da Saúde",
+            ),
+            structure=StructureFacet(
+                file_count=len(spec.endpoints),
+            ),
+            access=AccessFacet(policy="active/public/open"),
+        )
+
 
 # ----------------------------------------------------------------------
 # Group (theme)
@@ -108,7 +147,7 @@ class SaudeDatasetExtractor(MetadataExtractor):
 
 
 class SaudeGroupExtractor(MetadataExtractor):
-    """Build a group-level bag from a CKAN ``GroupRef``."""
+    """Build a group-level bag from a ``GroupRef`` or a ``CatalogEntry``."""
 
     origin = "saude"
 
@@ -117,12 +156,40 @@ class SaudeGroupExtractor(MetadataExtractor):
 
     def _extract(self, obj: Any) -> MetadataBag:
         group = obj
-        display = group.display_name or group.name or ""
+        # SaudeGroup wraps a CatalogEntry
+        entry = getattr(group, "entry", None)
+        if entry is not None:
+            return MetadataBag(
+                identity=IdentityFacet(name=entry.name, slug=entry.name),
+                description=DescriptionFacet(
+                    title=entry.title,
+                    long_name=entry.title,
+                    description=entry.notes or "",
+                    tags=[tag.name for tag in entry.tags],
+                    themes=[g.name for g in entry.groups],
+                ),
+                provenance=ProvenanceFacet(origin=self.origin),
+            )
+        # GroupRef (theme) — has display_name
+        if hasattr(group, "display_name"):
+            display = group.display_name or group.name or ""
+            return MetadataBag(
+                identity=IdentityFacet(name=group.name, slug=group.name),
+                description=DescriptionFacet(
+                    title=display,
+                    themes=[group.name],
+                ),
+                provenance=ProvenanceFacet(origin=self.origin),
+            )
+        # CatalogEntry — has title/notes
         return MetadataBag(
             identity=IdentityFacet(name=group.name, slug=group.name),
             description=DescriptionFacet(
-                title=display,
-                themes=[group.name],
+                title=group.title,
+                long_name=group.title,
+                description=group.notes or "",
+                tags=[tag.name for tag in group.tags],
+                themes=[g.name for g in group.groups],
             ),
             provenance=ProvenanceFacet(origin=self.origin),
         )
@@ -150,7 +217,10 @@ class SaudeFileExtractor(MetadataExtractor):
         }
 
     def _extract(self, obj: Any) -> MetadataBag:
-        resource = obj
+        # SaudeFile wraps a Resource in ``record``
+        resource = getattr(obj, "record", None)
+        if resource is None:
+            resource = obj
         return MetadataBag(
             identity=IdentityFacet(
                 name=resource.name,

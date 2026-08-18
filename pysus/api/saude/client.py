@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
 
 import httpx
+from pydantic import PrivateAttr
 from pysus import CACHEPATH
+from pysus.api.models import BaseRemoteClient, BaseRemoteFile
 
 from .catalog import (
     _DEFAULT_TTL,
@@ -22,8 +25,11 @@ from .download import download_dataset as _download_dataset
 from .download import download_resource as _download_resource
 from .resources import CatalogEntry, CKANPackage, GroupRef, Resource, TagRef
 
+if TYPE_CHECKING:  # pragma: no cover
+    from .models import SaudeDataset
 
-class SaudeClient:
+
+class SaudeClient(BaseRemoteClient):
     """Async client for the OpenDataSUS portal.
 
     The portal is a Next.js frontend over a CKAN backend. ``SaudeClient``
@@ -41,7 +47,12 @@ class SaudeClient:
     >>> asyncio.run(main())
     """
 
-    BASE_URL = "https://dadosabertos.saude.gov.br"
+    BASE_URL: ClassVar[str] = "https://dadosabertos.saude.gov.br"
+
+    _cache_dir: Path = PrivateAttr()
+    _cache_ttl: timedelta = PrivateAttr(default=_DEFAULT_TTL)
+    _client: httpx.AsyncClient = PrivateAttr()
+    _build_id: str | None = PrivateAttr(default=None)
 
     def __init__(
         self,
@@ -51,16 +62,51 @@ class SaudeClient:
         timeout: float = 30.0,
         user_agent: str | None = None,
     ) -> None:
-        self.cache_dir = (
+        super().__init__()
+        self._cache_dir = (
             Path(cache_dir) if cache_dir else Path(CACHEPATH) / "saude"
         )
-        self.cache_ttl = cache_ttl
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self._cache_ttl = cache_ttl
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
         headers = {"User-Agent": user_agent or "pysus-saude/0.1 (research)"}
         self._client = httpx.AsyncClient(
             headers=headers, timeout=timeout, follow_redirects=True
         )
-        self._build_id: str | None = None
+        self._build_id = None
+
+    @property
+    def name(self) -> str:
+        """Return the short client name."""
+        return "Saude"
+
+    @property
+    def long_name(self) -> str:
+        """Return the human-readable client name."""
+        return "Portal de Dados Abertos do SUS"
+
+    @property
+    def description(self) -> str:
+        """Return a description of the client."""
+        return (
+            "Interface de acesso ao Portal de Dados Abertos do "
+            "Ministério da Saúde"
+        )
+
+    @property
+    def cache_dir(self) -> Path:
+        """Return the on-disk cache directory."""
+        return self._cache_dir
+
+    @property
+    def cache_ttl(self) -> timedelta:
+        """Return the cache TTL."""
+        return self._cache_ttl
+
+    async def connect(self) -> None:
+        """Ensure the underlying HTTP client is ready (no-op)."""
+
+    async def login(self, **kwargs) -> None:
+        """Authenticate — the portal is public, so this is a no-op."""
 
     async def __aenter__(self) -> SaudeClient:
         return self
@@ -70,7 +116,17 @@ class SaudeClient:
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""
-        await self._client.aclose()
+        if not self._client.is_closed:
+            await self._client.aclose()
+
+    async def download(
+        self,
+        file: BaseRemoteFile,
+        output: Path,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> Path:
+        """Download a remote Saude file to *output*."""
+        return await file._download(output=output, callback=callback)
 
     async def _ensure_build_id(self, use_cache: bool = True) -> str:
         if self._build_id and not use_cache:
@@ -180,6 +236,18 @@ class SaudeClient:
         """Fetch the resources of a dataset."""
         package = await self.fetch_dataset(slug, use_cache=use_cache)
         return package.resources
+
+    async def datasets(self, **kwargs) -> list[SaudeDataset]:
+        """Return the pre-configured Saude theme datasets.
+
+        Each dataset is a :class:`SaudeDataset` built from the static
+        registry in :mod:`pysus.api.saude.databases`; ``content``
+        resolves the CKAN packages belonging to the theme.
+        """
+        from .databases import DATASET_SPECS
+        from .models import SaudeDataset
+
+        return [SaudeDataset(spec=spec, client=self) for spec in DATASET_SPECS]
 
     async def download_resource(
         self,
