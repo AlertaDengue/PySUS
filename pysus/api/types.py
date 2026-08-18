@@ -45,6 +45,7 @@ def _validate_file_type(v: str) -> str:
         "PARQUET",
         "CSV",
         "JSON",
+        "JSONL",
         "PDF",
         "DBC",
         "DBF",
@@ -148,6 +149,7 @@ DIR: Annotated[str, AfterValidator(_validate_file_type)] = "DIR"
 PARQUET: Annotated[str, AfterValidator(_validate_file_type)] = "PARQUET"
 CSV: Annotated[str, AfterValidator(_validate_file_type)] = "CSV"
 JSON: Annotated[str, AfterValidator(_validate_file_type)] = "JSON"
+JSONL: Annotated[str, AfterValidator(_validate_file_type)] = "JSONL"
 PDF: Annotated[str, AfterValidator(_validate_file_type)] = "PDF"
 DBC: Annotated[str, AfterValidator(_validate_file_type)] = "DBC"
 DBF: Annotated[str, AfterValidator(_validate_file_type)] = "DBF"
