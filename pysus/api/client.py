@@ -26,6 +26,7 @@ from .errors import ConnectionError, DownloadError, FormatError, ValidationError
 from .extensions import Parquet
 from .ftp import FTPClient
 from .models import BaseLocalFile, BaseRemoteFile
+from .saude import SaudeClient
 
 if TYPE_CHECKING:  # pragma: no cover
     from duckdb import DuckDBPyConnection
@@ -99,6 +100,7 @@ class PySUS:
         self._ducklake: DuckLake | None = None
         self._ftp: FTPClient | None = None
         self._dadosgov: DadosGovClient | None = None
+        self._saude: SaudeClient | None = None
 
     async def __aenter__(self):
         self._ducklake = DuckLake()
@@ -114,6 +116,8 @@ class PySUS:
             await self._ftp.close()
         if self._dadosgov:
             await self._dadosgov.close()
+        if self._saude:
+            await self._saude.close()
         self.engine.dispose()
 
     async def get_ducklake(
@@ -141,6 +145,16 @@ class PySUS:
             self._ftp = FTPClient()
             await self._ftp.connect()
         return self._ftp
+
+    async def get_saude(self) -> SaudeClient:
+        """Return the Saude (dadosabertos.saude.gov.br) client.
+
+        No authentication is required; the client is lazily created.
+        """
+
+        if self._saude is None:
+            self._saude = SaudeClient()
+        return self._saude
 
     async def get_local_file(
         self,

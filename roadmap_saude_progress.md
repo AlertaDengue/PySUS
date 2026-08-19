@@ -9,7 +9,7 @@ Tracks implementation progress against `roadmap_saude.md` and
 | 0 | Metadata architecture (MetadataBag + extractors) | ✅ complete | delivered 2026-08-17 |
 | 2 | Dataset registry (`AVAILABLE_DATABASES`) | ✅ complete | delivered 2026-08-17 |
 | 3 | DEMAS REST query path + File model | ✅ complete | delivered 2026-08-19 |
-| 4 | Inventory + compare integration | ⏳ pending | |
+| 4 | Inventory + compare integration | ✅ complete | delivered 2026-08-19 |
 | 5 | Sync engine integration | ⏳ pending | |
 | 6 | DuckLake catalog integration | ⏳ pending | |
 
@@ -186,6 +186,39 @@ on every base class, faceted layout, mergeable across origins.
   blank lines, load, stream chunking, column/row caching, detector
   (jsonl, single json, array, empty), factory instantiation
 - Full suite: **1006 passed**, 1 pre-existing failure
+- ruff clean
+
+---
+
+## Stage 4 — Inventory + compare integration (complete, 2026-08-19)
+
+### Deliverables
+
+- **`pysus/api/client.py`** — `PySUS.get_saude()` (lazy SaudeClient init,
+  no auth needed); `_saude` attribute; `__aexit__` cleanup
+- **`pysus/management/inventory.py`** — `Inventory._collect_saude()`:
+  walks `SaudeGroup` (CKAN packages → resource files) and
+  `SaudeEndpointFile` (DEMAS REST → single jsonl record per endpoint);
+  `_ORIGIN_TO_CLIENT["saude"]`; `collect()` and `collect_all()` dispatch
+- **`pysus/management/records.py`** — `ORIGINS` + `DOWNLOAD_PRIORITY`:
+  added `"saude"` as 4th origin (fallback after FTP/DadosGov)
+
+### Cross-origin identity
+
+`stem_of()` normalisation already handles the mapping:
+- Saude endpoint `arboviroses_dengue.jsonl` → stem `arboviroses_dengue`
+- DadosGov dataset `arboviroses-dengue` → stem `arboviroses_dengue`
+- CKAN resources share filenames (same UUID) → identical stems
+
+No override map needed; the comparator groups them naturally.
+
+### Test coverage
+
+- 8 new tests in `test_inventory.py`: endpoint file collection, CKAN
+  group collection, dataset filtering, mixed content, collect_all
+  includes saude, format detection, cross-origin stem matching
+- Updated `test_download_priority` assertion for 4 origins
+- Full suite: **1014 passed**, 1 pre-existing failure
 - ruff clean
 
 ---

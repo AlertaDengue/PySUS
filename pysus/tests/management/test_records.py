@@ -206,4 +206,4 @@ class TestFileRecord:
         assert FileRecord.from_dict(record.to_dict()) == record
 
     def test_download_priority(self):
-        assert DOWNLOAD_PRIORITY == ("ducklake", "ftp", "dadosgov")
+        assert DOWNLOAD_PRIORITY == ("ducklake", "ftp", "dadosgov", "saude")
