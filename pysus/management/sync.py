@@ -936,6 +936,16 @@ class SyncEngine:
             dataset_id,
         )
 
+        if file.client.name == "saude":
+            from pysus.api.saude.schemas import apply_column_descriptions
+
+            apply_column_descriptions(
+                columns_cursor,
+                dataset_id,
+                dataset=file.dataset.name.lower(),
+                endpoint=file.basename.rsplit(".", 1)[0],
+            )
+
     async def _preconnect_adapters(
         self, records: dict[str, list[FileRecord]]
     ) -> None:
