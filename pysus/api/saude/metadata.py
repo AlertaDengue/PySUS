@@ -254,8 +254,53 @@ class SaudeFileExtractor(MetadataExtractor):
         )
 
 
+# ----------------------------------------------------------------------
+# Endpoint file (DEMAS REST)
+# ----------------------------------------------------------------------
+
+
+class SaudeEndpointFileExtractor(MetadataExtractor):
+    """Build a file-level bag from a DEMAS :class:`EndpointSpec`."""
+
+    origin = "saude"
+
+    def supported_facets(self) -> set[str]:
+        return {
+            "identity",
+            "description",
+            "structure",
+            "access",
+            "provenance",
+        }
+
+    def _extract(self, obj: Any) -> MetadataBag:
+        # SaudeEndpointFile wraps an EndpointSpec in ``record``
+        spec = getattr(obj, "record", None)
+        if spec is None:
+            spec = obj
+        return MetadataBag(
+            identity=IdentityFacet(
+                name=spec.path,
+            ),
+            description=DescriptionFacet(
+                title=spec.summary,
+                long_name=spec.summary,
+            ),
+            structure=StructureFacet(
+                format="jsonl",
+            ),
+            access=AccessFacet(
+                url=f"https://apidadosabertos.saude.gov.br{spec.path}",
+                format="jsonl",
+                download_strategy="http-paged",
+            ),
+            provenance=ProvenanceFacet(origin=self.origin),
+        )
+
+
 __all__ = [
     "SaudeDatasetExtractor",
+    "SaudeEndpointFileExtractor",
     "SaudeFileExtractor",
     "SaudeGroupExtractor",
 ]

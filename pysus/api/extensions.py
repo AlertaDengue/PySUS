@@ -1207,6 +1207,30 @@ def _detect_json(path: Path, header: bytes) -> type[JSON] | None:
         return None
 
 
+def _detect_jsonl(path: Path, header: bytes) -> type[JSONL] | None:
+    """Detect JSON Lines (one JSON object per line, not an array or dict)."""
+    try:
+        with open(path, "rb") as f:
+            first = b""
+            second = b""
+            for line in f:
+                stripped = line.strip()
+                if stripped and not first:
+                    first = stripped
+                elif stripped and first:
+                    second = stripped
+                    break
+        if not first or not second:
+            return None
+        if first[:1] != b"{" or second[:1] != b"{":
+            return None
+        json.loads(first)
+        json.loads(second)
+        return JSONL
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
 _DETECTORS = [
     _detect_parquet,
     _detect_pdf,
@@ -1214,6 +1238,7 @@ _DETECTORS = [
     _detect_gzip,
     _detect_tar,
     _detect_dbf,
+    _detect_jsonl,
     _detect_json,
 ]
 
@@ -1246,6 +1271,7 @@ class ExtensionFactory:
         ".dbc": DBC,
         ".pdf": PDF,
         ".json": JSON,
+        ".jsonl": JSONL,
     }
 
     _detection_cache: dict[str, type[BaseLocalFile] | None] = {}

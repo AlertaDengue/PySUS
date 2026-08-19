@@ -1,0 +1,127 @@
+{
+  "openapi": "2.0",
+  "info": {
+    "title": "API DEMAS",
+    "version": "5.32.12"
+  },
+  "host": "apidadosabertos.saude.gov.br",
+  "basePath": "/",
+  "paths": {
+    "/arboviroses/dengue": {
+      "get": {
+        "tags": [
+          "Agravo Arboviroses"
+        ],
+        "summary": "Agravos por Arboviroses - Dengue",
+        "operationId": "get_dengue",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nu_ano",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "id_municipio",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "/arboviroses/chikungunya": {
+      "get": {
+        "tags": [
+          "Agravo Arboviroses"
+        ],
+        "summary": "Agravos por Arboviroses - Chikungunya",
+        "operationId": "get_chikungunya",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "nu_ano",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "/estabelecimentos": {
+      "get": {
+        "tags": [
+          "CNES"
+        ],
+        "summary": "Estabelecimentos de Saúde",
+        "operationId": "get_estabelecimentos",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "codigo_uf",
+            "in": "query",
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "/saude-indigena/sasisus-esgotamento-sanitario": {
+      "get": {
+        "tags": [
+          "Saúde Indígena"
+        ],
+        "summary": "Esgotamento sanitário na saúde indígena",
+        "operationId": "get_esgotamento",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "type": "integer"
+          }
+        ]
+      }
+    }
+  }
+}

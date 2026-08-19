@@ -31,12 +31,95 @@ from .download import download_resource
 from .errors import ResourceNotFound
 from .metadata import (
     SaudeDatasetExtractor,
+    SaudeEndpointFileExtractor,
     SaudeFileExtractor,
     SaudeGroupExtractor,
 )
 from .resources import CatalogEntry, CKANPackage, Resource
+from .rest import DEMAS_BASE, EndpointSpec, iter_rows
 
-__all__ = ["SaudeDataset", "SaudeFile", "SaudeGroup"]
+__all__ = ["SaudeDataset", "SaudeEndpointFile", "SaudeFile", "SaudeGroup"]
+
+
+class SaudeEndpointFile(BaseRemoteFile):
+    """A paginated DEMAS REST endpoint, persisted as JSONL.
+
+    Each instance represents one endpoint (e.g. ``/arboviroses/dengue``)
+    with its default query parameters.  ``_download`` streams all rows
+    from the API into a ``.jsonl`` file.
+
+    Parameters
+    ----------
+    record : EndpointSpec
+        The endpoint descriptor.
+    """
+
+    record: EndpointSpec
+    type: str = "File"
+    extractor_types: ClassVar[list] = [SaudeEndpointFileExtractor]
+
+    @property
+    def extension(self) -> str:
+        return ".jsonl"
+
+    @property
+    def size(self) -> int:
+        """Return 0 — the size is unknown until downloaded."""
+        return 0
+
+    @property
+    def modify(self) -> datetime:
+        """Raises ``ValueError`` — no date available from the swagger."""
+
+        raise ValueError("DEMAS endpoint files have no modification date")
+
+    @property
+    def year(self) -> int | None:
+        """Return the year parsed from the endpoint path, if present."""
+        return parse_year(self.record.path)
+
+    @property
+    def month(self) -> int | None:
+        return None
+
+    @property
+    def state(self) -> State | None:
+        return None
+
+    async def _download(
+        self,
+        output: Path | None = None,
+        callback: Callable[[int, int], None] | None = None,
+    ) -> Path:
+        """Stream all rows from the DEMAS endpoint to a JSONL file."""
+        import json as _json
+
+        if output is None:
+            output = Path(
+                f"{self.record.path.strip('/').replace('/', '_')}.jsonl"
+            )
+
+        parent = output.parent
+        parent.mkdir(parents=True, exist_ok=True)
+
+        client = cast("SaudeClient", self.dataset.client)
+        rows_written = 0
+        with open(output, "w", encoding="utf-8") as fh:
+            async for row in iter_rows(
+                client._client,
+                self.record.path,
+                params=None,
+                page_size=self.record.limit,
+            ):
+                fh.write(_json.dumps(row, ensure_ascii=False) + "\n")
+                rows_written += 1
+                if callback:
+                    callback(rows_written, 0)
+        return output
+
+    async def fetch_size(self) -> int:
+        """Return 0 — the size is unknown until downloaded."""
+        return 0
 
 
 class SaudeFile(BaseRemoteFile):
@@ -211,8 +294,17 @@ class SaudeDataset(BaseRemoteDataset):
         """Return the DEMAS REST endpoints for this dataset."""
         return self.spec.endpoints
 
-    async def _fetch_content(self) -> list[SaudeGroup]:
-        """Return the SaudeGroups (CKAN packages) of this dataset."""
+    async def _fetch_content(self) -> list[SaudeGroup | SaudeEndpointFile]:
+        """Return the content of this dataset.
+
+        A mix of:
+
+        - :class:`SaudeGroup` — CKAN packages matched by the spec;
+        - :class:`SaudeEndpointFile` — DEMAS REST endpoints (if any).
+
+        Endpoint files sit at the dataset level (no group), following
+        the same pattern as ungrouped files in DuckLake.
+        """
         spec = self.spec
         groups: list[SaudeGroup] = []
         if spec.ckan_group:
@@ -223,7 +315,22 @@ class SaudeDataset(BaseRemoteDataset):
             async for entry in self.client.iter_datasets():
                 if spec.matches(entry.name):
                     groups.append(SaudeGroup(entry=entry, dataset=self))
-        return groups
+
+        # DEMAS endpoint files (Stage 3)
+        endpoint_files: list[SaudeEndpointFile] = []
+        for ep_path in spec.endpoints:
+            endpoint_files.append(
+                SaudeEndpointFile(
+                    record=EndpointSpec(
+                        path=ep_path,
+                        tag=spec.demas_tags[0] if spec.demas_tags else "",
+                        params=(),
+                    ),
+                    dataset=self,
+                    path=Path(DEMAS_BASE + ep_path),
+                )
+            )
+        return groups + endpoint_files
 
 
 # Rebuild pydantic models with postponed annotations so their fields
