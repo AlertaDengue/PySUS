@@ -182,7 +182,10 @@ class DuckDataset(BaseRemoteDataset):
 
                 if states:
                     stmt = stmt.filter(
-                        CatalogFile.state.in_([s.upper() for s in states])
+                        or_(
+                            CatalogFile.state.in_([s.upper() for s in states]),
+                            CatalogFile.state.is_(None),
+                        )
                     )
                 if years:
                     stmt = stmt.filter(CatalogFile.year.in_(years))

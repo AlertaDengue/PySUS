@@ -213,3 +213,208 @@ class TestEnsureManagementColumns:
             "format",
             "source_sha256",
         }
+
+
+_CENTRAL_SCHEMA = """
+CREATE SCHEMA pysus;
+CREATE TABLE pysus.datasets (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR UNIQUE NOT NULL,
+    long_name VARCHAR NOT NULL,
+    description VARCHAR
+);
+"""
+
+_FULL_SCHEMA = (
+    _CENTRAL_SCHEMA
+    + """
+CREATE TABLE pysus.files (
+    id INTEGER,
+    dataset_id INTEGER,
+    group_id INTEGER,
+    path VARCHAR UNIQUE,
+    size BIGINT,
+    rows INTEGER,
+    type VARCHAR,
+    modified TIMESTAMP,
+    origin_modified TIMESTAMP,
+    origin_size BIGINT,
+    origin_path VARCHAR,
+    sha256 VARCHAR,
+    source_sha256 VARCHAR,
+    origin VARCHAR,
+    format VARCHAR,
+    year INTEGER,
+    month INTEGER,
+    state VARCHAR
+);
+"""
+)
+
+
+@pytest.fixture
+def saude_catalog():
+    writer = CatalogWriter(ducklake=MagicMock())
+    con = duckdb.connect(":memory:")
+    con.execute(_FULL_SCHEMA)
+    return writer, con.cursor(), con
+
+
+class TestSaudeDatasetCatalog:
+    def test_ensure_dataset_creates_saude_entry(self, saude_catalog):
+        writer, cursor, _ = saude_catalog
+        ds_id = writer.ensure_dataset(
+            cursor,
+            name="ARBOVIROSES_DENGUE",
+            long_name="Arboviroses - Dengue",
+            description="Dados abertos sobre dengue",
+        )
+        assert ds_id == 1
+        cursor.execute(
+            "SELECT name, long_name FROM pysus.datasets WHERE id = 1"
+        )
+        row = cursor.fetchone()
+        assert row[0] == "arboviroses_dengue"
+        assert row[1] == "Arboviroses - Dengue"
+
+    def test_upsert_file_with_state(self, saude_catalog):
+        writer, cursor, _ = saude_catalog
+        ds_id = writer.ensure_dataset(
+            cursor,
+            name="ARBOVIROSES_DENGUE",
+            long_name="Arboviroses - Dengue",
+        )
+        file_id, created = writer.upsert_file(
+            cursor,
+            dataset_id=ds_id,
+            group_id=None,
+            path="public/data/saude/arboviroses_dengue/_/2024/05/SP/br.parquet",
+            size=1024,
+            rows=100,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=1024,
+            origin_path="https://apidadosabertos.saude.gov.br/api/v1/dengue",
+            year=2024,
+            month=5,
+            state="SP",
+            origin="saude",
+            format="parquet",
+        )
+        assert created is True
+        cursor.execute(
+            "SELECT state, origin FROM pysus.files WHERE id = ?", (file_id,)
+        )
+        row = cursor.fetchone()
+        assert row[0] == "SP"
+        assert row[1] == "saude"
+
+    def test_upsert_file_national_no_state(self, saude_catalog):
+        writer, cursor, _ = saude_catalog
+        ds_id = writer.ensure_dataset(
+            cursor,
+            name="ARBOVIROSES_DENGUE",
+            long_name="Arboviroses - Dengue",
+        )
+        file_id, created = writer.upsert_file(
+            cursor,
+            dataset_id=ds_id,
+            group_id=None,
+            path="public/data/saude/arboviroses_dengue/_/2024/_/BR/br.parquet",
+            size=2048,
+            rows=200,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=2048,
+            origin_path="https://apidadosabertos.saude.gov.br/api/v1/dengue",
+            year=2024,
+            month=None,
+            state=None,
+            origin="saude",
+            format="parquet",
+        )
+        assert created is True
+        cursor.execute(
+            "SELECT state, origin FROM pysus.files WHERE id = ?", (file_id,)
+        )
+        row = cursor.fetchone()
+        assert row[0] is None
+        assert row[1] == "saude"
+
+    def test_query_includes_null_state_files(self, saude_catalog):
+        writer, cursor, con = saude_catalog
+        ds_id = writer.ensure_dataset(
+            cursor,
+            name="ARBOVIROSES_DENGUE",
+            long_name="Arboviroses - Dengue",
+        )
+        # Insert one file with state and one without
+        writer.upsert_file(
+            cursor,
+            dataset_id=ds_id,
+            group_id=None,
+            path="public/data/saude/arr/2024/05/SP/dengue_sp.parquet",
+            size=100,
+            rows=10,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=100,
+            origin_path="x",
+            year=2024,
+            month=5,
+            state="SP",
+        )
+        writer.upsert_file(
+            cursor,
+            dataset_id=ds_id,
+            group_id=None,
+            path="public/data/saude/arr/2024/_/BR/dengue_br.parquet",
+            size=200,
+            rows=20,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=200,
+            origin_path="y",
+            year=2024,
+            month=None,
+            state=None,
+        )
+        # Query with state filter — should include both SP and NULL-state
+        cursor.execute(
+            "SELECT path, state FROM pysus.files "
+            "WHERE dataset_id = ? AND "
+            "(state IN ('SP') OR state IS NULL) "
+            "ORDER BY path",
+            (ds_id,),
+        )
+        rows = cursor.fetchall()
+        assert len(rows) == 2
+        states = {r[1] for r in rows}
+        assert None in states
+        assert "SP" in states
+
+    def test_multiple_saude_datasets(self, saude_catalog):
+        writer, cursor, _ = saude_catalog
+        id1 = writer.ensure_dataset(
+            cursor, name="ARBOVIROSES_DENGUE", long_name="Dengue"
+        )
+        id2 = writer.ensure_dataset(
+            cursor, name="SISAGUA", long_name="Sistema de Agua"
+        )
+        assert id1 != id2
+        cursor.execute("SELECT COUNT(*) FROM pysus.datasets")
+        assert cursor.fetchone()[0] == 2
+
+    def test_ensure_dataset_idempotent(self, saude_catalog):
+        writer, cursor, _ = saude_catalog
+        id1 = writer.ensure_dataset(
+            cursor, name="ARBOVIROSES_DENGUE", long_name="Dengue v1"
+        )
+        id2 = writer.ensure_dataset(
+            cursor, name="ARBOVIROSES_DENGUE", long_name="Dengue v2"
+        )
+        assert id1 == id2
+        cursor.execute(
+            "SELECT long_name FROM pysus.datasets WHERE id = ?", (id1,)
+        )
+        assert cursor.fetchone()[0] == "Dengue v2"
