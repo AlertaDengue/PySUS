@@ -515,6 +515,7 @@ class SyncEngine:
         on_outcome: Callable[[SyncOutcome], None] | None = None,
         workers: int = 16,
         ftp_connections: int = 6,
+        origins: tuple[str, ...] | None = None,
     ) -> SyncReport:
         """Run the full pipeline and return a :class:`SyncReport`.
 
@@ -533,6 +534,7 @@ class SyncEngine:
         called once per processed logical file.
         """
         report = SyncReport(dataset=",".join(datasets) if datasets else None)
+        active_origins = origins or ("ducklake", "ftp", "dadosgov", "saude")
 
         async def collect_with_retry(origin: str, datasets=None, **kwargs):
             for attempt in range(3):
@@ -544,22 +546,22 @@ class SyncEngine:
                     await asyncio.sleep(2**attempt)
 
         records: dict[str, list[FileRecord]] = {
-            "ducklake": await collect_with_retry("ducklake", datasets),
-            "ftp": await collect_with_retry("ftp", datasets),
+            k: [] for k in ("ducklake", "ftp", "dadosgov", "saude")
         }
-        records["dadosgov"] = []
-        if self.dadosgov_token:
-            records["dadosgov"] = await collect_with_retry(
-                "dadosgov", datasets, dadosgov_token=self.dadosgov_token
-            )
-        records["saude"] = await collect_with_retry("saude", datasets)
+        if "ducklake" in active_origins:
+            records["ducklake"] = await collect_with_retry("ducklake", datasets)
+        if "ftp" in active_origins:
+            records["ftp"] = await collect_with_retry("ftp", datasets)
+        if "dadosgov" in active_origins:
+            records["dadosgov"] = []
+            if self.dadosgov_token:
+                records["dadosgov"] = await collect_with_retry(
+                    "dadosgov", datasets, dadosgov_token=self.dadosgov_token
+                )
+        if "saude" in active_origins:
+            records["saude"] = await collect_with_retry("saude", datasets)
 
-        comparisons = self.comparator.compare(
-            records["ducklake"]
-            + records["ftp"]
-            + records["dadosgov"]
-            + records["saude"]
-        )
+        comparisons = self.comparator.compare(sum(records.values(), []))
 
         # Pre-connect every adapter involved so concurrent workers never
         # race the initial catalog download.

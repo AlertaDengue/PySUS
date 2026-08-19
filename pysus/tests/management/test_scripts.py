@@ -41,7 +41,7 @@ class TestSyncClientsScript:
                 engine.run = AsyncMock(
                     return_value=MagicMock(summary=lambda: {"total": 1})
                 )
-                summary = await run(["SINAN"], 500, False, 4, 2)
+                summary = await run(["SINAN"], 500, False, 4, 2, False)
         assert summary == {"total": 1}
 
     def test_main_runs(self, tmp_path, capsys):

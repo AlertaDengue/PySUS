@@ -1,4 +1,4 @@
-"""Sync S3 with every file available on FTP and DadosGov.
+"""Sync S3 with every file available on FTP, DadosGov, and Saude.
 
 Downloads missing/outdated files, converts them to parquet, uploads to S3
 and updates the DuckLake catalogs. Resumable: files already cataloged with
@@ -8,6 +8,7 @@ S3 every N uploads.
 Usage:
     python -m pysus.management.scripts.sync_clients --datasets SINAN SIM
     python -m pysus.management.scripts.sync_clients --checkpoint-every 500
+    python -m pysus.management.scripts.sync_clients --saude-only
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ def load_env(path: str = ".env") -> dict[str, str]:
 
 
 async def run(
-    datasets, checkpoint_every, force, workers, ftp_connections
+    datasets, checkpoint_every, force, workers, ftp_connections, saude_only
 ) -> dict:
     env = load_env()
     engine = SyncEngine(
@@ -50,6 +51,7 @@ async def run(
         if total % 500 == 0:
             print(f"progress: {counts}", flush=True)
 
+    origins = ("ducklake", "saude") if saude_only else None
     async with engine:
         report = await engine.run(
             datasets=datasets,
@@ -58,6 +60,7 @@ async def run(
             on_outcome=on_outcome,
             workers=workers,
             ftp_connections=ftp_connections,
+            origins=origins,
         )
     return report.summary()
 
@@ -93,6 +96,11 @@ def main() -> int:
         default=6,
         help="FTP connection pool size",
     )
+    parser.add_argument(
+        "--saude-only",
+        action="store_true",
+        help="Only sync from Saude portal (skip FTP and DadosGov)",
+    )
     args = parser.parse_args()
 
     datasets = [d.upper() for d in args.datasets] if args.datasets else None
@@ -104,6 +112,7 @@ def main() -> int:
             args.force,
             args.workers,
             args.ftp_connections,
+            args.saude_only,
         )
     )
     print(summary)
