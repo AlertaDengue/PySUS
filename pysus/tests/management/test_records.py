@@ -4,7 +4,11 @@ from datetime import datetime
 
 from pysus.management.records import (
     DOWNLOAD_PRIORITY,
+    FileComparison,
     FileRecord,
+    IdentityKey,
+    SyncOutcome,
+    SyncReport,
     base_stem,
     canonical_dataset,
     canonical_group,
@@ -207,3 +211,156 @@ class TestFileRecord:
 
     def test_download_priority(self):
         assert DOWNLOAD_PRIORITY == ("ducklake", "ftp", "dadosgov", "saude")
+
+
+class TestIdentityKeyAsTuple:
+    def test_returns_six_elements(self):
+        key = IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2025,
+            month=1,
+            state="RJ",
+            stem="dengbr25",
+        )
+        t = key.as_tuple()
+        assert len(t) == 6
+        assert t == ("SINAN", "DENG", 2025, 1, "RJ", "dengbr25")
+
+
+class TestFileComparisonFormats:
+    def test_formats_property(self):
+        ftp = FileRecord(
+            origin="ftp",
+            dataset="SINAN",
+            name="DENGBR25.dbc",
+            path="/x",
+            group="DENG",
+            year=2025,
+        )
+        api = FileRecord(
+            origin="dadosgov",
+            dataset="SINAN",
+            name="DENGBR25.csv.zip",
+            path="/y",
+            group="DENG",
+            year=2025,
+        )
+        comp = FileComparison(key=ftp.identity_key(), records=[ftp, api])
+        assert comp.formats == {"dbc", "csv.zip"}
+
+    def test_formats_empty_format_returns_unknown(self):
+        rec = FileRecord(
+            origin="ftp",
+            dataset="X",
+            name="X",
+            path="/x",
+            format=None,
+        )
+        comp = FileComparison(key=rec.identity_key(), records=[rec])
+        assert comp.formats == {"unknown"}
+
+
+class TestBestRecordNone:
+    def test_returns_none_when_no_matching_origin(self):
+        ftp = FileRecord(
+            origin="ftp",
+            dataset="X",
+            name="X.dbc",
+            path="/x",
+        )
+        comp = FileComparison(key=ftp.identity_key(), records=[ftp])
+        result = comp.best_record(priorities=("alien",))
+        assert result is None
+
+
+class TestNeedsToken:
+    def test_only_on_dadosgov_needs_token(self):
+        rec = FileRecord(
+            origin="dadosgov",
+            dataset="X",
+            name="X.csv",
+            path="/x",
+        )
+        comp = FileComparison(key=rec.identity_key(), records=[rec])
+        assert comp.needs_token is True
+
+    def test_on_ftp_and_dadosgov_does_not_need_token(self):
+        ftp = FileRecord(
+            origin="ftp",
+            dataset="X",
+            name="X.dbc",
+            path="/x",
+        )
+        api = FileRecord(
+            origin="dadosgov",
+            dataset="X",
+            name="X.csv.zip",
+            path="/y",
+        )
+        comp = FileComparison(key=ftp.identity_key(), records=[ftp, api])
+        assert comp.needs_token is False
+
+
+class TestFileComparisonToDict:
+    def test_to_dict(self):
+        ftp = FileRecord(
+            origin="ftp",
+            dataset="SINAN",
+            name="DENGBR25.dbc",
+            path="/x",
+            group="DENG",
+            year=2025,
+        )
+        comp = FileComparison(key=ftp.identity_key(), records=[ftp])
+        d = comp.to_dict()
+        assert "key" in d
+        assert d["origins"] == ["ftp"]
+        assert "records" in d
+        assert len(d["records"]) == 1
+
+
+class TestSyncReport:
+    def _report(self):
+        key = IdentityKey(
+            dataset="X",
+            group=None,
+            year=2025,
+            month=None,
+            state=None,
+            stem="x",
+        )
+        return SyncReport(
+            outcomes=[
+                SyncOutcome(key=key, origin="ftp", status="uploaded"),
+                SyncOutcome(key=key, origin="ftp", status="skipped"),
+                SyncOutcome(key=key, origin="ftp", status="failed"),
+                SyncOutcome(key=key, origin="dadosgov", status="needs_token"),
+            ]
+        )
+
+    def test_uploaded(self):
+        r = self._report()
+        assert len(r.uploaded) == 1
+        assert r.uploaded[0].status == "uploaded"
+
+    def test_skipped(self):
+        r = self._report()
+        assert len(r.skipped) == 1
+
+    def test_failed(self):
+        r = self._report()
+        assert len(r.failed) == 1
+
+    def test_needs_token(self):
+        r = self._report()
+        assert len(r.needs_token) == 1
+
+    def test_summary(self):
+        r = self._report()
+        s = r.summary()
+        assert s["total"] == 4
+        assert s["uploaded"] == 1
+        assert s["skipped"] == 1
+        assert s["failed"] == 1
+        assert s["needs_token"] == 1

@@ -137,3 +137,78 @@ class TestExtraModel:
         extra = Extra(key="Frequência de atualização", value="Semanal")
         assert extra.key == "Frequência de atualização"
         assert extra.value == "Semanal"
+
+
+class TestParseIso:
+    def test_returns_datetime_directly(self):
+        from datetime import datetime
+
+        from pysus.api.saude.resources import _parse_iso
+
+        dt = datetime(2024, 1, 15, 10, 30)
+        assert _parse_iso(dt) is dt
+
+    def test_returns_none_for_invalid_string(self):
+        from pysus.api.saude.resources import _parse_iso
+
+        assert _parse_iso("not-a-date") is None
+
+    def test_returns_none_for_none(self):
+        from pysus.api.saude.resources import _parse_iso
+
+        assert _parse_iso(None) is None
+
+    def test_returns_none_for_empty(self):
+        from pysus.api.saude.resources import _parse_iso
+
+        assert _parse_iso("") is None
+
+
+class TestCoerceInt:
+    def test_none_returns_zero(self):
+        from pysus.api.saude.resources import CatalogPage
+
+        page = CatalogPage.model_validate(
+            {
+                "page": None,
+                "rows": None,
+                "numberOfPackages": 0,
+                "currentFilters": {},
+                "availableFilters": {},
+                "packages": [],
+            }
+        )
+        assert page.page == 0
+        assert page.rows == 0
+
+    def test_empty_string_returns_zero(self):
+        from pysus.api.saude.resources import CatalogPage
+
+        page = CatalogPage.model_validate(
+            {
+                "page": "",
+                "rows": "",
+                "numberOfPackages": 0,
+                "currentFilters": {},
+                "availableFilters": {},
+                "packages": [],
+            }
+        )
+        assert page.page == 0
+        assert page.rows == 0
+
+    def test_non_numeric_returns_zero(self):
+        from pysus.api.saude.resources import CatalogPage
+
+        page = CatalogPage.model_validate(
+            {
+                "page": [1, 2],
+                "rows": {"a": 1},
+                "numberOfPackages": 0,
+                "currentFilters": {},
+                "availableFilters": {},
+                "packages": [],
+            }
+        )
+        assert page.page == 0
+        assert page.rows == 0

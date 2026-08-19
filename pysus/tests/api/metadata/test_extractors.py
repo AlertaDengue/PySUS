@@ -35,7 +35,9 @@ _SAUDE_FIXTURES = pathlib.Path(__file__).parent.parent / "saude" / "fixtures"
 @pytest.fixture(scope="module")
 def saude_dataset_page_props() -> dict:
     payload = json.loads(
-        (_SAUDE_FIXTURES / "dataset_arboviroses-dengue.json").read_text()
+        (_SAUDE_FIXTURES / "dataset_arboviroses-dengue.json").read_text(
+            encoding="utf-8"
+        )
     )
     return payload["pageProps"]
 

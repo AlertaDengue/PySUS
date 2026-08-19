@@ -53,7 +53,9 @@ class TestEndpointSpec:
 
 @pytest.fixture
 def swagger():
-    return json.loads((FIXTURES / "demas_swagger.json").read_text())
+    return json.loads(
+        (FIXTURES / "demas_swagger.json").read_text(encoding="utf-8")
+    )
 
 
 class TestEndpointsFromSwagger:
@@ -82,10 +84,21 @@ class TestEndpointsFromSwagger:
     def test_params_extracted(self, swagger):
         specs = endpoints_from_swagger(swagger, tag="CNES")
         assert "codigo_uf" in specs[0].params
-        # limit and offset are query params but typically filtered
-        # by the caller — here they are included as-is
         assert "limit" in specs[0].params
         assert "offset" in specs[0].params
+
+    def test_path_without_get_skipped(self):
+        swagger = {
+            "paths": {
+                "/post-only": {"post": {"summary": "Create"}},
+                "/with-get": {
+                    "get": {"summary": "List", "tags": ["T"], "parameters": []}
+                },
+            }
+        }
+        specs = endpoints_from_swagger(swagger)
+        assert len(specs) == 1
+        assert specs[0].path == "/with-get"
 
 
 # -- _extract_rows --------------------------------------------------------
@@ -320,4 +333,27 @@ async def test_fetch_swagger_force_refresh(tmp_path):
         client, tmp_path, ttl=timedelta(hours=1), use_cache=False
     )
     assert result == {"version": "new"}
+    client.get.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_swagger_corrupt_cache_refetches(tmp_path):
+    """Corrupt cache file should trigger a fresh download."""
+    cache_file = tmp_path / "demas_swagger.json"
+    cache_file.write_text("not valid json {{{")
+
+    new = {"version": "fresh"}
+    client = MagicMock()
+    client.get = AsyncMock(
+        return_value=httpx.Response(
+            200,
+            json=new,
+            request=httpx.Request("GET", "https://test/"),
+        )
+    )
+
+    result = await fetch_swagger(
+        client, tmp_path, ttl=timedelta(hours=1), use_cache=True
+    )
+    assert result == new
     client.get.assert_called_once()

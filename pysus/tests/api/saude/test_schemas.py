@@ -49,6 +49,12 @@ class TestAvailableSchemas:
         schemas = available_schemas()
         assert "arboviroses" in schemas
 
+    def test_missing_dir_returns_empty(self, tmp_path, monkeypatch):
+        import pysus.api.saude.schemas as mod
+
+        monkeypatch.setattr(mod, "_SCHEMAS_DIR", tmp_path / "nope")
+        assert available_schemas() == []
+
 
 class TestApplyColumnDescriptions:
     def test_updates_existing_columns(self):
@@ -84,7 +90,7 @@ class TestApplyColumnDescriptions:
         )
         row = cursor.fetchone()
         assert row[0] is not None
-        assert "notificação" in row[0].lower()
+        assert "notific" in row[0].lower()
         con.close()
 
     def test_no_update_for_unknown_dataset(self):

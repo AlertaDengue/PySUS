@@ -265,6 +265,35 @@ class TestCollectDadosgov:
         assert len(records) == 1
         assert records[0].origin == "dadosgov"
 
+    @pytest.mark.asyncio
+    async def test_collect_dadosgov_filtered(self, inventory):
+        dataset_sinan = MagicMock()
+        dataset_sinan.name = "SINAN"
+        dataset_sinan.content = _awaitable([])
+        dataset_sim = MagicMock()
+        dataset_sim.name = "SIM"
+        dataset_sim.content = _awaitable([])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset_sinan, dataset_sim])
+        inventory.pysus.get_dadosgov = AsyncMock(return_value=client)
+
+        records = await inventory.collect(
+            "dadosgov", ["SINAN"], dadosgov_token="tok"
+        )
+        assert records == []
+
+    @pytest.mark.asyncio
+    async def test_collect_dadosgov_skips_non_group(self, inventory):
+        dataset = MagicMock()
+        dataset.name = "SINAN"
+        dataset.content = _awaitable(["not a group object"])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset])
+        inventory.pysus.get_dadosgov = AsyncMock(return_value=client)
+
+        records = await inventory.collect("dadosgov", dadosgov_token="tok")
+        assert records == []
+
 
 class TestCollectDucklake:
     @pytest.mark.asyncio
@@ -298,6 +327,21 @@ class TestCollectDucklake:
         assert len(records) == 1
         assert records[0].sha256 == "a" * 64
         assert records[0].source_path == "/ftp/x.dbc"
+
+    @pytest.mark.asyncio
+    async def test_collect_ducklake_filtered(self, inventory):
+        ds1 = MagicMock()
+        ds1.name = "sinan"
+        ds1.query = AsyncMock(return_value=[])
+        ds2 = MagicMock()
+        ds2.name = "sim"
+        ds2.query = AsyncMock(return_value=[])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[ds1, ds2])
+        inventory.pysus.get_ducklake = AsyncMock(return_value=client)
+
+        records = await inventory.collect("ducklake", ["SINAN"])
+        assert records == []
 
 
 class TestCollectSaude:

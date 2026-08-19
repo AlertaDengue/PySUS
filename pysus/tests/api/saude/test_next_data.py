@@ -73,6 +73,18 @@ class TestCache:
             tmp_path / "missing.json", timedelta(hours=1), datetime.now()
         )
 
+    def test_is_fresh_false_for_missing_saved_at(self, tmp_path: Path):
+        path = tmp_path / "build_id.json"
+        path.write_text(json.dumps({"buildId": "abc"}))
+        assert not _is_fresh(path, timedelta(hours=1), datetime.now())
+
+    def test_is_fresh_false_for_bad_saved_at(self, tmp_path: Path):
+        path = tmp_path / "build_id.json"
+        path.write_text(
+            json.dumps({"buildId": "abc", "saved_at": "not-a-date"})
+        )
+        assert not _is_fresh(path, timedelta(hours=1), datetime.now())
+
     def test_is_fresh_false_for_garbage(self, tmp_path: Path):
         path = tmp_path / "build_id.json"
         path.write_text("{not json")
@@ -140,6 +152,26 @@ class TestFetchBuildId:
                 homepage_url="https://dadosabertos.saude.gov.br/",
             )
         assert build_id == "stale-id"
+
+    @pytest.mark.asyncio
+    async def test_stale_cache_fallback_on_http_error(self, tmp_path: Path):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(503, content=b"service unavailable")
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            cache_path = tmp_path / "build_id.json"
+            _write_cache(
+                cache_path,
+                "old-build",
+                datetime.now() - timedelta(hours=48),
+            )
+            build_id = await fetch_build_id(
+                client,
+                cache_path=cache_path,
+                homepage_url="https://dadosabertos.saude.gov.br/",
+            )
+        assert build_id == "old-build"
 
     @pytest.mark.asyncio
     async def test_raises_when_no_cache_and_homepage_fails(

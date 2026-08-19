@@ -4,6 +4,7 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import duckdb
+import pyarrow as pa
 import pytest
 from pysus.management.catalog import CatalogWriter
 
@@ -288,7 +289,10 @@ class TestSaudeDatasetCatalog:
             cursor,
             dataset_id=ds_id,
             group_id=None,
-            path="public/data/saude/arboviroses_dengue/_/2024/05/SP/br.parquet",
+            path=(
+                "public/data/saude/arboviroses_dengue/"
+                "_/2024/05/SP/br.parquet"
+            ),
             size=1024,
             rows=100,
             modified=datetime(2026, 1, 1),
@@ -418,3 +422,390 @@ class TestSaudeDatasetCatalog:
             "SELECT long_name FROM pysus.datasets WHERE id = ?", (id1,)
         )
         assert cursor.fetchone()[0] == "Dengue v2"
+
+
+# -- ensure_group --------------------------------------------------------
+
+
+_FULL_CATALOG_SCHEMA = (
+    _CENTRAL_SCHEMA
+    + """
+CREATE TABLE pysus.dataset_groups (
+    id INTEGER PRIMARY KEY,
+    dataset_id INTEGER NOT NULL,
+    name VARCHAR NOT NULL,
+    long_name VARCHAR,
+    description VARCHAR,
+    UNIQUE(dataset_id, name)
+);
+CREATE TABLE pysus.files (
+    id INTEGER,
+    dataset_id INTEGER,
+    group_id INTEGER,
+    path VARCHAR UNIQUE,
+    size BIGINT,
+    rows INTEGER,
+    type VARCHAR,
+    modified TIMESTAMP,
+    origin_modified TIMESTAMP,
+    origin_size BIGINT,
+    origin_path VARCHAR,
+    sha256 VARCHAR,
+    source_sha256 VARCHAR,
+    origin VARCHAR,
+    format VARCHAR,
+    year INTEGER,
+    month INTEGER,
+    state VARCHAR
+);
+CREATE TABLE pysus.dataset_columns (
+    id INTEGER PRIMARY KEY,
+    dataset_id INTEGER NOT NULL,
+    name VARCHAR NOT NULL,
+    type VARCHAR NOT NULL,
+    description VARCHAR,
+    nullable BOOLEAN DEFAULT true
+);
+CREATE TABLE pysus.file_columns (
+    file_id INTEGER NOT NULL,
+    column_id INTEGER NOT NULL,
+    PRIMARY KEY(file_id, column_id)
+);
+"""
+)
+
+
+@pytest.fixture
+def full_catalog():
+    writer = CatalogWriter(ducklake=MagicMock())
+    con = duckdb.connect(":memory:")
+    con.execute(_FULL_CATALOG_SCHEMA)
+    return writer, con.cursor(), con
+
+
+class TestEnsureGroup:
+    def test_returns_none_for_empty_name(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        assert writer.ensure_group(cursor, 1, None) is None
+        assert writer.ensure_group(cursor, 1, "") is None
+
+    def test_creates_new_group(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        gid = writer.ensure_group(
+            cursor, dataset_id=1, name="deng", long_name="Dengue"
+        )
+        assert gid == 1
+        cursor.execute(
+            "SELECT name, long_name FROM pysus.dataset_groups WHERE id = 1"
+        )
+        row = cursor.fetchone()
+        assert row[0] == "DENG"
+        assert row[1] == "Dengue"
+
+    def test_reuses_existing_group(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        gid1 = writer.ensure_group(
+            cursor, dataset_id=1, name="deng", long_name="Dengue"
+        )
+        gid2 = writer.ensure_group(
+            cursor, dataset_id=1, name="deng", long_name="Dengue v2"
+        )
+        assert gid1 == gid2
+        cursor.execute(
+            "SELECT long_name FROM pysus.dataset_groups WHERE id = ?",
+            (gid1,),
+        )
+        assert cursor.fetchone()[0] == "Dengue v2"
+
+    def test_group_name_uppercased(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        gid = writer.ensure_group(cursor, dataset_id=1, name="  sinh  ")
+        cursor.execute(
+            "SELECT name FROM pysus.dataset_groups WHERE id = ?", (gid,)
+        )
+        assert cursor.fetchone()[0] == "SINH"
+
+
+# -- delete_file ---------------------------------------------------------
+
+
+class TestDeleteFile:
+    def test_deletes_file(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        file_id, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+        )
+        writer.delete_file(cursor, file_id)
+        assert writer.get_file(cursor, "public/data/x.parquet") is None
+
+    def test_deletes_file_columns(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        file_id, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+        )
+        cursor.execute(
+            "INSERT INTO pysus.file_columns (file_id, column_id) "
+            "VALUES (?, ?)",
+            (file_id, 1),
+        )
+        writer.delete_file(cursor, file_id)
+        cursor.execute(
+            "SELECT * FROM pysus.file_columns WHERE file_id = ?", (file_id,)
+        )
+        assert cursor.fetchall() == []
+
+
+# -- upsert_file with file_type -------------------------------------------
+
+
+class TestUpsertFileType:
+    def test_insert_with_file_type(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        file_id, created = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+            file_type="tabular",
+        )
+        assert created is True
+        cursor.execute("SELECT type FROM pysus.files WHERE id = ?", (file_id,))
+        assert cursor.fetchone()[0] == "tabular"
+
+    def test_update_with_origin_format_file_type(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        file_id, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+        )
+        file_id2, created = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=20,
+            rows=10,
+            modified=datetime(2026, 2, 1),
+            origin_modified=datetime(2026, 2, 1),
+            origin_size=20,
+            origin_path="ftp/x2",
+            year=2025,
+            month=None,
+            state=None,
+            origin="saude",
+            format="parquet",
+            file_type="tabular",
+        )
+        assert created is False
+        assert file_id == file_id2
+        cursor.execute(
+            "SELECT origin, format, type FROM pysus.files WHERE id = ?",
+            (file_id,),
+        )
+        row = cursor.fetchone()
+        assert row[0] == "saude"
+        assert row[1] == "parquet"
+        assert row[2] == "tabular"
+
+
+# -- link_columns --------------------------------------------------------
+
+
+class TestLinkColumns:
+    def _columns_con(self):
+        con = duckdb.connect(":memory:")
+        con.execute(
+            """
+            CREATE SCHEMA pysus;
+            CREATE TABLE pysus.dataset_columns (
+                id INTEGER PRIMARY KEY,
+                dataset_id INTEGER NOT NULL,
+                name VARCHAR NOT NULL,
+                type VARCHAR NOT NULL,
+                description VARCHAR,
+                nullable BOOLEAN DEFAULT true
+            );
+        """
+        )
+        return con
+
+    def test_inserts_new_columns(self, full_catalog):
+        writer, cursor, con = full_catalog
+        cols_con = self._columns_con()
+        cols_cursor = cols_con.cursor()
+
+        file_id, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+        )
+
+        schema = pa.schema([("id", pa.int64()), ("name", pa.string())])
+        writer.link_columns(cursor, cols_cursor, file_id, schema, dataset_id=1)
+
+        cols_cursor.execute(
+            "SELECT name FROM pysus.dataset_columns WHERE dataset_id = 1"
+        )
+        names = {r[0] for r in cols_cursor.fetchall()}
+        assert "id" in names
+        assert "name" in names
+
+        cursor.execute(
+            "SELECT column_id FROM pysus.file_columns WHERE file_id = ?",
+            (file_id,),
+        )
+        assert len(cursor.fetchall()) == 2
+
+    def test_reuses_existing_columns(self, full_catalog):
+        writer, cursor, con = full_catalog
+        cols_con = self._columns_con()
+        cols_cursor = cols_con.cursor()
+
+        file_id, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/x",
+            year=2025,
+            month=None,
+            state=None,
+        )
+
+        schema = pa.schema([("id", pa.int64())])
+        writer.link_columns(cursor, cols_cursor, file_id, schema, dataset_id=1)
+
+        file_id2, _ = writer.upsert_file(
+            cursor,
+            dataset_id=1,
+            group_id=None,
+            path="public/data/y.parquet",
+            size=10,
+            rows=5,
+            modified=datetime(2026, 1, 1),
+            origin_modified=datetime(2026, 1, 1),
+            origin_size=10,
+            origin_path="ftp/y",
+            year=2025,
+            month=None,
+            state=None,
+        )
+        writer.link_columns(cursor, cols_cursor, file_id2, schema, dataset_id=1)
+
+        cols_cursor.execute(
+            "SELECT COUNT(*) FROM pysus.dataset_columns WHERE dataset_id = 1"
+        )
+        assert cols_cursor.fetchone()[0] == 1
+
+
+# -- _catalog_engine / _columns_engine ------------------------------------
+
+
+class TestEngineProperties:
+    def test_catalog_engine_none_raises(self):
+        from pysus.api.errors import CatalogError
+
+        ducklake = MagicMock()
+        ducklake._catalog_adap._engine = None
+        writer = CatalogWriter(ducklake=ducklake)
+        with pytest.raises(CatalogError, match="catalog engine"):
+            _ = writer._catalog_engine
+
+    def test_catalog_engine_returns_value(self):
+        ducklake = MagicMock()
+        engine = MagicMock()
+        ducklake._catalog_adap._engine = engine
+        writer = CatalogWriter(ducklake=ducklake)
+        assert writer._catalog_engine is engine
+
+    def test_columns_engine_none_raises(self):
+        from pysus.api.errors import CatalogError
+
+        ducklake = MagicMock()
+        ducklake._columns_adap._engine = None
+        writer = CatalogWriter(ducklake=ducklake)
+        with pytest.raises(CatalogError, match="columns engine"):
+            _ = writer._columns_engine
+
+    def test_columns_engine_returns_value(self):
+        ducklake = MagicMock()
+        engine = MagicMock()
+        ducklake._columns_adap._engine = engine
+        writer = CatalogWriter(ducklake=ducklake)
+        assert writer._columns_engine is engine
+
+
+# -- _ensure_column ------------------------------------------------------
+
+
+class TestEnsureColumn:
+    def test_skips_existing_column(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        writer._ensure_column(cursor, "files", "size", "BIGINT")
+        assert writer._has_column(cursor, "files", "size")
+        writer._ensure_column(cursor, "files", "size", "BIGINT")
+
+    def test_adds_new_column(self, full_catalog):
+        writer, cursor, _ = full_catalog
+        assert not writer._has_column(cursor, "files", "custom_tag")
+        writer._ensure_column(cursor, "files", "custom_tag", "VARCHAR")
+        assert writer._has_column(cursor, "files", "custom_tag")

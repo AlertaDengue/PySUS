@@ -90,7 +90,7 @@ def saude_dataset_payload() -> dict[str, Any]:
 
 @pytest.fixture
 def saude_dataset_page_props(
-    saude_dataset_payload: dict[str, Any]
+    saude_dataset_payload: dict[str, Any],
 ) -> dict[str, Any]:
     """Just the ``pageProps`` of the dengue dataset payload."""
     return saude_dataset_payload["pageProps"]
