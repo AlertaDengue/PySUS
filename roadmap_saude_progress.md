@@ -11,7 +11,7 @@ Tracks implementation progress against `roadmap_saude.md` and
 | 3 | DEMAS REST query path + File model | ✅ complete | delivered 2026-08-19 |
 | 4 | Inventory + compare integration | ✅ complete | delivered 2026-08-19 |
 | 5 | Sync engine integration | ✅ completed | `b71c3fc` `22bf49d` `46d9a98` |
-| 6 | DuckLake catalog integration | ✅ completed | `state=NULL` fix + 6 catalog tests |
+| 6 | DuckLake catalog integration | ✅ completed | `state=NULL` fix + 6 catalog tests + column metadata backfill |
 
 ---
 
