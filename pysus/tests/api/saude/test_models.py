@@ -323,6 +323,7 @@ class TestSaudeEndpointFileExtra:
         self, saude_dataset, catalog_entry, tmp_path
     ):
         import json
+        import os
 
         ep_spec = EndpointSpec(
             path="/arboviroses/dengue",
@@ -342,10 +343,13 @@ class TestSaudeEndpointFileExtra:
 
         original = models_mod.iter_rows
         models_mod.iter_rows = fake_iter_rows
+        saved = os.getcwd()
         try:
+            os.chdir(tmp_path)
             result = await ep_file._download(output=None)
         finally:
             models_mod.iter_rows = original
+            os.chdir(saved)
         assert result.exists()
         content = json.loads(result.read_text(encoding="utf-8"))
         assert content == {"notific": 1}
