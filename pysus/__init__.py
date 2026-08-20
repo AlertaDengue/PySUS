@@ -3,14 +3,42 @@
 import os
 import pathlib
 from importlib import metadata as importlib_metadata
-from typing import Final
 
-CACHEPATH: Final[pathlib.Path] = pathlib.Path(
+CACHEPATH: pathlib.Path = pathlib.Path(
     os.getenv(
         "PYSUS_CACHEPATH",
         os.path.join(str(pathlib.Path.home()), "pysus"),
     )
 )
+
+
+def set_cache(path: str | pathlib.Path) -> pathlib.Path:
+    """Set the global cache directory for PySUS.
+
+    All downloaded files are stored under this path.  The default is
+    ``~/pysus`` (or the ``PYSUS_CACHEPATH`` environment variable).
+
+    Parameters
+    ----------
+    path : str or Path
+        New cache directory.  Parent directories are created
+        automatically.
+
+    Returns
+    -------
+    Path
+        The resolved cache path.
+
+    Examples
+    --------
+    >>> from pysus import set_cache
+    >>> set_cache("/data/pysus")
+    PosixPath('/data/pysus')
+    """
+    global CACHEPATH  # noqa: PLW0603
+    CACHEPATH = pathlib.Path(path).resolve()
+    CACHEPATH.mkdir(parents=True, exist_ok=True)
+    return CACHEPATH
 
 
 def get_version() -> str:

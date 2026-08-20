@@ -12,7 +12,6 @@ from typing import Literal, cast
 
 import pandas as pd
 from pysus.api import types
-from pysus.api.client import PySUS
 from tqdm.asyncio import tqdm
 
 __all__ = [
@@ -47,11 +46,11 @@ def _fetch_data(
     Parameters
     ----------
     dataset : str
-        Name of the dataset (e.g. "sinan", "sinasc").
+        Name of the dataset (e.g. ``"sinan"``, ``"sinasc"``).
     group : str, optional
         Group or disease code to filter by.
     state : str, optional
-        Two-letter state abbreviation (e.g. "RJ").
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int], optional
         Year or list of years to fetch.
     month : int | list[int], optional
@@ -67,10 +66,12 @@ def _fetch_data(
     -------
     list[str] | pd.DataFrame
         A list of paths to the downloaded Parquet files by default. If
-        as_dataframe is True, returns a concatenated DataFrame.
+        ``as_dataframe`` is ``True``, returns a concatenated DataFrame.
     """
 
     async def _fetch() -> list[str] | pd.DataFrame:
+        from pysus.api.client import PySUS
+
         async with PySUS() as pysus:
             files = await pysus.query(
                 dataset=dataset,
@@ -108,27 +109,9 @@ def _fetch_data(
 
             return paths
 
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
+    from pysus.api.client import _run_sync
 
-    if loop and loop.is_running():
-        try:
-            import nest_asyncio
-
-            nest_asyncio.apply()
-        except ImportError:
-            msg = (
-                "nest_asyncio is required when running inside Jupyter. "
-                "Install it with: pip install nest_asyncio"
-            )
-            raise RuntimeError(msg) from None
-        result = loop.run_until_complete(_fetch())
-        return cast(list[str] | pd.DataFrame, result)
-
-    result = asyncio.run(_fetch())
-    return cast(list[str] | pd.DataFrame, result)
+    return cast(list[str] | pd.DataFrame, _run_sync(_fetch()))
 
 
 def sinan(
@@ -547,6 +530,7 @@ def list_files(
     """
 
     async def _list():
+        from pysus.api.client import PySUS
 
         async with PySUS() as pysus:
             years = [year] if isinstance(year, int) else (year or [None])
