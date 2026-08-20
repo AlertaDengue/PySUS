@@ -347,6 +347,7 @@ class TestSaudeEndpointFileExtra:
         try:
             os.chdir(tmp_path)
             result = await ep_file._download(output=None)
+            result = result.resolve()
         finally:
             models_mod.iter_rows = original
             os.chdir(saved)
@@ -360,7 +361,6 @@ class TestSaudeFileDownloadOutputNone:
     async def test_download_output_none(
         self, saude_dataset, catalog_entry, tmp_path
     ):
-        from pathlib import Path
         from unittest.mock import patch
 
         group = SaudeGroup(entry=catalog_entry, dataset=saude_dataset)
@@ -374,8 +374,7 @@ class TestSaudeFileDownloadOutputNone:
         )
 
         async def fake_download_resource(client, package, **kwargs):
-            dest_dir = kwargs.get("dest_dir") or Path(".")
-            target = dest_dir / file.basename
+            target = tmp_path / file.basename
             target.write_bytes(b"fake")
             return target
 
