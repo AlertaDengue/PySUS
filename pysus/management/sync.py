@@ -28,10 +28,8 @@ from uuid import uuid4
 
 import httpx
 from pysus import CACHEPATH
-from pysus.api.dadosgov.models import File as APIFile
 from pysus.api.ducklake.functional import upload_s3
 from pysus.api.errors import AuthenticationError, ConnectionError
-from pysus.api.ftp.models import File as FTPFile
 from pysus.api.models import BaseRemoteFile
 
 from .catalog import CatalogWriter, sha256_of
@@ -211,7 +209,7 @@ class SyncEngine:
 
     async def upload_file(
         self,
-        file: FTPFile | APIFile,
+        file: BaseRemoteFile,
         callback: Callable[[int, int], None] | None = None,
         force: bool = False,
         ftp_client: Any | None = None,
@@ -383,7 +381,7 @@ class SyncEngine:
 
     async def _download_raw_with_retry(
         self,
-        file: FTPFile | APIFile,
+        file: BaseRemoteFile,
         max_retries: int = 5,
         ftp_client: Any | None = None,
     ) -> Path:
@@ -517,6 +515,7 @@ class SyncEngine:
         on_outcome: Callable[[SyncOutcome], None] | None = None,
         workers: int = 16,
         ftp_connections: int = 6,
+        origins: tuple[str, ...] | None = None,
     ) -> SyncReport:
         """Run the full pipeline and return a :class:`SyncReport`.
 
@@ -535,6 +534,7 @@ class SyncEngine:
         called once per processed logical file.
         """
         report = SyncReport(dataset=",".join(datasets) if datasets else None)
+        active_origins = origins or ("ducklake", "ftp", "dadosgov", "saude")
 
         async def collect_with_retry(origin: str, datasets=None, **kwargs):
             for attempt in range(3):
@@ -546,18 +546,22 @@ class SyncEngine:
                     await asyncio.sleep(2**attempt)
 
         records: dict[str, list[FileRecord]] = {
-            "ducklake": await collect_with_retry("ducklake", datasets),
-            "ftp": await collect_with_retry("ftp", datasets),
+            k: [] for k in ("ducklake", "ftp", "dadosgov", "saude")
         }
-        records["dadosgov"] = []
-        if self.dadosgov_token:
-            records["dadosgov"] = await collect_with_retry(
-                "dadosgov", datasets, dadosgov_token=self.dadosgov_token
-            )
+        if "ducklake" in active_origins:
+            records["ducklake"] = await collect_with_retry("ducklake", datasets)
+        if "ftp" in active_origins:
+            records["ftp"] = await collect_with_retry("ftp", datasets)
+        if "dadosgov" in active_origins:
+            records["dadosgov"] = []
+            if self.dadosgov_token:
+                records["dadosgov"] = await collect_with_retry(
+                    "dadosgov", datasets, dadosgov_token=self.dadosgov_token
+                )
+        if "saude" in active_origins:
+            records["saude"] = await collect_with_retry("saude", datasets)
 
-        comparisons = self.comparator.compare(
-            records["ducklake"] + records["ftp"] + records["dadosgov"]
-        )
+        comparisons = self.comparator.compare(sum(records.values(), []))
 
         # Pre-connect every adapter involved so concurrent workers never
         # race the initial catalog download.
@@ -932,6 +936,16 @@ class SyncEngine:
             dataset_id,
         )
 
+        if file.client.name == "saude":
+            from pysus.api.saude.schemas import apply_column_descriptions
+
+            apply_column_descriptions(
+                columns_cursor,
+                dataset_id,
+                dataset=file.dataset.name.lower(),
+                endpoint=file.basename.rsplit(".", 1)[0],
+            )
+
     async def _preconnect_adapters(
         self, records: dict[str, list[FileRecord]]
     ) -> None:
@@ -943,7 +957,7 @@ class SyncEngine:
             r.dataset.lower()
             for items in records.values()
             for r in items
-            if r.origin in ("ftp", "dadosgov")
+            if r.origin in ("ftp", "dadosgov", "saude")
         }
         for name in datasets:
             await self._dataset_adapter_by_name(name).ensure_connected()
@@ -1147,10 +1161,12 @@ class SyncEngine:
 
     @staticmethod
     def _pick_source(comparison: FileComparison) -> FileRecord | None:
-        """Return the artifact to ingest (ftp over dadosgov), if any."""
+        """Return the artifact to ingest (ftp > dadosgov > saude)."""
         record = comparison._pick("ftp")
         if record is None or record.file is None:
             record = comparison._pick("dadosgov")
+        if record is None or record.file is None:
+            record = comparison._pick("saude")
         if record is None or record.file is None:
             return None
         return record

@@ -7,6 +7,8 @@ import pandas as pd
 from pysus.management.compare import (
     FORMAT_PREFERENCE,
     Comparator,
+    _format_rank,
+    byte_hash,
     content_fingerprint,
 )
 from pysus.management.inventory import Inventory
@@ -113,6 +115,65 @@ class TestComparator:
     def test_format_preference_csv_first(self):
         assert FORMAT_PREFERENCE[0] == "csv"
 
+    def test_pick_returns_best_from_comparison(self):
+        ftp = _record("ftp", "DENGBR25.dbc")
+        api = _record("dadosgov", "DENGBR25.csv.zip")
+        s3 = _record("ducklake", "DENGBR25.parquet")
+        comparison = FileComparison(
+            key=ftp.identity_key(), records=[api, ftp, s3]
+        )
+        comp = Comparator()
+        assert comp.pick(comparison) is s3
+
+    def test_pick_returns_none_for_unknown_origin(self):
+        ftp = _record("ftp", "DENGBR25.dbc")
+        comparison = FileComparison(key=ftp.identity_key(), records=[ftp])
+        comp = Comparator(priorities=("unknown_origin",))
+        assert comp.pick(comparison) is None
+
+
+class TestFormatRank:
+    def test_empty_string(self):
+        assert _format_rank("") == len(FORMAT_PREFERENCE) + 1
+
+    def test_unknown_string(self):
+        assert _format_rank("unknown") == len(FORMAT_PREFERENCE) + 1
+
+    def test_whitespace_only(self):
+        assert _format_rank("  ") == len(FORMAT_PREFERENCE) + 1
+
+    def test_unknown_format(self):
+        assert _format_rank("xyzzy") == len(FORMAT_PREFERENCE)
+
+
+class TestByteHash:
+    def test_sha256_of_file(self, tmp_path):
+        f = tmp_path / "data.txt"
+        f.write_bytes(b"hello world")
+        h = byte_hash(f)
+        assert len(h) == 64  # sha256 hex digest
+
+    def test_same_content_same_hash(self, tmp_path):
+        a = tmp_path / "a.bin"
+        b = tmp_path / "b.bin"
+        content = b"some binary data"
+        a.write_bytes(content)
+        b.write_bytes(content)
+        assert byte_hash(a) == byte_hash(b)
+
+    def test_different_content_different_hash(self, tmp_path):
+        a = tmp_path / "a.bin"
+        b = tmp_path / "b.bin"
+        a.write_bytes(b"alpha")
+        b.write_bytes(b"beta")
+        assert byte_hash(a) != byte_hash(b)
+
+    def test_custom_algorithm(self, tmp_path):
+        f = tmp_path / "data.bin"
+        f.write_bytes(b"test")
+        h = byte_hash(f, algorithm="md5")
+        assert len(h) == 32
+
 
 class TestContentFingerprint:
     def test_same_content_same_fingerprint(self):
@@ -129,6 +190,16 @@ class TestContentFingerprint:
         a = pd.DataFrame({"x": [1], "y": [2]})
         b = pd.DataFrame({"y": [2], "x": [1]})
         assert content_fingerprint(a) == content_fingerprint(b)
+
+    def test_large_dataframe_uses_even_spacing(self):
+        big = pd.DataFrame({"col": list(range(2000))})
+        small = pd.DataFrame({"col": list(range(2000))})
+        assert content_fingerprint(big) == content_fingerprint(small)
+
+    def test_large_dataframe_different_data_differs(self):
+        a = pd.DataFrame({"col": list(range(2000))})
+        b = pd.DataFrame({"col": list(range(2000, 4000))})
+        assert content_fingerprint(a) != content_fingerprint(b)
 
 
 class TestInventoryDiff:
@@ -173,4 +244,18 @@ class TestInventoryDiff:
 
     def test_load_missing_snapshot(self, tmp_path):
         inventory = Inventory(pysus=MagicMock(), snapshot_dir=tmp_path)
+        assert inventory.load_snapshot("ftp") is None
+
+    def test_load_corrupt_snapshot(self, tmp_path):
+        inventory = Inventory(pysus=MagicMock(), snapshot_dir=tmp_path)
+        path = inventory._snapshot_path("ftp")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{bad json")
+        assert inventory.load_snapshot("ftp") is None
+
+    def test_load_snapshot_missing_records_key(self, tmp_path):
+        inventory = Inventory(pysus=MagicMock(), snapshot_dir=tmp_path)
+        path = inventory._snapshot_path("ftp")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"origin": "ftp"}')
         assert inventory.load_snapshot("ftp") is None

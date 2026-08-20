@@ -75,3 +75,19 @@ class TestComparisonReporter:
         records = [_record("ftp", "DENGBR25.dbc", group="DENG")]
         reports = ComparisonReporter().report(records)
         json.dumps([r.to_dict() for r in reports])
+
+    def test_ftp_dadosgov_pair(self):
+        records = [
+            _record("ftp", "DENGBR25.dbc", group="DENG"),
+            _record("dadosgov", "DENGBR25.csv.zip", group="DENG"),
+        ]
+        reports = ComparisonReporter().report(records)
+        assert reports[0].on_ftp_dadosgov == 1
+
+    def test_ftp_ducklake_pair(self):
+        records = [
+            _record("ftp", "DENGBR25.dbc", group="DENG"),
+            _record("ducklake", "DENGBR25.parquet", group="DENG"),
+        ]
+        reports = ComparisonReporter().report(records)
+        assert reports[0].on_ftp_s3 == 1

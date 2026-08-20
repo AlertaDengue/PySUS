@@ -1,7 +1,18 @@
 Release Notes
 ---
 
-## [2.9.0](https://github.com/AlertaDengue/PySUS/compare/2.8.0...2.9.0) (2026-08-17)
+## [2.9.0](https://github.com/AlertaDengue/PySUS/compare/2.8.0...2.9.0) (2026-08-19)
+
+### Features
+
+* **metadata:** unified metadata layer (`MetadataBag`, `MetadataExtractor`) with per-client extractors for FTP, DadosGov, DuckLake and Saude; every remote entity now exposes a merged `.metadata` bag
+* **saude:** add OpenDataSUS catalog client (`pysus.api.saude`) with Next.js buildId discovery, catalog listing, full CKAN package metadata and resource downloads (stage 1 of the dadosabertos.saude.gov.br integration)
+* **saude:** add source-scoped dataset registry — 19 `DatasetSpec` entries for all SUS themes (arboviroses, CNES, SISAGUA, etc.) with DEMAS endpoint mapping; `SaudeDataset`/`SaudeGroup`/`SaudeFile` models with metadata extractors
+* **saude:** add DEMAS REST query path — `EndpointSpec`, `iter_rows()` async paginator, `endpoints_from_swagger()` parser; `SaudeEndpointFile` persists paginated JSON endpoints as JSONL
+* **saude:** add `JSONL` file type — load, stream, columns, rows with auto-detection; registered in `ExtensionFactory`
+* **saude:** integrate into inventory + compare pipeline — `Inventory._collect_saude()`, `stem_of()` cross-origin identity, `"saude"` as 4th origin in `DOWNLOAD_PRIORITY`
+* **saude:** integrate into sync engine — `upload_file()`/`_download_raw_with_retry()` widened to `BaseRemoteFile`, origin branches wired, `--saude-only` CLI flag, `origins` filter on `SyncEngine.run()`
+* **saude:** DuckLake catalog integration — `DuckDataset.query()` state=NULL fix for national-only files, per-dataset catalogs auto-created via `CatalogWriter`
 
 ## [2.8.0](https://github.com/AlertaDengue/PySUS/compare/2.7.0...2.8.0) (2026-08-14)
 

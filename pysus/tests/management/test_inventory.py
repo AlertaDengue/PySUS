@@ -1,7 +1,8 @@
 """Tests for pysus.management.inventory collectors (mocked clients)."""
 
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pysus.management.inventory import Inventory, _record_changed, _safe_modify
@@ -219,7 +220,6 @@ class TestCollectDadosgov:
     @pytest.mark.asyncio
     async def test_collect_dadosgov(self, inventory):
         from pathlib import Path
-        from unittest.mock import patch
 
         from pysus.api.models import BaseRemoteGroup
 
@@ -239,7 +239,11 @@ class TestCollectDadosgov:
             async def _fetch_files(self):
                 return []
 
-        group = _FakeGroup(path=Path("x"), type="file", dataset=_fake_dataset())
+        group = _FakeGroup(
+            path=Path("x"),
+            type="file",
+            dataset=_fake_dataset(),
+        )
         group._files = [_ftp_file("DENGBR25.csv.zip")]
         dataset = MagicMock()
         dataset.name = "SINAN"
@@ -264,6 +268,35 @@ class TestCollectDadosgov:
             records = await inventory.collect("dadosgov", dadosgov_token="tok")
         assert len(records) == 1
         assert records[0].origin == "dadosgov"
+
+    @pytest.mark.asyncio
+    async def test_collect_dadosgov_filtered(self, inventory):
+        dataset_sinan = MagicMock()
+        dataset_sinan.name = "SINAN"
+        dataset_sinan.content = _awaitable([])
+        dataset_sim = MagicMock()
+        dataset_sim.name = "SIM"
+        dataset_sim.content = _awaitable([])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset_sinan, dataset_sim])
+        inventory.pysus.get_dadosgov = AsyncMock(return_value=client)
+
+        records = await inventory.collect(
+            "dadosgov", ["SINAN"], dadosgov_token="tok"
+        )
+        assert records == []
+
+    @pytest.mark.asyncio
+    async def test_collect_dadosgov_skips_non_group(self, inventory):
+        dataset = MagicMock()
+        dataset.name = "SINAN"
+        dataset.content = _awaitable(["not a group object"])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset])
+        inventory.pysus.get_dadosgov = AsyncMock(return_value=client)
+
+        records = await inventory.collect("dadosgov", dadosgov_token="tok")
+        assert records == []
 
 
 class TestCollectDucklake:
@@ -298,3 +331,232 @@ class TestCollectDucklake:
         assert len(records) == 1
         assert records[0].sha256 == "a" * 64
         assert records[0].source_path == "/ftp/x.dbc"
+
+    @pytest.mark.asyncio
+    async def test_collect_ducklake_filtered(self, inventory):
+        ds1 = MagicMock()
+        ds1.name = "sinan"
+        ds1.query = AsyncMock(return_value=[])
+        ds2 = MagicMock()
+        ds2.name = "sim"
+        ds2.query = AsyncMock(return_value=[])
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[ds1, ds2])
+        inventory.pysus.get_ducklake = AsyncMock(return_value=client)
+
+        records = await inventory.collect("ducklake", ["SINAN"])
+        assert records == []
+
+
+class TestCollectSaude:
+    @pytest.mark.asyncio
+    async def test_collect_saude_endpoint_file(self, inventory):
+        """Endpoint files become FileRecords with format=jsonl."""
+        from pysus.api.saude.databases import DatasetSpec
+        from pysus.api.saude.models import SaudeDataset, SaudeEndpointFile
+        from pysus.api.saude.rest import EndpointSpec
+
+        ep_spec = EndpointSpec(
+            path="/arboviroses/dengue",
+            summary="Dengue data",
+            tag="Agravo Arboviroses",
+        )
+        endpoint_file = SaudeEndpointFile(
+            record=ep_spec,
+            dataset=SaudeDataset.model_construct(
+                spec=DatasetSpec(
+                    name="ARBOVIROSES",
+                    long_name="Arboviroses",
+                    description="",
+                    ckan_group="arboviroses",
+                    slug_patterns=(),
+                    exclude_patterns=(),
+                    demas_tags=(),
+                    endpoints=(),
+                ),
+                client=MagicMock(),
+            ),
+            path=Path("/tmp/arboviroses_dengue"),
+        )
+
+        ds_spec = DatasetSpec(
+            name="ARBOVIROSES",
+            long_name="Arboviroses",
+            description="",
+            ckan_group="arboviroses",
+            slug_patterns=(),
+            exclude_patterns=(),
+            demas_tags=("Agravo Arboviroses",),
+            endpoints=("/arboviroses/dengue",),
+        )
+        dataset = MagicMock(spec=SaudeDataset)
+        dataset.name = "ARBOVIROSES"
+        dataset.spec = ds_spec
+        dataset.content = _awaitable([endpoint_file])
+
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset])
+        inventory.pysus.get_saude = AsyncMock(return_value=client)
+
+        records = await inventory.collect("saude")
+        assert len(records) == 1
+        assert records[0].origin == "saude"
+        assert records[0].dataset == "ARBOVIROSES"
+        assert records[0].format == "jsonl"
+        assert records[0].name == "arboviroses_dengue.jsonl"
+
+    @pytest.mark.asyncio
+    async def test_collect_saude_ckan_group(self, inventory):
+        """CKAN groups produce records for each resource file."""
+        from pysus.api.saude.models import SaudeDataset, SaudeGroup
+
+        group = MagicMock(spec=SaudeGroup)
+        group.name = "arboviroses-dengue"
+
+        file = MagicMock()
+        file.basename = "DENGBR25.csv.zip"
+        file.path = Path("https://dadosabertos.saude.gov.br/resources/dengue")
+        file.size = 1024
+        file.year = 2025
+        file.month = None
+        file.state = None
+
+        group.files = _awaitable([file])
+
+        ds_spec = MagicMock()
+        ds_spec.name = "ARBOVIROSES"
+        dataset = MagicMock(spec=SaudeDataset)
+        dataset.name = "ARBOVIROSES"
+        dataset.spec = ds_spec
+        dataset.content = _awaitable([group])
+
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset])
+        inventory.pysus.get_saude = AsyncMock(return_value=client)
+
+        records = await inventory.collect("saude")
+        assert len(records) == 1
+        assert records[0].origin == "saude"
+        assert records[0].name == "DENGBR25.csv.zip"
+        assert records[0].group == "ARBOVIROSES-DENGUE"
+        assert records[0].year == 2025
+
+    @pytest.mark.asyncio
+    async def test_collect_saude_filtered(self, inventory):
+        """Dataset filter excludes non-matching datasets."""
+        from pysus.api.saude.models import SaudeDataset
+
+        ds1 = MagicMock(spec=SaudeDataset)
+        ds1.name = "ARBOVIROSES"
+        ds1.content = _awaitable([])
+        ds2 = MagicMock(spec=SaudeDataset)
+        ds2.name = "CNES"
+        ds2.content = _awaitable([])
+
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[ds1, ds2])
+        inventory.pysus.get_saude = AsyncMock(return_value=client)
+
+        records = await inventory.collect("saude", ["ARBOVIROSES"])
+        assert len(records) == 0  # content is empty, but filter worked
+
+    @pytest.mark.asyncio
+    async def test_collect_saude_mixed_content(self, inventory):
+        """Mixed content (groups + endpoint files) are all collected."""
+        from pysus.api.saude.databases import DatasetSpec
+        from pysus.api.saude.models import (
+            SaudeDataset,
+            SaudeEndpointFile,
+            SaudeGroup,
+        )
+        from pysus.api.saude.rest import EndpointSpec
+
+        ep_spec = EndpointSpec(path="/cnes/estabelecimentos")
+        ep_file = SaudeEndpointFile(
+            record=ep_spec,
+            dataset=SaudeDataset.model_construct(
+                spec=DatasetSpec(
+                    name="CNES",
+                    long_name="CNES",
+                    description="",
+                    ckan_group=None,
+                    slug_patterns=(),
+                    exclude_patterns=(),
+                    demas_tags=(),
+                    endpoints=(),
+                ),
+                client=MagicMock(),
+            ),
+            path=Path("/tmp/cnes_estabelecimentos"),
+        )
+
+        group = MagicMock(spec=SaudeGroup)
+        group.name = "cnes-estabelecimentos"
+        file = MagicMock()
+        file.basename = "estabelecimentos.csv"
+        file.path = Path("https://x/estabelecimentos.csv")
+        file.size = 500
+        file.year = None
+        file.month = None
+        file.state = None
+        group.files = _awaitable([file])
+
+        ds_spec = MagicMock()
+        ds_spec.name = "CNES"
+        dataset = MagicMock(spec=SaudeDataset)
+        dataset.name = "CNES"
+        dataset.spec = ds_spec
+        dataset.content = _awaitable([ep_file, group])
+
+        client = MagicMock()
+        client.datasets = AsyncMock(return_value=[dataset])
+        inventory.pysus.get_saude = AsyncMock(return_value=client)
+
+        records = await inventory.collect("saude")
+        assert len(records) == 2
+        formats = {r.format for r in records}
+        assert "jsonl" in formats
+        assert "csv" in formats
+
+
+class TestCollectAllIncludesSaude:
+    @pytest.mark.asyncio
+    async def test_collect_all_returns_four_origins(self, inventory):
+        """collect_all should include saude in the returned dict."""
+        # Stub all collectors to return empty lists
+        inventory._collect_ftp = AsyncMock(return_value=[])
+        inventory._collect_dadosgov = AsyncMock(return_value=[])
+        inventory._collect_ducklake = AsyncMock(return_value=[])
+        inventory._collect_saude = AsyncMock(return_value=[])
+
+        result = await inventory.collect_all()
+        assert "saude" in result
+        assert len(result) == 4
+
+
+class TestSaudeFormats:
+    def test_jsonl_format_detected(self):
+        """FileRecord auto-detects jsonl format from name."""
+        r = FileRecord(
+            origin="saude",
+            dataset="X",
+            name="arboviroses_dengue.jsonl",
+            path="https://x",
+        )
+        assert r.format == "jsonl"
+
+    def test_jsonl_stem_matches_dadosgov(self):
+        """Cross-origin stem normalisation: Saude endpoint vs DadosGov slug."""
+        from pysus.management.records import stem_of
+
+        # Saude: arboviroses_dengue.jsonl → stem = arboviroses_dengue
+        # DadosGov: arboviroses-dengue → stem = arboviroses_dengue
+        assert stem_of("arboviroses_dengue.jsonl") == stem_of(
+            "arboviroses-dengue"
+        )
+
+    def test_jsonl_stem_matches_ckan(self):
+        """Cross-origin stem: Saude CKAN resource = DadosGov CKAN resource."""
+        from pysus.management.records import stem_of
+
+        assert stem_of("DENGBR25.csv.zip") == stem_of("DENGBR25.csv.zip")

@@ -6,7 +6,7 @@ import re
 from abc import abstractmethod
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 from dateparser import parse  # type: ignore[import-untyped]
@@ -16,6 +16,11 @@ from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from pysus.api.types import State
 
 from .client import ConjuntoDados, DadosGov, Recurso
+from .metadata import (
+    DadosGovDatasetExtractor,
+    DadosGovFileExtractor,
+    DadosGovGroupExtractor,
+)
 
 _FORMAT_RE = re.compile(r"[._](csv|json|xml)(\.zip)?$", re.IGNORECASE)
 
@@ -56,6 +61,7 @@ class File(BaseRemoteFile):
 
     record: Recurso
     type: str = "File"
+    extractor_types: ClassVar[list] = [DadosGovFileExtractor]
     _metadata: dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __init__(self, **data):
@@ -249,6 +255,7 @@ class Group(BaseRemoteGroup):
     """A group of files within a dataset."""
 
     record: ConjuntoDados
+    extractor_types: ClassVar[list] = [DadosGovGroupExtractor]
     _formatter: Callable[[str], dict[str, Any]] | None = PrivateAttr(
         default=None
     )
@@ -359,6 +366,7 @@ class Dataset(BaseRemoteDataset):
     ids: list[str] = []
     client: DadosGov
     group_aliases: dict[str, str] = {}
+    extractor_types: ClassVar[list] = [DadosGovDatasetExtractor]
 
     def __repr__(self):
         """Return the dataset name as its string representation."""

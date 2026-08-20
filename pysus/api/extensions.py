@@ -7,7 +7,7 @@ import json
 import shutil
 import tarfile
 import zipfile
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -770,6 +770,100 @@ class JSON(BaseTabularFile):
         yield await self.load()
 
 
+class JSONL(BaseTabularFile):
+    """Represents a JSON Lines file — one JSON object per line.
+
+    Used by the Saude client to persist paginated DEMAS REST rows.
+    """
+
+    type: FileType = Field("JSONL")
+    _columns_cache: list["Column"] | None = PrivateAttr(default=None)
+    _rows_cache: int | None = PrivateAttr(default=None)
+
+    def _read_lines(self) -> Iterator[dict]:
+        """Yield decoded JSON objects from the file, line by line."""
+
+        def _gen():
+            with open(self.path, encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    yield json.loads(line)
+
+        return _gen()
+
+    @property
+    def columns(self) -> list["Column"]:
+        """Return the column metadata from the first record."""
+        if self._columns_cache is not None:
+            return self._columns_cache
+        if self.path.stat().st_size == 0:
+            self._columns_cache = []
+            return self._columns_cache
+        sample: dict = {}
+        with open(self.path, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    sample = json.loads(line)
+                    break
+        if not sample:
+            self._columns_cache = []
+            return self._columns_cache
+        df = pd.DataFrame([sample])
+        self._columns_cache = [
+            Column.from_schema(name=col, dtype=_map_dtype(str(dt)))
+            for col, dt in zip(df.columns, df.dtypes)
+        ]
+        return self._columns_cache
+
+    @property
+    def rows(self) -> int:
+        """Return the number of JSON records in the file."""
+        if self._rows_cache is not None:
+            return self._rows_cache
+        count = 0
+        with open(self.path, encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    count += 1
+        self._rows_cache = count
+        return self._rows_cache
+
+    async def load(self) -> pd.DataFrame:
+        """Read the entire JSONL file into a DataFrame."""
+
+        def _load():
+            return pd.read_json(self.path, lines=True)
+
+        return await to_thread.run_sync(_load)
+
+    async def stream(
+        self,
+        chunk_size: int = 10000,
+    ) -> AsyncGenerator[pd.DataFrame, None]:
+        """Yield the JSONL records in batches of the given size."""
+
+        def _chunks():
+            batch: list[dict] = []
+            with open(self.path, encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    batch.append(json.loads(line))
+                    if len(batch) >= chunk_size:
+                        yield pd.DataFrame(batch)
+                        batch = []
+            if batch:
+                yield pd.DataFrame(batch)
+
+        for chunk in _chunks():
+            yield chunk
+            await asyncio.sleep(0)
+
+
 class PDF(BaseLocalFile):
     """Represents a PDF file."""
 
@@ -1113,6 +1207,30 @@ def _detect_json(path: Path, header: bytes) -> type[JSON] | None:
         return None
 
 
+def _detect_jsonl(path: Path, header: bytes) -> type[JSONL] | None:
+    """Detect JSON Lines (one JSON object per line, not an array or dict)."""
+    try:
+        with open(path, "rb") as f:
+            first = b""
+            second = b""
+            for line in f:
+                stripped = line.strip()
+                if stripped and not first:
+                    first = stripped
+                elif stripped and first:
+                    second = stripped
+                    break
+        if not first or not second:
+            return None
+        if first[:1] != b"{" or second[:1] != b"{":
+            return None
+        json.loads(first)
+        json.loads(second)
+        return JSONL
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
 _DETECTORS = [
     _detect_parquet,
     _detect_pdf,
@@ -1120,6 +1238,7 @@ _DETECTORS = [
     _detect_gzip,
     _detect_tar,
     _detect_dbf,
+    _detect_jsonl,
     _detect_json,
 ]
 
@@ -1152,6 +1271,7 @@ class ExtensionFactory:
         ".dbc": DBC,
         ".pdf": PDF,
         ".json": JSON,
+        ".jsonl": JSONL,
     }
 
     _detection_cache: dict[str, type[BaseLocalFile] | None] = {}

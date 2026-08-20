@@ -13,11 +13,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-ORIGINS: tuple[str, ...] = ("ducklake", "ftp", "dadosgov")
+ORIGINS: tuple[str, ...] = ("ducklake", "ftp", "dadosgov", "saude")
 
 #: Download resolution order: S3 parquet first, FTP second, DadosGov last
 #: (only used when a file is not on S3 and requires the API token).
-DOWNLOAD_PRIORITY: tuple[str, ...] = ORIGINS
+#: Saude is the 4th priority — a fallback after FTP and DadosGov.
+DOWNLOAD_PRIORITY: tuple[str, ...] = ("ducklake", "ftp", "dadosgov", "saude")
 
 _FORMAT_SUFFIXES = (".csv", ".json", ".xml", ".xlsx", ".xls", ".dbx")
 _COMPRESSION_SUFFIXES = (".zip", ".gz", ".bz2", ".7z", ".rar")

@@ -8,7 +8,7 @@ import hashlib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Union
 
 from anyio import to_thread
 from pydantic import Field, PrivateAttr
@@ -20,6 +20,11 @@ from .catalog.adapters import DatasetAdapter
 from .catalog.orm.dataset import File as CatalogFile
 from .catalog.orm.dataset import Group
 from .catalog.orm.default import Dataset
+from .metadata import (
+    DuckLakeDatasetExtractor,
+    DuckLakeFileExtractor,
+    DuckLakeGroupExtractor,
+)
 
 if TYPE_CHECKING:
     from .client import DuckLake
@@ -28,6 +33,7 @@ if TYPE_CHECKING:
 class File(BaseRemoteFile):
     group: Optional["DuckGroup"] = Field(default=None, exclude=True)
 
+    extractor_types: ClassVar[list] = [DuckLakeFileExtractor]
     _record: CatalogFile = PrivateAttr()
 
     def __init__(self, **data: Any) -> None:
@@ -99,6 +105,7 @@ class DuckDataset(BaseRemoteDataset):
     client: "DuckLake" = Field(exclude=True)
     border: Any = Field(exclude=True)
     update_on_close: bool = Field(default=False, exclude=True)
+    extractor_types: ClassVar[list] = [DuckLakeDatasetExtractor]
 
     def __init__(self, **data) -> None:
         if "adapter" in data and "border" not in data:
@@ -175,7 +182,10 @@ class DuckDataset(BaseRemoteDataset):
 
                 if states:
                     stmt = stmt.filter(
-                        CatalogFile.state.in_([s.upper() for s in states])
+                        or_(
+                            CatalogFile.state.in_([s.upper() for s in states]),
+                            CatalogFile.state.is_(None),
+                        )
                     )
                 if years:
                     stmt = stmt.filter(CatalogFile.year.in_(years))
@@ -233,6 +243,7 @@ class DuckDataset(BaseRemoteDataset):
 class DuckGroup(BaseRemoteGroup):
     record: Group = Field(exclude=True)
     dataset: DuckDataset = Field(exclude=True)
+    extractor_types: ClassVar[list] = [DuckLakeGroupExtractor]
 
     def __str__(self) -> str:
         return self.name

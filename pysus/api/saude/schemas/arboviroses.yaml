@@ -1,0 +1,136 @@
+# Column schemas for DEMAS arboviroses endpoints.
+# Sourced from the SINAN/SUS documentation (cartilha de arboviroses).
+
+dengue:
+  - name: nu_notific
+    type: integer
+    description_pt: "Número da notificação"
+    description_en: "Notification number"
+  - name: dt_notific
+    type: string
+    description_pt: "Data da notificação"
+    description_en: "Notification date"
+  - name: nu_ano
+    type: integer
+    description_pt: "Ano da notificação"
+    description_en: "Notification year"
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município de residência"
+    description_en: "IBGE municipality code of residence"
+  - name: id_uf
+    type: string
+    description_pt: "Unidade Federativa de residência"
+    description_en: "State of residence"
+  - name: cs_sexo
+    type: string
+    description_pt: "Sexo (M-F)"
+    description_en: "Sex (M-F)"
+  - name: dt_nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+  - name: idade
+    type: integer
+    description_pt: "Idade (anos)"
+    description_en: "Age (years)"
+  - name: classi_fin
+    type: string
+    description_pt: "Classificação final"
+    description_en: "Final classification"
+  - name: criterio_conf
+    type: string
+    description_pt: "Critério de confirmação"
+    description_en: "Confirmation criteria"
+  - name: evolucao
+    type: string
+    description_pt: "Evolução do caso"
+    description_en: "Case outcome"
+  - name: dt_obito
+    type: string
+    description_pt: "Data do óbito"
+    description_en: "Date of death"
+
+chikungunya:
+  - name: nu_notific
+    type: integer
+    description_pt: "Número da notificação"
+    description_en: "Notification number"
+  - name: dt_notific
+    type: string
+    description_pt: "Data da notificação"
+    description_en: "Notification date"
+  - name: nu_ano
+    type: integer
+    description_pt: "Ano da notificação"
+    description_en: "Notification year"
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município de residência"
+    description_en: "IBGE municipality code of residence"
+  - name: id_uf
+    type: string
+    description_pt: "Unidade Federativa de residência"
+    description_en: "State of residence"
+  - name: cs_sexo
+    type: string
+    description_pt: "Sexo (M-F)"
+    description_en: "Sex (M-F)"
+  - name: dt_nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+  - name: idade
+    type: integer
+    description_pt: "Idade (anos)"
+    description_en: "Age (years)"
+  - name: classi_fin
+    type: string
+    description_pt: "Classificação final"
+    description_en: "Final classification"
+  - name: evolucao
+    type: string
+    description_pt: "Evolução do caso"
+    description_en: "Case outcome"
+
+zikavirus:
+  - name: nu_notific
+    type: integer
+    description_pt: "Número da notificação"
+    description_en: "Notification number"
+  - name: dt_notific
+    type: string
+    description_pt: "Data da notificação"
+    description_en: "Notification date"
+  - name: nu_ano
+    type: integer
+    description_pt: "Ano da notificação"
+    description_en: "Notification year"
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município de residência"
+    description_en: "IBGE municipality code of residence"
+  - name: id_uf
+    type: string
+    description_pt: "Unidade Federativa de residência"
+    description_en: "State of residence"
+  - name: cs_sexo
+    type: string
+    description_pt: "Sexo (M-F)"
+    description_en: "Sex (M-F)"
+  - name: dt_nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+  - name: idade
+    type: integer
+    description_pt: "Idade (anos)"
+    description_en: "Age (years)"
+  - name: classi_fin
+    type: string
+    description_pt: "Classificação final"
+    description_en: "Final classification"
+  - name: evolucao
+    type: string
+    description_pt: "Evolução do caso"
+    description_en: "Case outcome"

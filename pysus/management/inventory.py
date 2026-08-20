@@ -27,6 +27,7 @@ _ORIGIN_TO_CLIENT = {
     "ftp": "ftp",
     "dadosgov": "dadosgov",
     "ducklake": "ducklake",
+    "saude": "saude",
 }
 
 
@@ -47,9 +48,9 @@ class Inventory:
         datasets: list[str] | None = None,
         dadosgov_token: str | None = None,
     ) -> list[FileRecord]:
-        """Collect the file listing of *origin* (``ftp``, ``dadosgov`` or
-        ``ducklake``), optionally restricted to *datasets* (canonical
-        uppercase names)."""
+        """Collect the file listing of *origin* (``ftp``, ``dadosgov``,
+        ``ducklake`` or ``saude``), optionally restricted to *datasets*
+        (canonical uppercase names)."""
         origin = origin.strip().lower()
         if origin == "ftp":
             return await self._collect_ftp(datasets)
@@ -57,6 +58,8 @@ class Inventory:
             return await self._collect_dadosgov(datasets, token=dadosgov_token)
         if origin == "ducklake":
             return await self._collect_ducklake(datasets)
+        if origin == "saude":
+            return await self._collect_saude(datasets)
         raise ValueError(f"Unknown origin: {origin!r}")
 
     async def collect_all(
@@ -71,6 +74,7 @@ class Inventory:
             "dadosgov": await self._collect_dadosgov(
                 datasets, token=dadosgov_token
             ),
+            "saude": await self._collect_saude(datasets),
         }
 
     async def _collect_ftp(
@@ -183,6 +187,65 @@ class Inventory:
                         file=file,
                     )
                 )
+        return records
+
+    async def _collect_saude(
+        self, datasets: list[str] | None = None
+    ) -> list[FileRecord]:
+        """Collect from the OpenDataSUS (dadosabertos.saude.gov.br) client.
+
+        Content items are either:
+
+        - ``SaudeGroup`` — CKAN packages whose files are walked
+          recursively (like DadosGov);
+        - ``SaudeEndpointFile`` — DEMAS REST endpoints, each turned
+          into a single ``FileRecord`` with ``format="jsonl"``.
+        """
+        from pysus.api.models import BaseRemoteGroup
+        from pysus.api.saude.models import SaudeEndpointFile
+
+        client = await self.pysus.get_saude()
+        records: list[FileRecord] = []
+        for dataset in await client.datasets():
+            if datasets and dataset.name.upper() not in datasets:
+                continue
+            for item in await dataset.content:
+                if isinstance(item, SaudeEndpointFile):
+                    # DEMAS endpoint file → single record
+                    ep_name = item.record.path.strip("/").replace("/", "_")
+                    records.append(
+                        FileRecord(
+                            origin="saude",
+                            dataset=dataset.name,
+                            name=f"{ep_name}.jsonl",
+                            path=str(item.path),
+                            size=item.size,
+                            modified=_safe_modify(item),
+                            year=item.year,
+                            month=item.month,
+                            state=item.state,
+                            format="jsonl",
+                            file=item,
+                        )
+                    )
+                elif isinstance(item, BaseRemoteGroup):
+                    # CKAN group → walk its files
+                    for file in await item.files:
+                        records.append(
+                            FileRecord(
+                                origin="saude",
+                                dataset=dataset.name,
+                                name=file.basename,
+                                path=str(file.path),
+                                size=file.size,
+                                modified=_safe_modify(file),
+                                group=getattr(item, "name", None),
+                                year=file.year,
+                                month=file.month,
+                                state=file.state,
+                                file=file,
+                            )
+                        )
         return records
 
     # ------------------------------------------------------------------

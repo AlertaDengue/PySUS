@@ -16,6 +16,7 @@ from pysus.api.extensions import (
     DBC,
     DBF,
     JSON,
+    JSONL,
     PDF,
     Directory,
     ExtensionFactory,
@@ -1630,3 +1631,127 @@ async def test_csv_rows_cached(tmp_dir):
     first = obj.rows
     second = obj.rows
     assert first == second
+
+
+# -- JSONL ----------------------------------------------------------------
+
+
+class TestJSONL:
+    def test_columns(self, tmp_dir):
+        path = tmp_dir / "test.jsonl"
+        path.write_text('{"a": 1, "b": "x"}\n{"a": 2, "b": "y"}\n')
+        obj = JSONL(path=path)
+        cols = obj.columns
+        assert len(cols) == 2
+        assert cols[0].name == "a"
+        assert cols[1].name == "b"
+
+    def test_rows(self, tmp_dir):
+        path = tmp_dir / "test.jsonl"
+        lines = "\n".join(json.dumps({"i": i}) for i in range(7))
+        path.write_text(lines + "\n")
+        obj = JSONL(path=path)
+        assert obj.rows == 7
+
+    def test_rows_empty(self, tmp_dir):
+        path = tmp_dir / "empty.jsonl"
+        path.write_text("")
+        obj = JSONL(path=path)
+        assert obj.rows == 0
+
+    def test_rows_blank_lines(self, tmp_dir):
+        path = tmp_dir / "blanks.jsonl"
+        path.write_text('{"a":1}\n\n\n{"a":2}\n\n')
+        obj = JSONL(path=path)
+        assert obj.rows == 2
+
+    @pytest.mark.asyncio
+    async def test_load(self, tmp_dir):
+        path = tmp_dir / "test.jsonl"
+        path.write_text('{"x": 10}\n{"x": 20}\n')
+        obj = JSONL(path=path)
+        df = await obj.load()
+        assert len(df) == 2
+        assert list(df.columns) == ["x"]
+        assert df["x"].tolist() == [10, 20]
+
+    @pytest.mark.asyncio
+    async def test_stream(self, tmp_dir):
+        path = tmp_dir / "test.jsonl"
+        lines = "\n".join(json.dumps({"i": i}) for i in range(25))
+        path.write_text(lines + "\n")
+        obj = JSONL(path=path)
+        chunks = []
+        async for chunk in obj.stream(chunk_size=10):
+            chunks.append(chunk)
+        assert len(chunks) == 3
+        assert len(chunks[0]) == 10
+        assert len(chunks[1]) == 10
+        assert len(chunks[2]) == 5
+
+    def test_columns_cached(self, tmp_dir):
+        """JSONL.columns must return the same list on repeated access."""
+        path = tmp_dir / "test.jsonl"
+        path.write_text('{"a": 1}\n')
+        obj = JSONL(path=path)
+        first = obj.columns
+        second = obj.columns
+        assert first is second
+
+    def test_rows_cached(self, tmp_dir):
+        """JSONL.rows must return the same int on repeated access."""
+        path = tmp_dir / "test.jsonl"
+        path.write_text('{"a": 1}\n{"b": 2}\n')
+        obj = JSONL(path=path)
+        assert obj.rows == 2
+        assert obj.rows == 2
+
+
+# -- JSONL detector -------------------------------------------------------
+
+
+class TestDetectJSONL:
+    def test_detects_jsonl_file(self, tmp_dir):
+        from pysus.api.extensions import _detect_jsonl
+
+        path = tmp_dir / "data.jsonl"
+        path.write_text('{"a": 1}\n{"b": 2}\n')
+        with open(path, "rb") as f:
+            header = f.read(4096)
+        assert _detect_jsonl(path, header) is JSONL
+
+    def test_not_jsonl_single_json_object(self, tmp_dir):
+        from pysus.api.extensions import _detect_jsonl
+
+        path = tmp_dir / "data.json"
+        path.write_text('{"a": 1}\n')
+        with open(path, "rb") as f:
+            header = f.read(4096)
+        assert _detect_jsonl(path, header) is None
+
+    def test_not_jsonl_json_array(self, tmp_dir):
+        from pysus.api.extensions import _detect_jsonl
+
+        path = tmp_dir / "data.json"
+        path.write_text('[{"a": 1}]\n')
+        with open(path, "rb") as f:
+            header = f.read(4096)
+        assert _detect_jsonl(path, header) is None
+
+    def test_not_jsonl_empty(self, tmp_dir):
+        from pysus.api.extensions import _detect_jsonl
+
+        path = tmp_dir / "empty.jsonl"
+        path.write_text("")
+        with open(path, "rb") as f:
+            header = f.read(4096)
+        assert _detect_jsonl(path, header) is None
+
+    def test_factory_instantiates_jsonl(self, tmp_dir):
+        """ExtensionFactory should instantiate JSONL from a .jsonl file."""
+        path = tmp_dir / "test.jsonl"
+        path.write_text('{"a": 1}\n{"b": 2}\n')
+        import asyncio
+
+        result = asyncio.run(ExtensionFactory.instantiate(path))
+        assert isinstance(result, JSONL)
