@@ -438,7 +438,7 @@ class TestPySUSQuery:
             client, "get_ducklake", new=AsyncMock(return_value=None)
         ):
             with pytest.raises(
-                ConnectionError, match="Could not connect to PySUS s3 bucket"
+                ConnectionError, match="Could not connect to PySUS S3 bucket"
             ):
                 await client.query(dataset="sinan")
 
