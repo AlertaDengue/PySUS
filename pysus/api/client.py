@@ -412,6 +412,8 @@ class PySUS:
         """Download a remote file and return a local file handle.
 
         Skips re-download if a matching local copy already exists.
+        When no *callback* is supplied and progress bars are enabled,
+        a ``tqdm`` bar is shown automatically.
 
         Parameters
         ----------
@@ -439,6 +441,10 @@ class PySUS:
         """
 
         from pysus.api.extensions import ExtensionFactory
+        from pysus.api.progress import get_progress_callback
+
+        if callback is None:
+            callback = get_progress_callback(desc=file.basename)
 
         existing_local = await self.get_local_file(file)
         if existing_local and existing_local.path.exists():
@@ -492,6 +498,8 @@ class PySUS:
                 state=file.state,
                 group=getattr(file.group, "name", None),
             )
+            if hasattr(callback, "close"):
+                callback.close()  # type: ignore[union-attr]
             return await ExtensionFactory.instantiate(local_path)
 
         except Exception as e:  # noqa
@@ -499,6 +507,8 @@ class PySUS:
 
             traceback.print_exc()
 
+            if hasattr(callback, "close"):
+                callback.close()  # type: ignore[union-attr]
             await self._update_state(
                 local_path,
                 str(remote_path),
