@@ -5,10 +5,14 @@ import webbrowser
 import typer
 from pysus import __version__
 
-from .saude import app as saude_app
-
 app = typer.Typer(help="PySUS CLI")
-app.add_typer(saude_app, name="saude")
+
+try:
+    from .saude import app as saude_app
+
+    app.add_typer(saude_app, name="saude")
+except ImportError:
+    pass
 
 
 def _is_colab() -> bool:

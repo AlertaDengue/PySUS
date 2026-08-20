@@ -92,3 +92,69 @@ class TestCaching:
         # Second call should reuse the cached buildId
         await saude_client.list_groups()
         assert (tmp_path / "build_id.json").exists()
+
+
+class TestProperties:
+    def test_name(self, saude_client: SaudeClient):
+        assert saude_client.name == "Saude"
+
+    def test_long_name(self, saude_client: SaudeClient):
+        assert saude_client.long_name == "Portal de Dados Abertos do SUS"
+
+    def test_description(self, saude_client: SaudeClient):
+        assert "Ministério" in saude_client.description
+
+
+class TestDownload:
+    @pytest.mark.asyncio
+    async def test_delegates_to_file(self, saude_client: SaudeClient, tmp_path):
+        from unittest.mock import AsyncMock, MagicMock
+
+        mock_file = MagicMock()
+        mock_file._download = AsyncMock(return_value=tmp_path / "out.csv")
+        result = await saude_client.download(mock_file, tmp_path / "out.csv")
+        mock_file._download.assert_called_once()
+        assert result == tmp_path / "out.csv"
+
+
+class TestEnsureBuildId:
+    @pytest.mark.asyncio
+    async def test_refetches_when_use_cache_false(
+        self, saude_client: SaudeClient, tmp_path
+    ):
+        from unittest.mock import patch
+
+        await saude_client.list_groups()
+        old_id = saude_client._build_id
+        assert old_id is not None
+
+        new_id = "completely-new-build-id"
+
+        async def fake_fetch(*args, **kwargs):
+            return new_id
+
+        with patch(
+            "pysus.api.saude.client.fetch_build_id",
+            side_effect=fake_fetch,
+        ):
+            result = await saude_client._ensure_build_id(use_cache=False)
+        assert result == new_id
+
+    @pytest.mark.asyncio
+    async def test_reuses_when_use_cache_true(
+        self, saude_client: SaudeClient, tmp_path
+    ):
+        await saude_client.list_groups()
+        old_id = saude_client._build_id
+        result = await saude_client._ensure_build_id(use_cache=True)
+        assert result == old_id
+
+
+class TestDatasets:
+    @pytest.mark.asyncio
+    async def test_returns_saude_datasets(self, saude_client: SaudeClient):
+        from pysus.api.saude.models import SaudeDataset
+
+        datasets = await saude_client.datasets()
+        assert len(datasets) > 0
+        assert all(isinstance(d, SaudeDataset) for d in datasets)

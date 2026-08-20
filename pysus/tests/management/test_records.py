@@ -66,7 +66,11 @@ class TestComposeS3Key:
         assert key == "public/data/ftp/sih/RD/2025/02/AC/RDAC2502.parquet"
 
     def test_dataset_lowercased(self):
-        key = compose_s3_key(origin="FTP", dataset="SINAN", name="DENGBR25.dbc")
+        key = compose_s3_key(
+            origin="FTP",
+            dataset="SINAN",
+            name="DENGBR25.dbc",
+        )
         assert key.startswith("public/data/ftp/sinan/")
 
     def test_csv_zip_and_dbc_share_key(self):

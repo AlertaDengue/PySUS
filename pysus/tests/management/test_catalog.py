@@ -749,7 +749,13 @@ class TestLinkColumns:
             month=None,
             state=None,
         )
-        writer.link_columns(cursor, cols_cursor, file_id2, schema, dataset_id=1)
+        writer.link_columns(
+            cursor,
+            cols_cursor,
+            file_id2,
+            schema,
+            dataset_id=1,
+        )
 
         cols_cursor.execute(
             "SELECT COUNT(*) FROM pysus.dataset_columns WHERE dataset_id = 1"

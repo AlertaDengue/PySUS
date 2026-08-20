@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from pysus.api.saude.resources import (
     CatalogEntry,
     CatalogPage,
@@ -212,3 +213,42 @@ class TestCoerceInt:
         )
         assert page.page == 0
         assert page.rows == 0
+
+
+class TestResourceValidators:
+    def test_format_none_returns_empty(self):
+        from pysus.api.saude.resources import Resource
+
+        r = Resource(
+            id="r1",
+            url="https://example.com/x",
+            format=None,
+        )
+        assert r.format == ""
+
+    def test_format_strips_and_uppercases(self):
+        from pysus.api.saude.resources import Resource
+
+        r = Resource(
+            id="r1",
+            url="https://example.com/x",
+            format="  csv  ",
+        )
+        assert r.format == "CSV"
+
+
+class TestCKANTimestampValidator:
+    def test_invalid_timestamp_raises(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError, match="Invalid timestamp"):
+            CKANPackage.model_validate(
+                {
+                    "id": "1",
+                    "name": "test",
+                    "title": "Test",
+                    "metadata_created": "not-a-date",
+                    "metadata_modified": "also-not-a-date",
+                    "num_resources": 0,
+                }
+            )

@@ -239,7 +239,11 @@ class TestCollectDadosgov:
             async def _fetch_files(self):
                 return []
 
-        group = _FakeGroup(path=Path("x"), type="file", dataset=_fake_dataset())
+        group = _FakeGroup(
+            path=Path("x"),
+            type="file",
+            dataset=_fake_dataset(),
+        )
         group._files = [_ftp_file("DENGBR25.csv.zip")]
         dataset = MagicMock()
         dataset.name = "SINAN"

@@ -203,9 +203,7 @@ Legacy Data Readers
    :members:
    :undoc-members:
 
-Command Line Interface
-----------------------
-
-.. automodule:: pysus.cli
-   :members:
-   :undoc-members:
+.. Comment out CLI docs until saude.py is committed to the repo.
+.. .. automodule:: pysus.cli
+..    :members:
+..    :undoc-members:

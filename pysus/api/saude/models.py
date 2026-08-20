@@ -257,7 +257,7 @@ class SaudeGroup(BaseRemoteGroup):
             if resource.id == resource_id:
                 return resource
         raise ResourceNotFound(
-            f"Resource '{resource_id}' not found in '{self.name}'."
+            f"Resource '{resource_id}' not found" f" in '{self.name}'."
         )
 
 
