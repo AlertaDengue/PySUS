@@ -471,7 +471,9 @@ class PySUS:
                 client = await self.get_dadosgov(token)
             else:
                 raise ValidationError(
-                    f"No download logic for client: {client_name}",
+                    f"No download logic for client: {client_name}.\n"
+                    "Hint: valid clients are 'ducklake', 'ftp', "
+                    "and 'dadosgov'."
                 )
 
             if timeout is not None:
@@ -505,7 +507,9 @@ class PySUS:
             )
             local_path.unlink(missing_ok=True)
             raise DownloadError(
-                f"Unexpected error downloading {file.basename}: {e}",
+                f"Unexpected error downloading {file.basename}: {e}.\n"
+                "Hint: check your network connection and disk space. "
+                "If the error is transient, try again."
             ) from e
 
     @_sync_aware
@@ -586,7 +590,9 @@ class PySUS:
             return parquet_file
 
         raise FormatError(
-            f"{local_file} can't be converted to Parquet",
+            f"{local_file} can't be converted to Parquet.\n"
+            "Hint: supported formats are DBF, DBC, CSV, "
+            "and ZIP archives containing tabular data."
         )
 
     def get_local_hierarchy(self):
@@ -675,7 +681,11 @@ class PySUS:
             await self.get_ducklake()
 
         if self._ducklake is None:
-            raise ConnectionError("Could not connect to PySUS s3 bucket")
+            raise ConnectionError(
+                "Could not connect to PySUS S3 bucket.\n"
+                "Hint: check your network connection and ensure S3 "
+                "endpoints are not blocked by a firewall or proxy."
+            )
 
         all_datasets = await self._ducklake.datasets()
 
@@ -745,7 +755,11 @@ class PySUS:
         from pysus.api.utils import is_geocode_column
 
         if not paths:
-            raise ValidationError("No paths provided")
+            raise ValidationError(
+                "No paths provided.\n"
+                "Hint: pass at least one path to read_parquet(), "
+                "e.g. read_parquet([path1, path2])."
+            )
 
         def get_columns(path: Path) -> set[tuple[str, str]]:
             """Return the schema of a Parquet file as (name, type) pairs."""
@@ -767,7 +781,9 @@ class PySUS:
                     raise ValidationError(
                         f"Schema mismatch: file {i} has columns "
                         f"{[c[0] for c in schema]}, "
-                        f"expected {[c[0] for c in schemas[0]]}"
+                        f"expected {[c[0] for c in schemas[0]]}.\n"
+                        "Hint: use mode='union' to merge columns "
+                        "or mode='intersection' to keep common ones."
                     )
 
         elif mode == "intersection":
