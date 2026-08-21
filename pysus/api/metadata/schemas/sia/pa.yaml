@@ -1,0 +1,181 @@
+# Column schemas for SIA (Sistema de Informações Ambulatoriais)
+# Source: DATASUS SIA documentation
+
+pa_producao_ambulatorial:
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município"
+    description_en: "IBGE municipality code"
+    required: true
+  - name: uf_zi
+    type: string
+    description_pt: "Código da UF"
+    description_en: "State code"
+  - name: ano_cmpt
+    type: string
+    description_pt: "Ano de competência"
+    description_en: "Competence year"
+  - name: mes_cmpt
+    type: string
+    description_pt: "Mês de competência"
+    description_en: "Competence month"
+  - name: n_aih
+    type: string
+    description_pt: "Número da AIH"
+    description_en: "AIH number"
+  - name: id_paciente
+    type: string
+    description_pt: "Identificação do paciente"
+    description_en: "Patient identification"
+  - name: proc_solic
+    type: string
+    description_pt: "Procedimento solicitado"
+    description_en: "Requested procedure"
+  - name: proc_rea
+    type: string
+    description_pt: "Procedimento realizado"
+    description_en: "Performed procedure"
+  - name: cid_principal
+    type: string
+    description_pt: "CID principal"
+    description_en: "Principal CID"
+  - name: cid_secun
+    type: string
+    description_pt: "CID secundário"
+    description_en: "Secondary CID"
+  - name: tipo_gru
+    type: string
+    description_pt: "Tipo de grupo"
+    description_en: "Group type"
+  - name: tipo_fin
+    type: string
+    description_pt: "Tipo de financiamento"
+    description_en: "Financing type"
+  - name: n_prof
+    type: string
+    description_pt: "Número do profissional"
+    description_en: "Professional number"
+  - name: cnes
+    type: string
+    description_pt: "Código CNES"
+    description_en: "CNES code"
+  - name: cpf
+    type: string
+    description_pt: "CPF"
+    description_en: "CPF"
+  - name: municipio
+    type: string
+    description_pt: "Município"
+    description_en: "Municipality"
+  - name: qt_serv
+    type: integer
+    description_pt: "Quantidade de serviços"
+    description_en: "Service quantity"
+  - name: val_serv
+    type: float
+    description_pt: "Valor do serviço"
+    description_en: "Service value"
+    unit: "BRL"
+  - name: val_sf
+    type: float
+    description_pt: "Valor SF"
+    description_en: "SF value"
+    unit: "BRL"
+  - name: val_anest
+    type: float
+    description_pt: "Valor de anestesia"
+    description_en: "Anesthesia value"
+    unit: "BRL"
+  - name: val_erro_3
+    type: float
+    description_pt: "Valor erro 3"
+    description_en: "Error 3 value"
+    unit: "BRL"
+  - name: val_ucih
+    type: float
+    description_pt: "Valor UCIH"
+    description_en: "UCIH value"
+    unit: "BRL"
+  - name: sequencia
+    type: integer
+    description_pt: "Sequencial"
+    description_en: "Sequential"
+  - name: remessa
+    type: string
+    description_pt: "Remessa"
+    description_en: "Submission"
+
+bi_boletim_individualizado:
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município"
+    description_en: "IBGE municipality code"
+  - name: uf_zi
+    type: string
+    description_pt: "Código da UF"
+    description_en: "State code"
+  - name: ano_cmpt
+    type: string
+    description_pt: "Ano de competência"
+    description_en: "Competence year"
+  - name: mes_cmpt
+    type: string
+    description_pt: "Mês de competência"
+    description_en: "Competence month"
+  - name: cnes
+    type: string
+    description_pt: "Código CNES"
+    description_en: "CNES code"
+  - name: proc_solic
+    type: string
+    description_pt: "Procedimento solicitado"
+    description_en: "Requested procedure"
+  - name: proc_rea
+    type: string
+    description_pt: "Procedimento realizado"
+    description_en: "Performed procedure"
+  - name: cid_principal
+    type: string
+    description_pt: "CID principal"
+    description_en: "Principal CID"
+  - name: cid_secun
+    type: string
+    description_pt: "CID secundário"
+    description_en: "Secondary CID"
+  - name: tipo_gru
+    type: string
+    description_pt: "Tipo de grupo"
+    description_en: "Group type"
+  - name: tipo_fin
+    type: string
+    description_pt: "Tipo de financiamento"
+    description_en: "Financing type"
+  - name: n_prof
+    type: string
+    description_pt: "Número do profissional"
+    description_en: "Professional number"
+  - name: cpf
+    type: string
+    description_pt: "CPF"
+    description_en: "CPF"
+  - name: municipio
+    type: string
+    description_pt: "Município"
+    description_en: "Municipality"
+  - name: qt_serv
+    type: integer
+    description_pt: "Quantidade de serviços"
+    description_en: "Service quantity"
+  - name: val_serv
+    type: float
+    description_pt: "Valor do serviço"
+    description_en: "Service value"
+    unit: "BRL"
+  - name: sequencia
+    type: integer
+    description_pt: "Sequencial"
+    description_en: "Sequential"
+  - name: remessa
+    type: string
+    description_pt: "Remessa"
+    description_en: "Submission"

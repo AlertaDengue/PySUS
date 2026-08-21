@@ -1,0 +1,569 @@
+# Column schemas for SIH (Sistema de Informações Hospitalares)
+# Source: DATASUS SIH documentation
+
+rd_reduzida:
+  - name: n_aih
+    type: string
+    description_pt: "Número da AIH"
+    description_en: "AIH number"
+    format: "12 digits"
+    required: true
+  - name: ident
+    type: string
+    description_pt: "Tipo de AIH (1=Normal, 2=Óbito, 3=Intercorrência)"
+    description_en: "AIH type (1=Normal, 2=Death, 3=Intercurrence)"
+  - name: uf_zi
+    type: string
+    description_pt: "Código da UF do estabelecimento"
+    description_en: "Establishment state code"
+  - name: ano_cmpt
+    type: string
+    description_pt: "Ano de competência"
+    description_en: "Competence year"
+    format: "YYYY"
+  - name: mes_cmpt
+    type: string
+    description_pt: "Mês de competência"
+    description_en: "Competence month"
+    format: "MM"
+  - name: nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+    format: "YYYYMMDD"
+  - name: sexo
+    type: string
+    description_pt: "Sexo (1=Masc, 2=Fem, 9=Ignorado)"
+    description_en: "Sex (1=Male, 2=Female, 9=Unknown)"
+  - name: cgc_hosp
+    type: string
+    description_pt: "CNPJ do hospital"
+    description_en: "Hospital CNPJ"
+  - name: cpf_aut
+    type: string
+    description_pt: "CPF do paciente autorizado"
+    description_en: "Authorized patient CPF"
+  - name: nacio
+    type: string
+    description_pt: "Nacionalidade"
+    description_en: "Nationality"
+  - name: cep
+    type: string
+    description_pt: "CEP de residência"
+    description_en: "Residence ZIP code"
+    format: "8 digits"
+  - name: munic_res
+    type: string
+    description_pt: "Código IBGE do município de residência"
+    description_en: "IBGE municipality code of residence"
+  - name: nmep
+    type: string
+    description_pt: "Número do prontuário"
+    description_en: "Medical record number"
+  - name: dt_inter
+    type: string
+    description_pt: "Data de internação"
+    description_en: "Admission date"
+    format: "YYYYMMDD"
+  - name: dt_saida
+    type: string
+    description_pt: "Data de saída"
+    description_en: "Discharge date"
+    format: "YYYYMMDD"
+  - name: diar_acom
+    type: integer
+    description_pt: "Diarias de acompanhante"
+    description_en: "Companion days"
+  - name: qt_diarias
+    type: integer
+    description_pt: "Quantidade de diárias"
+    description_en: "Number of days"
+  - name: procedural
+    type: string
+    description_pt: "Código do procedimento (TUSS)"
+    description_en: "Procedure code (TUSS)"
+  - name: val_sh
+    type: float
+    description_pt: "Valor da SP/SADT"
+    description_en: "SP/SADT value"
+    unit: "BRL"
+  - name: val_sp
+    type: float
+    description_pt: "Valor da SP"
+    description_en: "SP value"
+    unit: "BRL"
+  - name: val_sadt
+    type: float
+    description_pt: "Valor da SADT"
+    description_en: "SADT value"
+    unit: "BRL"
+  - name: val_rn
+    type: float
+    description_pt: "Valor de RN"
+    description_en: "RN value"
+    unit: "BRL"
+  - name: val_acomp
+    type: float
+    description_pt: "Valor de acompanhamento"
+    description_en: "Accompaniment value"
+    unit: "BRL"
+  - name: val_ortp
+    type: float
+    description_pt: "Valor de ortopedia"
+    description_en: "Orthopedics value"
+    unit: "BRL"
+  - name: val_sangue
+    type: float
+    description_pt: "Valor de sangue"
+    description_en: "Blood value"
+    unit: "BRL"
+  - name: val_sadtsr
+    type: float
+    description_pt: "Valor de SADT sem residência"
+    description_en: "SADT without residence value"
+    unit: "BRL"
+  - name: val_transp
+    type: float
+    description_pt: "Valor de transporte"
+    description_en: "Transport value"
+    unit: "BRL"
+  - name: val_obsang
+    type: float
+    description_pt: "Valor de observação de sangue"
+    description_en: "Blood observation value"
+    unit: "BRL"
+  - name: val_ped1ac
+    type: float
+    description_pt: "Valor de pediatria"
+    description_en: "Pediatrics value"
+    unit: "BRL"
+  - name: val_tot
+    type: float
+    description_pt: "Valor total"
+    description_en: "Total value"
+    unit: "BRL"
+  - name: val_uti
+    type: float
+    description_pt: "Valor de UTI"
+    description_en: "ICU value"
+    unit: "BRL"
+  - name: us_tot
+    type: float
+    description_pt: "Valor de produção hospitalar"
+    description_en: "Hospital production value"
+    unit: "BRL"
+  - name: diag_princ
+    type: string
+    description_pt: "Diagnóstico principal (CID-10)"
+    description_en: "Principal diagnosis (ICD-10)"
+  - name: diag_secun
+    type: string
+    description_pt: "Diagnóstico secundário"
+    description_en: "Secondary diagnosis"
+  - name: cobranca
+    type: string
+    description_pt: "Tipo de cobrança"
+    description_en: "Billing type"
+  - name: natureza
+    type: string
+    description_pt: "Natureza da internação"
+    description_en: "Admission nature"
+  - name: nat_jur
+    type: string
+    description_pt: "Natureza jurídica"
+    description_en: "Legal nature"
+  - name: gestao
+    type: string
+    description_pt: "Gestão (M=Municipal, E=Estadual, F=Federal)"
+    description_en: "Management (M=Municipal, E=State, F=Federal)"
+  - name: competencia
+    type: string
+    description_pt: "Competência"
+    description_en: "Competence"
+  - name: mundo
+    type: string
+    description_pt: "Mundo"
+    description_en: "World"
+  - name: tipo_financ
+    type: string
+    description_pt: "Tipo de financiamento"
+    description_en: "Financing type"
+  - name: mrm
+    type: string
+    description_pt: "Motivo de rejeição"
+    description_en: "Rejection reason"
+  - name: num_proc
+    type: string
+    description_pt: "Número do processo"
+    description_en: "Process number"
+  - name: cod_rules
+    type: string
+    description_pt: "Código de regras"
+    description_en: "Rules code"
+  - name: verde
+    type: string
+    description_pt: "Verde"
+    description_en: "Green"
+  - name: fases
+    type: string
+    description_pt: "Fases"
+    description_en: "Phases"
+  - name: problema
+    type: string
+    description_pt: "Problema"
+    description_en: "Problem"
+  - name: seq_aih5
+    type: string
+    description_pt: "Sequencial AIH5"
+    description_en: "Sequential AIH5"
+  - name: cbor
+    type: string
+    description_pt: "Código da ocupação"
+    description_en: "Occupation code"
+  - name: cnaer
+    type: string
+    description_pt: "Código da atividade econômica"
+    description_en: "Economic activity code"
+  - name: vincprev
+    type: string
+    description_pt: "Vinculação previdenciária"
+    description_en: "Social security linkage"
+  - name: gestor_cod
+    type: string
+    description_pt: "Código do gestor"
+    description_en: "Manager code"
+  - name: gestor_tp
+    type: string
+    description_pt: "Tipo do gestor"
+    description_en: "Manager type"
+  - name: gestor_cpf
+    type: string
+    description_pt: "CPF do gestor"
+    description_en: "Manager CPF"
+  - name: gestor_dt
+    type: string
+    description_pt: "Data do gestor"
+    description_en: "Manager date"
+  - name: cnes
+    type: string
+    description_pt: "Código CNES"
+    description_en: "CNES code"
+  - name: cnpj_mant
+    type: string
+    description_pt: "CNPJ da mantenedora"
+    description_en: "Maintainer CNPJ"
+  - name: incfhpq
+    type: string
+    description_pt: "Indicador de infecção hospitalar"
+    description_en: "Hospital infection indicator"
+  - name: cid_asso
+    type: string
+    description_pt: "CID associado"
+    description_en: "Associated CID"
+  - name: cid_morte
+    type: string
+    description_pt: "CID do óbito"
+    description_en: "Death CID"
+  - name: complex
+    type: string
+    description_pt: "Complexidade (1=Básica, 2=Especial, 3=Média)"
+    description_en: "Complexity (1=Basic, 2=Special, 3=Medium)"
+  - name: financ
+    type: string
+    description_pt: "Financiamento"
+    description_en: "Financing"
+  - name: faec_tp
+    type: string
+    description_pt: "Tipo FAEC"
+    description_en: "FAEC type"
+  - name: regct
+    type: string
+    description_pt: "Registro CT"
+    description_en: "CT registry"
+  - name: raca_cor
+    type: string
+    description_pt: "Raça/Cor"
+    description_en: "Race/Color"
+  - name: etnia
+    type: string
+    description_pt: "Etnia"
+    description_en: "Ethnicity"
+  - name: sequencia
+    type: integer
+    description_pt: "Sequencial"
+    description_en: "Sequential"
+  - name: remessa
+    type: string
+    description_pt: "Remessa"
+    description_en: "Submission"
+  - name: ind_vdrl
+    type: string
+    description_pt: "Indicador VDRL"
+    description_en: "VDRL indicator"
+  - name: municipio
+    type: string
+    description_pt: "Município"
+    description_en: "Municipality"
+  - name: tipo_proc
+    type: string
+    description_pt: "Tipo de processo"
+    description_en: "Process type"
+  - name: num_folhas
+    type: integer
+    description_pt: "Número de folhas"
+    description_en: "Number of sheets"
+  - name: qtd_folhas
+    type: integer
+    description_pt: "Quantidade de folhas"
+    description_en: "Sheets quantity"
+  - name: qtd_totaih
+    type: integer
+    description_pt: "Quantidade total de AIH"
+    description_en: "Total AIH quantity"
+  - name: folhas
+    type: integer
+    description_pt: "Folhas"
+    description_en: "Sheets"
+  - name: glosa
+    type: float
+    description_pt: "Glosa"
+    description_en: "Discount"
+    unit: "BRL"
+  - name: rec_glosa
+    type: float
+    description_pt: "Receita de glosa"
+    description_en: "Discount revenue"
+    unit: "BRL"
+  - name: pgto
+    type: float
+    description_pt: "Pagamento"
+    description_en: "Payment"
+    unit: "BRL"
+  - name: val_sh_fed
+    type: float
+    description_pt: "Valor SP federal"
+    description_en: "Federal SP value"
+    unit: "BRL"
+  - name: val_sp_fed
+    type: float
+    description_pt: "Valor SP federal"
+    description_en: "Federal SP value"
+    unit: "BRL"
+  - name: val_sh_ges
+    type: float
+    description_pt: "Valor SP gestão"
+    description_en: "Management SP value"
+    unit: "BRL"
+  - name: val_sp_ges
+    type: float
+    description_pt: "Valor SP gestão"
+    description_en: "Management SP value"
+    unit: "BRL"
+  - name: val_uci
+    type: float
+    description_pt: "Valor UCI"
+    description_en: "UCI value"
+    unit: "BRL"
+  - name: marca_uci
+    type: string
+    description_pt: "Marca UCI"
+    description_en: "UCI brand"
+
+rj_rejeitada:
+  - name: n_aih
+    type: string
+    description_pt: "Número da AIH"
+    description_en: "AIH number"
+    required: true
+  - name: uf_zi
+    type: string
+    description_pt: "Código da UF"
+    description_en: "State code"
+  - name: ano_cmpt
+    type: string
+    description_pt: "Ano de competência"
+    description_en: "Competence year"
+  - name: mes_cmpt
+    type: string
+    description_pt: "Mês de competência"
+    description_en: "Competence month"
+  - name: dt_inter
+    type: string
+    description_pt: "Data de internação"
+    description_en: "Admission date"
+    format: "YYYYMMDD"
+  - name: dt_saida
+    type: string
+    description_pt: "Data de saída"
+    description_en: "Discharge date"
+    format: "YYYYMMDD"
+  - name: cpf_aut
+    type: string
+    description_pt: "CPF do paciente"
+    description_en: "Patient CPF"
+  - name: nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+  - name: cnes
+    type: string
+    description_pt: "Código CNES"
+    description_en: "CNES code"
+  - name: diagn
+    type: string
+    description_pt: "Diagnóstico"
+    description_en: "Diagnosis"
+  - name: tipo_proc
+    type: string
+    description_pt: "Tipo de procedimento"
+    description_en: "Procedure type"
+  - name: complex
+    type: string
+    description_pt: "Complexidade"
+    description_en: "Complexity"
+  - name: municipio
+    type: string
+    description_pt: "Município"
+    description_en: "Municipality"
+  - name: val_sh
+    type: float
+    description_pt: "Valor SP"
+    description_en: "SP value"
+    unit: "BRL"
+  - name: val_sp
+    type: float
+    description_pt: "Valor SP"
+    description_en: "SP value"
+    unit: "BRL"
+  - name: val_tot
+    type: float
+    description_pt: "Valor total"
+    description_en: "Total value"
+    unit: "BRL"
+  - name: mess
+    type: string
+    description_pt: "Mês de saída"
+    description_en: "Discharge month"
+  - name: tipo_rec
+    type: string
+    description_pt: "Tipo de recebimento"
+    description_en: "Receipt type"
+  - name: n_proc
+    type: string
+    description_pt: "Número do procedimento"
+    description_en: "Procedure number"
+  - name: cnes_2
+    type: string
+    description_pt: "CNES secundário"
+    description_en: "Secondary CNES"
+  - name: uf
+    type: string
+    description_pt: "UF"
+    description_en: "State"
+  - name: n_aih_2
+    type: string
+    description_pt: "Número AIH (2)"
+    description_en: "AIH number (2)"
+  - name: diar_acom
+    type: integer
+    description_pt: "Diárias de acompanhante"
+    description_en: "Companion days"
+  - name: sequencia
+    type: integer
+    description_pt: "Sequencial"
+    description_en: "Sequential"
+  - name: remessa
+    type: string
+    description_pt: "Remessa"
+    description_en: "Submission"
+
+er_rejeitada_erro:
+  - name: ai
+    type: string
+    description_pt: "Número da AIH"
+    description_en: "AIH number"
+  - name: cn_invalido
+    type: string
+    description_pt: "CNPS inválido"
+    description_en: "Invalid CNPS"
+  - name: cn_inform
+    type: string
+    description_pt: "CNPS informado"
+    description_en: "Informed CNPS"
+  - name: cgc_hosp
+    type: string
+    description_pt: "CNPJ do hospital"
+    description_en: "Hospital CNPJ"
+  - name: uf_zi
+    type: string
+    description_pt: "Código da UF"
+    description_en: "State code"
+  - name: ano_cmpt
+    type: string
+    description_pt: "Ano de competência"
+    description_en: "Competence year"
+  - name: mes_cmpt
+    type: string
+    description_pt: "Mês de competência"
+    description_en: "Competence month"
+  - name: nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+  - name: dt_inter
+    type: string
+    description_pt: "Data de internação"
+    description_en: "Admission date"
+  - name: dt_saida
+    type: string
+    description_pt: "Data de saída"
+    description_en: "Discharge date"
+  - name: n_proc
+    type: string
+    description_pt: "Número do procedimento"
+    description_en: "Procedure number"
+  - name: complex
+    type: string
+    description_pt: "Complexidade"
+    description_en: "Complexity"
+  - name: val_sh
+    type: float
+    description_pt: "Valor SP"
+    description_en: "SP value"
+    unit: "BRL"
+  - name: val_sp
+    type: float
+    description_pt: "Valor SP"
+    description_en: "SP value"
+    unit: "BRL"
+  - name: val_tot
+    type: float
+    description_pt: "Valor total"
+    description_en: "Total value"
+    unit: "BRL"
+  - name: val_uti
+    type: float
+    description_pt: "Valor UTI"
+    description_en: "ICU value"
+    unit: "BRL"
+  - name: val_tran
+    type: float
+    description_pt: "Valor transporte"
+    description_en: "Transport value"
+    unit: "BRL"
+  - name: sequencia
+    type: integer
+    description_pt: "Sequencial"
+    description_en: "Sequential"
+  - name: remessa
+    type: string
+    description_pt: "Remessa"
+    description_en: "Submission"
+  - name: tipo_rec
+    type: string
+    description_pt: "Tipo de recebimento"
+    description_en: "Receipt type"
+  - name: co_erro
+    type: string
+    description_pt: "Código do erro"
+    description_en: "Error code"
