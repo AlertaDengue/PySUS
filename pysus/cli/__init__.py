@@ -35,6 +35,20 @@ try:
 except ImportError:
     pass
 
+try:
+    from .configure import app as configure_app
+
+    app.add_typer(configure_app, name="configure")
+except ImportError:
+    pass
+
+try:
+    from .cache import app as cache_app
+
+    app.add_typer(cache_app, name="cache")
+except ImportError:
+    pass
+
 
 def _is_colab() -> bool:
     return "COLAB_RELEASE_TAG" in os.environ

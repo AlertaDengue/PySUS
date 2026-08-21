@@ -55,10 +55,36 @@ from pysus.api._impl.databases import *  # noqa
 from pysus.api.client import PySUS  # noqa
 from pysus.api.columns import ColumnInfo  # noqa: F401,E402
 from pysus.api.columns import search_columns  # noqa: F401,E402
+from pysus.api.diff import diff_dfs  # noqa: F401,E402
+from pysus.api.diff import diff_rows  # noqa: F401,E402
+from pysus.api.diff import diff_summary  # noqa: F401,E402
+from pysus.api.export import to_csv  # noqa: F401,E402
+from pysus.api.export import to_excel  # noqa: F401,E402
+from pysus.api.export import to_geojson  # noqa: F401,E402
+from pysus.api.export import to_sql  # noqa: F401,E402
 from pysus.api.flatten import flatten_json_columns  # noqa: F401,E402
 from pysus.api.mappings import to_english  # noqa: F401,E402
+from pysus.api.metadata.columns import available_databases  # noqa: F401,E402
+from pysus.api.metadata.columns import load_column_metadata  # noqa: F401,E402
 from pysus.api.progress import disable_progress_bars  # noqa: F401,E402
 from pysus.api.progress import enable_progress_bars  # noqa: F401,E402
+from pysus.api.quality import column_stats  # noqa: F401,E402
+from pysus.api.quality import missing_values  # noqa: F401,E402
+from pysus.api.quality import profile_report  # noqa: F401,E402
+from pysus.api.quality import quality_score  # noqa: F401,E402
+from pysus.api.quality import validate_data  # noqa: F401,E402
+from pysus.api.transform import aggregate_by_age_group  # noqa: F401,E402
+from pysus.api.transform import aggregate_by_period  # noqa: F401,E402
+from pysus.api.transform import aggregate_by_state  # noqa: F401,E402
+from pysus.api.transform import detect_units  # noqa: F401,E402
+from pysus.api.transform import get_linking_keys  # noqa: F401,E402
+from pysus.api.transform import link_datasets  # noqa: F401,E402
+from pysus.api.transform import mask_data  # noqa: F401,E402
+from pysus.api.transform import optimize_memory  # noqa: F401,E402
+from pysus.api.transform import rename_columns  # noqa: F401,E402
+from pysus.api.transform import set_precision  # noqa: F401,E402
+from pysus.api.transform import stream_parquet  # noqa: F401,E402
+from pysus.api.transform import unmask_data  # noqa: F401,E402
 
 _FTP_DESCRIPTIONS: dict[str, str] = {
     "CIHA": "Hospital & ambulatory admission records",

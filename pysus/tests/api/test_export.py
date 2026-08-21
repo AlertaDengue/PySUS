@@ -139,3 +139,59 @@ class TestToSQL:
         df = make_test_df()
         ddl = to_sql(df, "my_table", dialect="sqlite")
         assert "INTEGER" in ddl or "TEXT" in ddl
+
+
+class TestExport:
+    def test_csv(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        result = export(df, tmp_path / "out.csv")
+        assert result.exists()
+        assert pd.read_csv(result).shape == (2, 3)
+
+    def test_parquet(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        result = export(df, tmp_path / "out.parquet")
+        assert result.exists()
+        assert pd.read_parquet(result).shape == (2, 3)
+
+    def test_json(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        result = export(df, tmp_path / "out.json")
+        assert result.exists()
+        lines = result.read_text().strip().split("\n")
+        assert len(lines) == 2
+
+    def test_sqlite(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        result = export(df, tmp_path / "out.sqlite")
+        assert result.exists()
+        import sqlite3
+
+        conn = sqlite3.connect(str(result))
+        tables = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+        conn.close()
+        assert len(tables) >= 1
+
+    def test_unsupported_format(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        with pytest.raises(ValueError, match="Unsupported format"):
+            export(df, tmp_path / "out.xyz")
+
+    def test_creates_dirs(self, tmp_path):
+        from pysus.api.export import export
+
+        df = make_test_df()
+        result = export(df, tmp_path / "sub" / "dir" / "out.parquet")
+        assert result.exists()
