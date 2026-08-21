@@ -21,6 +21,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from .dadosgov import app as dadosgov_app
+
+    app.add_typer(dadosgov_app, name="dadosgov")
+except ImportError:
+    pass
+
 
 def _is_colab() -> bool:
     return "COLAB_RELEASE_TAG" in os.environ
