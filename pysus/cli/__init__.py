@@ -28,6 +28,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from .ducklake import app as ducklake_app
+
+    app.add_typer(ducklake_app, name="ducklake")
+except ImportError:
+    pass
+
 
 def _is_colab() -> bool:
     return "COLAB_RELEASE_TAG" in os.environ
