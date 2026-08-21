@@ -2,9 +2,16 @@
 
 Manages file downloads, local state tracking, catalog attachment,
 Parquet conversion, and query execution across multiple backends.
+
+Supports both asynchronous (``async with PySUS() as c:``) and synchronous
+(``with PySUS() as c:``) usage.  When entered synchronously, every async
+method automatically runs on a persistent event loop so callers never
+need ``async``/``await``.
 """
 
+import asyncio
 import enum
+import functools
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +37,62 @@ from .saude import SaudeClient
 
 if TYPE_CHECKING:  # pragma: no cover
     from duckdb import DuckDBPyConnection
+
+
+def _run_sync(coro):  # type: ignore[no-untyped-def]
+    """Execute *coro* synchronously.
+
+    Handles the ``nest_asyncio`` requirement for Jupyter environments.
+    Used by convenience functions in ``databases.py`` that need to bridge
+    async pipelines into a synchronous call.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        try:
+            import nest_asyncio  # type: ignore[import-untyped]
+
+            nest_asyncio.apply()
+        except ImportError:
+            msg = (
+                "nest_asyncio is required when running inside Jupyter. "
+                "Install it with: pip install nest_asyncio"
+            )
+            raise RuntimeError(msg) from None
+        return loop.run_until_complete(coro)
+
+    return asyncio.run(coro)
+
+
+def _sync_aware(method):
+    """Decorator that makes an async method callable in both sync and async
+    contexts.
+
+    In **sync mode** (``self._sync is True`` and not already inside
+    ``_run_async``), the coroutine is executed immediately via the
+    instance's persistent event loop and the value is returned directly.
+
+    In **async mode**, the coroutine is returned for the caller to
+    ``await``.  Nested calls from within an already-running ``_run_async``
+    also fall through to this path so that ``await`` works normally on
+    the event loop.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        coro = method(self, *args, **kwargs)
+        if getattr(self, "_sync", False) and not getattr(
+            self,
+            "_sync_running",
+            False,
+        ):
+            return self._run_async(coro)
+        return coro
+
+    return wrapper
 
 
 class Base(DeclarativeBase):
@@ -102,6 +165,96 @@ class PySUS:
         self._dadosgov: DadosGovClient | None = None
         self._saude: SaudeClient | None = None
 
+        self._sync = False
+        self._sync_running = False
+        self._loop: asyncio.AbstractEventLoop | None = None
+
+    def _run_async(self, coro):  # type: ignore[no-untyped-def]
+        """Execute *coro* synchronously using the persistent event loop.
+
+        If no persistent loop exists yet, creates one.  Handles the
+        ``nest_asyncio`` requirement for Jupyter environments.
+        """
+        if self._sync_running:
+            return (
+                self._loop.run_until_complete(coro)
+                if self._loop
+                else asyncio.run(coro)
+            )
+
+        self._sync_running = True
+        try:
+            if self._loop is not None and not self._loop.is_closed():
+                return self._loop.run_until_complete(coro)
+
+            try:
+                running = asyncio.get_running_loop()
+            except RuntimeError:
+                running = None
+
+            if running and running.is_running():
+                try:
+                    import nest_asyncio  # type: ignore[import-untyped]
+
+                    nest_asyncio.apply()
+                except ImportError:
+                    msg = (
+                        "nest_asyncio is required when running inside Jupyter. "
+                        "Install it with: pip install nest_asyncio"
+                    )
+                    raise RuntimeError(msg) from None
+                return running.run_until_complete(coro)
+
+            return asyncio.run(coro)
+        finally:
+            self._sync_running = False
+
+    def __enter__(self) -> "PySUS":
+        """Enter synchronous context.
+
+        Creates a persistent event loop and initialises the async clients
+        on it so that subsequent sync method calls reuse the same loop.
+        """
+        self._sync = True
+        try:
+            running = asyncio.get_running_loop()
+        except RuntimeError:
+            running = None
+
+        if running and running.is_running():
+            try:
+                import nest_asyncio  # type: ignore[import-untyped]
+
+                nest_asyncio.apply()
+            except ImportError:
+                msg = (
+                    "nest_asyncio is required when running inside Jupyter. "
+                    "Install it with: pip install nest_asyncio"
+                )
+                raise RuntimeError(msg) from None
+            self._loop = running
+        else:
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+            self._loop.run_until_complete(self.__aenter__())
+        return self
+
+    def __exit__(  # type: ignore[no-untyped-def]
+        self,
+        exc_type,
+        exc_val,
+        exc_tb,
+    ) -> None:
+        """Exit synchronous context, closing the persistent event loop."""
+        if self._loop is not None and not self._loop.is_closed():
+            if not self._loop.is_running():
+                self._loop.run_until_complete(
+                    self.__aexit__(exc_type, exc_val, exc_tb),
+                )
+                self._loop.close()
+        self._sync = False
+        self._loop = None
+
     async def __aenter__(self):
         self._ducklake = DuckLake()
         await self._ducklake.connect()
@@ -120,6 +273,7 @@ class PySUS:
             await self._saude.close()
         self.engine.dispose()
 
+    @_sync_aware
     async def get_ducklake(
         self,
         callback: Callable[[int, int], None] | None = None,
@@ -130,6 +284,7 @@ class PySUS:
             await self._ducklake.connect(callback=callback)
         return self._ducklake
 
+    @_sync_aware
     async def get_dadosgov(self, access_token: str | None) -> DadosGovClient:
         """Return the DadosGov client, connecting lazily if needed."""
 
@@ -138,6 +293,7 @@ class PySUS:
             await self._dadosgov.connect(token=access_token)
         return self._dadosgov
 
+    @_sync_aware
     async def get_ftp(self) -> FTPClient:
         """Return the FTP client, connecting lazily if needed."""
 
@@ -146,6 +302,7 @@ class PySUS:
             await self._ftp.connect()
         return self._ftp
 
+    @_sync_aware
     async def get_saude(self) -> SaudeClient:
         """Return the Saude (dadosabertos.saude.gov.br) client.
 
@@ -156,6 +313,7 @@ class PySUS:
             self._saude = SaudeClient()
         return self._saude
 
+    @_sync_aware
     async def get_local_file(
         self,
         file: BaseRemoteFile,
@@ -205,6 +363,7 @@ class PySUS:
 
         return base_dir / file.basename
 
+    @_sync_aware
     async def _update_state(
         self,
         local_path: Path,
@@ -242,6 +401,7 @@ class PySUS:
             record.last_synced = datetime.now(timezone.utc).replace(tzinfo=None)
             session.commit()
 
+    @_sync_aware
     async def download(
         self,
         file: BaseRemoteFile,
@@ -252,6 +412,8 @@ class PySUS:
         """Download a remote file and return a local file handle.
 
         Skips re-download if a matching local copy already exists.
+        When no *callback* is supplied and progress bars are enabled,
+        a ``tqdm`` bar is shown automatically.
 
         Parameters
         ----------
@@ -279,6 +441,10 @@ class PySUS:
         """
 
         from pysus.api.extensions import ExtensionFactory
+        from pysus.api.progress import get_progress_callback
+
+        if callback is None:
+            callback = get_progress_callback(desc=file.basename)
 
         existing_local = await self.get_local_file(file)
         if existing_local and existing_local.path.exists():
@@ -311,7 +477,9 @@ class PySUS:
                 client = await self.get_dadosgov(token)
             else:
                 raise ValidationError(
-                    f"No download logic for client: {client_name}",
+                    f"No download logic for client: {client_name}.\n"
+                    "Hint: valid clients are 'ducklake', 'ftp', "
+                    "and 'dadosgov'."
                 )
 
             if timeout is not None:
@@ -330,6 +498,8 @@ class PySUS:
                 state=file.state,
                 group=getattr(file.group, "name", None),
             )
+            if hasattr(callback, "close"):
+                callback.close()  # type: ignore[union-attr]
             return await ExtensionFactory.instantiate(local_path)
 
         except Exception as e:  # noqa
@@ -337,6 +507,8 @@ class PySUS:
 
             traceback.print_exc()
 
+            if hasattr(callback, "close"):
+                callback.close()  # type: ignore[union-attr]
             await self._update_state(
                 local_path,
                 str(remote_path),
@@ -345,9 +517,12 @@ class PySUS:
             )
             local_path.unlink(missing_ok=True)
             raise DownloadError(
-                f"Unexpected error downloading {file.basename}: {e}",
+                f"Unexpected error downloading {file.basename}: {e}.\n"
+                "Hint: check your network connection and disk space. "
+                "If the error is transient, try again."
             ) from e
 
+    @_sync_aware
     async def _delete_record(self, path: str):
         """Delete a LocalFileState record from the database."""
 
@@ -357,6 +532,7 @@ class PySUS:
                 session.delete(record)
                 session.commit()
 
+    @_sync_aware
     async def download_to_parquet(
         self,
         file: BaseRemoteFile,
@@ -424,7 +600,9 @@ class PySUS:
             return parquet_file
 
         raise FormatError(
-            f"{local_file} can't be converted to Parquet",
+            f"{local_file} can't be converted to Parquet.\n"
+            "Hint: supported formats are DBF, DBC, CSV, "
+            "and ZIP archives containing tabular data."
         )
 
     def get_local_hierarchy(self):
@@ -477,6 +655,7 @@ class PySUS:
             )
             return {str(r.remote_path) for r in records}
 
+    @_sync_aware
     async def query(
         self,
         client: Origin | None = None,
@@ -485,7 +664,10 @@ class PySUS:
         state: str | list[str] | None = None,
         year: int | list[int] | None = None,
         month: int | list[int] | None = None,
-    ) -> list[BaseRemoteFile]:
+        as_dataframe: bool = False,
+        columns: list[str] | None = None,
+        dtypes: dict[str, str] | None = None,
+    ) -> list[BaseRemoteFile] | pd.DataFrame:
         """Query available datasets through the DuckLake catalog.
 
         Parameters
@@ -502,17 +684,31 @@ class PySUS:
             Year(s) to filter by.
         month : int or list of int, optional
             Month(s) to filter by.
+        as_dataframe : bool, optional
+            When ``True``, downloads all matching files, converts them
+            to Parquet, and returns a single concatenated DataFrame.
+            Default ``False``.
+        columns : list of str, optional
+            Subset of column names to keep when ``as_dataframe=True``.
+        dtypes : dict, optional
+            Override column types when ``as_dataframe=True``.
+            Keys are column names, values are dtype strings.
 
         Returns
         -------
-        list
-            List of matching File objects.
+        list or DataFrame
+            List of matching File objects, or a DataFrame if
+            ``as_dataframe=True``.
         """
         if self._ducklake is None:
             await self.get_ducklake()
 
         if self._ducklake is None:
-            raise ConnectionError("Could not connect to PySUS s3 bucket")
+            raise ConnectionError(
+                "Could not connect to PySUS S3 bucket.\n"
+                "Hint: check your network connection and ensure S3 "
+                "endpoints are not blocked by a firewall or proxy."
+            )
 
         all_datasets = await self._ducklake.datasets()
 
@@ -538,11 +734,45 @@ class PySUS:
             )
             files.extend(ds_files)
 
-        if not client:
+        if client:
+            prefix = f"public/data/{client.lower()}/"
+            files = [f for f in files if str(f.path).startswith(prefix)]
+
+        if not as_dataframe:
             return files
 
-        prefix = f"public/data/{client.lower()}/"
-        return [f for f in files if str(f.path).startswith(prefix)]
+        if not files:
+            return pd.DataFrame()
+
+        import asyncio as _asyncio
+
+        sem = _asyncio.Semaphore(3)
+
+        async def _dl(f: BaseRemoteFile):
+            async with sem:
+                return await self.download_to_parquet(f)
+
+        downloaded = await _asyncio.gather(*[_dl(f) for f in files])
+        paths = [p.path for p in downloaded if p is not None]
+        if not paths:
+            return pd.DataFrame()
+
+        df = self.read_parquet(paths, add_dv=True)
+        if not isinstance(df, pd.DataFrame):
+            df = df.df()  # type: ignore[union-attr]
+
+        if columns:
+            df = df[[c for c in columns if c in df.columns]]
+
+        if dtypes:
+            for col, dtype in dtypes.items():
+                if col in df.columns:
+                    try:
+                        df[col] = df[col].astype(dtype)
+                    except (ValueError, TypeError):
+                        pass
+
+        return df
 
     def read_parquet(
         self,
@@ -582,7 +812,11 @@ class PySUS:
         from pysus.api.utils import is_geocode_column
 
         if not paths:
-            raise ValidationError("No paths provided")
+            raise ValidationError(
+                "No paths provided.\n"
+                "Hint: pass at least one path to read_parquet(), "
+                "e.g. read_parquet([path1, path2])."
+            )
 
         def get_columns(path: Path) -> set[tuple[str, str]]:
             """Return the schema of a Parquet file as (name, type) pairs."""
@@ -604,7 +838,9 @@ class PySUS:
                     raise ValidationError(
                         f"Schema mismatch: file {i} has columns "
                         f"{[c[0] for c in schema]}, "
-                        f"expected {[c[0] for c in schemas[0]]}"
+                        f"expected {[c[0] for c in schemas[0]]}.\n"
+                        "Hint: use mode='union' to merge columns "
+                        "or mode='intersection' to keep common ones."
                     )
 
         elif mode == "intersection":

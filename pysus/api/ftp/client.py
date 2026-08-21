@@ -166,8 +166,10 @@ class FTP(BaseRemoteClient):
 
         if self.ftp is None:
             raise ConnectionError(
-                "FTP client is not connected. Call 'await client.login()'"
-                " before accessing datasets."
+                "FTP client is not connected.\n"
+                "Hint: call 'await client.login()' before accessing "
+                "datasets, and check your network connection to "
+                "ftp.saude.gov.br."
             )
 
         return [d(client=self) for d in AVAILABLE_DATABASES]

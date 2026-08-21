@@ -159,7 +159,7 @@ class TestCiha:
 
 class TestFetchData:
     def test_fetch_data_single_year(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -185,7 +185,7 @@ class TestFetchData:
             )
 
     def test_fetch_data_multiple_years(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -206,7 +206,7 @@ class TestFetchData:
             assert mock_pysus.query.call_count == 1
 
     def test_fetch_data_with_group_filter(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -237,7 +237,7 @@ class TestFetchData:
             )
 
     def test_fetch_data_empty_result(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -260,7 +260,7 @@ class TestFetchData:
             assert len(result) == 0
 
     def test_fetch_data_without_progress(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -284,7 +284,7 @@ class TestFetchData:
             mock_pysus.download.assert_called_once()
 
     def test_fetch_data_no_files(self):
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             enter_mock = AsyncMock(return_value=mock_pysus)
             exit_mock = AsyncMock()
@@ -309,7 +309,7 @@ class TestFetchData:
 
     def test_fetch_data_with_progress(self):
         with (
-            patch("pysus.api._impl.databases.PySUS") as mock_pysus_class,
+            patch("pysus.api.client.PySUS") as mock_pysus_class,
             patch(
                 "pysus.api._impl.databases.tqdm.gather",
                 new_callable=AsyncMock,
@@ -375,7 +375,7 @@ class TestFetchDataRunningLoop:
 
         async def _inner():
             with (
-                patch("pysus.api._impl.databases.PySUS") as mock_pysus_class,
+                patch("pysus.api.client.PySUS") as mock_pysus_class,
                 patch.dict("sys.modules", {"nest_asyncio": nest_mock}),
             ):
                 mock_pysus = MagicMock()
@@ -500,7 +500,7 @@ class TestListFiles:
         mock_record.record.state = "SP"
         mock_record.record.origin_modified = "2024-01-15"
 
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             mock_pysus_class.return_value.__aenter__ = AsyncMock(
                 return_value=mock_pysus
@@ -533,7 +533,7 @@ class TestListFiles:
         mock_record.record.state = "SP"
         mock_record.record.origin_modified = "2024-01-15"
 
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             mock_pysus_class.return_value.__aenter__ = AsyncMock(
                 return_value=mock_pysus
@@ -561,13 +561,15 @@ class TestListFiles:
             r.record.origin_modified = "2024-01-15"
             records.append(r)
 
-        with patch("pysus.api._impl.databases.PySUS") as mock_pysus_class:
+        with patch("pysus.api.client.PySUS") as mock_pysus_class:
             mock_pysus = MagicMock()
             mock_pysus_class.return_value.__aenter__ = AsyncMock(
                 return_value=mock_pysus
             )
             mock_pysus_class.return_value.__aexit__ = AsyncMock()
-            mock_pysus.query = AsyncMock(side_effect=[records[:2], records[2:]])
+            mock_pysus.query = AsyncMock(
+                side_effect=[records[:2], records[2:]],
+            )
 
             from pysus.api._impl.databases import list_files
 

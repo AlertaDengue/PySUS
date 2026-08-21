@@ -80,6 +80,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
+line_length = 80
 src_paths = ["isort", "test"]
 
 [tool.black]

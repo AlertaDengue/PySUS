@@ -133,8 +133,9 @@ class DadosGov(BaseRemoteClient):
 
         if not _token:
             raise AuthenticationError(
-                "A token is required to connect to DadosGov. "
-                "Pass it to connect(token=...) or login(token=...)."
+                "A token is required to connect to DadosGov.\n"
+                "Hint: get a token from dados.gov.br, then pass it "
+                "via login(token=...) or the DADOSGOV_TOKEN env var."
             )
 
         self._token = _token
@@ -214,7 +215,9 @@ class DadosGov(BaseRemoteClient):
         """
         if self._client is None:
             raise ConnectionError(
-                "Client not connected. Call login(token=...) first.",
+                "Client not connected. Call login(token=...) first.\n"
+                "Hint: set the DADOSGOV_TOKEN env var or pass "
+                "token= to connect().",
             )
 
         params = {
@@ -255,7 +258,9 @@ class DadosGov(BaseRemoteClient):
         """
         if self._client is None:
             raise ConnectionError(
-                "Client not connected. Call login(token=...) first.",
+                "Client not connected. Call login(token=...) first.\n"
+                "Hint: set the DADOSGOV_TOKEN env var or pass "
+                "token= to connect().",
             )
 
         response = await self._client.get(f"publico/conjuntos-dados/{id}")
@@ -275,7 +280,9 @@ class DadosGov(BaseRemoteClient):
         """Download a remote file to a local path."""
         if self._client is None:
             raise ConnectionError(
-                "Client not connected. Call login(token=...) first.",
+                "Client not connected. Call login(token=...) first.\n"
+                "Hint: set the DADOSGOV_TOKEN env var or pass "
+                "token= to connect().",
             )
 
         url = (
