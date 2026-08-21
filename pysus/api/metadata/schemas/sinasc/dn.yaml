@@ -1,0 +1,169 @@
+# Column schemas for SINASC (Sistema de Informações sobre Nascidos Vivos)
+# Source: DATASUS SINASC documentation
+
+dn_declaracao:
+  - name: num_dn
+    type: string
+    description_pt: "Número da declaração"
+    description_en: "Declaration number"
+    required: true
+  - name: dt_notific
+    type: string
+    description_pt: "Data de notificação"
+    description_en: "Notification date"
+    format: "YYYYMMDD"
+  - name: id_municipio
+    type: string
+    description_pt: "Código IBGE do município"
+    description_en: "IBGE municipality code"
+  - name: uf
+    type: string
+    description_pt: "UF"
+    description_en: "State"
+  - name: sex
+    type: string
+    description_pt: "Sexo (1=Masc, 2=Fem)"
+    description_en: "Sex (1=Male, 2=Female)"
+  - name: dt_nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+    format: "YYYYMMDD"
+  - name: horanasc
+    type: string
+    description_pt: "Hora do nascimento"
+    description_en: "Birth time"
+    format: "HHMM"
+  - name: peso
+    type: integer
+    description_pt: "Peso ao nascer (gramas)"
+    description_en: "Birth weight (grams)"
+    unit: "g"
+  - name: apgar1
+    type: integer
+    description_pt: "APGAR 1 minuto"
+    description_en: "APGAR 1 minute"
+  - name: apgar5
+    type: integer
+    description_pt: "APGAR 5 minutos"
+    description_en: "APGAR 5 minutes"
+  - name: raca_cor
+    type: string
+    description_pt: "Raça/Cor"
+    description_en: "Race/Color"
+  - name: escolmae
+    type: string
+    description_pt: "Escolaridade da mãe"
+    description_en: "Mother's education"
+  - name: idademaee
+    type: integer
+    description_pt: "Idade da mãe (anos)"
+    description_en: "Mother's age (years)"
+  - name: civilmae
+    type: string
+    description_pt: "Estado civil da mãe"
+    description_en: "Mother's marital status"
+  - name: nrofilhos
+    type: integer
+    description_pt: "Número de filhos vivos"
+    description_en: "Number of living children"
+  - name: gestacao
+    type: integer
+    description_pt: "Semanas de gestação"
+    description_en: "Gestational weeks"
+  - name: codpj
+    type: string
+    description_pt: "Código PJ"
+    description_en: "PJ code"
+  - name: cpfunf
+    type: string
+    description_pt: "CPF da mãe"
+    description_en: "Mother's CPF"
+  - name: nameful
+    type: string
+    description_pt: "Nome da mãe"
+    description_en: "Mother's name"
+  - name: cid_basico
+    type: string
+    description_pt: "CID básico"
+    description_en: "Basic CID"
+  - name: causamor
+    type: string
+    description_pt: "Causa da morte"
+    description_en: "Cause of death"
+  - name: sexogen
+    type: string
+    description_pt: "Sexo do genitor"
+    description_en: "Father's sex"
+  - name: nomegen
+    type: string
+    description_pt: "Nome do genitor"
+    description_en: "Father's name"
+  - name: dtconflc
+    type: string
+    description_pt: "Data de conflito LC"
+    description_en: "LC conflict date"
+  - name: tpinstdc
+    type: string
+    description_pt: "Tipo inst DC"
+    description_en: "DC institution type"
+  - name: nregist
+    type: string
+    description_pt: "Número do registro"
+    description_en: "Registration number"
+  - name: dtregnot
+    type: string
+    description_pt: "Data de registro"
+    description_en: "Registration date"
+  - name: tpreg
+    type: string
+    description_pt: "Tipo de registro"
+    description_en: "Registration type"
+  - name: rgrede
+    type: string
+    description_pt: "Rede"
+    description_en: "Network"
+  - name: stcronsas
+    type: string
+    description_pt: "Estado de cronsas"
+    description_en: "Cronsas status"
+  - name: tipoobito
+    type: string
+    description_pt: "Tipo de óbito"
+    description_en: "Death type"
+  - name: obitomater
+    type: string
+    description_pt: "Óbito materno"
+    description_en: "Maternal death"
+  - name: obitofet
+    type: string
+    description_pt: "Óbito fetal"
+    description_en: "Fetal death"
+  - name: idassismed
+    type: string
+    description_pt: "ID assistência médica"
+    description_en: "Medical assistance ID"
+  - name: tpaprovei
+    type: string
+    description_pt: "Tipo aprovei"
+    description_en: "Approvei type"
+  - name: qtsylv
+    type: integer
+    description_pt: "Quantidade SYLV"
+    description_en: "SYLV quantity"
+  - name: tsylv
+    type: string
+    description_pt: "Tipo SYLV"
+    description_en: "SYLV type"
+  - name: diagnost
+    type: string
+    description_pt: "Diagnóstico"
+    description_en: "Diagnosis"
+  - name: numproc
+    type: string
+    description_pt: "Número do processo"
+    description_en: "Process number"
+  - name: contabil
+    type: string
+    description_pt: "Contábil"
+    description_en: "Accounting"

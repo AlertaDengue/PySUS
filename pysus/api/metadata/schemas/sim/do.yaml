@@ -1,0 +1,237 @@
+# Column schemas for SIM (Sistema de Informação sobre Mortalidade)
+# Source: DATASUS SIM documentation
+
+do_mortalidade_geral:
+  - name: tipo
+    type: string
+    description_pt: "Tipo do óbito"
+    description_en: "Death type"
+  - name: dt_notific
+    type: string
+    description_pt: "Data de notificação"
+    description_en: "Notification date"
+    format: "YYYYMMDD"
+  - name: causabas
+    type: string
+    description_pt: "Causa básica (CID-10)"
+    description_en: "Basic cause (ICD-10)"
+    required: true
+  - name: hora_obito
+    type: string
+    description_pt: "Hora do óbito"
+    description_en: "Death time"
+    format: "HHMM"
+  - name: dt_obito
+    type: string
+    description_pt: "Data do óbito"
+    description_en: "Death date"
+    format: "YYYYMMDD"
+  - name: tipo_obito
+    type: string
+    description_pt: "Tipo de óbito"
+    description_en: "Death type"
+  - name: cid_basico
+    type: string
+    description_pt: "CID básico"
+    description_en: "Basic CID"
+  - name: diagnostico
+    type: string
+    description_pt: "Diagnóstico"
+    description_en: "Diagnosis"
+  - name: dt_nasc
+    type: string
+    description_pt: "Data de nascimento"
+    description_en: "Date of birth"
+    format: "YYYYMMDD"
+  - name: idade
+    type: integer
+    description_pt: "Idade"
+    description_en: "Age"
+  - name: sex
+    type: string
+    description_pt: "Sexo"
+    description_en: "Sex"
+  - name: raca_cor
+    type: string
+    description_pt: "Raça/Cor"
+    description_en: "Race/Color"
+  - name: esc
+    type: string
+    description_pt: "Escolaridade"
+    description_en: "Education"
+  - name: estciv
+    type: string
+    description_pt: "Estado civil"
+    description_en: "Marital status"
+  - name: gensb
+    type: string
+    description_pt: "Gênero"
+    description_en: "Gender"
+  - name: tpinsc
+    type: string
+    description_pt: "Tipo de inscrição"
+    description_en: "Registration type"
+  - name: ninsc
+    type: string
+    description_pt: "Número de inscrição"
+    description_en: "Registration number"
+  - name: rangra
+    type: string
+    description_pt: "Faixa etária"
+    description_en: "Age group"
+  - name: tpfnde
+    type: string
+    description_pt: "Tipo de fundação"
+    description_en: "Foundation type"
+  - name: dspbesp
+    type: string
+    description_pt: "Despesa Básica Especial"
+    description_en: "Special Basic Expense"
+  - name: dtobito
+    type: string
+    description_pt: "Data do óbito"
+    description_en: "Death date"
+  - name: horanasc
+    type: string
+    description_pt: "Hora de nascimento"
+    description_en: "Birth time"
+  - name: azpexpq
+    type: string
+    description_pt: "AZ pexpq"
+    description_en: "AZ pexpq"
+  - name: cdpesq
+    type: string
+    description_pt: "Código de pesquisa"
+    description_en: "Research code"
+  - name: dtxpexp
+    type: string
+    description_pt: "Data de XP exp"
+    description_en: "XP exp date"
+  - name: naturb
+    type: string
+    description_pt: "Natureza do óbito"
+    description_en: "Death nature"
+  - name: fonte
+    type: string
+    description_pt: "Fonte"
+    description_en: "Source"
+  - name: tpgrund
+    type: string
+    description_pt: "Tipo de grupo"
+    description_en: "Group type"
+  - name: numproc
+    type: string
+    description_pt: "Número do processo"
+    description_en: "Process number"
+  - name: cge
+    type: string
+    description_pt: "CGE"
+    description_en: "CGE"
+  - name: tpmarc
+    type: string
+    description_pt: "Tipo de marcação"
+    description_en: "Marking type"
+  - name: cirurgia
+    type: string
+    description_pt: "Cirurgia"
+    description_en: "Surgery"
+  - name: reg_cir
+    type: string
+    description_pt: "Registro de cirurgia"
+    description_en: "Surgery registry"
+  - name: tpapps
+    type: string
+    description_pt: "Tipo de aplicação"
+    description_en: "Application type"
+  - name: qtpartob
+    type: integer
+    description_pt: "Quantidade de partos"
+    description_en: "Birth quantity"
+  - name: saida
+    type: string
+    description_pt: "Saída"
+    description_en: "Discharge"
+  - name: tpmov
+    type: string
+    description_pt: "Tipo de movimentação"
+    description_en: "Movement type"
+  - name: num_ida
+    type: string
+    description_pt: "Número IDA"
+    description_en: "IDA number"
+  - name: mensage
+    type: string
+    description_pt: "Mensagem"
+    description_en: "Message"
+  - name: qtfilhos
+    type: integer
+    description_pt: "Quantidade de filhos"
+    description_en: "Number of children"
+  - name: cpresc
+    type: string
+    description_pt: "CP RESC"
+    description_en: "CP RESC"
+  - name: gpt
+    type: string
+    description_pt: "GPT"
+    description_en: "GPT"
+  - name: gestrisco
+    type: string
+    description_pt: "Gestação de risco"
+    description_en: "High-risk pregnancy"
+  - name: dpabg
+    type: string
+    description_pt: "DPA BG"
+    description_en: "DPA BG"
+  - name: fecund
+    type: string
+    description_pt: "Fertilidade"
+    description_en: "Fertility"
+  - name: mortemat
+    type: string
+    description_pt: "Morte materna"
+    description_en: "Maternal death"
+  - name: mortinf
+    type: string
+    description_pt: "Morte infantil"
+    description_en: "Infant death"
+  - name: tipodo
+    type: string
+    description_pt: "Tipo de óbito"
+    description_en: "Death type"
+  - name: contat
+    type: string
+    description_pt: "Contato"
+    description_en: "Contact"
+  - name: dtexprg
+    type: string
+    description_pt: "Data de exp PG"
+    description_en: "PG exp date"
+  - name: scprenatal
+    type: string
+    description_pt: "SCP pré-natal"
+    description_en: "Prenatal SCP"
+  - name: tpresg
+    type: string
+    description_pt: "Tipo RESG"
+    description_en: "RESG type"
+  - name: rgrede
+    type: string
+    description_pt: "Rede"
+    description_en: "Network"
+  - name: escmae
+    type: string
+    description_pt: "Escolaridade da mãe"
+    description_en: "Mother's education"
+  - name: uf
+    type: string
+    description_pt: "UF"
+    description_en: "State"
+  - name: num_dn
+    type: string
+    description_pt: "Número DN"
+    description_en: "DN number"
+  - name: codinst
+    type: string
+    description_pt: "Código da instituição"
+    description_en: "Institution code"
