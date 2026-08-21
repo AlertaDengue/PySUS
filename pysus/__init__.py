@@ -53,6 +53,8 @@ __version__: str = version
 
 from pysus.api._impl.databases import *  # noqa
 from pysus.api.client import PySUS  # noqa
+from pysus.api.columns import ColumnInfo  # noqa: F401,E402
+from pysus.api.columns import search_columns  # noqa: F401,E402
 from pysus.api.flatten import flatten_json_columns  # noqa: F401,E402
 from pysus.api.mappings import to_english  # noqa: F401,E402
 from pysus.api.progress import disable_progress_bars  # noqa: F401,E402
