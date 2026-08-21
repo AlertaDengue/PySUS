@@ -664,7 +664,10 @@ class PySUS:
         state: str | list[str] | None = None,
         year: int | list[int] | None = None,
         month: int | list[int] | None = None,
-    ) -> list[BaseRemoteFile]:
+        as_dataframe: bool = False,
+        columns: list[str] | None = None,
+        dtypes: dict[str, str] | None = None,
+    ) -> list[BaseRemoteFile] | pd.DataFrame:
         """Query available datasets through the DuckLake catalog.
 
         Parameters
@@ -681,11 +684,21 @@ class PySUS:
             Year(s) to filter by.
         month : int or list of int, optional
             Month(s) to filter by.
+        as_dataframe : bool, optional
+            When ``True``, downloads all matching files, converts them
+            to Parquet, and returns a single concatenated DataFrame.
+            Default ``False``.
+        columns : list of str, optional
+            Subset of column names to keep when ``as_dataframe=True``.
+        dtypes : dict, optional
+            Override column types when ``as_dataframe=True``.
+            Keys are column names, values are dtype strings.
 
         Returns
         -------
-        list
-            List of matching File objects.
+        list or DataFrame
+            List of matching File objects, or a DataFrame if
+            ``as_dataframe=True``.
         """
         if self._ducklake is None:
             await self.get_ducklake()
@@ -721,11 +734,45 @@ class PySUS:
             )
             files.extend(ds_files)
 
-        if not client:
+        if client:
+            prefix = f"public/data/{client.lower()}/"
+            files = [f for f in files if str(f.path).startswith(prefix)]
+
+        if not as_dataframe:
             return files
 
-        prefix = f"public/data/{client.lower()}/"
-        return [f for f in files if str(f.path).startswith(prefix)]
+        if not files:
+            return pd.DataFrame()
+
+        import asyncio as _asyncio
+
+        sem = _asyncio.Semaphore(3)
+
+        async def _dl(f: BaseRemoteFile):
+            async with sem:
+                return await self.download_to_parquet(f)
+
+        downloaded = await _asyncio.gather(*[_dl(f) for f in files])
+        paths = [p.path for p in downloaded if p is not None]
+        if not paths:
+            return pd.DataFrame()
+
+        df = self.read_parquet(paths, add_dv=True)
+        if not isinstance(df, pd.DataFrame):
+            df = df.df()  # type: ignore[union-attr]
+
+        if columns:
+            df = df[[c for c in columns if c in df.columns]]
+
+        if dtypes:
+            for col, dtype in dtypes.items():
+                if col in df.columns:
+                    try:
+                        df[col] = df[col].astype(dtype)
+                    except (ValueError, TypeError):
+                        pass
+
+        return df
 
     def read_parquet(
         self,
