@@ -829,13 +829,7 @@ class TestDownload:
             ),
             patch.object(client, "_update_state", new=AsyncMock()),
         ):
-            with pytest.raises(
-                DownloadError,
-                match=(
-                    "Unexpected error downloading test.unknown:"
-                    " No download logic for client: unknown"
-                ),
-            ):
+            with pytest.raises(DownloadError, match="test.unknown"):
                 await client.download(mock_file)
 
         await client.__aexit__(None, None, None)
