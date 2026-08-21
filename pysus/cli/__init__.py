@@ -14,6 +14,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from .ftp import app as ftp_app
+
+    app.add_typer(ftp_app, name="ftp")
+except ImportError:
+    pass
+
 
 def _is_colab() -> bool:
     return "COLAB_RELEASE_TAG" in os.environ
