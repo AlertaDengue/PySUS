@@ -52,12 +52,15 @@ version: str = get_version()
 __version__: str = version
 
 from pysus.api._impl.databases import *  # noqa
+from pysus.api.cache_utils import cache_status, clear_cache  # noqa: F401,E402
 from pysus.api.client import PySUS  # noqa
 from pysus.api.columns import ColumnInfo  # noqa: F401,E402
 from pysus.api.columns import search_columns  # noqa: F401,E402
+from pysus.api.concurrent import download_many  # noqa: F401,E402
 from pysus.api.diff import diff_dfs  # noqa: F401,E402
 from pysus.api.diff import diff_rows  # noqa: F401,E402
 from pysus.api.diff import diff_summary  # noqa: F401,E402
+from pysus.api.export import export  # noqa: F401,E402
 from pysus.api.export import to_csv  # noqa: F401,E402
 from pysus.api.export import to_excel  # noqa: F401,E402
 from pysus.api.export import to_geojson  # noqa: F401,E402
@@ -73,6 +76,8 @@ from pysus.api.quality import missing_values  # noqa: F401,E402
 from pysus.api.quality import profile_report  # noqa: F401,E402
 from pysus.api.quality import quality_score  # noqa: F401,E402
 from pysus.api.quality import validate_data  # noqa: F401,E402
+from pysus.api.streaming import query_parquet  # noqa: F401,E402
+from pysus.api.streaming import to_arrow  # noqa: F401,E402
 from pysus.api.transform import aggregate_by_age_group  # noqa: F401,E402
 from pysus.api.transform import aggregate_by_period  # noqa: F401,E402
 from pysus.api.transform import aggregate_by_state  # noqa: F401,E402
