@@ -1,19 +1,49 @@
-# PySUS 2.0 is now available!
+# PySUS
 
 [![DOI](https://zenodo.org/badge/63720586.svg)](https://zenodo.org/badge/latestdoi/63720586)
 [![release](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml/badge.svg)](https://github.com/AlertaDengue/PySUS/actions/workflows/release.yaml)
 [![Documentation Status](https://readthedocs.org/projects/pysus/badge/?version=latest)](https://pysus.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/pysus.svg)](https://pypi.org/project/PySUS/)
-[![EpidBot Ready](https://img.shields.io/badge/EpidBot-Ready-brightgreen?style=flat-square&logo=robot&logoColor=white)](https://epidbot.kwar-ai.com.br)
 
-PySUS is a Python package for accessing and analyzing Brazil's public health data (DATASUS). It provides tools to download, process, and work with health datasets including SINAN (disease notifications), SIM (mortality), SINASC (births), SIH (hospitalizations), SIA (ambulatory), CIHA, CNES, PNI, and more.
+PySUS is a Python library for accessing Brazil's public health data (DATASUS).
+It downloads, converts, and analyses datasets from four independent sources —
+**FTP DataSUS**, **dados.gov.br** (Open Data), **dadosabertos.saude.gov.br**
+(OpenDataSUS), and **DuckLake** (S3 mirror) — and exposes them through a
+single, DataFrame-first API.
 
-## What's New in PySUS 2.0
+## Key features
 
-- **Simplified API**: New high-level functions for direct DataFrame access
-- **Streamlit Web UI**: Launch a local web interface for browsing and downloading datasets
-- **Flexible Schema Modes**: Read multiple parquet files with union, intersection, or strict modes
-- **SQL Query**: Filter catalog queries by dataset, group, state, year, and month
+- **One-line downloads** — `sinan("DENG", 2024, as_dataframe=True)` returns a
+  `pandas.DataFrame` in a single call.
+- **Four data sources** — FTP, DadosGov, Saude (OpenDataSUS), DuckLake; the
+  orchestrator picks the best route automatically.
+- **Data quality** — `missing_values()`, `validate_data()`, `quality_score()`,
+  and `profile_report()` give instant insight into completeness and schema
+  integrity.
+- **Transformation pipeline** — `link_datasets()`, `aggregate_by_state()`,
+  `detect_units()`, `rename_columns()`, `optimize_memory()`.
+- **Export** — `to_csv()`, `to_excel()`, `to_geojson()`, `to_sql()`, or the
+  generic `export()` that auto-detects format.
+- **Streaming & DuckDB** — `query_parquet()` runs SQL directly on Parquet via
+  DuckDB; `to_arrow()` / `to_df()` convert on the fly.
+- **Parallel downloads** — `download_many()` fetches files concurrently with a
+  configurable semaphore.
+- **Column metadata** — `search_columns()` finds variables by name or
+  description across all DATASUS databases.
+- **Diff & comparison** — `diff_dfs()`, `diff_summary()`, `diff_rows()` compare
+  two DataFrames and surface schema or value differences.
+- **Progress bars** — `enable_progress_bars()` / `disable_progress_bars()`.
+- **Cache management** — `cache_status()`, `clear_cache()`, `set_cache()`.
+- **Friendly errors** — every exception carries a `hint` and optional
+  `docs_url`; warnings via `PySUSWarning`.
+- **Retry & resume** — `@retry` decorator with exponential back-off;
+  `PartialDownload` for HTTP Range resume.
+- **Input validation** — `validate_choice()`, `validate_dataset()`,
+  `validate_origin()` with fuzzy suggestions on typos.
+- **CLI** — Typer-based commands for every operation.
+- **Configuration** — TOML file (`pysus.toml`) + environment variables with
+  3-tier precedence.
+- **Streamlit web UI** — `pysus web` launches a local browser interface.
 
 ## Installation
 
@@ -21,272 +51,311 @@ PySUS is a Python package for accessing and analyzing Brazil's public health dat
 pip install pysus
 ```
 
-For the local Streamlit web interface:
+For the Streamlit web interface:
+
 ```bash
 pip install pysus[web]
 ```
 
 ### Docker
 
-A pre-built JupyterLab image is available on Docker Hub:
-
 ```bash
 docker pull alertadengue/pysus
 docker run -p 8888:8888 alertadengue/pysus
 ```
 
-Or build locally and start the container:
+Or build locally:
 
 ```bash
 docker compose up --build
-```
-
-Then open [http://127.0.0.1:8888/lab](http://127.0.0.1:8888/lab) in your browser.
-
-Stop the container:
-
-```bash
+# open http://127.0.0.1:8888/lab
 docker compose down
 ```
 
-## Quick Start
+## Quick start
 
-### Simplified Database Functions (New in 2.0)
-
-By default, the high-level convenience functions query and download data locally, returning a list of paths to the downloaded Parquet files. This allows you to inspect the file structure or load them with your preferred tool (e.g., pandas, Polars, DuckDB).
+### Download a dataset (one-liner)
 
 ```python
 from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
 
-# Download SINAN Dengue data for 2000 and return a list of Parquet paths
-parquet_files = sinan(disease="deng", year=2000)
+# Returns a list of local Parquet paths
+parquet_files = sinan(disease="deng", year=2024)
 
-# Multiple years
-parquet_files = sinan(disease="deng", year=[2023, 2024])
-
-# SINASC births for São Paulo, 2020-2023
-parquet_files = sinasc(state="SP", year=[2020, 2021, 2022, 2023])
-
-# SIM mortality data
-parquet_files = sim(state="SP", year=2024)
-
-# SIH hospitalizations with month
-parquet_files = sih(state="SP", year=2024, month=[1, 2, 3])
-
-# CNES health facilities
-parquet_files = cnes(state="SP", year=2024, month=1)
-```
-
-### Loading as a DataFrame Directly
-If you prefer to load and combine the data automatically into a single pandas DataFrame, pass the as_dataframe=True parameter to any of the functions:
-
-```python
-import pandas as pd
-from pysus import sinan
-
-# Download and return a concatenated pandas DataFrame
+# Get a DataFrame directly
 df = sinan(disease="deng", year=2024, as_dataframe=True)
+
+# Multiple years, filtered by state
+df = sinasc(state="SP", year=[2020, 2021, 2022, 2023], as_dataframe=True)
 ```
 
-### Listing the files
-
-You can also list the files within the dataset to check which files are available to download
+### Browse available datasets
 
 ```python
-from pysus import list_files
+from pysus import info, search, list_files
 
-list_files("SINAN")
+info()                          # table of all datasets across all origins
+search("sinan")                 # fuzzy search across FTP, Saude, DadosGov
+list_files("SINAN")             # list files within a dataset
 ```
 
-### Using the PySUS Client
+### The PySUS client (full control)
 
 ```python
-from pysus import PySUS
+import pysus
 
 async def main():
-    async with PySUS() as pysus:
-        # Query DuckLake catalog
-        files = await pysus.query(
+    async with pysus.PySUS() as client:
+        files = await client.query(
             dataset="sinan",
             group="DENG",
             state="SP",
             year=2024,
         )
-
-        # Download files
         for f in files:
-            local = await pysus.download(f)
+            local = await client.download(f)
             print(local.path)
 
-        # Read multiple parquet files
-        import glob
-        paths = glob.glob("/cache/sinan/**/*.parquet")
-        df = pysus.read_parquet(paths, mode="union")
+        df = client.read_parquet(
+            [str(f.path) for f in files],
+            mode="union",
+        )
 ```
 
-### Using the Streamlit Web UI (experimental feature)
-
-Launch the local web interface:
-
-```bash
-pysus web
-```
-
-Or with a custom port:
-
-```bash
-pysus web -p 8080
-```
-
-Or run directly with Streamlit:
-
-```bash
-streamlit run pysus/web/app.py
-```
-
-The web interface provides three data sources:
-
-- **Default (DuckLake)**: Queries the PySUS S3 catalog — the primary data source. Select a dataset and filter by group, state, year, and month.
-- **FTP DataSUS**: Browses legacy DATASUS FTP directories. Auto-connects on tab selection.
-- **API DataSUS (DadosGov)**: Queries the dados.gov.br open data API. Requires an API token.
-
-Use the interactive filters to find files, add them to the download queue, and download with a single click. After a query, an expandable Python snippet shows the equivalent code to reproduce the same operation in a script or notebook.
-
-## Features
-
-- **Automatic Downloads**: Fetch data from FTP, DuckLake (S3), and dados.gov.br API
-- **Parquet Output**: All downloaded data is converted to Apache Parquet format
-- **DuckLake Integration**: S3-compatible cloud storage for parquet catalogs
-- **Local Catalog**: SQLite-based tracking of download history to avoid re-downloads
-- **Type Inference**: Automatic data type conversion from legacy formats (DBF, DBC)
-- **CLI with Streamlit UI**: Command-line interface with local web-based UI
-
-## Architecture
-
-PySUS 2.0 has a modular architecture:
-
-```
-PySUS
-├── FTP Client         # Traditional FTP-based datasets
-├── DadosGov Client   # dados.gov.br API access
-├── DuckLake Client   # S3 object storage for Parquet catalogs
-└── Database Functions # High-level functions (sinan, sinasc, sim, etc.)
-```
-
-### Database Functions
-
-New in PySUS 2.0, these functions provide a simplified interface:
-
-| Function | Dataset | Parameters |
-|----------|---------|------------|
-| `sinan(disease, year)` | Disease Notifications | disease (e.g., "DENG", "ZIKA"), year |
-| `sinasc(state, year, group)` | Births | state, year, group (optional) |
-| `sim(state, year, group)` | Mortality | state, year, group (optional) |
-| `sih(state, year, month, group)` | Hospitalizations | state, year, month, group (optional) |
-| `sia(state, year, month, group)` | Ambulatory | state, year, month, group (optional) |
-| `pni(state, year, group)` | Immunizations | state, year, group (optional) |
-| `ibge(year, group)` | IBGE | year, group (optional) |
-| `cnes(state, year, month, group)` | Health Facilities | state, year, month, group (optional) |
-| `ciha(state, year, month)` | Hospital Admissions | state, year, month |
-
-### DuckLake Query
+Works identically in synchronous code:
 
 ```python
-async with PySUS() as pysus:
-    # Filter by any combination of parameters
-    files = await pysus.query(
-        dataset="sinan",      # dataset name
-        group="DENG",         # disease group
-        state="SP",           # state code
-        year=2024,            # year
-        month=1,              # month (optional)
-    )
+from pysus import PySUS
+
+with PySUS() as client:
+    files = client.query(dataset="sinan", group="DENG", state="SP", year=2024)
 ```
 
-### read_parquet Modes
+### Parallel downloads
 
 ```python
-# Union mode (default) - includes all columns from any file
-df = pysus.read_parquet(paths, mode="union")
+from pysus import download_many
 
-# Intersection mode - only common columns across all files
-df = pysus.read_parquet(paths, mode="intersection")
+paths = await download_many(files, max_concurrent=5)
+```
 
-# Strict mode - raises error if schemas don't match
-df = pysus.read_parquet(paths, mode="strict")
+### Streaming / DuckDB
 
-# With custom SQL
-df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100")
+```python
+from pysus import query_parquet
+
+# Run SQL directly on Parquet files (no full load into memory)
+df = query_parquet("path/to/file.parquet", sql="SELECT * WHERE NU_IDADE > 30")
+```
+
+### Data quality
+
+```python
+from pysus import missing_values, validate_data, quality_score, profile_report
+
+report = profile_report(df)          # HTML summary
+missing = missing_values(df)         # per-column missing counts
+score   = quality_score(df)          # 0-100 completeness score
+issues  = validate_data(df, rules)   # custom rule validation
+```
+
+### Transformation
+
+```python
+from pysus import (
+    link_datasets,
+    aggregate_by_state,
+    detect_units,
+    optimize_memory,
+    rename_columns,
+    set_precision,
+)
+
+df = optimize_memory(df)              # downcast dtypes, save memory
+df = rename_columns(df, mapping)      # rename columns via dict
+df = link_datasets(df_a, df_b, keys)  # join by linking keys
+```
+
+### Export
+
+```python
+from pysus import export, to_csv, to_excel, to_geojson, to_sql
+
+to_csv(df, "output.csv")
+to_excel(df, "output.xlsx")
+to_geojson(df, "output.geojson", lat="LAT", lon="LON")
+to_sql(df, "sqlite:///health.db", table_name="notifications")
+export(df, "output.parquet")         # auto-detects format from extension
+```
+
+### Diff
+
+```python
+from pysus import diff_summary, diff_dfs
+
+diff_summary(df_old, df_new)   # printed summary of schema & value changes
+result = diff_dfs(df_old, df_new)  # structured ComparisonResult
+```
+
+### Column search
+
+```python
+from pysus import search_columns, load_column_metadata
+
+cols = search_columns("dengue")         # search all databases
+meta = load_column_metadata("SINAN")    # load schema for one database
+```
+
+### Progress bars
+
+```python
+from pysus import disable_progress_bars, enable_progress_bars
+
+disable_progress_bars()  # silence tqdm during batch jobs
+# ...
+enable_progress_bars()
+```
+
+### Cache management
+
+```python
+from pysus import set_cache, cache_status, clear_cache
+
+set_cache("/data/pysus")          # change cache directory
+cache_status()                    # show disk usage and file counts
+clear_cache()                     # delete all cached files
+```
+
+## CLI commands
+
+```bash
+pysus info                  # table of all datasets
+pysus search sinan          # search datasets by name
+pysus ftp list-datasets     # FTP DataSUS catalog
+pysus ftp download SINAN    # download from FTP
+pysus dadosgov list         # dados.gov.br catalog (needs DADOSGOV_TOKEN)
+pysus saude list-datasets   # OpenDataSUS (dadosabertos.saude.gov.br)
+pysus saude show sinan      # show dataset metadata
+pysus saude download sinan  # download dataset resources
+pysus configure             # interactive setup
+pysus cache status          # show cache usage
+pysus cache clear           # delete cached files
+pysus web                   # launch Streamlit UI
 ```
 
 ## Configuration
 
-### Cache Directory
+### TOML file
 
-```python
-from pysus import CACHEPATH
-import os
+Create `pysus.toml` in your project root (or `~/.pysus.toml`):
 
-os.environ['PYSUS_CACHEPATH'] = '/my/custom/path'
-# or
-pysus = PySUS(db_path='/my/config.db')
+```toml
+[cache]
+path = "/data/pysus"
+
+[download]
+timeout = 300
+max_retries = 3
+backoff_base = 1.0
+
+[dadosgov]
+token = "your-api-token-here"
 ```
 
-### Environment Variables
+### Environment variables
 
-- `PYSUS_CACHEPATH`: Directory for cached files
-- `DADOSGOV_TOKEN`: API token for the dados.gov.br client
-  (required for DadosGov downloads)
-- `ACCESS_KEY` / `SECRET_KEY`: S3 credentials for writing to the
-  PySUS bucket (catalog sync/maintenance)
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `PYSUS_CACHEPATH` | Override the default cache directory (`~/pysus`) | No |
+| `DADOSGOV_TOKEN` | API token for dados.gov.br downloads | Yes (DadosGov only) |
+| `ACCESS_KEY` / `SECRET_KEY` | S3 credentials for catalog sync | No (maintainers) |
 
-## Data Sources
+Precedence: explicit argument > environment variable > TOML file > default.
 
-| Dataset | Description | Source |
-|---------|-------------|--------|
-| SINAN | Disease Notifications | FTP / DuckLake / DadosGov |
-| SIM | Mortality | FTP / DuckLake / DadosGov |
-| SINASC | Births | FTP / DuckLake / DadosGov |
-| SIH | Hospitalizations | FTP / DuckLake |
-| SIA | Ambulatory | FTP / DuckLake |
-| CIHA | Hospital Admissions | FTP / DuckLake |
-| CNES | Health Facilities | FTP / DuckLake / DadosGov |
-| PNI | Immunizations | FTP / DuckLake / DadosGov |
-| IBGE | Geographic Data | FTP / DuckLake |
+## Data sources
 
+| Dataset | Description | FTP | DadosGov | Saude | DuckLake |
+|---------|-------------|:---:|:--------:|:-----:|:--------:|
+| SINAN | Disease notifications | x | x | x | x |
+| SIM | Mortality | x | x | x | x |
+| SINASC | Births | x | x | x | x |
+| SIH | Hospitalisations | x | | | x |
+| SIA | Ambulatory procedures | x | | | x |
+| CIHA | Hospital admissions | x | | | x |
+| CNES | Health facilities | x | x | x | x |
+| PNI | Immunisations | x | x | x | x |
+| IBGE | Geographic data | x | | | x |
+| COVID19 | COVID-19 confirmed cases | x | x | x | x |
+| Arboviroses | Arboviral diseases | | | x | |
+| AssistenciaSaude | Health assistance | | | x | |
+| AtencaoPrimaria | Primary care | | | x | |
+| Vacinacao | Vaccination | | | x | |
+| SisAgua | Water surveillance | | | x | |
+| Sisvan | Nutritional surveillance | | | x | |
+
+## Architecture
+
+```
+pysus
+├── api/
+│   ├── client.py           PySUS orchestrator (sync + async)
+│   ├── errors.py           Error hierarchy with hints
+│   ├── retry.py            @retry decorator
+│   ├── partial.py          PartialDownload (HTTP Range resume)
+│   ├── validate.py         Input validation with suggestions
+│   ├── progress.py         tqdm progress bar controls
+│   ├── concurrent.py       download_many()
+│   ├── cache_utils.py      cache_status / clear_cache
+│   ├── streaming.py        query_parquet / to_arrow / to_df
+│   ├── flatten.py          JSON column flattening
+│   ├── mappings.py         Portuguese → English column names
+│   ├── columns.py          Column search
+│   ├── export/             CSV / Excel / GeoJSON / SQL exporters
+│   ├── diff/               DataFrame comparison
+│   ├── quality/            Missing values, validation, profiling, scoring
+│   ├── transform/          Linking, aggregation, units, memory, precision
+│   ├── metadata/           Column metadata, local cache, schema versioning
+│   ├── ftp/                FTP DataSUS client
+│   ├── dadosgov/           dados.gov.br API client
+│   ├── saude/              OpenDataSUS (dadosabertos.saude.gov.br) client
+│   ├── ducklake/           S3/Parquet catalog client
+│   └── _impl/              Public re-exports (the pysus.* namespace)
+├── cli/                    Typer CLI sub-commands
+├── config.py               TOML + env-var configuration
+└── web/                    Streamlit web interface
+```
 
 ## Development
 
-### Installation
+### Setup
 
-#### Using Conda
 ```bash
+# Conda
 conda env create -f conda/dev.yaml
 conda activate pysus
-```
 
-#### Using Poetry
-```bash
+# Poetry
 poetry install
 ```
 
-### Running Tests
+### Tests
 
-Run code linters:
+```bash
+# Unit tests (host)
+pytest pysus/tests/
+
+# Unit tests (Docker — recommended for full coverage)
+docker compose exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
+```
+
+### Linting
+
 ```bash
 pre-commit run --all-files
 ```
 
-Run tests:
-```bash
-pytest pysus/tests/
-```
-
-Run tests inside the Docker container:
-
-```bash
-docker compose exec -T -w /usr/src jupyter python3 -m pytest pysus/tests/
-```
+Enforced via pre-commit: **black** (80-col), **flake8** (80-col), **isort**
+(profile=black, line-length=80), **mypy**, **pyupgrade**.
 
 ## License
 
