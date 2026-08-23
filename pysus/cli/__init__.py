@@ -142,7 +142,10 @@ def search(
     """Search datasets across all origins (FTP, Saude, DadosGov)."""
     from difflib import get_close_matches
 
-    from pysus import _DADOSGOV_DESCRIPTIONS, _FTP_DESCRIPTIONS
+    from pysus.api._impl._ui import _DADOSGOV_DESC, _FTP_DESC
+
+    _DADOSGOV_DESCRIPTIONS = _DADOSGOV_DESC
+    _FTP_DESCRIPTIONS = _FTP_DESC
 
     query_lower = query.lower()
     rows: list[tuple[str, str, str, str]] = []

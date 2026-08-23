@@ -51,66 +51,16 @@ def get_version() -> str:
 version: str = get_version()
 __version__: str = version
 
-from pysus.api._impl.databases import *  # noqa
-from pysus.api.cache_utils import cache_status, clear_cache  # noqa: F401,E402
-from pysus.api.client import PySUS  # noqa
-from pysus.api.columns import ColumnInfo  # noqa: F401,E402
-from pysus.api.columns import search_columns  # noqa: F401,E402
-from pysus.api.concurrent import download_many  # noqa: F401,E402
-from pysus.api.diff import diff_dfs  # noqa: F401,E402
-from pysus.api.diff import diff_rows  # noqa: F401,E402
-from pysus.api.diff import diff_summary  # noqa: F401,E402
-from pysus.api.export import export  # noqa: F401,E402
-from pysus.api.export import to_csv  # noqa: F401,E402
-from pysus.api.export import to_excel  # noqa: F401,E402
-from pysus.api.export import to_geojson  # noqa: F401,E402
-from pysus.api.export import to_sql  # noqa: F401,E402
-from pysus.api.flatten import flatten_json_columns  # noqa: F401,E402
-from pysus.api.mappings import to_english  # noqa: F401,E402
-from pysus.api.metadata.columns import available_databases  # noqa: F401,E402
-from pysus.api.metadata.columns import load_column_metadata  # noqa: F401,E402
-from pysus.api.progress import disable_progress_bars  # noqa: F401,E402
-from pysus.api.progress import enable_progress_bars  # noqa: F401,E402
-from pysus.api.quality import column_stats  # noqa: F401,E402
-from pysus.api.quality import missing_values  # noqa: F401,E402
-from pysus.api.quality import profile_report  # noqa: F401,E402
-from pysus.api.quality import quality_score  # noqa: F401,E402
-from pysus.api.quality import validate_data  # noqa: F401,E402
-from pysus.api.streaming import query_parquet  # noqa: F401,E402
-from pysus.api.streaming import to_arrow  # noqa: F401,E402
-from pysus.api.transform import aggregate_by_age_group  # noqa: F401,E402
-from pysus.api.transform import aggregate_by_period  # noqa: F401,E402
-from pysus.api.transform import aggregate_by_state  # noqa: F401,E402
-from pysus.api.transform import detect_units  # noqa: F401,E402
-from pysus.api.transform import get_linking_keys  # noqa: F401,E402
-from pysus.api.transform import link_datasets  # noqa: F401,E402
-from pysus.api.transform import mask_data  # noqa: F401,E402
-from pysus.api.transform import optimize_memory  # noqa: F401,E402
-from pysus.api.transform import rename_columns  # noqa: F401,E402
-from pysus.api.transform import set_precision  # noqa: F401,E402
-from pysus.api.transform import stream_parquet  # noqa: F401,E402
-from pysus.api.transform import unmask_data  # noqa: F401,E402
+# Canonical __all__: everything from _impl plus the local names.
+# Keep the old name ``info()`` as a convenience alias.
+# ── Single import from the implementation layer ─────────────────
+# This is the *only* import line that populates pysus.*.  Every
+# user-facing function, class, and error lives in _impl.__all__.
+from pysus.api._impl import *  # noqa: E402,F401,F403
+from pysus.api._impl import __all__ as _impl_all  # noqa: E402,F401
+from pysus.api._impl import info_table as info  # noqa: E402,F401
 
-_FTP_DESCRIPTIONS: dict[str, str] = {
-    "CIHA": "Hospital & ambulatory admission records",
-    "CNES": "Health facility registry",
-    "IBGEDATASUS": "Population & census data (IBGE)",
-    "PNI": "National immunisation programme",
-    "SIA": "Ambulatory care information system",
-    "SIH": "Hospital admission information system",
-    "SIM": "Mortality information system",
-    "SINAN": "Notifiable disease information system",
-    "SINASC": "Live birth information system",
-}
-
-_DADOSGOV_DESCRIPTIONS: dict[str, str] = {
-    "CNES": "Health facility registry",
-    "PNI": "National immunisation programme",
-    "SIM": "Mortality information system",
-    "SINAN": "Notifiable disease information system",
-    "SINASC": "Live birth information system",
-    "COVID19": "Confirmed COVID-19 cases",
-}
+__all__: list[str] = [*_impl_all, "set_cache", "CACHEPATH"]
 
 
 def _first_run_message() -> None:  # pragma: no cover
@@ -125,100 +75,6 @@ def _first_run_message() -> None:  # pragma: no cover
         f"Data cache: {CACHEPATH}\n"
         f"Change it with: pysus.set_cache('/your/path')\n"
         f"Browse datasets with: pysus.info()\n"
-    )
-
-
-def info() -> None:
-    """Print a table of all available datasets and their origins.
-
-    Shows dataset name, origin, whether authentication is required,
-    and a short description.
-
-    Examples
-    --------
-    >>> import pysus
-    >>> pysus.info()
-    """
-    rows: list[dict[str, str]] = []
-
-    # FTP datasets (anonymous)
-    try:
-        from pysus.api.ftp.databases import AVAILABLE_DATABASES
-
-        for ds_cls in AVAILABLE_DATABASES:
-            name = ds_cls.__name__
-            desc = _FTP_DESCRIPTIONS.get(name, name)
-            rows.append(
-                {
-                    "name": name,
-                    "origin": "FTP",
-                    "auth": "no",
-                    "description": desc,
-                },
-            )
-    except Exception:  # noqa: BLE001
-        pass
-
-    # Saude / OpenDataSUS datasets (anonymous)
-    try:
-        from pysus.api.saude.databases import DATASET_SPECS
-
-        for spec in DATASET_SPECS:
-            rows.append(
-                {
-                    "name": spec.name,
-                    "origin": "Saude",
-                    "auth": "no",
-                    "description": spec.long_name,
-                },
-            )
-    except Exception:  # noqa: BLE001
-        pass
-
-    # DadosGov datasets (token required)
-    try:
-        from pysus.api.dadosgov import databases as dg_databases
-
-        for dg_cls in dg_databases.AVAILABLE_DATABASES:
-            dg_name = dg_cls.__name__
-            desc = _DADOSGOV_DESCRIPTIONS.get(dg_name, dg_name)
-            rows.append(
-                {
-                    "name": dg_name,
-                    "origin": "DadosGov",
-                    "auth": "yes",
-                    "description": desc,
-                },
-            )
-    except Exception:  # noqa: BLE001
-        pass
-
-    if not rows:
-        print("No datasets available.")
-        return
-
-    # Build aligned table
-    name_w = max(len(r["name"]) for r in rows)
-    origin_w = max(len(r["origin"]) for r in rows)
-    auth_w = max(len(r["auth"]) for r in rows)
-
-    header = (
-        f"  {'Name':<{name_w}}  {'Origin':<{origin_w}}  "
-        f"{'Auth':<{auth_w}}  Description"
-    )
-    sep = "  " + "-" * (len(header) - 2)
-
-    print(sep)
-    print(header)
-    print(sep)
-    for r in rows:
-        print(
-            f"  {r['name']:<{name_w}}  {r['origin']:<{origin_w}}  "
-            f"{r['auth']:<{auth_w}}  {r['description']}",
-        )
-    print(sep)
-    print(
-        f"\n  Total: {len(rows)} datasets | Cache: {CACHEPATH}",
     )
 
 

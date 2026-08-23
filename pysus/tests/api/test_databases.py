@@ -177,6 +177,7 @@ class TestFetchData:
             _fetch_data(dataset="sinan", year=2024, show_progress=False)
 
             mock_pysus.query.assert_called_once_with(
+                client=None,
                 dataset="sinan",
                 group=None,
                 state=None,
@@ -229,6 +230,7 @@ class TestFetchData:
             )
 
             mock_pysus.query.assert_called_once_with(
+                client=None,
                 dataset="sinan",
                 group="DENGUE",
                 state="SP",

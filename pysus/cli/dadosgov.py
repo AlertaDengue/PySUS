@@ -36,7 +36,7 @@ def _get_token(
 @app.command("list")
 def list_datasets():
     """List all available DadosGov datasets."""
-    from pysus import _DADOSGOV_DESCRIPTIONS
+    from pysus.api._impl._ui import _DADOSGOV_DESC as _DADOSGOV_DESCRIPTIONS
     from pysus.api.dadosgov.databases import AVAILABLE_DATABASES
 
     name_w = max(len(d.__name__) for d in AVAILABLE_DATABASES)
@@ -61,7 +61,7 @@ def search(
     """Search DadosGov datasets by name or description."""
     from difflib import get_close_matches
 
-    from pysus import _DADOSGOV_DESCRIPTIONS
+    from pysus.api._impl._ui import _DADOSGOV_DESC as _DADOSGOV_DESCRIPTIONS
     from pysus.api.dadosgov.databases import AVAILABLE_DATABASES
 
     query_lower = query.lower()
@@ -107,7 +107,7 @@ def show(
     ),
 ):
     """Show details for a DadosGov dataset."""
-    from pysus import _DADOSGOV_DESCRIPTIONS
+    from pysus.api._impl._ui import _DADOSGOV_DESC as _DADOSGOV_DESCRIPTIONS
     from pysus.api.dadosgov.databases import AVAILABLE_DATABASES
 
     slug_upper = slug.upper()

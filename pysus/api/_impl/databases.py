@@ -7,8 +7,10 @@ vital statistics (SINASC, SIM), hospital admissions (SIH), ambulatory care
 and hospitalisation records (CIHA).
 """
 
+from __future__ import annotations
+
 import asyncio
-from typing import Literal, cast
+from typing import cast
 
 import pandas as pd
 from pysus.api import types
@@ -34,14 +36,13 @@ def _fetch_data(
     state: str | None = None,
     year: int | list[int] | None = None,
     month: int | list[int] | None = None,
+    origin: str | None = None,
+    columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Query, download, and process Parquet files for a given dataset.
-
-    Internally creates an async event loop, queries the PySUS API for matching
-    files, and downloads them. By default, returns a list of local file paths.
 
     Parameters
     ----------
@@ -55,25 +56,43 @@ def _fetch_data(
         Year or list of years to fetch.
     month : int | list[int], optional
         Month or list of months to fetch.
+    origin : str, optional
+        Restrict to a specific origin (``"FTP"``, ``"Saude"``,
+        ``"DadosGov"``, ``"DuckLake"``).  ``None`` uses the DuckLake
+        catalog which merges all origins.
+    columns : list[str], optional
+        Subset of column names to keep in the final DataFrame.
     show_progress : bool, optional
         Whether to display a tqdm progress bar during download.
     as_dataframe : bool, optional
-        Whether to concatenate and return the data as a pandas DataFrame.
+        Whether to concatenate and return a pandas DataFrame.
     **kwargs
-        Additional arguments forwarded to :meth:`PySUS.read_parquet`.
+        Forwarded to :meth:`PySUS.read_parquet`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        A list of paths to the downloaded Parquet files by default. If
-        ``as_dataframe`` is ``True``, returns a concatenated DataFrame.
+        Paths to downloaded Parquet files (default) or a DataFrame.
     """
 
     async def _fetch() -> list[str] | pd.DataFrame:
         from pysus.api.client import PySUS
+        from pysus.api.types import DADOSGOV, DUCKLAKE, FTP, SAUDE
 
         async with PySUS() as pysus:
+            client_filter = None
+            if origin is not None:
+                origin_upper = origin.upper()
+                mapping = {
+                    "FTP": FTP,
+                    "SAUDE": SAUDE,
+                    "DUCKLAKE": DUCKLAKE,
+                    "DADOSGOV": DADOSGOV,
+                }
+                client_filter = mapping.get(origin_upper)
+
             files = await pysus.query(
+                client=client_filter,
                 dataset=dataset,
                 group=group,
                 state=state,
@@ -82,7 +101,9 @@ def _fetch_data(
             )
 
             if not files:
-                return pd.DataFrame() if as_dataframe else cast(list[str], [])
+                if as_dataframe:
+                    return pd.DataFrame()
+                return cast(list[str], [])
 
             sem = asyncio.Semaphore(3)
 
@@ -104,8 +125,11 @@ def _fetch_data(
             paths: list[str] = [str(f.path) for f in downloaded_files]
 
             if as_dataframe:
-                res = pysus.read_parquet(paths, **kwargs).df()
-                return cast(pd.DataFrame, res)
+                res = pysus.read_parquet(paths, **kwargs)
+                df = res.df() if not isinstance(res, pd.DataFrame) else res
+                if columns:
+                    df = df[[c for c in columns if c in df.columns]]
+                return cast(pd.DataFrame, df)
 
             return paths
 
@@ -115,78 +139,31 @@ def _fetch_data(
 
 
 def sinan(
-    disease: Literal[
-        "ACBI",
-        "ACGR",
-        "ANIM",
-        "ANTR",
-        "BOTU",
-        "CANC",
-        "CHAG",
-        "CHIK",
-        "COLE",
-        "COQU",
-        "DENG",
-        "DERM",
-        "DIFT",
-        "ESQU",
-        "EXAN",
-        "FMAC",
-        "FTIF",
-        "HANS",
-        "HANT",
-        "HEPA",
-        "IEXO",
-        "INFL",
-        "LEIV",
-        "LEPT",
-        "LERD",
-        "LTAN",
-        "MALA",
-        "MENI",
-        "MENT",
-        "NTRA",
-        "PAIR",
-        "PEST",
-        "PFAN",
-        "PNEU",
-        "RAIV",
-        "SDTA",
-        "SIFA",
-        "SIFC",
-        "SIFG",
-        "SRC",
-        "TETA",
-        "TETN",
-        "TOXC",
-        "TOXG",
-        "TRAC",
-        "TUBE",
-        "VARC",
-        "VIOL",
-        "ZIKA",
-    ],
+    disease: types.DatasetName,
     year: int | list[int],
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Fetch SINAN records for a given disease and year(s).
 
-    SINAN (Sistema de Informação de Agravos de Notificação) is the Brazilian
-    notifiable-disease information system.
+    SINAN is the Brazilian notifiable-disease information system.
 
     Parameters
     ----------
-    disease : Literal
-        Disease code (e.g. "DENG" for dengue, "ZIKA" for zika).
+    disease : str
+        Disease code (e.g. ``"DENG"`` for dengue, ``"ZIKA"``).
     year : int | list[int]
         Year or list of years to fetch.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.sinan("DENG", 2020, as_dataframe=True)
     """
     return _fetch_data(
         dataset="sinan",
@@ -202,26 +179,29 @@ def sinasc(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch SINASC birth certificates for a given state, year(s), and group.
+    """Fetch SINASC birth certificates for a given state, year(s).
 
-    SINASC (Sistema de Informação sobre Nascidos Vivo) is the Brazilian live
-    birth information system.
+    SINASC is the Brazilian live birth information system.
 
     Parameters
     ----------
-    state : types.State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.sinasc("RJ", 2020, as_dataframe=True)
     """
     return _fetch_data(
         dataset="sinasc",
@@ -238,26 +218,29 @@ def sim(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch SIM mortality records for a given state, year(s), and group.
+    """Fetch SIM mortality records for a given state, year(s).
 
-    SIM (Sistema de Informação sobre Mortalidade) is the Brazilian mortality
-    information system.
+    SIM is the Brazilian mortality information system.
 
     Parameters
     ----------
-    state : State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.sim("RJ", 2020, as_dataframe=True)
     """
     return _fetch_data(
         dataset="sim",
@@ -275,15 +258,14 @@ def sih(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch SIH hospital admissions for a state, year, month, and group.
+    """Fetch SIH hospital admissions for a state, year, month.
 
-    SIH (Sistema de Informação Hospitalar) is the Brazilian hospital
-    admission information system.
+    SIH is the Brazilian hospital admission information system.
 
     Parameters
     ----------
-    state : types.State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     month : int | list[int]
@@ -291,12 +273,16 @@ def sih(
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.sih("RJ", 2020, 1, as_dataframe=True)
     """
     return _fetch_data(
         dataset="sih",
@@ -315,15 +301,14 @@ def sia(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch SIA ambulatory care for a state, year, month, and group.
+    """Fetch SIA ambulatory care for a state, year, month.
 
-    SIA (Sistema de Informação Ambulatorial) is the Brazilian ambulatory care
-    information system.
+    SIA is the Brazilian ambulatory care information system.
 
     Parameters
     ----------
-    state : types.State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     month : int | list[int]
@@ -331,12 +316,16 @@ def sia(
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.sia("RJ", 2020, 1, as_dataframe=True)
     """
     return _fetch_data(
         dataset="sia",
@@ -354,26 +343,29 @@ def pni(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch PNI immunisation records for a given state, year(s), and group.
+    """Fetch PNI immunisation records for a given state, year(s).
 
-    PNI (Programa Nacional de Imunizações) is the Brazilian national
-    immunisation programme.
+    PNI is the Brazilian national immunisation programme.
 
     Parameters
     ----------
-    state : State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.pni("RJ", 2020, as_dataframe=True)
     """
     return _fetch_data(
         dataset="pni",
@@ -389,10 +381,9 @@ def ibge(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch IBGE census data for given year(s) and optional group.
+    """Fetch IBGE census data for given year(s).
 
-    IBGE (Instituto Brasileiro de Geografia e Estatística) provides census
-    and demographic data.
+    IBGE provides census and demographic data.
 
     Parameters
     ----------
@@ -401,12 +392,16 @@ def ibge(
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.ibge(2020, as_dataframe=True)
     """
     return _fetch_data(dataset="ibge", group=group, year=year, **kwargs)
 
@@ -418,15 +413,14 @@ def cnes(
     group: str | None = None,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch CNES health facilities for a state, year, month, and group.
+    """Fetch CNES health facilities for a state, year, month.
 
-    CNES (Cadastro Nacional de Estabelecimentos de Saúde) is the Brazilian
-    registry of health-care facilities.
+    CNES is the Brazilian registry of health-care facilities.
 
     Parameters
     ----------
-    state : State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     month : int | list[int]
@@ -434,12 +428,16 @@ def cnes(
     group : str, optional
         Additional grouping code.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.cnes("RJ", 2020, 1, as_dataframe=True)
     """
     return _fetch_data(
         dataset="cnes",
@@ -458,28 +456,31 @@ def ciha(
     group: str | None = "CIHA",
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Fetch CIHA hospitalisation records for state, year, month, and group.
+    """Fetch CIHA hospitalisation records for state, year, month.
 
-    CIHA (Comunicação de Internação Hospitalar) provides hospitalisation
-    records.
+    CIHA provides hospitalisation records.
 
     Parameters
     ----------
-    state : State
-        Two-letter state abbreviation (e.g. "RJ").
+    state : str
+        Two-letter state abbreviation (e.g. ``"RJ"``).
     year : int | list[int]
         Year or list of years to fetch.
     month : int | list[int]
         Month or list of months to fetch.
     group : str, optional
-        Additional grouping code. Default is "CIHA".
+        Grouping code.  Default is ``"CIHA"``.
     **kwargs
-        Additional arguments forwarded to :func:`_fetch_data`.
+        Forwarded to :func:`_fetch_data`.
 
     Returns
     -------
     list[str] | pd.DataFrame
-        List of downloaded Parquet paths, or a DataFrame if specified.
+        Paths or DataFrame.
+
+    Examples
+    --------
+    >>> pysus.ciha("RJ", 2020, 1, as_dataframe=True)
     """
     return _fetch_data(
         dataset="ciha",
@@ -507,26 +508,29 @@ def list_files(
 
     Parameters
     ----------
-    dataset : Literal
-        Dataset name (e.g. "SINAN", "SINASC", etc.).
-    client : Origin, optional
+    dataset : str
+        Dataset name (e.g. ``"SINAN"``).
+    client : str, optional
         Data source client to query.
     group : str, optional
         Group or disease code to filter by.
     state : str, optional
-        Two-letter state abbreviation (e.g. "RJ").
+        Two-letter state abbreviation.
     year : int | list[int], optional
         Year or list of years to filter by.
     month : int | list[int], optional
         Month or list of months to filter by.
     **kwargs
-        Additional arguments forwarded to :meth:`PySUS.query`.
+        Forwarded to :meth:`PySUS.query`.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with columns name, path, dataset, group, year, month, state,
-        and modify.
+        Columns: name, path, dataset, group, year, month, state, modify.
+
+    Examples
+    --------
+    >>> pysus.list_files("SINAN", year=2020, state="RJ")
     """
 
     async def _list():
@@ -554,8 +558,8 @@ def list_files(
                 {
                     "name": str(r.path).split("/")[-1],
                     "path": str(r.path),
-                    "dataset": r.dataset.name if r.dataset else None,
-                    "group": r.group.name if r.group else None,
+                    "dataset": (r.dataset.name if r.dataset else None),
+                    "group": (r.group.name if r.group else None),
                     "year": r.record.year,
                     "month": r.record.month,
                     "state": r.record.state,

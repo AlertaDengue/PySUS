@@ -19,11 +19,11 @@ def status() -> None:
     from pysus.api.cache_utils import cache_status, format_size
 
     s = cache_status()
-    typer.echo(f"Cache path:    {s.path}")
-    typer.echo(f"Total files:   {s.total_files}")
+    typer.echo(f"Cache path: {s.path}")
+    typer.echo(f"Total files: {s.total_files}")
     typer.echo(f"Parquet files: {s.parquet_files}")
     typer.echo(f"Partial files: {s.partial_files}")
-    typer.echo(f"Total size:    {format_size(s.total_size_bytes)}")
+    typer.echo(f"Total size: {format_size(s.total_size_bytes)}")
     if s.last_modified:
         typer.echo(f"Last modified: {s.last_modified:%Y-%m-%d %H:%M:%S}")
 

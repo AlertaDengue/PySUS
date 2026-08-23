@@ -135,6 +135,8 @@ def _generate_inserts(
                 values.append(str(val))
 
         values_str = ", ".join(values)
-        lines.append(f"INSERT INTO {table_name} VALUES ({values_str});")
+        lines.append(
+            f"INSERT INTO {table_name} VALUES ({values_str});"  # noqa: E702
+        )
 
     return "\n".join(lines)
