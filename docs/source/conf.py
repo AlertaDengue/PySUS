@@ -38,14 +38,17 @@ def setup(app):
 
     app.connect("autodoc-skip-member", _skip_pydantic_internals)
 
-    # Sphinx 5.3 autodoc emits docutils RST parsing warnings when
-    # processing inherited class attributes on exception subclasses.
-    # Filter these via a logging filter on the root logger.
+    # Sphinx 5.3 emits docutils RST parsing warnings when autodoc processes
+    # inherited class attributes on exception subclasses.  The sphinx logger
+    # has propagate=False, so filters must be attached directly to it.
     class _InlineLiteralFilter(logging.Filter):
         def filter(self, record):
-            return "Inline literal start-string without end-string" not in record.getMessage()
+            return (
+                "Inline literal start-string without end-string"
+                not in record.getMessage()
+            )
 
-    logging.getLogger().addFilter(_InlineLiteralFilter())
+    logging.getLogger("sphinx").addFilter(_InlineLiteralFilter())
     print("DEBUG: skip-member handler registered", flush=True)
 
 intersphinx_mapping = {
