@@ -1,0 +1,312 @@
+# Column schemas for SINAN - COLE
+# Source: COLE.csv from SINAN metadata tarball
+# Total CSV rows: 73, exported fields: 52, skipped: 23
+
+colera:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data da investigação do caso."
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as Atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar(6)"
+  - name: FC_CONTATO
+    field: "tp_contato_caso_suspeito"
+    type: string
+    description_pt: "Local em que o paciente teve contato com caso semelhante nos últimos 10 dias, anteriores ao início dos sinais e sintomas"
+    type_info: "varchar(1)"
+    categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro estado/município 7. Outros 8. Sem história de contato 9. Ignorado"
+  - name: FC_CONT_DE
+    field: "ds_caso_outro"
+    type: string
+    type_info: "varchar(30)"
+  - name: NM_CONTATO
+    field: "no_contato"
+    type: string
+    description_pt: "Nome completo do contato"
+    type_info: "varchar(40)"
+  - name: DDD
+    field: "nu_ddd nu_telefone"
+    type: string
+    description_pt: "Telefone do contato"
+    type_info: "varchar(2) varchar(9)"
+  - name: TEL_CONTAT
+    field: "nu_ddd nu_telefone"
+    type: string
+    description_pt: "Telefone do contato"
+    type_info: "varchar(2) varchar(9)"
+  - name: END_CONTAT
+    field: "co_endereco_contato no_endereco_contato"
+    type: string
+    description_pt: "Endereço completo do contato"
+    type_info: "varchar(60)"
+  - name: VINCULO
+    field: "tp_vinculo"
+    type: string
+    description_pt: "Para direcionar a investigação quanto a suspeita da fonte de contaminação."
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Consumo de água não tratada 2- Exposição à esgoto 3- Alimento 4- Deslocamento 5- Outros 9- Ignorado"
+  - name: OUT_VINCUL
+    field: "ds_vinculo_outro"
+    type: string
+    description_pt: "Informar se outras sugestões de vínculo que não as de cima especificadas"
+    type_info: "varchar(30)"
+  - name: CS_ASSINTO
+    field: "st_sinais_assintomatico"
+    type: string
+    description_pt: "O paciente não apresentou sintomas da doença"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_DIARRE
+    field: "st_sinais_diarreia"
+    type: string
+    description_pt: "O paciente apresentou diarréia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_CAIMBRA
+    field: "st_sinais_caimbra"
+    type: string
+    description_pt: "O paciente apresentou câimbras"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_FEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "O paciente teve febre"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_VOMITOS
+    field: "st_sinais_vomito"
+    type: string
+    description_pt: "O paciente teve vômitos"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_DOR
+    field: "st_sinais_abdominal"
+    type: string
+    description_pt: "O paciente apresentou dor abdominal"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_CHOQUE
+    field: "st_sinais_choque"
+    type: string
+    description_pt: "O paciente entrou em estado de choque"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_DESIT
+    field: "tp_desidratacao"
+    type: string
+    description_pt: "Grau de desidratação do paciente"
+    type_info: "varchar(1)"
+    categories: "1. Não 2. Algum grau 3. Grave 9. Ignorado"
+  - name: TIP_DIARRE
+    field: "tp_caracteristica_diarreia"
+    type: string
+    description_pt: "Como apresentava- se a diarréia"
+    type_info: "varchar(1)"
+    categories: "1-aquosa/ amarelada 2- aquosa/ água de arroz 3- pastosa 9- ignorado"
+  - name: CS_FREQUEN
+    field: "tp_frequencia_dia"
+    type: string
+    description_pt: "Quantas evacuações o paciente teve durante 24 horas."
+    type_info: "varchar(1)"
+    categories: "1. até 5 evacuações 2. de 6 a 10 evacuações 3. de 11 a 20 evacuações 4. acima de 20 evacuações"
+  - name: CS_SANGUE
+    field: "st_presenca_sangue"
+    type: string
+    description_pt: "Se há presença de sangue nas fezes do paciente"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_MUCO
+    field: "st_presenca_muco"
+    type: string
+    description_pt: "Se há presença de muco nas fezes do paciente"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_TIPO
+    field: "tp_atendimento"
+    type: string
+    description_pt: "Tipo de atendimento recebido pelo paciente em decorrência da suspeita de cólera"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Hospitalar 2. Ambulatorial 3. Domiciliar 4. Nenhum 9. Ignorado"
+  - name: DT_ATENDIM
+    field: "dt_atendimento"
+    type: date
+    description_pt: "Data em que o paciente foi atendido"
+    required: true
+  - name: DT_INTERNA
+    field: "dt_internacao"
+    type: date
+    description_pt: "Se hospitalar, Data da internação"
+  - name: UF_HOSPITA
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi internado"
+    type_info: "varchar(2)"
+  - name: NM_MUNIC_H
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Nome completo do município onde o paciente foi internado"
+    type_info: "varchar(6)"
+  - name: NM_HOSPITA
+    field: "co_unidade_hospital no_unidade_hospital"
+    type: numeric
+    description_pt: "Código do Hospital onde o paciente foi internado"
+    type_info: "numeric(8) varchar(70)"
+  - name: CS_MATERIA
+    field: "st_materia_colhido_fezes"
+    type: string
+    description_pt: "Colheu-se fezes para o exame"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: CS_VOMITO
+    field: "st_materia_colhido_vomito"
+    type: string
+    description_pt: "Colheu-se vômito para o exame"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim 2-não 9-ignorado"
+  - name: DT_COLETA
+    field: "dt_coleta"
+    type: date
+    description_pt: "Data da coleta do material para exame"
+    required: true
+    categories: "Dd/mm/aaaa"
+  - name: CS_ANTIB
+    field: "st_uso_antibiotico"
+    type: string
+    description_pt: "Se o paciente fez uso de antibiótico antes da coleta para exame"
+    type_info: "varchar(1)"
+    categories: "1-sim 2-não 9-ignorado"
+  - name: NM_ANTIBIO
+    field: "ds_uso_antibiotico"
+    type: string
+    description_pt: "Especificar o nome do antibiótico"
+    type_info: "varchar(30)"
+  - name: CS_RESULTA
+    field: "st_resultado"
+    type: string
+    description_pt: "Informar se o exame foi positivo ou negativo"
+    type_info: "varchar(1)"
+    categories: "1. Positivo 2. Negativo"
+  - name: CS_POSITIV
+    field: "tp_caso_positivo"
+    type: string
+    description_pt: "Informar o sorotipo"
+    type_info: "varchar(1)"
+    categories: "1. Ogawa 2. Inaba 3. Hikojima 4. Outro sorotipo 5. Não vibrio"
+  - name: CS_NEG_ESP
+    field: "ds_caso_negativo"
+    type: string
+    description_pt: "Acrescentar a opção outro agente etiologico"
+    type_info: "varchar(30)"
+  - name: CS_REIDRAT
+    field: "tp_reidratacao"
+    type: string
+    description_pt: "Informar o tipo de tratamento recebido pelo paciente"
+    type_info: "varchar(1)"
+    categories: "1-via oral 2-venosa 3-oral - venosa"
+  - name: CS_ANTIB_T
+    field: "st_utilizou_antibiotico"
+    type: string
+    description_pt: "se o paciente foi tratado com antibióticos"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: ANTIB_DES
+    field: "ds_utilizou_antibiotico"
+    type: string
+    description_pt: "Em caso afirmativo, qual"
+    type_info: "varchar(30)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Classificação final do caso"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Confirmado 2. Descartado"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Define se o caso foi confirmado por laboratório ou clínico - epidemiológico"
+    type_info: "varchar(1)"
+    categories: "1. Laboratorial 2. Clínico- epidemiológico"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 3 – Indeterminado"
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+    categories: "Tabela com siglas e código padronizados pelo IBGE"
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+    categories: "Tabela com código e descrição de paises."
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+    categories: "Tabela com Códigos e nomes padronizados pelo IBGE"
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+    categories: "Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso. Se o bairro não estiver na tabela de distrito provável de infecção do município provável de infecção, será gravado o nome digitado no campo Bairro e não será gravado nenhum código."
+    type_info: "number(8) vachar2(60)"
+    categories: "Tabela Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo Gestor municipal do Sinan"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso. Se o bairro não estiver na tabela de distrito provável de infecção do município provável de infecção, será gravado o nome digitado no campo Bairro e não será gravado nenhum código."
+    type_info: "number(8) vachar2(60)"
+    categories: "Tabela Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo Gestor municipal do Sinan"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
+    type_info: "varchar(1)"
+    categories: "1. sim 2. não 9. ignorado"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Evolução do caso"
+    type_info: "varchar(1)"
+    categories: "1- cura 2- óbito por cólera 3- óbito por outras causas 9- ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento do caso"
+    required: true

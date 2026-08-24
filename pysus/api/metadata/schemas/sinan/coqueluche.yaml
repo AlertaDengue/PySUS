@@ -1,0 +1,302 @@
+# Column schemas for SINAN - COQU
+# Source: COQU.csv from SINAN metadata tarball
+# Total CSV rows: 50, exported fields: 51, skipped: 0
+
+coqueluche:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data completa do inicio da investigação iniciada (Data da primeira ação desenvolvida após o conhecimento do caso)"
+    required: true
+    categories: "dd/mm/aa"
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar(6)"
+    categories: "Exportar o código da CBO e não o código sequencial"
+  - name: ANT_SENTIN
+    field: "st_unidade_sentinela"
+    type: string
+    description_pt: "Informa se a unidade de saúde que notificou o caso é considerada sentinela"
+    type_info: "Varchar(1)"
+    required: true
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: FC_CONTATO
+    field: "tp_contato_coqueluche"
+    type: string
+    description_pt: "Local em que o paciente teve contato com caso semelhante nos últimos 14 dias, anterior ao início dos Sintomas"
+    type_info: "Varchar(1)"
+    categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro Estado/ Município 7. Outro 8. Sem história de contato 9. Ignorado"
+  - name: OUT_CONTAT
+    field: "ds_contato_coqueluche_outro"
+    type: string
+    description_pt: "Outro local de contato além dos referidos no campo LO_CONTATO"
+    type_info: "varchar(30)"
+  - name: NM_CONTATO
+    field: "no_contato"
+    type: string
+    description_pt: "Nome completo do contato"
+    type_info: "varchar(70)"
+  - name: END_CONTAT
+    field: "co_endereco_contato no_endereco_contato"
+    type: string
+    description_pt: "Endereço completo do contato"
+    type_info: "varchar(60)"
+  - name: CS_VAC_N
+    field: "tp_dose_vacina"
+    type: string
+    description_pt: "Número de doses da vacina que o paciente recebeu. (informação em cartão de vacina)"
+    type_info: "varchar(1)"
+    categories: "1. Uma 2. Duas 3. Três 4. Três + 1 Reforço 5. Três + 2 Reforços 6. Nunca Vacinado 9. Ignorado"
+  - name: DT_ULT_DOS
+    field: "dt_ultima_dose"
+    type: date
+    description_pt: "Data da última dose da vacina tríplice (DTP) que o paciente recebeu. Não deve ser menor ou igual a data de nascimento."
+  - name: DT_CATARRA
+    field: "dt_inicio_tosse"
+    type: date
+    description_pt: "Data do início da tosse. Essa data deverá ser inferior a 14 dias a data de notificação"
+    required: true
+  - name: CS_TOSSE_E
+    field: "st_sinais_tosse"
+    type: string
+    description_pt: "Informa se o paciente apresentou tosse"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_TOSSE_P
+    field: "st_sinais_tosse_paroxistica"
+    type: string
+    description_pt: "Informa se o paciente apresentou tosse paroxísitica(tosse súbita incontrolável com tossidas rápidas e curtas(5 a 10) em uma única expiração"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_CRISE
+    field: "st_sinais_respiracao"
+    type: string
+    description_pt: "Informa se o paciente apresentou respiração ruidosa ao final da crise de tosse (guincho)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_CIANOSE
+    field: "st_sinais_cianose"
+    type: string
+    description_pt: "Informa se o paciente apresentou Cianose"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_VOMITOS
+    field: "st_sinais_vomito"
+    type: string
+    description_pt: "Informa se o paciente apresentou vômitos pós- tosse"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_APNEIA
+    field: "st_sinais_apneia"
+    type: string
+    description_pt: "Informa se o paciente apresentou Apnéia"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_TEMP37
+    field: "st_sinais_temperatura_menor_38"
+    type: string
+    description_pt: "Informa se o paciente apresentou temperatura < 38ºC"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_TEMP_38
+    field: "st_sinais_temperatura_maior_38"
+    type: string
+    description_pt: "Informa se o paciente apresentou temperatura > ou = 38ºC."
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: CS_OUT_SIN
+    field: "st_sinais_outro"
+    type: string
+    description_pt: "Informa se o paciente apresentou outros sintomas que não os descritos anteriormente"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: NM_OUT_SIN
+    field: "ds_sinais_outro"
+    type: string
+    description_pt: "descreve outro sinal ou sintoma não referido nos campos anteriores"
+    type_info: "varchar(30)"
+  - name: CS_PNEUMON
+    field: "st_complicacao_pneumonia"
+    type: string
+    description_pt: "Informa se o paciente apresentou Pneumonia ou Broncopneumonia"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_ENCEFAL
+    field: "st_complicacao_encefalopatia"
+    type: string
+    description_pt: "Informa se o paciente apresentou Encefalopatia (convulsões)"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_DESITRA
+    field: "st_complicacao_desidratacao"
+    type: string
+    description_pt: "Informa se o paciente apresentou Desidratação"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_OTITE
+    field: "st_complicacao_otite"
+    type: string
+    description_pt: "Informa se o paciente apresentou Otite"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_DESNUTR
+    field: "st_complicacao_desnutricao"
+    type: string
+    description_pt: "Informa se o paciente apresentou Desnutrição"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CS_OUT_COM
+    field: "st_complicacao_outro"
+    type: string
+    description_pt: "Informa se o paciente apresentou outras complicações que não as listadas anteriormente"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: NM_OUT_COM
+    field: "ds_complicacao_outro"
+    type: string
+    description_pt: "Especifica outras complicações, além das referidas."
+    type_info: "varchar(30)"
+  - name: CS_HOSPITA
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informa se o paciente foi hospitalizado"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 - Ignorado"
+  - name: DT_INTERNA
+    field: "dt_internacao"
+    type: date
+    description_pt: "data de internação, caso tenha ocorrido."
+  - name: COD_UF_HOS
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "sigla da UF onde o paciente foi internado"
+    type_info: "varchar(2)"
+  - name: COD_MUN_HO
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Município onde está localizado o hospital onde o paciente foi internado"
+    type_info: "varchar(6)"
+    categories: "Códigos dos municípios do IBGE"
+  - name: COD_HOSP
+    field: "co_unidade_hospital"
+    type: numeric
+    description_pt: "Código do hospital onde o paciente foi internado"
+    type_info: "numeric(8)"
+    categories: "Códigos e nomes da tabela do cadastro Nacional de Estabelecimento de Saúde (CNES)"
+  - name: CS_ANTIBIO
+    field: "st_utilizou_antibiotico"
+    type: string
+    description_pt: "Informa se o paciente fez uso de Antibióticos/antimicrobian os no tratamento."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: DT_ADM_ANT
+    field: "dt_antibiotico"
+    type: date
+    description_pt: "Data da administração do antibiótico/antimicrobiano"
+  - name: CS_COLETA
+    field: "st_coleta_material"
+    type: string
+    description_pt: "Informa se foi realizada a coleta de material da nasofaringe"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: DT_COLETA
+    field: "dt_coleta"
+    type: date
+    description_pt: "Data da coleta do material da nasofaringe"
+    required: true
+  - name: CS_CULTURA
+    field: "tp_resultado_cultura"
+    type: string
+    description_pt: "resultado da cultura do material da nasofaringe(Bordetella pertussis)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Positiva 2. Negativa 3. Não realizada 9. Ignorado"
+  - name: MED_IDEN_C
+    field: "st_identificacao_comunicante"
+    type: string
+    description_pt: "Informar se foram identificados comunicantes íntimos (os comunicantes podem ser identificados na residência, creche, escola, orfanatos, quartéis e outros locais que possibilitam o contato íntimo com o caso)"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9. Ignorado"
+  - name: MED_QUAN_C
+    field: "qt_identificacao"
+    type: numeric
+    description_pt: "Número de comunicantes íntimos"
+    type_info: "numeric(3)"
+  - name: MED_CASO_S
+    field: "tp_caso_confirmado"
+    type: string
+    description_pt: "Nº de casos secundários identificados entre os comunicantes."
+    type_info: "varchar(1)"
+    categories: "0. Nenhum 1. Um 2. Dois ou mais 9. Ignorado"
+  - name: COLET_COMU
+    field: "st_coleta_material_comunicante"
+    type: string
+    description_pt: "Informa se foi realizada coleta de material da nasofaringe de comunicantes"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: QUAN_COMUN
+    field: "qt_comunicante"
+    type: numeric
+    description_pt: "número de comunicantes em que foi coletado o material"
+    type_info: "numeric(3)"
+    required: true
+  - name: QUAN_POSIT
+    field: "nu_comunicante_positivo"
+    type: numeric
+    description_pt: "número de comunicantes com resultado da cultura positivo"
+    type_info: "numeric(3)"
+    required: true
+  - name: MED_BLOQUE
+    field: "tp_medida_controle"
+    type: string
+    description_pt: "Informa se foi realizado bloqueio e qual tipo do bloqueio"
+    type_info: "varchar(1)"
+    categories: "1. Bloqueio vacinal 2. Quimioprofilaxi a 3. Ambos 4. Não 9. Ignorado"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Classificação final do caso"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Confirmado 2. Descartado"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "critério utilizado para confirmação do caso ou descarte do suspeito"
+    type_info: "varchar(1)"
+    categories: "1. Laboratorial 2. Vínculo Epidemiológico 3. Clínico"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se a doença adquirida está relacionada as condições/situação de trabalho"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: TB_NOTIFICACAO
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se a doença adquirida está relacionada as condições/situação de trabalho"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Evolução do caso"
+    type_info: "varchar(1)"
+    categories: "1. Cura 2. Óbito por coqueluche 3. Óbito por outras causas 9.Ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento do caso"
+    required: true

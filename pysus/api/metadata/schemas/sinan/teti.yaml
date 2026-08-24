@@ -1,0 +1,198 @@
+# Column schemas for SINAN - TETA
+# Source: TETA.csv from SINAN metadata tarball
+# Total CSV rows: 37, exported fields: 37, skipped: 1
+
+teti:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data completa do inicio da investigação iniciada (Data da primeira ação desenvolvida após o conhecimento do caso)"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
+    type_info: "varchar2(6)"
+  - name: TP_CAUSA
+    field: "tp_possivel_causa"
+    type: string
+    description_pt: "Informa a possível porta de entrada da doença segundo informação do paciente. Deve-se investigar se houve história de injeção nos últimos 21 dias ou demais opções nos últimos 30 dias."
+    type_info: "varcha r2(1)"
+  - name: TP_CAUSOUT
+    field: "ds_possivel_causa_outro"
+    type: string
+    description_pt: "Descrição de outra possível causa"
+    type_info: "varchar2(30)"
+  - name: TP_LOCALLE
+    field: "tp_local_lesao"
+    type: string
+    description_pt: "Local da lesão que provavelmente foi a porta de entrada para o agente etiológico"
+    type_info: "varchar2(1)"
+  - name: NU_DOSE
+    field: "tp_dose_aplicada"
+    type: string
+    description_pt: "Número de doses recebidas de uma ou mais das seguintes vacinas: DTP, DT, dT, TT ou Tetravalente antes da lesão"
+    type_info: "varchar2(1)"
+  - name: DT_ULT_DOS
+    field: "dt_ultima_dose"
+    type: date
+    description_pt: "Data da última dose da vacina contra tétano (DPT,DT,dT,TT Tetra)"
+  - name: TP_PROFILA
+    field: "tp_tratamento_especifico"
+    type: string
+    description_pt: "Informar a substância que foi utilizada utilizada na profilaxia, após ferimento."
+    type_info: "varchar2(1)"
+  - name: CS_TRISMO
+    field: "st_manifestacao_trismo"
+    type: string
+    description_pt: "Se o paciente apresentou dificuldade ou sensibilidade em abrir a boca"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CS_RISO
+    field: "st_manifestacao_riso"
+    type: string
+    description_pt: "Se o paciente apresentou riso sarcástico"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CS_OPISTOT
+    field: "st_manifestacao_opistotono"
+    type: string
+    description_pt: "Se o paciente apresentou rigidez musculatura dorsal"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CS_NUCA
+    field: "st_manifestacao_nuca"
+    type: string
+    description_pt: "Se o paciente apresentou rigidez musculatura da nuca"
+    type_info: "varchar2(1)"
+  - name: CS_ABDOMIN
+    field: "st_manifestacao_abdominal"
+    type: string
+    description_pt: "Se o paciente apresentou rigidez musculatura abdominal"
+    type_info: "varchar2(1)"
+  - name: CS_MEMBROS
+    field: "st_manifestacao_membro"
+    type: string
+    description_pt: "Se o paciente apresentou rigidez nas pernas e/ou braços"
+    type_info: "varchar2(1)"
+  - name: CS_CRISES
+    field: "st_manifestacao_crise"
+    type: string
+    description_pt: "Se o paciente apresentou crises de contraturas musculares"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CS_SIN_OUT
+    field: "st_manifestacao_outro"
+    type: string
+    description_pt: "Se o paciente apresentou manifestações clinicas além das citadas"
+    type_info: "varchar2(1)"
+  - name: NM_SIN_OUT
+    field: "ds_manifestacao_outro"
+    type: string
+    description_pt: "Manifestações clínicas outras manifestações (Especificar)"
+    type_info: "varchar2(30)"
+  - name: TP_ORIGEM
+    field: "tp_origem_caso"
+    type: string
+    description_pt: "Identificar se o conhecimento do caso se deu por notificação possível ou por ocasião da busca ativa, ou pela declaração de óbito"
+    type_info: "varchar2(1)"
+  - name: CS_HOSPITA
+    field: "st_ocorreu_hostpitalizacao"
+    type: string
+    description_pt: "Informar se o paciente foi hospitalizado para tratamento após a manifestação clínica da doença."
+    type_info: "varchar2(1)"
+    required: true
+  - name: DT_INTERNA
+    field: "dt_internacao"
+    type: date
+    description_pt: "Data de internação, caso tenha ocorrido"
+    required: true
+  - name: SG_UF_INTE
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi internado"
+    type_info: "varchar2(2)"
+  - name: NM_MUNIC_H
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Nome do município onde o paciente foi internado"
+    type_info: "varchar2(6)"
+  - name: TP_IDENTFI
+    field: "st_medida_identificar"
+    type: string
+    description_pt: "Se foi identificada pessoas com esquema vacinal incompleto ou não vacinadas."
+    type_info: "varchar2(1)"
+  - name: TP_VACINA
+    field: "st_medida_vacinacao"
+    type: string
+    description_pt: "Se foi analisada a cobertura vacinal da população do município em que reside o caso"
+    type_info: "varchar2(1)"
+  - name: TP_ANALISE
+    field: "st_medida_analise"
+    type: string
+    description_pt: "Se foi realizada vacinação nas pessoas vulneráveis"
+    type_info: "varchar2(1)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Confirmação do caso ou descarte do suspeito que não atende aos critérios de confirmação após a investigação"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CS_LOCAL
+    field: "tp_local_infeccao"
+    type: string
+    description_pt: "Local onde provavelmente ocorreu a infecção"
+    type_info: "varchar2(1)"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar como o paciente evoluiu"
+    type_info: "varchar2(1)"
+  - name: DT_OBITO
+    field: "tp_evolucao_caso"
+    type: date
+    description_pt: "Data de óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento da investigação"
+    required: true

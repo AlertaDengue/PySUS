@@ -1,0 +1,437 @@
+# Column schemas for SINAN - FTIF
+# Source: FTIF.csv from SINAN metadata tarball
+# Total CSV rows: 121, exported fields: 92, skipped: 30
+
+febre_tifoide:
+  - name: DT_INVEST
+    field: "dt_investigaçao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita ao paciente"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
+    type_info: "varchar2(6)"
+  - name: CONTATO
+    field: "tp_contato_caso_febre"
+    type: string
+    type_info: "varchar2(1)"
+  - name: CONT_OUT
+    field: "ds_contato_caso_febre_outro"
+    type: string
+    description_pt: "Descrever qual foi o outro tipo de contato com caso semelhante até 45 dias antes do início dos sinais e sintomas."
+    type_info: "varchar2(30)"
+  - name: NM_CONTAT
+    field: "no_contato"
+    type: string
+    description_pt: "Nome completo do contato"
+    type_info: "varchar2(70)"
+  - name: DDD
+    field: "nu_ddd"
+    type: string
+    description_pt: "DDD do Telefone do contato"
+    type_info: "varchar2(2)"
+  - name: TEL_CONTAT
+    field: "nu_telefone"
+    type: string
+    description_pt: "Telefone do contato"
+    type_info: "varchar2(9)"
+  - name: SUGE_VINCU
+    field: "tp_sugestao"
+    type: string
+    description_pt: "Identificar fontes de infecção mais comuns."
+    type_info: "varchar2(1)"
+    required: true
+  - name: VINC_OUT
+    field: "ds_sugestao_outro"
+    type: string
+    description_pt: "Especificar outros tipos de vínculos."
+    type_info: "varchar2(30)"
+  - name: ASSINTOMAT
+    field: "st_sinais_assintomatico"
+    type: string
+    description_pt: "O paciente assintomático"
+    type_info: "varchar2(1)"
+    required: true
+  - name: FEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "O paciente teve febre."
+    type_info: "varchar2(1)"
+    required: true
+  - name: CEFALEIA
+    field: "st_sinais_cefaleia"
+    type: string
+    description_pt: "O paciente teve cefaléia."
+    type_info: "varchar2(1)"
+    required: true
+  - name: DIARREIA
+    field: "st_sinais_diarreia"
+    type: string
+    description_pt: "O paciente teve diarréia."
+    type_info: "varchar2(1)"
+    required: true
+  - name: CONSTIPA
+    field: "st_sinais_constiparcao"
+    type: string
+    description_pt: "O paciente apresentou constipação."
+    type_info: "varchar2(1)"
+    required: true
+  - name: ASTENIA
+    field: "st_sinais_astenia"
+    type: string
+    description_pt: "O paciente apresentou astenia."
+    type_info: "varchar2(1)"
+  - name: TOSSE
+    field: "st_sinais_tosse"
+    type: string
+    description_pt: "O paciente teve tosse."
+    type_info: "varchar2(1)"
+  - name: ESPLENO
+    field: "st_sinais_espenomeg"
+    type: string
+    description_pt: "O paciente apresentava esplenomegalia."
+    type_info: "varchar2(1)"
+  - name: TIFICA
+    field: "st_sinais_roseola_tifica"
+    type: string
+    description_pt: "Foi identificada Reseola tiphy no paciente."
+    type_info: "varchar2(1)"
+  - name: NAUSEAS
+    field: "st_sinais_nausea"
+    type: string
+    description_pt: "O paciente apresentou náuseas."
+    type_info: "varchar2(1)"
+    required: true
+  - name: VOMITOS
+    field: "st_sinais_vomito"
+    type: string
+    description_pt: "O paciente apresentou vômitos."
+    type_info: "varchar2(1)"
+    required: true
+  - name: DOR
+    field: "st_sinais_abdominal"
+    type: string
+    description_pt: "O paciente apresentou dor abdominal."
+    type_info: "varchar2(1)"
+    required: true
+  - name: PULSO
+    field: "st_sinais_dissociacao"
+    type: string
+    description_pt: "O paciente teve dissociação pulso/temperatura."
+    type_info: "varchar2(1)"
+  - name: ENTERO
+    field: "st_complicacao_enterorragia"
+    type: string
+    description_pt: "Se o paciente apresentou enterorragia."
+    type_info: "varchar2(1)"
+  - name: PERFURA
+    field: "st_complicacao_perfuracao"
+    type: string
+    description_pt: "Se o paciente apresentou perfuração intestinal."
+    type_info: "varchar2(1)"
+  - name: COMP_OUT
+    field: "st_complicacao_outro"
+    type: string
+    description_pt: "O paciente apresentou outras complicações."
+    type_info: "varchar2(1)"
+  - name: COMP_OUT_D
+    field: "ds_complicacao_outro"
+    type: string
+    description_pt: "Especificar se o paciente apresentou outras complicações"
+    type_info: "varchar2(30)"
+  - name: ATENDIMENT
+    field: "tp_atendimento"
+    type: string
+    description_pt: "Tipo de atendimento recebido pelo paciente em decorrência da suspeita de febre tifóide"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DT_ATENDE
+    field: "dt_atendimento"
+    type: date
+    required: true
+  - name: UF
+    field: "co_uf_atendimento"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi internado"
+    type_info: "varchar2(2)"
+  - name: MUNICIPIO
+    field: "co_municipio_atendimento"
+    type: string
+    description_pt: "Nome completo do município onde o paciente foi internado"
+    type_info: "varchar2(6)"
+  - name: HOSPITAL
+    field: "co_unidade_atendimento"
+    type: string
+    description_pt: "Nome completo do Hospital onde o paciente foi internado"
+    type_info: "number(7,0)"
+  - name: SANGUE
+    field: "st_material_coletado_sangue"
+    type: string
+    description_pt: "Colheu-se sangue para o exame."
+    type_info: "varchar2(1)"
+    required: true
+  - name: FEZES
+    field: "st_material_coletado_fezes"
+    type: string
+    description_pt: "Colheu-se fezes para o exame."
+    type_info: "varchar2(1)"
+    required: true
+  - name: URINA
+    field: "st_material_coletado_medular"
+    type: string
+    description_pt: "Colheu-se urina para o exame."
+    type_info: "varchar2(1)"
+    required: true
+  - name: ANTIBIOTIC
+    field: "st_uso_antibiotico"
+    type: string
+    description_pt: "O paciente fez uso de antibiótico antes da coleta para exame."
+    type_info: "varchar2(1)"
+  - name: DT_HEMO1
+    field: "dt_hemocultura_coleta_1"
+    type: date
+    description_pt: "O exame coletado hemocultura."
+  - name: HEMO_R1
+    field: "tp_hemocultura_resultado_1"
+    type: string
+    type_info: "varchar2(1)"
+  - name: HEMO_D_1
+    field: "ds_hemocultura_resultado_1"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_HEMO2
+    field: "dt_hemocultura_coleta_2"
+    type: date
+  - name: HEMO_R2
+    field: "tp_hemocultura_resultado_2"
+    type: string
+    type_info: "varchar2(1)"
+  - name: HEMO_D_2
+    field: "ds_hemocultura_resultado_2"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_HEMO3
+    field: "dt_hemocultura_coleta_3"
+    type: date
+  - name: HEMO_R3
+    field: "tp_hemocultura_resultado_3"
+    type: string
+    type_info: "varchar2(1)"
+  - name: HEMO_D_3
+    field: "ds_hemocultura_resultado_3"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_URO
+    field: "dt_mielocultura_coleta_1"
+    type: date
+    description_pt: "Data da coleta do material de urocultura"
+  - name: URO_R1
+    field: "tp_mielocultura_resultado_1"
+    type: string
+    description_pt: "Resultado da coleta de urocultura"
+    type_info: "varchar2(1)"
+  - name: URO_D
+    field: "Ds_mielocultura_resultado_1"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_URO2
+    field: "Dt_mielocultura_coleta_2"
+    type: date
+    description_pt: "O exame coletado foi urocultura."
+  - name: URO_R2
+    field: "tp_mielocultura_resultado_2"
+    type: string
+    type_info: "varchar2(1)"
+  - name: URO_D_2
+    field: "ds_mielocultura_resultado_2"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_URO3
+    field: "dt_mielocultura_coleta_3"
+    type: date
+    description_pt: "O exame coletado foi urocultura."
+  - name: URO_R3
+    field: "tp_mielocultura_resultado_3"
+    type: string
+    type_info: "varchar2(1)"
+  - name: URO_D_3
+    field: "ds_mielocultura_resultado_3"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_COPRO1
+    field: "dt_coprocultura_coleta_1"
+    type: date
+  - name: COPRO_R1
+    field: "tp_coprocultura_resultado_1"
+    type: string
+    type_info: "varchar2(1)"
+  - name: COPRO_D_1
+    field: "ds_coprocultura_resultado_1"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_COPRO2
+    field: "dt_coprocultura_coleta_2"
+    type: date
+  - name: COPRO_R2
+    field: "tp_coprocultura_resultado_2"
+    type: string
+    type_info: "varchar2(1)"
+  - name: COPRO_D_2
+    field: "ds_coprocultura_resultado_2"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_COPRO3
+    field: "dt_coprocultura_coleta_3"
+    type: date
+  - name: COPRO_R3
+    field: "tp_coprocultura_resultado_3"
+    type: string
+    type_info: "varchar2(1)"
+  - name: COPRO_D_3
+    field: "ds_coprocultura_resultado_3"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_OUTR1
+    field: "dt_outro_coleta_1"
+    type: date
+  - name: OUTR_R1
+    field: "tp_outro_resultado_1"
+    type: string
+    type_info: "varchar2(1)"
+  - name: OUTR_D1
+    field: "ds_outro_resultado_1"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_OUTR2
+    field: "dt_outro_coleta_2"
+    type: date
+  - name: OUTR_R2
+    field: "tp_outro_resultado_2"
+    type: string
+    type_info: "varchar2(1)"
+  - name: OUTR_D2
+    field: "ds_outro_resultado_2"
+    type: string
+    type_info: "varchar2(30)"
+  - name: DT_OUTR3
+    field: "dt_outro_coleta_3"
+    type: date
+  - name: OUTR_R3
+    field: "tp_outro_resultado_3"
+    type: string
+    type_info: "varchar2(1)"
+  - name: OUTR_D3
+    field: "ds_outro_resultado_3"
+    type: string
+    type_info: "varchar2(30)"
+  - name: CLORAFEN
+    field: "st_antibio_trata_cloranfenicol"
+    type: string
+    description_pt: "O paciente fez uso de Cloranfenicol durante o tratamento."
+    type_info: "varchar2(1)"
+  - name: AMPICILINA
+    field: "st_antibio_trata_ampicilina"
+    type: string
+    description_pt: "O paciente fez uso de Ampicilina durante o tratamento."
+    type_info: "varchar2(1)"
+  - name: SULFA
+    field: "st_antibio_trata_sulfametox"
+    type: string
+    description_pt: "O paciente fez uso de Sulfametoxazol durante o tratamento."
+    type_info: "varchar2(1)"
+  - name: QUINOLONA
+    field: "st_antibio_trata_quinolona"
+    type: string
+    description_pt: "O paciente fez uso de Quinolona durante o tratamento."
+    type_info: "varchar2(1)"
+  - name: ANT_OUTR
+    field: "st_antibio_trata_outro"
+    type: string
+    description_pt: "O paciente usou outros tipos de antibióticos."
+    type_info: "varchar2(1)"
+  - name: ANT_OUT_D
+    field: "ds_antibio_trata_outro"
+    type: string
+    description_pt: "Especificar o nome do antibiótico."
+    type_info: "varchar2(30)"
+  - name: DIAS
+    field: "nu_tempo_uso"
+    type: string
+    description_pt: "Tempo de uso do antibiótico (em dias)"
+    type_info: "varchar(2)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Confirma ou descarta o caso de Febre Tifóide."
+    type_info: "varchar2(2)"
+    required: true
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Define se o caso foi confirmado pelo critério de laboratório ou clínico- epidemiológico."
+    type_info: "varchar2(2)"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi Provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela."
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
+    type_info: "varchar2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Evolução do caso"
+    type_info: "varchar2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento da investigação."
+    required: true
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
+    type_info: "varchar(7)"

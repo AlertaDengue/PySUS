@@ -1,0 +1,485 @@
+# Column schemas for SINAN - MENI
+# Source: MENI.csv from SINAN metadata tarball
+# Total CSV rows: 101, exported fields: 100, skipped: 2
+
+meningite:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "data de ínicio da investigação do caso."
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)."
+    type_info: "varchar(6)"
+  - name: ANT_AC
+    field: "st_vacina_polissacaridica_ac"
+    type: string
+    description_pt: "Informar se o paciente tem história vacinal de polissacarídica A/C"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_3
+    field: "nu_dose_polissacaridica_ac"
+    type: string
+    description_pt: "Nº de doses da vacina polissacarídica A/C"
+    type_info: "number(2)"
+  - name: ANT_DTUL_3
+    field: "dt_dose_polissacaridica_ac"
+    type: date
+    description_pt: "data da última dose da vacinação polissacarídica A/C"
+  - name: ANT_BC
+    field: "st_vacina_polissacaridica_bc"
+    type: string
+    description_pt: "Informa se o paciente tem história vacinal de polissacarídica B/C"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSES_
+    field: "nu_dose_polissacaridica_bc"
+    type: string
+    description_pt: "Nº de doses da acina polissacarídica B/C"
+    type_info: "number(2)"
+  - name: ANT_DTULT_
+    field: "dt_dose_polissacaridica_bc"
+    type: date
+    description_pt: "Data da ultima dose da vacinação polissacarídica B/C"
+  - name: ANT_CONJ_C
+    field: "st_vacina_conjugada_meningo"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de conjugada meningo C"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_C
+    field: "nu_dose_conjugada_meningo_c"
+    type: string
+    description_pt: "Nº de doses da vacina conjugada meningo C"
+    type_info: "number(2)"
+  - name: ANT_DTUL_C
+    field: "dt_dose_conjugada_meningo_c"
+    type: date
+    description_pt: "data da ultima dose da vacinação conjugada meningo C"
+  - name: ANT_BCG
+    field: "st_vacina_bcg"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de BCG"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_4
+    field: "nu_dose_bcg"
+    type: string
+    description_pt: "Nº de doses"
+    type_info: "number(2)"
+  - name: ANT_DTUL_4
+    field: "dt_dose_bcg"
+    type: date
+    description_pt: "data da ultima dose da vacinação BCG"
+  - name: ANT_TRIPLI
+    field: "st_vacina_triplice"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de Triplice Viral"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_5
+    field: "nu_dose_triplice"
+    type: string
+    description_pt: "Nº de doses da vacina Triplice Viral"
+    type_info: "number(2)"
+  - name: ANT_DTUL_5
+    field: "dt_dose_triplice"
+    type: date
+    description_pt: "data da ultima dose da vacinação Tríplice Viral"
+  - name: ANT_HEMO_T
+    field: "st_vacina_hemofilo"
+    type: string
+    description_pt: "Informa se o paciente tem história vacinal de Hemófilos (Tetravalente ou Hib)"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_T
+    field: "nu_dose_hemofilo"
+    type: string
+    description_pt: "Nº de doses da vacina Hemófilos (Tetravalente ou Hib)"
+    type_info: "number(2)"
+  - name: ANT_DTUL_T
+    field: "dt_dose_hemofilo"
+    type: date
+    description_pt: "data da ultima dose da vacinação Hemófilos (Tetravalente ou Hib)"
+  - name: ANT_PNEUMO
+    field: "st_vacina_pneumococo"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de Pneumococo"
+    type_info: "varchar2(1)"
+  - name: ANT_DOSE_7
+    field: "nu_dose_pneumococo"
+    type: string
+    description_pt: "Nº de doses da vacina Pneumococo"
+    type_info: "number(2)"
+  - name: ANT_DTUL_7
+    field: "dt_dose_pneumococo"
+    type: date
+    description_pt: "data da ultima dose da vacinação Pneumococo"
+  - name: ANT_OUTRA
+    field: "st_vacina_outro"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de Outras Vacinas"
+    type_info: "varchar2(1)"
+  - name: ANT_OU_DE
+    field: "ds_vacina_outro"
+    type: string
+    description_pt: "informa se o paciente tem história vacinal de Outras Vacinas especificar"
+    type_info: "varchar2(30)"
+  - name: ANT_DTUL_8
+    field: "dt_dose_outro"
+    type: date
+    description_pt: "data da última dose da vacinação Outra"
+  - name: ANT_AIDS
+    field: "tp_doenca_pre_aids_hiv"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_IMUNO
+    field: "tp_doenca_pre_outra_doenca"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_IRA
+    field: "tp_doenca_pre_ira"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_TUBE
+    field: "tp_doenca_pre_tuberculose"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_TRAUMA
+    field: "tp_doenca_pre_traumatismo"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_INF_HO
+    field: "tp_doenca_pre_infeccao"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_OUTRO
+    field: "tp_doenca_pre_outro"
+    type: string
+    description_pt: "Informa a pré-existência do agravo"
+    type_info: "varchar2(1)"
+  - name: ANT_OUTR_D
+    field: "ds_doenca_pre_existente_outro"
+    type: string
+    description_pt: "Especifica outro tipo de doença pré-existente"
+    type_info: "varchar2(30)"
+  - name: ANT_NOMECO
+    field: "no_contato"
+    type: string
+    description_pt: "Nome completo do contato"
+    type_info: "varchar2(70)"
+  - name: DDD
+    field: "nu_dddnu_telefone"
+    type: string
+    description_pt: "Telefone do contato com DDD."
+    type_info: "varchar2(2) varchar2(9)"
+  - name: ANT_TELECO
+    field: "nu_dddnu_telefone"
+    type: string
+    description_pt: "Telefone do contato com DDD."
+    type_info: "varchar2(2) varchar2(9)"
+  - name: ANT_ENDECO
+    field: "no_endereco"
+    type: string
+    description_pt: "endereço completo do contato"
+    type_info: "varchar2(60)"
+  - name: ANT_SECUND
+    field: "st_caso_secundario"
+    type: string
+    description_pt: "informa se este paciente é um caso secundário (o paciente era contato íntimo de um caso e apresentou início dos sintomas após 24 hs do aparecimento de sintomas deste caso). Colocar o nº da ficha e o nome do caso índice no campo ( Nome do contato) ao lado do nome."
+    type_info: "varchar2(1)"
+  - name: CLI_CEFALE
+    field: "st_sinais_cefaleia"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_FEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_VOMITO
+    field: "st_sinais_vomito"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_CONVUL
+    field: "st_sinais_convulsao"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_RIGIDE
+    field: "st_sinais_rigidez_nuca"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_KERNIG
+    field: "st_sinais_kenirg"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_ABAULA
+    field: "st_sinais_abaulamento"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_COMA
+    field: "st_sinais_coma"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_PETEQU
+    field: "st_sinais_petequias"
+    type: string
+    description_pt: "informa se esta manifestação clínica ocorreu com o paciente"
+    type_info: "varchar2(1)"
+  - name: CLI_OUTRAS
+    field: "st_sinais_outro"
+    type: string
+    description_pt: "informa se ocorreram outras manifestações clínicas"
+    type_info: "varchar2(1)"
+  - name: CLI_ESPECI
+    field: "ds_sinais_outro"
+    type: string
+    description_pt: "Especificação de outros sinais e/ou sintomas não listados na ficha"
+    type_info: "varchar2(30)"
+  - name: ATE_HOSPIT
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informa se o paciente foi hospitalizado"
+    type_info: "varchar2(1)"
+  - name: ATE_INTERN
+    field: "st_ocorreu_hospitalizacao"
+    type: date
+    description_pt: "data de internação"
+  - name: ATE_UF_HOS
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF do hospital onde o paciente foi internado."
+    type_info: "varchar2(2)"
+  - name: ATE_MUNICI
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Município onde está localizado o hospital onde o paciente foi internado"
+    type_info: "varchar2(6)"
+  - name: ATE_HOSP_1
+    field: "co_unidade_hospital"
+    type: string
+    description_pt: "Código do hospital onde o paciente foi internado"
+    type_info: "number(8,0)"
+  - name: LAB_PUNCAO
+    field: "st_puncao_lombar"
+    type: string
+    description_pt: "Informa se foi realizada punção lombar no paciente"
+    type_info: "varchar2(1)"
+  - name: LAB_DTPUNC
+    field: "dt_puncao"
+    type: date
+    description_pt: "Data da realização da punção lombar"
+  - name: LAB_ASPECT
+    field: "tp_aspector_liquor"
+    type: string
+    description_pt: "Aspecto do líquor recolhido na punção"
+    type_info: "varchar2(1)"
+  - name: LAB_CTLIQU
+    field: "nu_cultura_liquor"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_CTLESA
+    field: "nu_cultura_lesao_petequial"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_CTSANG
+    field: "nu_cultura_sangue_soro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_CTESCA
+    field: "nu_cultura_escarro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_BCLIQU
+    field: "nu_bacteriosc_liquor"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_BCLESA
+    field: "nu_bacteriosc_lesao_petequial"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_BCSANG
+    field: "nu_bacteriosc_sangue_soro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_BCESCA
+    field: "nu_bacteriosc_escarro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_CILIQU
+    field: "nu_cie_liquor"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_CISANG
+    field: "nu_cie_sangue_soro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_AGLIQU
+    field: "nu_aglutinacao_liquor"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_AGSANG
+    field: "nu_aglunicacao_sangue_soro"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_ISLIQU
+    field: "nu_isolamento_viral_liquor"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_ISFEZE
+    field: "nu_isolamento_viral_fezes"
+    type: string
+    description_pt: "Agente etiológico identificado no exame"
+    type_info: "varchar2(2)"
+  - name: LAB_PCLIQU
+    field: "nu_tecnica_laboratorio_liquor"
+    type: string
+    type_info: "varchar2(2)"
+  - name: LAB_PCLESA
+    field: "nu_tecnica_laboratorio_lesao"
+    type: string
+    type_info: "varchar2(2)"
+  - name: LAB_PCSANG
+    field: "nu_tecnica_laboratorio_sangue"
+    type: string
+    type_info: "varchar2(2)"
+  - name: LAB_PCESCA
+    field: "nu_tecnica_laboratorio_escarro"
+    type: string
+    type_info: "varchar2(2)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Informa se o diagnóstico final está confirmando ou descartado"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CON_DIAGES
+    field: "tp_classificacao_confirmado"
+    type: string
+    type_info: "varchar2(2)"
+    required: true
+  - name: CLA_ME_BAC
+    field: "co_bacteria"
+    type: string
+    description_pt: "diagnóstico final conforme o Quadro II"
+    type_info: "varchar(4)"
+    required: true
+  - name: CLA_ME_ASS
+    field: "co_asseptica"
+    type: string
+    description_pt: "diagnóstico final conforme o Quadro III"
+    type_info: "varchar(4)"
+    required: true
+  - name: CLA_ME_ETI
+    field: "co_etiologia"
+    type: string
+    description_pt: "diagnóstico final conforme o Quadro IV"
+    type_info: "varchar(4)"
+    required: true
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informa qual foi o critério para a confirmação do caso, conforme quadro I"
+    type_info: "varchar2(2)"
+    required: true
+  - name: CLA_SOROGR
+    field: "co_sorogrupo"
+    type: string
+    description_pt: "resultado do exame de sorogrupagem, caso seja N. meningiditis, conforme quadro VI"
+    type_info: "number(4)"
+  - name: MED_NUCOMU
+    field: "nu_comunicante"
+    type: string
+    description_pt: "número de comunicantes identificados"
+    type_info: "number(2)"
+  - name: MED_QUIMIO
+    field: "st_quimioprofilaxia"
+    type: string
+    description_pt: "Informa se foi realizada quimioprofilaxia nos comunicantes"
+    type_info: "varchar2(1)"
+    required: true
+  - name: MED_DT_QUI
+    field: "dt_quimioprolaxia"
+    type: date
+    description_pt: "Data em que foi realizada quimioprofiaxia dos comunicantes"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informa se o paciente adquiriu a doença em decorrência das condições/situação de trabalho"
+    type_info: "varchar2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "evolução do caso"
+    type_info: "varchar2(1)"
+  - name: MED_DT_EVO
+    field: "dt_evolucao"
+    type: date
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento do caso"
+    required: true
+  - name: LAB_HEMA
+    field: "nu_hemacias"
+    type: numeric
+    type_info: "numeric(5)"
+  - name: LAB_NEUTRO
+    field: "nu_neutrofilo"
+    type: numeric
+    type_info: "numeric(3)"
+  - name: LAB_GLICO
+    field: "nu_glicose"
+    type: numeric
+    type_info: "numeric(5)"
+  - name: LAB_LEUCO
+    field: "nu_leucocito"
+    type: numeric
+    type_info: "numeric(5)"
+  - name: LAB_EOSI
+    field: "nu_eosinofilo"
+    type: numeric
+    type_info: "numeric(3)"
+  - name: LAB_PROT
+    field: "nu_proteina"
+    type: numeric
+    type_info: "numeric(5)"
+  - name: LAB_MONO
+    field: "nu_monocito"
+    type: numeric
+    type_info: "numeric(3)"
+  - name: LAB_LINFO
+    field: "nu_linfocito"
+    type: numeric
+    type_info: "numeric(3)"
+  - name: LAB_CLOR
+    field: "nu_cloreto"
+    type: numeric
+    type_info: "numeric(5)"
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
+    type_info: "varchar(7)"

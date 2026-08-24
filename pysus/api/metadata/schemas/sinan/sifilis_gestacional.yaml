@@ -1,0 +1,75 @@
+# Column schemas for SINAN - SIFG
+# Source: SIFG.csv from SINAN metadata tarball
+# Total CSV rows: 13, exported fields: 13, skipped: 0
+
+sifilis_gestacional:
+  - name: PRE_MUNIRE
+    field: "co_municipio_prenatal"
+    type: string
+    description_pt: "Município de localização da Unidade de Saúde de realização do pré-natal"
+    type_info: "varchar2(6)"
+  - name: PRE_UNIPRE
+    field: "co_unidade_prenatal"
+    type: string
+    description_pt: "Unidade de Saúde de realização do Pré-Natal."
+    type_info: "number(8,0)"
+  - name: PRE_SISPRE
+    field: "nu_sisprenatal"
+    type: string
+    description_pt: "Número identificador da gestante no cadastro do SISPRENATAL."
+    type_info: "varchar2(10)"
+  - name: TPEVIDENCI
+    field: "tp_evidencia_clinica"
+    type: string
+    description_pt: "Classificação clínica da sífilis na gestação 1 - sífilis primária - cancro duro; 2 - sífilis secundária – lesões cutâneo-mucosas (roséolas, sifílides papulosas, condiloma plano, alopécia); 3 - sífilis terciária – lesões cutâneo- mucosas (tubérculos ou gomas); alterações neurológicas (tabes dorsalis, demência); alterações cardiovasculares (aortite sifilítica, aneurisma aórtico); alterações articulares (artropatia de Charcot); 4 - sífilis latente - fase assintomática o diagnóstico apenas é obtido por meio de reações sorológicas."
+    type_info: "varchar2(1)"
+  - name: TPTESTE1
+    field: "tp_teste1"
+    type: string
+    description_pt: "Refere-se ao resultado do teste não treponêmico preconizado para a primeira consulta de pré- natal. Entende-se como teste não treponêmicos o VDRL e o RPR;"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DSTITULO1
+    field: "ds_titulo1"
+    type: string
+    description_pt: "Resultado da titulação do VDRL/RPR"
+    type_info: "varchar2(30)"
+    required: true
+  - name: DTTESTE1
+    field: "dt_teste1"
+    type: date
+    description_pt: "Data da realização do teste não treponêmico no pré-natal."
+    required: true
+  - name: TPCONFIRMA
+    field: "tp_teste_confirmatorio"
+    type: string
+    description_pt: "Refere-se ao resultado do teste treponêmico, confirmatório, realizado no pré-natal. Os testes confirmatórios treponêmicos são indicados na confirmação diagnóstica e exclusão de resultados de testes não treponêmicos falsos positivos. São classificados como testes treponêmicos: FTA-Abs (Fluorescent Treponemal Antibody-absorption), MHA-Tp (Microhemaglutination Treponema pallidum Assay), TPHA (Treponema pallidum Hemaglutination Assay), ELISA (Enzyme-Linked Immunosorbent Assay)."
+    type_info: "Varchar2(10)"
+    required: true
+  - name: TPESQUEMA
+    field: "tp_esquema"
+    type: string
+    description_pt: "Esquema de tratamento preconizado pelo Ministério da Saúde e disponível no Manual de Diretrizes para o Controle da Sífilis Congênita."
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRATPARC
+    field: "st_parceiro_tratado"
+    type: string
+    description_pt: "Verifica se o parceiro foi tratado concomitantemente à gestante"
+    type_info: "varchar2(1)"
+  - name: TPESQPAR
+    field: "tp_esquema_parceiro"
+    type: string
+    description_pt: "Esquema de tratamento preconizado pelo Ministério da Saúde e disponível no Manual de Diretrizes para o Controle da Sífilis Congênita. (para o parceiro)"
+    type_info: "varchar2(1)"
+  - name: TPMOTPARC
+    field: "tp_motivo"
+    type: string
+    description_pt: "Relata o motivo pelo qual o parceiro não foi tratado"
+    type_info: "varchar2(1)"
+  - name: DSMOTIVO
+    field: "ds_parceiro_outro"
+    type: string
+    description_pt: "Descreve o outro motivo pelo qual o parceiro não foi tratado"
+    type_info: "varchar2(30)"
+    required: true

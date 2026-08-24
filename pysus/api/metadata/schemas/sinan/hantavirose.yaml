@@ -1,0 +1,430 @@
+# Column schemas for SINAN - HANT
+# Source: HANT.csv from SINAN metadata tarball
+# Total CSV rows: 89, exported fields: 89, skipped: 1
+
+hantavirose:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que iniciou a investigação epidemiológica"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)."
+    type_info: "varchar2(6)"
+  - name: TREINA_MIL
+    field: "st_atividade_treinamento"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: DESMATA_N
+    field: "st_atividade_desmatamento"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: EXPO_N
+    field: "st_atividade_exposicao"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: MOAGEM_N
+    field: "st_atividade_moagem"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: DORMIU_N
+    field: "st_atividade_barraca"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: TRANSPO_N
+    field: "st_atividade_transporte"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: PESCOU_N
+    field: "st_atividade_pesca"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: ROEDOR_N
+    field: "st_atividade_contato_rato"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco descrita."
+    type_info: "varchar2(1)"
+  - name: OUTRA_ATIV
+    field: "st_atividade_outro"
+    type: string
+    description_pt: "Informar se nas últimas 8 semanas (60 dias) que antecederam os primeiros sintomas, o paciente desenvolveu ou esteve exposto à atividade de risco Descrita."
+    type_info: "varchar2(1)"
+  - name: OUTR_ATI_D
+    field: "ds_atividade_outro"
+    type: string
+    description_pt: "Informar se Outros especifique"
+    type_info: "varchar2(40)"
+  - name: CLI_DT_ATE
+    field: "dt_atendimento_1"
+    type: date
+    description_pt: "Data do primeiro atendimento do paciente"
+  - name: CLI_LOCAL
+    field: "no_local_atendimento_1"
+    type: string
+    description_pt: "Local do primeiro atendimento do pacientes (US ou Clínica ou Hospital – Município/ UF)"
+    type_info: "varchar2(30)"
+  - name: CLI_FEBRE
+    field: "st_manifestacao_febre"
+    type: string
+    description_pt: "Informar se o paciente apresentou febre"
+    type_info: "varchar2(1)"
+  - name: CLI_TOSSE
+    field: "st_manifestacao_tosse_seca"
+    type: string
+    description_pt: "Informar se o paciente apresentou tosse seca"
+    type_info: "varchar2(1)"
+  - name: CLI_DISPNE
+    field: "st_manifestacao_dispneia"
+    type: string
+    description_pt: "Informar se o paciente apresentou dispnéia"
+    type_info: "varchar2(1)"
+  - name: CLI_RESPI
+    field: "st_manifestacao_insuf_respira"
+    type: string
+    description_pt: "Informar se o paciente apresentou insuficiência respiratória/ SARA"
+    type_info: "varchar2(1)"
+  - name: CLI_CEFALE
+    field: "st_manifestacao_cefaleia"
+    type: string
+    description_pt: "Informar se o paciente apresentou cefaléia"
+    type_info: "varchar2(1)"
+  - name: CLI_MIAL_G
+    field: "st_manifestacao_mialgia"
+    type: string
+    description_pt: "Informar se o paciente apresentou mialgias"
+    type_info: "varchar2(1)"
+  - name: CLI_LOMBAR
+    field: "st_manifestacao_dor_lombar"
+    type: string
+    description_pt: "Informar se o paciente apresentou dor lombar"
+    type_info: "varchar2(1)"
+  - name: CLI_ABDOMI
+    field: "st_manifestacao_dor_abdomina"
+    type: string
+    description_pt: "Informar se o paciente apresentou dor abdominal"
+    type_info: "varchar2(1)"
+  - name: CLI_HIPOTE
+    field: "st_manifestacao_hipotensao"
+    type: string
+    description_pt: "Informar se o paciente apresentou hipotensão"
+    type_info: "varchar2(1)"
+  - name: CLI_CHOQUE
+    field: "st_manifestacao_choque"
+    type: string
+    description_pt: "Informar se o paciente apresentou choque"
+    type_info: "varchar2(1)"
+  - name: CLI_VOMITO
+    field: "st_manifestacao_nausea"
+    type: string
+    description_pt: "Informar se o paciente apresentou náusea/ vômitos"
+    type_info: "varchar2(1)"
+  - name: CLI_DIARRE
+    field: "st_manifestacao_diarreia"
+    type: string
+    description_pt: "Informar se o paciente apresentou diarréia"
+    type_info: "varchar2(1)"
+  - name: CLI_TORACI
+    field: "st_manifestacao_dor_toracica"
+    type: string
+    description_pt: "Informar se o paciente apresentou dor torácica"
+    type_info: "varchar2(1)"
+  - name: CLI_TONTUR
+    field: "st_manifestacao_tontura"
+    type: string
+    description_pt: "Informar se o paciente apresentou tontura/ vertigens"
+    type_info: "varchar2(1)"
+  - name: CLI_CARDIA
+    field: "st_manifestacao_insuf_cardiaca"
+    type: string
+    description_pt: "Informar se o paciente apresentou insuficiência cardíaca"
+    type_info: "varchar2(1)"
+  - name: CLI_RENAL
+    field: "st_manifestacao_insuf_renal"
+    type: string
+    description_pt: "Informar se o paciente apresentou insuficiência renal"
+    type_info: "varchar2(1)"
+  - name: CLI_NEUROL
+    field: "st_manifestacao_sintoma_neuro"
+    type: string
+    description_pt: "Informar se o paciente apresentou sintomas neurológicos"
+    type_info: "varchar2(1)"
+  - name: CLI_ASTENI
+    field: "st_manifestacao_astenia"
+    type: string
+    description_pt: "Informar se o paciente apresentou astenia"
+    type_info: "varchar2(1)"
+  - name: CLI_PETEQU
+    field: "st_manifestacao_petequias"
+    type: string
+    description_pt: "Informar se o paciente apresentou petéquias(manchas de sangue sob a pele)"
+    type_info: "varchar2(1)"
+  - name: CLI_HEMO
+    field: "st_manifestacao_hemor_outro"
+    type: string
+    description_pt: "Informar se o paciente apresentou hemorragias"
+    type_info: "varchar2(1)"
+  - name: CLI_H_DESC
+    field: "ds_manifestacao_hemor_outro"
+    type: string
+    description_pt: "Especificar a manifestação hemorrágica"
+    type_info: "varchar2 (30)"
+  - name: CLI_OUTROS
+    field: "st_manifestacao_outro"
+    type: string
+    description_pt: "Informar se o paciente apresentou outras manifestações clínicas"
+    type_info: "varchar2(1)"
+  - name: CLI_OUT_D
+    field: "ds_manifestacao_outro"
+    type: string
+    description_pt: "Especificar a outra manifestação clínica apresentada pelo paciente"
+    type_info: "varchar2(30)"
+  - name: AM_SANGUE
+    field: "st_amostra_sangue"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_HEMA_N
+    field: "st_resultado_a_hematocrito"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_TROMBO
+    field: "st_resultado_a_trombocitopenia"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_ATIPIC
+    field: "st_resultado_a_linfocito"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_UREIA
+    field: "st_resultado_a_aumento"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_TGO
+    field: "st_resultado_a_tgo"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_TGO_D
+    field: "ds_resultado_a_tgo"
+    type: string
+    type_info: "varchar2(30)"
+  - name: LAB_TGP
+    field: "st_resultado_a_tgp"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_TGP_D
+    field: "ds_resultado_a_tgp"
+    type: string
+    type_info: "varchar2(30)"
+  - name: LAB_RES_B
+    field: "tp_resultado_b"
+    type: string
+    type_info: "varchar2(30)"
+  - name: LAB_RADIOL
+    field: "st_radiografia_torax"
+    type: string
+    description_pt: "Se o paciente realizou radiografia do tórax"
+    type_info: "varchar2(1)"
+  - name: LAB_DIFUSO
+    field: "st_alguma_alteracao_difuso"
+    type: string
+    description_pt: "Se o exame radiológico apresentou este resultado"
+    type_info: "varchar2(1)"
+  - name: LAB_LOCAL
+    field: "st_alguma_alteracao_localizado"
+    type: string
+    description_pt: "Se o exame radiológico apresentou este resultado"
+    type_info: "varchar2(1)"
+  - name: LAB_DERRAM
+    field: "st_alguma_alteracao_pleural"
+    type: string
+    description_pt: "Se o exame radiológico apresentou este resultado"
+    type_info: "varchar2(1)"
+  - name: DT_COL_IGM
+    field: "dt_coleta_sorologia"
+    type: date
+    description_pt: "Data da coleta da amostra de IGM"
+  - name: LAB_IGM_R
+    field: "tp_resultado_igm"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_IMUNO
+    field: "tp_resultado_imunohistoquimica"
+    type: string
+    type_info: "varchar2(1)"
+  - name: LAB_RTPCR
+    field: "tp_resultado_amostra_rt_pcr"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_HOSP
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Se o paciente foi hospitalizado"
+    type_info: "varchar2(1)"
+  - name: TRA_DT_INT
+    field: "dt_internacao"
+    type: date
+    description_pt: "Dia, mês e ano da internação, caso tenha ocorrido"
+  - name: TRA_UF
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi internado"
+    type_info: "varchar2(2)"
+  - name: TRA_MUNICI
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Nome completo e código do município onde o paciente foi internado"
+    type_info: "varchar2(6)"
+  - name: TRA_HOSPIT
+    field: "co_unidade_hospital"
+    type: string
+    description_pt: "Nome completo do Hospital onde o paciente foi internado"
+    type_info: "number(8,0)"
+  - name: TRA_MECANI
+    field: "st_terapeutico_respirador"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_ANTIVI
+    field: "st_terapeutico_antiviral"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_CORTIC
+    field: "st_terapeutico_corticoide"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_CPAP
+    field: "st_terapeutico_cpap"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_VASOAT
+    field: "st_terapeutico_droga"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_ANTIBI
+    field: "st_terapeutico_antibiotico"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_TRATAM
+    field: "st_terapeutico_outro"
+    type: string
+    type_info: "varchar2(1)"
+  - name: TRA_ESPECI
+    field: "ds_terapeutico_outro"
+    type: string
+    description_pt: "Se outro tipo de tratamento especificar."
+    type_info: "varchar2(30)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Campo obrigatório"
+    type_info: "varchar2(2)"
+    required: true
+  - name: CON_FORMA
+    field: "st_forma_clinica"
+    type: string
+    type_info: "varchar2(1)"
+    required: true
+  - name: CRITERIO
+    field: "st_criterio_diagnostico"
+    type: string
+    description_pt: "Qual o critério utilizado para confirmação ou descarte do caso"
+    type_info: "varchar2(1)"
+    required: true
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccao"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: ZONA_INFEC
+    field: "tp_zona_infeccao"
+    type: string
+    type_info: "varchar2(1)"
+  - name: CON_AMBIEN
+    field: "tp_ambiente_infeccao"
+    type: string
+    type_info: "varchar2(1)"
+  - name: CON_AMB_DE
+    field: "ds_ambiente_infeccao_outro"
+    type: string
+    description_pt: "Especificar o outro local onde provavelmente ocorreu a infecção."
+    type_info: "varchar2(30)"
+  - name: CON_LOCALI
+    field: "nu_localizacao_lpi"
+    type: string
+    description_pt: "Identificar a que distância da Sede do Município Encontra-se o LPI"
+    type_info: "number(2)"
+  - name: CON_LOCAL2
+    field: "tp_localizacao_lpi"
+    type: string
+    description_pt: "Identificar a Localização/Direção do LPI em Relação à Sede do Município"
+    type_info: "varchar2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Campo Obrigatório"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DT_EVOLUC
+    field: "dt_evolucao"
+    type: date
+    required: true
+  - name: CON_AUTOPS
+    field: "st_realizou_autopsia"
+    type: string
+    type_info: "varchar2(1)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se o paciente adquiriu a doença em decorrência das condições/situação do trabalho"
+    type_info: "varchar2(1)"
+  - name: DT_ENCERRA
+    field: "dt_encerramnto"
+    type: date
+    description_pt: "Data do encerramento da investigação"
+    required: true
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    description_pt: "Informações complementares e observações a respeito do caso"
+    type_info: "varchar2(255)"

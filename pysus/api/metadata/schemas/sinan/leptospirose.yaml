@@ -1,0 +1,437 @@
+# Column schemas for SINAN - LEPT
+# Source: LEPT.csv from SINAN metadata tarball
+# Total CSV rows: 99, exported fields: 99, skipped: 1
+
+leptospirose:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a data da 1ª visita ao paciente"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
+    type_info: "VARCHAR2(6)"
+  - name: ANT_CB_LAM
+    field: "st_risco_agua"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_CRI
+    field: "st_risco_animal"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_CAI
+    field: "st_risco_caixa_dagua"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_FOS
+    field: "st_risco_fossa"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_SIN
+    field: "st_risco_local_roedor"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_PLA
+    field: "st_risco_plantio"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_COR
+    field: "st_risco_rio"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_ROE
+    field: "st_risco_roedor"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_GRA
+    field: "st_risco_graos"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_TER
+    field: "st_risco_terreno"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_LIX
+    field: "st_risco_lixo"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_CB_OUT
+    field: "st_risco_outro"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_OU_DES
+    field: "ds_risco_outro"
+    type: string
+    type_info: "VARCHAR2(30)"
+  - name: ANT_HUMANO
+    field: "st_caso_humano"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: ANT_ANIMAI
+    field: "st_caso_animal"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_DT_ATE
+    field: "dt_atendimento"
+    type: date
+    required: true
+  - name: CLI_FEBRE
+    field: "st_sinais_febre"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_MIALGI
+    field: "st_sinais_mialgia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_CEFALE
+    field: "st_sinais_cefaleia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_PROST
+    field: "st_sinais_prostacao"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_CONGES
+    field: "st_sinais_congestao"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_PANTUR
+    field: "st_sinais_panturrilha"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_VOMITO
+    field: "st_sinais_vomito"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_DIARRE
+    field: "st_sinais_diarreia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_ICTERI
+    field: "st_sinais_ictericia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_RENAL
+    field: "st_sinais_renal"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_RESPIR
+    field: "st_sinais_respiratoria"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_CARDIA
+    field: "st_sinais_cardiaca"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_HEMOPU
+    field: "st_sinais_hemorragia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_HEMORR
+    field: "st_sinais_outro_hemorragia"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_MENING
+    field: "st_sinais_meningismo"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_OUTROS
+    field: "st_sinais_outro"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CLI_OTRDES
+    field: "ds_sinal_outro"
+    type: string
+    type_info: "VARCHAR2(30)"
+  - name: ATE_HOSP
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Se o paciente foi hospitalizado"
+    type_info: "VARCHAR2(1)"
+  - name: ATE_DT_INT
+    field: "dt_internacao"
+    type: date
+    description_pt: "Data de internação, caso tenha ocorrido"
+  - name: ATE_DT_ALT
+    field: "dt_alta"
+    type: date
+    description_pt: "Data alta > ou = Data de internação"
+  - name: ATE_UF
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi Internado"
+    type_info: "VARCHAR2(2)"
+  - name: ATE_MUNICI
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Nome completo do município onde o paciente foi internado"
+    type_info: "VARCHAR2(6)"
+  - name: ATE_HOSPIT
+    field: "co_unidade_hospitalno_hospital"
+    type: string
+    description_pt: "Nome completo do Hospital onde o paciente foi internado"
+    type_info: "NUMBER(7)VARCHAR2(60)"
+  - name: LAB_DT_1
+    field: "dt_coleta_elisa_1"
+    type: date
+  - name: LAB_ELIS_1
+    field: "tp_resultado_elisa_1"
+    type: string
+    type_info: "VARCHAR(1)"
+  - name: LAB_DT_2
+    field: "dt_coleta_elisa_2"
+    type: date
+  - name: LAB_ELIS_2
+    field: "tp_resultado_elisa_2"
+    type: string
+    type_info: "VARCHAR(1)"
+  - name: DTMICRO1
+    field: "dt_coleta_micro_1"
+    type: date
+  - name: MICRO1_S1
+    field: "ds_amostra1_sorovar_1"
+    type: string
+    type_info: "VARCHAR2(5)"
+  - name: MICRO1_T_1
+    field: "ds_amostra1_titulo_1"
+    type: string
+    type_info: "VARCHAR2(4)"
+    required: true
+  - name: MICRO1_S_2
+    field: "ds_amostra1_sorovar_2"
+    type: string
+    type_info: "VARCHAR2(5)"
+  - name: MICRO1_T_2
+    field: "ds_amostra1_titulo_2"
+    type: string
+    type_info: "VARCHAR2(5)"
+    required: true
+  - name: LAB_MICR_1
+    field: "tp_resultado_micro_1"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: DTMICRO2
+    field: "dt_coleta_micro_2"
+    type: date
+  - name: MICRO2_S1
+    field: "ds_amostra2_sorovar_1"
+    type: string
+    type_info: "VARCHAR2(5)"
+  - name: MICRO2_T_1
+    field: "ds_amostra2_titulo_1"
+    type: string
+    type_info: "VARCHAR2(4)"
+    required: true
+  - name: MICRO2_S_2
+    field: "ds_amostra2_sorovar_2"
+    type: string
+    type_info: "VARCHAR2(5)"
+  - name: MICRO2_T_2
+    field: "ds_amostra2_titulo_2"
+    type: string
+    type_info: "VARCHAR2(4)"
+    required: true
+  - name: LAB_MICR_2
+    field: "tp_resultado_micro_2"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: DTISOLA
+    field: "dt_coleta_isolamento"
+    type: date
+  - name: RES_ISOL
+    field: "tp_resultado_isolamento"
+    type: string
+    type_info: "VARCHAR(1)"
+  - name: DTIMUNO
+    field: "dt_coleta_imunohistoquimica"
+    type: date
+  - name: RES_IMUNO
+    field: "tp_resultado_imunohistoquimica"
+    type: string
+    type_info: "VARCHAR(1)"
+  - name: DT_PCR
+    field: "dt_coleta_rtpcr"
+    type: date
+  - name: RES_PCR
+    field: "tp_resultado_rtpcr"
+    type: string
+    type_info: "VARCHAR(1)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    type_info: "VARCHAR2(2)"
+    required: true
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    type_info: "VARCHAR2(2)"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi Provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao No_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "Number(8) Vachar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao No_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "Number(8) Vachar2(60)"
+  - name: CON_AREA
+    field: "tp_area_infeccao"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: CON_AMBIEN
+    field: "tp_ambiente_infeccao"
+    type: string
+    type_info: "VARCHAR2(1)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se o paciente adquiriu a doença em decorrência das condições/situação do trabalho"
+    type_info: "VARCHAR2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "evolução do caso"
+    type_info: "VARCHAR2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data da ocorrência do óbito"
+    required: true
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento da investigação"
+    required: true
+  - name: DT_RISCO1
+    field: "dt_risco_1"
+    type: date
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+  - name: DT_RISCO2
+    field: "dt_risco_2"
+    type: date
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+  - name: DT_RISCO3
+    field: "dt_risco_3"
+    type: date
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+  - name: DT_RISCO4
+    field: "dt_risco_4"
+    type: date
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+  - name: CO_MUN_R1
+    field: "co_municipio_risco_1"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(6)"
+  - name: CO_MUN_R2
+    field: "co_municipio_risco_2"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(6)"
+  - name: CO_MUN_R3
+    field: "co_municipio_risco_3"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(6)"
+  - name: CO_MUN_R4
+    field: "co_municipio_risco_4"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(6)"
+  - name: CO_UF_R1
+    field: "co_uf_risco_1"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(2)"
+  - name: CO_UF_R2
+    field: "co_uf_risco_2"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(2)"
+  - name: CO_UF_R3
+    field: "co_uf_risco_3"
+    type: string
+    description_pt: "Data e endereço se esteve em situação"
+    type_info: "VARCHAR2(2)"
+  - name: CO_UF_R4
+    field: "co_uf_risco_4"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(2)"
+  - name: NO_END_R1
+    field: "no_endereco_risco_1"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_END_R2
+    field: "no_endereco_risco_2"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_END_R3
+    field: "no_endereco_risco_3"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_END_R4
+    field: "no_endereco_risco_4"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_LOC_R1
+    field: "no_localidade_risco_1"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_LOC_R2
+    field: "no_localidade_risco_2"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_LOC_R3
+    field: "no_localidade_risco_3"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: NO_LOC_R4
+    field: "no_localidade_risco_4"
+    type: string
+    description_pt: "Data e endereço se esteve em situação de risco ocorrida nos 30 dias que antecederam os primeiros sintomas"
+    type_info: "VARCHAR2(60)"
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    description_pt: "Informações complementares e observações a respeito do caso"
+    type_info: "VARCHAR2(255)"

@@ -1,0 +1,203 @@
+# Column schemas for SINAN - SIFC
+# Source: SIFC.csv from SINAN metadata tarball
+# Total CSV rows: 47, exported fields: 37, skipped: 10
+
+sifilis_congenita:
+  - name: ANT_IDADE
+    field: "nu_idade_mae"
+    type: string
+    description_pt: "Idade da mãe, por ocasião da notificação do caso. Permite digitação."
+    type_info: "number(3)"
+  - name: ANT_RACA
+    field: "tp_raca_mae"
+    type: string
+    description_pt: "Considera-se na seleção das categorias a cor ou raça declarada pela mãe. 1- branca 2- preta 3- amarela ( pessoa que se declarou de raça amarela) 4- parda (pessoa que se declarou mulata, cabocla, cafuza, mameluca ou mestiça de preto com pessoa de outra cor ou raça) 5 – indígena (pessoa que se declarou indígena ou índia)"
+    type_info: "varchar2(1)"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_ocupacao_mae"
+    type: string
+    description_pt: "Tabela de ocupação padronizada pelo Sinan"
+    type_info: "varchar2(6)"
+  - name: ESCOLMAE
+    field: "tp_escolaridade_mae"
+    type: string
+    description_pt: "Escolaridade da mãe no momento da notificação do caso"
+    type_info: "varchar2(2)"
+    required: true
+  - name: ANT_PRE_NA
+    field: "st_prenatal"
+    type: string
+    description_pt: "Informa se a mãe realizou pré-natal durante a gravidez do caso notificado."
+    type_info: "varchar2(1)"
+    required: true
+  - name: UF_PRE_NAT
+    field: "co_uf_prenatal"
+    type: string
+    description_pt: "Informa a UF do local de realização do pré- natal."
+    type_info: "varchar2(2)"
+  - name: MUN_PRE_NA
+    field: "co_municipio_prenatal"
+    type: string
+    description_pt: "Informa o Município do local da realização do pré-natal."
+    type_info: "varchar2(6)"
+  - name: UNI_PRE_NA
+    field: "co_unidade_pre_natal"
+    type: string
+    description_pt: "Nome da unidade de saúde onde foi realizado o pré-natal."
+    type_info: "varchar2(7)"
+  - name: ANTSIFIL_N
+    field: "tp_diagnostico_sifilis"
+    type: string
+    description_pt: "Diagnóstico de sífilis firmado laboratorialmente na rotina de pré-natal, durante o pré-natal ou no momento do parto ou após o parto ou não realizado ou ignorado."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LAB_PARTO
+    field: "tp_teste_parto"
+    type: string
+    description_pt: "Resultado qualitativo do VDRL materno recomendado na admissão de todas as gestantes para a realização do parto/curetagem."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LAB_TITU_2
+    field: "nu_titulo_parto"
+    type: string
+    description_pt: "Resultado quantitativo do VDRL materno recomendado na admissão de todas as gestantes para a realização do parto/curetagem"
+    type_info: "number(4)"
+    required: true
+  - name: LAB_DT3
+    field: "dt_teste_parto"
+    type: date
+    description_pt: "Data da coleta do VDRL realizado no momento do parto/curetagem."
+    required: true
+  - name: LAB_CONF
+    field: "tp_teste_confirmatorio"
+    type: string
+    description_pt: "Resultado qualitativo do teste treponêmico realizado no parto"
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRA_ESQUEM
+    field: "tp_esquema_tratamento"
+    type: string
+    description_pt: "Esquema terapêutico adequado significa tratamento realizado de acordo com o esquema preconizado para a fase clinica da sífilis, iniciado a mais de 30 dias antes do parto e cujos títulos baixaram como esperado ou permaneceram com títulos baixos e o parceiro tratado concomitantemente a gestante."
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRA_DT
+    field: "dt_inicio_tratamento"
+    type: date
+    description_pt: "Data do início do tratamento para a sífilis da mãe do caso notificado."
+    required: true
+  - name: ANT_TRATAD
+    field: "st_parceiro_tratado"
+    type: string
+    description_pt: "Informa sobre tratamento para sífilis do(s) parceiro(s) da mãe do caso notificado."
+    type_info: "varchar2(1)"
+    required: true
+  - name: ANT_UF_CRI
+    field: "co_uf_nascimento"
+    type: string
+    description_pt: "UF de localização da ocorrência do nascimento, aborto ou óbito da criança."
+    type_info: "varchar2(2)"
+  - name: ANT_MUNI_C
+    field: "co_municipio_nascimento"
+    type: string
+    description_pt: "Município de localização da ocorrência do nascimento, aborto ou óbito da criança."
+    type_info: "varchar2(6)"
+  - name: ANT_LOCAL_
+    field: "co_unidade_nascimento"
+    type: string
+    description_pt: "Código e nome da unidade de saúde onde foi realizado o parto da criança aborto ou óbito da criança."
+    type_info: "number(8,0)"
+    required: true
+  - name: LABC_SANGU
+    field: "tp_teste_periferico"
+    type: string
+    description_pt: "Resultado qualitativo do VDRL ou outro teste não treponêmico realizado em amostra de sangue periférico do caso notificado."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LABC_TIT_1
+    field: "nu_titulo_periferico"
+    type: string
+    description_pt: "Resultado quantitativo (título) do VDRL ou outro teste não treponêmico realizado em amostra de sangue periférico do caso notificado."
+    type_info: "number(4)"
+    required: true
+  - name: LABC_DT_1
+    field: "dt_teste_periferico"
+    type: date
+    description_pt: "Data da coleta do teste não treponêmico – Sangue Periférico"
+  - name: LABC_IGG
+    field: "tp_teste_18meses"
+    type: string
+    description_pt: "Resultado do teste treponêmico realizado na criança em amostra de sangue periférico."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LABC_DT
+    field: "dt_teste_18meses"
+    type: date
+  - name: LABC_LIQUO
+    field: "tp_teste_liquor"
+    type: string
+    description_pt: "Resultado qualitativo do teste não treponêmico realizado em amostra de líquor do caso notificado."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LABC_TIT_2
+    field: "nu_titulo_liquor"
+    type: string
+    description_pt: "Resultado quantitativo do teste treponêmico realizado em amostra de líquor do caso notificado."
+    type_info: "number(4)"
+  - name: LABC_DT_2
+    field: "dt_teste_liquor"
+    type: date
+    description_pt: "Data da coleta do Teste não treponêmico – Líquor"
+  - name: LABC_TITUL
+    field: "tp_titulacao"
+    type: string
+    description_pt: "Titulação ascendente – Refere-se à comparação dos títulos da sorologia não treponêmica da criança após cada teste realizado durante o esquema de seguimento ( VDRL com 1mes, 3, 6 ,12 e 18 meses)."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LABC_EVIDE
+    field: "tp_evidencia_pallidum"
+    type: string
+    description_pt: "Evidência de T. pallidum em exame microscópico de material colhido em placenta, lesões cutâneo-mucosas, cordão umbilical, ou necropsia, através de técnica de “campo escuro”, imunofluorescência direta ou outro método específico."
+    type_info: "varchar2(1)"
+    required: true
+  - name: LABC_LIQ_1
+    field: "tp_alteracao_liquorica"
+    type: string
+    description_pt: "Alterações ao exame do líquor, caracterizadas por: celularidade maior que 10/campo e proteinorraquia maior que 100mg/ml, no recém-nato."
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRA_DIAG_T
+    field: "tp_diagnostico_radiologico"
+    type: string
+    description_pt: "Diagnóstico de alterações ósseas observáveis ao Rx, tais como osteocondrite, osteoartrite, periostite (diafisite produtiva), rarefação óssea, tíbia em “lâmina de sabre”."
+    type_info: "varchar2(1)"
+    required: true
+  - name: SIN_OUTR_E
+    field: "ds_sinal_sintoma_outro"
+    type: string
+    type_info: "varchar2(20)"
+  - name: TRA_ESQU_1
+    field: "tp_esquema"
+    type: string
+    description_pt: "Esquema terapêutico utilizado para o tratamento da sífilis congênita do caso notificado, ao nível hospitalar ou ambulatorial. A Penicilina Cristalina é administrada por via intravenosa, e as Penicilinas Procaína e Benzatina administradas por via intramuscular."
+    type_info: "varchar2(1)"
+    required: true
+  - name: DS_ESQUEMA
+    field: "ds_esquema_outro"
+    type: string
+    description_pt: "Especificação de outro esquema de tratamento utilizado para a criança, não listado acima."
+    type_info: "varchar2(30)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso de sífilis congênita: Considera-se óbito por sífilis congênita - o caso de morte do recém-nato, após o nascimento com vida, filho de mãe com sífilis não tratada ou tratada inadequadamente. Considera-se Aborto - toda perda gestacional, até 22 semanas de gestação ou com peso menor ou igual a 500 gramas. Considera-se Natimorto - todo feto morto, após 22 semanas de gestação ou com peso maior que 500 gramas."
+    type_info: "varchar2(1)"
+    required: true
+  - name: EVO_DIAG_N
+    type: string
+    description_pt: "Diagnóstico definitivo do caso notificado, segundo o estadiamento do caso.  Sífilis congênita recente: diagnóstico em criança < de 2 anos de idade.  Sífilis congênita tardia: diagnóstico em criança > de 2 anos de idade.  Natimorto com sífilis: perda fetal com mais de 22 semanas de gestação ou >500g de peso;  Aborto por sífilis: perda fetal com <22 semanas de gestação;  Descartado: investigação incompleta impossibilitando o diagnóstico final do caso"
+    type_info: "varchar2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data do óbito da criança"
