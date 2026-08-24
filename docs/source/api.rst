@@ -149,6 +149,7 @@ Package Root
 .. automodule:: pysus
    :members:
    :undoc-members:
+   :noindex:
 
 Exceptions
 ----------

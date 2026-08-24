@@ -188,7 +188,7 @@ def files(
             typer.echo("No files match the given filters.")
             raise typer.Exit(code=0)
 
-        typer.echo(f"  Files for {ds_cls.__name__}: " f"{len(remote_files)}\n")
+        typer.echo(f"  Files for {ds_cls.__name__}: {len(remote_files)}\n")
         for f in remote_files[:50]:
             typer.echo(f"  {f.path}")
         if len(remote_files) > 50:

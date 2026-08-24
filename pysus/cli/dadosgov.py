@@ -205,7 +205,7 @@ def download(
                 raise typer.Exit(code=0)
 
             typer.echo(
-                f"Downloading {len(remote_files)} file(s) " f"to {out_dir}..."
+                f"Downloading {len(remote_files)} file(s) to {out_dir}..."
             )
             for f in remote_files:
                 typer.echo(f"  {f.path}")

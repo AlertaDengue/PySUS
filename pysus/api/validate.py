@@ -61,7 +61,7 @@ def validate_choice(
     if matches:
         suggestions = ", ".join(f"'{m}'" for m in matches)
         raise ValidationError(
-            f"Invalid {label}: '{value}'. " f"Did you mean {suggestions}?",
+            f"Invalid {label}: '{value}'. Did you mean {suggestions}?",
             hint=f"Valid {label} values: {', '.join(choices)}",
         )
 
