@@ -50,9 +50,7 @@ jobs:
         run: |
           npm install \
             semantic-release \
-            conventional-changelog-conventionalcommits \
-            conventional-changelog@^8 \
-            conventional-changelog-writer@^9 \
+            conventional-changelog-conventionalcommits@^9 \
             @semantic-release/commit-analyzer \
             @semantic-release/release-notes-generator \
             @semantic-release/changelog \
