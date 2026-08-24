@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 from pysus.api.transform import (
     aggregate_by_age_group,
     aggregate_by_period,
@@ -134,6 +135,15 @@ class TestAliases:
         assert "CS_SEXO" in result.columns
 
 
+try:
+    import cryptography  # noqa: F401
+
+    _has_cryptography = True
+except ImportError:
+    _has_cryptography = False
+
+
+@pytest.mark.skipif(not _has_cryptography, reason="cryptography not installed")
 class TestMasking:
     def test_encrypt_decrypt(self):
         df = pd.DataFrame({"CPF": ["12345678901", "98765432100"]})

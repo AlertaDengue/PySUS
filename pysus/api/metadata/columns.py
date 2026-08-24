@@ -90,7 +90,7 @@ def _load_yaml_metadata(
         for yaml_file in db_dir.glob("*.yaml"):
             if group and yaml_file.stem != group:
                 continue
-            with open(yaml_file) as f:
+            with open(yaml_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
             for _ep_name, columns in data.items():
                 if not isinstance(columns, list):
@@ -113,7 +113,7 @@ def _load_yaml_metadata(
             for yaml_file in saude_dir.glob("*.yaml"):
                 if group and yaml_file.stem != group:
                     continue
-                with open(yaml_file) as f:
+                with open(yaml_file, encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}
                 for _ep_name, columns in data.items():
                     if not isinstance(columns, list):

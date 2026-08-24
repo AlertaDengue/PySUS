@@ -110,7 +110,7 @@ def _save_config(config: PySUSConfig) -> None:
     lines = ["# PySUS configuration file", ""]
 
     lines.append("[cache]")
-    lines.append(f'path = "{config.cache.path}"')
+    lines.append(f'path = "{str(config.cache.path).replace(chr(92), "/")}"')
     lines.append("")
 
     lines.append("[download]")

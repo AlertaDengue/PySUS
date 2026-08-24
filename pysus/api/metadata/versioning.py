@@ -174,7 +174,7 @@ def _load_metadata_for_year(
     if year_file.exists():
         import yaml  # type: ignore[import-untyped]
 
-        with open(year_file) as f:
+        with open(year_file, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
         result: dict[str, dict[str, Any]] = {}
         for _ep_name, columns in data.items():

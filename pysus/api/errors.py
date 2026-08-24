@@ -1,16 +1,8 @@
-"""PySUS exception hierarchy.
+r"""PySUS exception hierarchy.
 
 Every error carries a "hint" (how to fix it) and a "docs_url"
 (link to relevant documentation).  The ``__str__`` method renders
-a user-friendly box::
-
-    +------------------------------------------------------------+
-    |  PySUS DownloadError                                        |
-    |  HTTP 404 from ftp.datasus.gov.br                           |
-    |                                                             |
-    |  Hint: Check that the dataset and year exist.               |
-    |  Docs: https://pysus.readthedocs.io/en/latest/errors        |
-    +------------------------------------------------------------+
+a user-friendly box with the error name, message, hint, and docs link.
 """
 
 from __future__ import annotations
