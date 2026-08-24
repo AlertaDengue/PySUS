@@ -100,3 +100,24 @@ any network access:
 
    local = await file.download()
    print(local.metadata.structure.columns)
+
+Curated column descriptions
+---------------------------
+
+The Saude catalog can apply curated column descriptions during a sync. The
+SIM Declaração de Óbito resource is covered by
+``pysus/api/saude/schemas/vigilanciameioambiente.yaml``. Its field names and
+Portuguese descriptions are transcribed from the official SIM data dictionary
+(updated July 2025); no records are bundled with PySUS.
+
+The schema is keyed by the downloaded resource basename, so it can be applied
+without relying on a particular data file or downloading a sample:
+
+.. code-block:: python
+
+   from pysus.api.saude.schemas import load_endpoint_columns
+
+   columns = load_endpoint_columns(
+       "vigilanciameioambiente", "DO24OPEN_csv"
+   )
+   assert any(column["name"] == "TIPOBITO" for column in columns)

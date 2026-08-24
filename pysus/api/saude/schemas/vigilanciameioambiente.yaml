@@ -1,0 +1,47 @@
+# Column descriptions for the SIM Declaração de Óbito (DO) resource.
+# Source: Ministry of Health, CGIAE, SIM data dictionary (updated 2025-07).
+# https://svs.aids.gov.br/daent/cgiae/sistemas-informacao/sim/documentacao/dicionario-de-dados-SIM-tabela-DO.pdf
+#
+# The same resource is exposed by the portal with different filenames. Keep
+# these aliases so catalog syncs can apply the same schema to the 2024 file.
+
+DO24OPEN_csv: &sim_do_columns
+  - name: TIPOBITO
+    type: string
+    description_pt: "Tipo do óbito: 1 - fetal; 2 - não fetal."
+    description_en: "Death type: 1 - fetal; 2 - non-fetal."
+  - name: DTOBITO
+    type: string
+    description_pt: "Data em que ocorreu o óbito, no formato ddmmaaaa."
+    description_en: "Date of death, in ddmmyyyy format."
+  - name: HORAOBITO
+    type: string
+    description_pt: "Horário do óbito, no padrão de 24 horas."
+    description_en: "Time of death, using the 24-hour format."
+  - name: DTNASC
+    type: string
+    description_pt: "Data de nascimento do falecido, no formato ddmmaaaa."
+    description_en: "Date of birth of the deceased, in ddmmyyyy format."
+  - name: SEXO
+    type: string
+    description_pt: "Sexo do falecido: M/1 masculino; F/2 feminino; I/0/9 ignorado."
+    description_en: "Sex of the deceased: M/1 male; F/2 female; I/0/9 unknown."
+  - name: RACACOR
+    type: string
+    description_pt: "Cor/raça informada: 1 branca; 2 preta; 3 amarela; 4 parda; 5 indígena."
+    description_en: "Self-reported race/colour: 1 white; 2 black; 3 yellow; 4 brown; 5 Indigenous."
+  - name: CODESTRES
+    type: string
+    description_pt: "Código da Unidade Federativa de residência."
+    description_en: "Code of the Federative Unit of residence."
+  - name: CODMUNRES
+    type: string
+    description_pt: "Código do município de residência."
+    description_en: "Code of the municipality of residence."
+  - name: CAUSABAS
+    type: string
+    description_pt: "Causa básica da Declaração de Óbito."
+    description_en: "Underlying cause of death on the death certificate."
+
+Mortalidade_Geral_2024_csv: *sim_do_columns
+Mortalidade Geral 2024: *sim_do_columns

@@ -24,6 +24,13 @@ class TestLoadEndpointColumns:
         cols = load_endpoint_columns("arboviroses", "zikavirus")
         assert len(cols) > 0
 
+    def test_load_sim_schema_from_resource_filename(self):
+        cols = load_endpoint_columns("vigilanciameioambiente", "DO24OPEN_csv")
+        assert len(cols) >= 8
+        names = [c["name"] for c in cols]
+        assert "TIPOBITO" in names
+        assert "CODMUNRES" in names
+
     def test_unknown_dataset_returns_empty(self):
         cols = load_endpoint_columns("nonexistent", "endpoint")
         assert cols == []
@@ -91,6 +98,46 @@ class TestApplyColumnDescriptions:
         row = cursor.fetchone()
         assert row[0] is not None
         assert "notific" in row[0].lower()
+        con.close()
+
+    def test_applies_sim_description(self):
+        import duckdb
+
+        con = duckdb.connect(":memory:")
+        con.execute(
+            """
+            CREATE SCHEMA pysus;
+            CREATE TABLE pysus.dataset_columns (
+                id INTEGER PRIMARY KEY,
+                dataset_id INTEGER NOT NULL,
+                name VARCHAR NOT NULL,
+                type VARCHAR NOT NULL,
+                description VARCHAR,
+                nullable BOOLEAN DEFAULT true
+            );
+        """
+        )
+        cursor = con.cursor()
+        cursor.execute(
+            "INSERT INTO pysus.dataset_columns "
+            "(id, dataset_id, name, type, nullable) "
+            "VALUES (1, 1, 'TIPOBITO', 'VARCHAR', true)"
+        )
+        updated = apply_column_descriptions(
+            cursor,
+            dataset_id=1,
+            dataset="vigilanciameioambiente",
+            endpoint="DO24OPEN_csv",
+        )
+        # The return value counts schema definitions processed; the query
+        # below verifies that the matching database column was persisted.
+        assert updated == 9
+        cursor.execute(
+            "SELECT description FROM pysus.dataset_columns WHERE id = 1"
+        )
+        row = cursor.fetchone()
+        assert row[0] is not None
+        assert "fetal" in row[0].lower()
         con.close()
 
     def test_no_update_for_unknown_dataset(self):
