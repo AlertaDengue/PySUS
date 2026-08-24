@@ -1,7 +1,7 @@
-r"""PySUS exception hierarchy.
+"""PySUS exception hierarchy.
 
-Every error carries a "hint" (how to fix it) and a "docs_url"
-(link to relevant documentation).  The ``__str__`` method renders
+Every error carries a hint (how to fix it) and a docs_url
+(link to relevant documentation).  The str method renders
 a user-friendly box with the error name, message, hint, and docs link.
 """
 

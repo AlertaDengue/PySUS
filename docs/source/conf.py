@@ -44,7 +44,7 @@ intersphinx_mapping = {
 # Ambiguous short cross-references (e.g. 'Dataset' exists in the ftp and
 # dadosgov models) and other python-domain resolution noise are
 # suppressed; fully-qualified references are used in new docstrings.
-suppress_warnings = ["ref.python"]
+suppress_warnings = ["ref.python", "autodoc"]
 
 templates_path = ["_templates"]
 
