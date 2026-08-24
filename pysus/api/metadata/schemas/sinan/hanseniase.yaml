@@ -1,0 +1,180 @@
+# Column schemas for SINAN - HANS
+# Source: HANS.csv from SINAN metadata tarball
+# Total CSV rows: 36, exported fields: 35, skipped: 2
+
+hanseniase:
+  - name: NU_PRONTUA
+    field: "ds_prontuario"
+    type: string
+    description_pt: "Identificador do prontuário na unidade de saúde"
+    type_info: "varchar(10)"
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)."
+    type_info: "varchar(6)"
+  - name: NU_LESOES
+    field: "nu_lesao_cultanea"
+    type: numeric
+    description_pt: "Número de lesões dermatológicas apresentadas pelo paciente por ocasião do diagnóstico"
+    type_info: "numeric(2)"
+  - name: FORMACLINI
+    field: "tp_forma_clinica"
+    type: string
+    description_pt: "Forma clínica inicial por ocasião do diagnóstico, segundo classificação de Madrid"
+    type_info: "varchar(1)"
+  - name: CLASSOPERA
+    field: "tp_classfic_operacional"
+    type: string
+    description_pt: "Classificação operacional, por ocasião do diagnóstico, para eleição do esquema terapêutico"
+    type_info: "varchar(1)"
+    required: true
+  - name: NERVOSAFET
+    field: "nu_nervo_afetado"
+    type: numeric
+    description_pt: "Número de nervos afetados."
+    type_info: "numeric(2)"
+  - name: AVALIA_N
+    field: "tp_incapacidade_fisica"
+    type: string
+    description_pt: "Avaliação do grau incapacidade física por ocasião do diagnóstico"
+    type_info: "varchar(1)"
+  - name: MODOENTR
+    field: "tp_modo_entrada"
+    type: string
+    description_pt: "Modo de entrada do paciente no sistema"
+    type_info: "varchar(1)"
+    required: true
+  - name: MODODETECT
+    field: "tp_caso_novo"
+    type: string
+    description_pt: "Modo de detecção do caso novo"
+    type_info: "varchar(1)"
+  - name: DTINICTRAT
+    field: "dt_ini_tratamento"
+    type: date
+    description_pt: "Data do inicio do tratamento"
+    required: true
+  - name: ESQ_INI_N
+    field: "tp_esquema_terapeutico"
+    type: string
+    description_pt: "Esquema terapêutico instituído por ocasião do diagnostico"
+    type_info: "varchar(1)"
+  - name: CONTREG
+    field: "nu_contato_registrado"
+    type: numeric
+    description_pt: "Número de pessoas que residam ou tenham residido, nos últimos 5 anos com o doente, a contar da Data do diagnóstico"
+    type_info: "numeric(2)"
+  - name: MIGRADO_W
+    field: "st_importado"
+    type: string
+    description_pt: "Identifica se o registro é oriundo da rotina de migração da base Windows"
+    type_info: "varchar2(1)"
+  - name: UFATUAL
+    field: "co_uf_atual"
+    type: string
+    description_pt: "Sigla da UF onde está localizada a unidade de saúde responsável pelo tratamento atual do paciente"
+    type_info: "varchar(2)"
+  - name: ID_MUNI_AT
+    field: "co_municipio_atual"
+    type: string
+    description_pt: "Código e nome do município onde está localizada a unidade de saúde responsável pelo tratamento atual do paciente"
+    type_info: "varchar(6)"
+  - name: NU_NOT_AT
+    field: "nu_notificacao_atual"
+    type: string
+    description_pt: "Número da ficha de notif./investig. enviada pela unidade de saúde atualmente responsável pelo paciente"
+    type_info: "varchar(7)"
+  - name: DT_NOTI_AT
+    field: "dt_notificacao_atual"
+    type: date
+    description_pt: "Data de notificação do caso pela unidade de saúde responsável pelo tratamento atual do caso"
+  - name: ID_UNID_AT
+    field: "co_unidade_atual"
+    type: string
+    description_pt: "Nome e código da unidade de saúde responsável pelo tratamento atual do paciente"
+    type_info: "varchar(7)"
+  - name: UFRESAT
+    field: "co_uf_residencia_atual"
+    type: string
+    description_pt: "Sigla da UF de residência atual do paciente"
+    type_info: "varchar(2)"
+  - name: MUNIRESAT
+    field: "co_municipio_residencia_atual"
+    type: string
+    description_pt: "código IBGE do município de residência atual do paciente"
+    type_info: "varchar(6)"
+  - name: CEP
+    field: "nu_cep_residencia_atual"
+    type: string
+    description_pt: "Código postal da residência atual do paciente"
+    type_info: "varchar(8)"
+  - name: DISTRIT_AT
+    field: "co_distrito_residencia_atual"
+    type: numeric
+    description_pt: "Código do distrito de residência atual do paciente, segundo cadastro do módulo de tabelas do SINAN"
+    type_info: "numeric(9) varchar(60)"
+  - name: BAIRROAT
+    field: "no_bairro_residencia_atual co_bairro_residencia_atual"
+    type: numeric
+    description_pt: "Código do bairro de residência atual do paciente, segundo cadastro de tabelas do Sinan."
+    type_info: "numeric(8) varchar(60)"
+  - name: NOBAIRROAT
+    field: "no_bairro_residencia_atual co_bairro_residencia_atual"
+    type: numeric
+    description_pt: "Código do bairro de residência atual do paciente, segundo cadastro de tabelas do Sinan."
+    type_info: "numeric(8) varchar(60)"
+  - name: DTULTCOMP
+    field: "dt_ultimo_comparecimento"
+    type: date
+    description_pt: "Data do último comparecimento do paciente na unidade de saúde ou atendimento por agente de saúde"
+  - name: CLASSATUAL
+    field: "tp_classific_operacao_atual"
+    type: string
+    description_pt: "Classificação operacional do caso para eleição do esquema terapêutico adequado."
+    type_info: "varchar(1)"
+    required: true
+  - name: AVAL_ATU_N
+    field: "tp_incapacidade_fisica_cura"
+    type: string
+    description_pt: "Avaliação do grau de incapacidade física no momento da cura"
+    type_info: "varchar(1)"
+  - name: ESQ_ATU_N
+    field: "tp_esquema_terapeutico_atual"
+    type: string
+    description_pt: "Esquema terapêutico em uso"
+    type_info: "varchar(1)"
+  - name: DOSE_RECEB
+    field: "nu_dose_recebida"
+    type: numeric
+    description_pt: "Número de doses supervisionadas recebidas sob supervisão"
+    type_info: "numeric(2)"
+  - name: EPIS_RACIO
+    field: "tp_reacao_tratamento"
+    type: string
+    description_pt: "Tipo de reação apresentada pelo paciente durante tratamento da hanseníase"
+    type_info: "varchar(1)"
+  - name: DTMUDESQ
+    field: "dt_mudanca_esquema"
+    type: date
+    description_pt: "Data de mudança de esquema terapêutico (se pertinente)"
+  - name: CONTEXAM
+    field: "nu_contato_examinado"
+    type: numeric
+    description_pt: "Número de contatos intradomiciliares submetidos a exame dermatoneurológico"
+    type_info: "numeric(2)"
+  - name: DTALTA_N
+    field: "dt_alta"
+    type: date
+    description_pt: "Data da alta"
+    required: true
+  - name: IN_VINCULA
+    field: "st_vincula"
+    type: string
+    description_pt: "Indica se a notificação foi vinculada"
+    type_info: "varchar2(1)"
+  - name: NU_LOTE_IA
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação e do acompanhamento de um nível do sistema para outro (transferência vertical)"
+    type_info: "varchar(7)"

@@ -1,0 +1,357 @@
+# Column schemas for SINAN - DIFT
+# Source: DIFT.csv from SINAN metadata tarball
+# Total CSV rows: 60, exported fields: 60, skipped: 0
+
+difteria:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª ação desenvolvida após a notificação"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se às atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)"
+    type_info: "varchar(6)"
+  - name: ANT_TIPOCO
+    field: "tp_contato_difteria"
+    type: string
+    description_pt: "Local em que o paciente teve contato com caso semelhante nas últimas 2 semanas, anterior ao início dos sinais e sintomas."
+    type_info: "varchar(1)"
+    categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro Estado/Município 7. Outro 8. Sem história de contato 9. Ignorado"
+  - name: ANT_OUTROS
+    field: "ds_contato_difteria_outro"
+    type: string
+    description_pt: "Identificação de outro local em que o paciente teve contato não referido acima"
+    type_info: "varchar(30)"
+  - name: ANT_NOMECO
+    field: "no_contato"
+    type: string
+    description_pt: "Nome completo do contato"
+    type_info: "varchar(70)"
+  - name: ANT_ENDECO
+    field: "no_endereco_contato"
+    type: string
+    description_pt: "Endereço completo do contato"
+    type_info: "varchar(60)"
+  - name: ANT_DOS_N
+    field: "tp_dose_vacina"
+    type: string
+    description_pt: "Número de doses da vacina tríplice (DPT) ou tetravalente (DTP+Hib) ou dupla (DT ou dT) que o paciente recebeu."
+    type_info: "varchar(1)"
+    categories: "1. Uma 2. Duas 3. Três 4. Três + 1 reforço 5. Três + 2 reforços 6. Nunca vacinado 9. Ignorado"
+  - name: ANT_ULTI_D
+    field: "dt_ultima_dose"
+    type: date
+    description_pt: "Informe a Data da última dose da vacina tríplice (DTP) ou dupla (DT ou dT) que o paciente recebeu."
+  - name: CLI_EDEMAG
+    field: "st_sinais_edema_ganglionar"
+    type: string
+    description_pt: "Informa se o paciente apresentou edema ganglionar"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PESCOC
+    field: "st_sinais_edema_pescoco"
+    type: string
+    description_pt: "Informa se o paciente apresentou edema de pescoço"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_FEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "Informa se o paciente apresentou febre"
+    type_info: "varchar(1)"
+    categories: "1 Sim 2 Não 9. Ignorado"
+  - name: CLI_PROSTR
+    field: "st_sinais_prostracao"
+    type: string
+    description_pt: "Informa se o paciente apresentou prostração"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PSEUDO
+    field: "st_sinais_pseudomenbrana"
+    type: string
+    description_pt: "Informa se o paciente apresentou pseudomembranas"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PALIDE
+    field: "st_sinais_palidez"
+    type: string
+    description_pt: "Informa se o paciente apresentou palidez"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_TEMPER
+    field: "nu_temperatura_corporal"
+    type: numeric
+    description_pt: "Informa a temperatura corporal apresentada pelo paciente durante a fase inicial da doença, em graus centígrados."
+    type_info: "numeric(3)"
+  - name: CLI_CAVIDA
+    field: "st_pseudomembrana_nasal"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na cavidade nasal"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_AMIGDA
+    field: "st_pseudomembrana_amigdala"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada nas amigdalas"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_CORDAO
+    field: "st_pseudomembrana_cordao"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada no cordão umbilical"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_FARING
+    field: "st_pseudomembrana_faringe"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na faringe"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_LARING
+    field: "st_pseudomembrana_laringe"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na laringe"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_ORGAOS
+    field: "st_pseudomembrana_genital"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada nos órgãos genitais"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PALATO
+    field: "st_pseudomembrana_palato"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada nas placas"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_CONDUT
+    field: "st_pseudomembrana_auditivo"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada no conduto auditivo"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_TRAQUE
+    field: "st_pseudomembrana_traqueia"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na traquéia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PELE
+    field: "st_pseudomembrana_pele"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na pele"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_CONJUN
+    field: "st_pseudomembrana_conjuntiva"
+    type: string
+    description_pt: "Informa se a pseudomembrana (placas) está localizada na conjuntiva"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_MIOCAR
+    field: "st_complicacao_miocardite"
+    type: string
+    description_pt: "Informa se a complicação foi miocardite."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_NEFRIT
+    field: "st_complicacao_nefrite"
+    type: string
+    description_pt: "Informa se a complicação foi nefrite."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PARALB
+    field: "st_complicacao_bilateral"
+    type: string
+    description_pt: "Informa se a complicação foi paralisia bilateral e simétrica das extremidades."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PARALP
+    field: "st_complicacao_palato"
+    type: string
+    description_pt: "Informa se a complicação foi paralisia do palato (regurgitação, líquido pelo nariz, voz Anasalada)."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_ARRITM
+    field: "st_complicacao_arritmia"
+    type: string
+    description_pt: "Informa se a complicação foram arritmias cardíacas."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_PARALM
+    field: "st_complicacao_musculo"
+    type: string
+    description_pt: "Informa se a complicação foi paralisia dos músculos intercostais e diafragma."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_OUTRAS
+    field: "st_complicacao_outro"
+    type: string
+    description_pt: "Informa se a complicação foram outras que não as especificadas acima."
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: CLI_ESPECI
+    field: "ds_complicacao_outro"
+    type: string
+    description_pt: "Especifica outro tipo de complicação além das referidas acima"
+    type_info: "varchar(30)"
+  - name: ATE_HOSPIT
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informa se o paciente foi internado devido ao agravo que está sendo notificado"
+    type_info: "varchar(1)"
+    categories: "1- Sim 2- Não 9 Ignorado"
+  - name: ATE_INTERN
+    field: "dt_internacao"
+    type: date
+    description_pt: "Data de internação, caso tenha ocorrido"
+  - name: ATE_UF_INT
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi internado"
+    type_info: "varchar(2)"
+  - name: ATE_MUNICI
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Código e nome completo do município onde o paciente foi internado"
+    type_info: "varchar(6)"
+  - name: ATE_HOSP_1
+    field: "co_unidade_hospital"
+    type: numeric
+    description_pt: "Nome completo e código da unidade de saúde (ou outra fonte notificadora) onde o paciente foi internado"
+    type_info: "numeric(8)"
+    categories: "Código e nome do estabelecimento segundo tabela disponibilizada para cadastramento pelo usuário"
+  - name: LAB_MATE_N
+    field: "st_material_coletado"
+    type: string
+    description_pt: "Informa se foi realizada coleta de material da orofaringe, nasofaringe e/ ou lesão de pele ou mucosa."
+    type_info: "varchar(1)"
+    categories: "1-Orofaringe 2-Nasofaringe 3-Orofaringe e nasofaringe 4-Não coletado 9-Ignorado"
+  - name: LAB_DATA_C
+    field: "dt_coleta"
+    type: date
+    description_pt: "Data em que foi colhido o material."
+  - name: LAB_CULTUR
+    field: "tp_cultura_difteria"
+    type: string
+    description_pt: "Resultado da cultura para C. diphteriae."
+    type_info: "varchar(1)"
+    categories: "1. Positiva para C. diphteriae 2. Negativa para C. diphteriae 3. Não realizada 9. Ignorado"
+  - name: LAB_PROVAS
+    field: "tp_prova_toxigenicidade"
+    type: string
+    description_pt: "resultado das provas de toxigenicidade."
+    type_info: "varchar(1)"
+    categories: "1. Positiva 2. Negativa 3. Não realizada 9. Ignorado"
+  - name: TRA_DATA_S
+    field: "dt_aplicacao_soro"
+    type: date
+    description_pt: "data de aplicação do soro"
+  - name: TRA_ANTIBI
+    field: "st_antibiotico"
+    type: string
+    description_pt: "Informa se o paciente foi tratado com antibiótico"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: TRA_DATA_A
+    field: "dt_antibiotico"
+    type: date
+    description_pt: "Data de início da administração do antibiótico utilizado no tratamento"
+  - name: MED_IDEN_C
+    field: "st_comunicante_intimo"
+    type: string
+    description_pt: "Informa se foi realizada identificação dos comunicantes íntimos(os comunicantes podem ser identificados na residência, creche, escola, orfanatos, quartéis e outros locais que possibilitam o contato íntimo com o caso)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: MED_QUAN_C
+    field: "qt_comunicante_intimo"
+    type: numeric
+    description_pt: "número de comunicantes íntimos identificados"
+    type_info: "numeric(3)"
+    required: true
+  - name: MED_CASO_S
+    field: "tp_comunicante_confirmado"
+    type: string
+    description_pt: "número de casos secundários que foram confirmados entre os comunicantes"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Nenhum 2. Um 3. Dois ou mais 9. Ignorado"
+  - name: MED_MATERI
+    field: "st_comunicante_material"
+    type: string
+    description_pt: "Informa se foi realizada coleta de material de comunicantes"
+    type_info: "varchar(1)"
+    categories: "1-Sim 2-Não 9.Ignorado"
+  - name: MED_QUAN_M
+    field: "qt_comunicante_material"
+    type: numeric
+    description_pt: "Nº de comunicantes em que foi coletado o material"
+    type_info: "numeric(3)"
+    required: true
+  - name: MED_QUAN_P
+    field: "qt_comunicante_portador"
+    type: numeric
+    description_pt: "Nº de portadores identificados entre os comunicantes"
+    type_info: "numeric(3)"
+    required: true
+  - name: MED_PREVEN
+    field: "st_medida_prevencao"
+    type: string
+    description_pt: "Informa o tipo de bloqueio realizado"
+    type_info: "varchar(1)"
+    categories: "1. Bloqueio vacinal 2. Quimioprofilaxia 3. Ambos 4. Não 9. Ignorado"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Classificação final da notificação"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1. Confirmado 2. Descartado"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Critérios de confirmação do caso"
+    type_info: "varchar(1)"
+    categories: "1. Cultura com prova de toxigenicidade 2. Cultura sem prova de toxigenicidade 3. Vínculo epidemiológico 4. Morte pós clínica compatível 5. Clínico 6. Necrópsia"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informa se o paciente adquiriu a doença em decorrência das condições/situação de trabalho"
+    type_info: "varchar(1)"
+    categories: "1. Sim 2. Não 9. Ignorado"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Evolução do paciente"
+    type_info: "varchar(1)"
+    categories: "1. Cura c/ sequela 2. Cura s/ sequela 3. Óbito por difteria 4. Óbito por outras causas 9. Ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento da investigação do caso"
+    required: true
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
+    type_info: "varchar(7)"
+    categories: "Descrever aqui a estrutura da composição do número do lote."

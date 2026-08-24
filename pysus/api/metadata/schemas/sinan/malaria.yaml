@@ -1,0 +1,128 @@
+# Column schemas for SINAN - MALA
+# Source: MALA.csv from SINAN metadata tarball
+# Total CSV rows: 22, exported fields: 23, skipped: 0
+
+malaria:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Informe a data do início da investigação."
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
+    type_info: "varchar2(6)"
+  - name: AT_ATIVIDA
+    field: "tp_principal_atividade"
+    type: string
+    description_pt: "Atividade que provavelmente estava envolvida na causa da transmissão da malária. Permite avaliar as atividades de risco para doença"
+    type_info: "varchar2(2)"
+    required: true
+  - name: AT_LAMINA
+    field: "tp_lamina"
+    type: string
+    description_pt: "Identificar se é um caso novo (BA/BP) ou uma recaída/recrudescência (LVC)"
+    type_info: "varchar2(1)"
+    required: true
+  - name: AT_SINTOMA
+    field: "tp_sintoma"
+    type: string
+    description_pt: "Identificar se o paciente está com ou sem sintomas característicos da malária. Permite avaliar a existência de assintomáticos interferindo na transmissão da doença"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DEXAME
+    field: "dt_exame"
+    type: date
+    description_pt: "Data em que foi realizado o exame. Permite avaliar se o exame está sendo realizado no prazo previsto"
+    required: true
+  - name: RESULT
+    field: "tp_resultado_exame"
+    type: string
+    description_pt: "Resultado do exame identificando as espécies e formas parasitárias. Orienta o tratamento e permite a avaliação das espécies parasitárias existentes"
+    type_info: "varchar2(2)"
+    required: true
+  - name: PMM
+    field: "tp_resultado_exame"
+    type: numeric
+    description_pt: "Densidade parasitária por plasmódio em mm3. Permite avaliar o nível de gravidade da doença e atraso no tratamento"
+    type_info: "numeric(8)"
+  - name: PCRUZ
+    field: "tp_parasitemis"
+    type: string
+    description_pt: "Densidade parasitária por plasmódio em cruzes. Permite avaliar o nível de gravidade da doença e atraso no tratamento"
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRA_ESQUEM
+    field: "tp_esquema_tratamento"
+    type: string
+    description_pt: "Esquema de tratamento utilizado de acordo com o manual de terapêutica da malária"
+    type_info: "varchar2(2)"
+  - name: DSTRAESQUE
+    field: "ds_esquema_tratamento_outro"
+    type: string
+    type_info: "varchar(30)"
+  - name: DTRATA
+    field: "dt_inicio_tratamento"
+    type: date
+    description_pt: "Data em que iniciou o tratamento. Permite avaliar se o tratamento está sendo realizado imediatamente após o diagnóstico."
+    required: true
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Conclusão da investigação"
+    type_info: "varchar2(2)"
+    required: true
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Tabela com siglas e código padronizados pelo IBGE"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccao"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "no_bairro_infeccaoco_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: NOBAIINF
+    field: "no_bairro_infeccaoco_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+  - name: LOC_INF
+    field: "no_localidade_infeccao"
+    type: string
+    description_pt: "Localidade provável de infecção. Orienta as ações de controle"
+    type_info: "varchar(60)"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Data do encerramento da investigação"
+    required: true
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
+    type_info: "varchar(7)"

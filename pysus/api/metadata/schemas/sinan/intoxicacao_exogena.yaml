@@ -1,0 +1,308 @@
+# Column schemas for SINAN - IEXO
+# Source: IEXO.csv from SINAN metadata tarball
+# Total CSV rows: 59, exported fields: 61, skipped: 1
+
+intoxicacao_exogena:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Informar a data de investigação do caso"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando desempregado"
+    type_info: "varchar2(6)"
+  - name: SIT_TRAB
+    field: "tp_mercado_trabalho"
+    type: string
+    description_pt: "Informar o local de ocorrência da Exposição"
+    type_info: "varchar(2)"
+  - name: TRAB_DESC
+    field: "ds_mercado_trabalho_outro"
+    type: string
+    description_pt: "Informar o local de ocorrência da exposição"
+    type_info: "varchar2(30)"
+  - name: LOC_EXPO
+    field: "tp_ocorrencia"
+    type: string
+    description_pt: "Informar o local de ocorrência da exposição"
+    type_info: "varchar2(1)"
+  - name: LOC_EXP_DE
+    field: "ds_ocorrencia_outro"
+    type: string
+    description_pt: "Especificar outro local de ocorrência da exposição"
+    type_info: "varchar(30)"
+  - name: NOEMPRESA
+    field: "no_local_exposicao"
+    type: string
+    description_pt: "Informar o nome do local/estabelecimento de ocorrência do acidente/exposição"
+    type_info: "varchar(70)"
+  - name: CNAE
+    field: "co_cnae"
+    type: string
+    description_pt: "Informar o nome do local/estabelecimento de ocorrência do acidente/exposição"
+    type_info: "varchar(10)"
+  - name: UF_EMP
+    field: "co_uf_exposicao"
+    type: string
+    description_pt: "Informar a UF de ocorrência o acidente/exposição"
+    type_info: "varchar(2)"
+  - name: MUN_EMP
+    field: "co_municipio_exposicao"
+    type: string
+    description_pt: "Informar o município de ocorrência do acidente/exposição"
+    type_info: "varchar(6)"
+  - name: DIS_EMP
+    field: "co_distrito_exposicao"
+    type: string
+    description_pt: "Informar o Distrito de ocorrência do acidente/exposição"
+    type_info: "varchar(9)"
+  - name: COBAIEMP
+    field: "co_bairro_exposicaono_bairro_exposicao"
+    type: string
+    description_pt: "Informa o código e nome do bairro ou localidade de ocorrência do acidente/exposição"
+    type_info: "varchar(8) varchar(60)"
+  - name: NOBAIEMP
+    field: "co_bairro_exposicaono_bairro_exposicao"
+    type: string
+    description_pt: "Informa o código e nome do bairro ou localidade de ocorrência do acidente/exposição"
+    type_info: "varchar(8) varchar(60)"
+  - name: END_EMP
+    field: "co_endereco_exposicaono_endereco_exposicao"
+    type: string
+    description_pt: "Informar o Endereço da localidade de ocorrência do acidente/exposição"
+    type_info: "varchar2(60)"
+  - name: NU_EMP
+    field: "co_endereco_exposicao"
+    type: string
+    description_pt: "Informar o número do endereço do estabelecimento"
+    type_info: "varchar(6)"
+  - name: COMP_EMP
+    field: "ds_complemento_exposicao"
+    type: string
+    description_pt: "Informar o complemento do endereço do acidente/exposição"
+    type_info: "varchar2(60)"
+  - name: REF_EMP
+    field: "ds_referencia_exposicao"
+    type: string
+    description_pt: "Informar o ponto de referência do estabelecimento"
+    type_info: "varchar2(60)"
+  - name: CEP_EMP
+    field: "nu_cep_exposicao"
+    type: string
+    description_pt: "Informar o Cep da localidade de ocorrência do acidente/exposição"
+    type_info: "varchar2(7)"
+  - name: DDD_EMP
+    field: "nu_ddd_exposicaonu_telefone_exposicao"
+    type: string
+    description_pt: "Informar o telefone da localidade de ocorrência do acidente/exposição"
+    type_info: "varchar(3) varcahr2(9)"
+  - name: FONE_EMP
+    field: "nu_ddd_exposicaonu_telefone_exposicao"
+    type: string
+    description_pt: "Informar o telefone da localidade de ocorrência do acidente/exposição"
+    type_info: "varchar(3) varcahr2(9)"
+  - name: ZONA_EXP
+    field: "tp_zona_exposicao"
+    type: string
+    description_pt: "Informar a zona do local de ocorrência do acidente/exposição"
+    type_info: "varchar2(1)"
+  - name: PAIS_EXP
+    field: "co_pais"
+    type: string
+    description_pt: "Informar o País se estabelecimento fora do Brasil"
+    type_info: "varchar(4)"
+  - name: AGENTE_TOX
+    field: "tp_agente_toxico"
+    type: string
+    description_pt: "Informar o grupo do agente tóxico /classificação geral"
+    type_info: "varchar2(2)"
+  - name: OUT_AGENTE
+    field: "ds_agente_toxico_outro"
+    type: string
+    description_pt: "Especificar outro agente tóxico"
+    type_info: "varchar2(30)"
+  - name: COAGTOXMA1
+    field: "co_ag_tox_marca_1"
+    type: numeric
+    description_pt: "Código do agente tóxico"
+    type_info: "numeric(3)"
+  - name: AGENTE_1
+    field: "ds_agente_toxico_1"
+    type: string
+    description_pt: "Informar o nome comercial;/popular do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: P_ATIVO_1
+    field: "ds_principio_ativo_1"
+    type: string
+    description_pt: "Informar o nome do princípio ativo do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: COAGTOXMA2
+    field: "co_ag_tox_marca_1"
+    type: numeric
+    description_pt: "Código do agente tóxico"
+    type_info: "numeric(3)"
+  - name: AGENTE_2
+    field: "ds_agente_toxico_2"
+    type: string
+    description_pt: "Informar o nome comercial;/popular do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: P_ATIVO_2
+    field: "ds_principio_ativo_2"
+    type: string
+    description_pt: "Informar o nome do princípio ativo do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: COAGTOXMA3
+    field: "co_ag_tox_marca_1"
+    type: numeric
+    description_pt: "Código do agente tóxico"
+    type_info: "numeric(3)"
+  - name: AGENTE_3
+    field: "ds_agente_toxico_3"
+    type: string
+    description_pt: "Informar o nome comercial;/popular do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: P_ATIVO_3
+    field: "ds_principio_ativo_3"
+    type: string
+    description_pt: "Informar o nome do princípio ativo do agente tóxico"
+    type_info: "varchar2(60)"
+  - name: UTILIZACAO
+    field: "tp_utilizacao"
+    type: string
+    description_pt: "Informar, caso o produto químico seja agrotóxico, qual a finalidade da utilização"
+    type_info: "varchar2(1)"
+  - name: UTIL_DESC
+    field: "ds_utilizacao_outro"
+    type: string
+    description_pt: "Especificar outra finalidade"
+    type_info: "varchar2(30)"
+  - name: ATIVIDA_1
+    field: "tp_atividade_1"
+    type: string
+    description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (1ª opção)"
+    type_info: "varchar(2)"
+  - name: ATIVIDA_2
+    field: "tp_atividade_2"
+    type: string
+    description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (2ª opção)"
+    type_info: "varchar(2)"
+  - name: ATIVIDA_3
+    field: "tp_atividade_3"
+    type: string
+    description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (3ª opção)"
+    type_info: "varchar(2)"
+  - name: LAVOURA
+    field: "ds_cultura_lavoura"
+    type: string
+    description_pt: "I Informar, caso o produto químico seja agrotóxico, qual a cultura/lavoura predominante,"
+    type_info: "varchar(100)"
+  - name: VIA_1
+    field: "tp_via_contaminacao_1"
+    type: string
+    description_pt: "Informar a via de exposição/ contaminação (1 ª opção)"
+    type_info: "varchar2(1)"
+  - name: VIA_2
+    field: "tp_via_contaminacao_2"
+    type: string
+    description_pt: "Informar a via de exposição/ contaminação (2 ª opção)"
+    type_info: "varchar2(1)"
+  - name: VIA_3
+    field: "tp_via_contaminacao_3"
+    type: string
+    description_pt: "Informar a via de exposição/ contaminação (3 ª opção)"
+    type_info: "varchar2(1)"
+  - name: CIRCUNSTAN
+    field: "tp_contaminacao"
+    type: string
+    description_pt: "Informar em que circunstância ocorreu a exposição/ contaminação"
+    type_info: "varchar2(2)"
+  - name: CIRCUN_DES
+    field: "ds_contaminacao_outro"
+    type: string
+    description_pt: "Especificar outra circunstância"
+    type_info: "varchar2(30)"
+  - name: DOENCA_TRA
+    field: "st_acidente_trabalho"
+    type: string
+    description_pt: "Informe, em caso de Acidente de Trabalho, se foi feita comunicação do mesmo"
+    type_info: "varchar2(1)"
+  - name: TPEXP
+    field: "tp_exposicao"
+    type: string
+    description_pt: "Informar o tipo de exposição"
+    type_info: "varchar2(1)"
+  - name: NUTEMPO
+    field: "tp_tempo"
+    type: string
+    description_pt: "Informar o tempo trabalho na ocupação."
+    type_info: "varchar(2) varchar(1)"
+  - name: TPTEMPO
+    field: "tp_tempo"
+    type: string
+    description_pt: "Informar o tempo trabalho na ocupação."
+    type_info: "varchar(2) varchar(1)"
+  - name: TPATENDE
+    field: "tp_atendimento"
+    type: string
+    description_pt: "Informar o tipo de atendimento"
+    type_info: "varchar2(1)"
+  - name: HOSPITAL
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informar se houve Internação hospitalar"
+    type_info: "varchar2(1)"
+  - name: DTINTERNA
+    field: "dt_internacao"
+    type: date
+  - name: UF_HOSP
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Informar a UF do hospital"
+    type_info: "varchar2(2)"
+  - name: MUN_HOSP
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Informar o município do hospitalização Código do IBGE"
+    type_info: "varchar2(6)"
+  - name: CNES_HOSP
+    field: "co_unidade_hospital"
+    type: string
+    description_pt: "Informar o nome da Unidade de saúde Código da Unidade de saúde"
+    type_info: "varchar(8)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Informar a classificação final do caso."
+    type_info: "varchar(2)"
+    required: true
+  - name: DIAG_CONF
+    field: "co_cid_diagnostico"
+    type: string
+    description_pt: "Informar o código do cid 10, se o caso for de intoxicação confirmada"
+    type_info: "varchar2(4)"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informar o critério de confirmação do caso"
+    type_info: "varchar2(2)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso"
+    type_info: "varchar2(2)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar data do óbito"
+  - name: CAT
+    field: "tp_comunicacao_acidente_trab"
+    type: string
+    description_pt: "Informe, em caso de Acidente de Trabalho(CAT), se foi feita comunicação do mesmo"
+    type_info: "varchar2(1)"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data do encerramento do caso"
+    required: true

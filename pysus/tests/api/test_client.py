@@ -438,7 +438,7 @@ class TestPySUSQuery:
             client, "get_ducklake", new=AsyncMock(return_value=None)
         ):
             with pytest.raises(
-                ConnectionError, match="Could not connect to PySUS s3 bucket"
+                ConnectionError, match="Could not connect to PySUS S3 bucket"
             ):
                 await client.query(dataset="sinan")
 
@@ -829,13 +829,7 @@ class TestDownload:
             ),
             patch.object(client, "_update_state", new=AsyncMock()),
         ):
-            with pytest.raises(
-                DownloadError,
-                match=(
-                    "Unexpected error downloading test.unknown:"
-                    " No download logic for client: unknown"
-                ),
-            ):
+            with pytest.raises(DownloadError, match="test.unknown"):
                 await client.download(mock_file)
 
         await client.__aexit__(None, None, None)

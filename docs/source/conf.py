@@ -34,8 +34,21 @@ def _skip_pydantic_internals(app, what, name, obj, skip, options):
 
 
 def setup(app):
+    import logging
+
     app.connect("autodoc-skip-member", _skip_pydantic_internals)
-    print("DEBUG: skip-member handler registered", flush=True)
+
+    # Sphinx 5.3 emits docutils RST parsing warnings when autodoc processes
+    # inherited class attributes on exception subclasses.  The sphinx logger
+    # has propagate=False, so filters must be attached directly to it.
+    class _InlineLiteralFilter(logging.Filter):
+        def filter(self, record):
+            return (
+                "Inline literal start-string without end-string"
+                not in record.getMessage()
+            )
+
+    logging.getLogger("sphinx").addFilter(_InlineLiteralFilter())
 
 intersphinx_mapping = {
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),

@@ -1,0 +1,240 @@
+# Column schemas for SINAN - TUBE
+# Source: TUBE.csv from SINAN metadata tarball
+# Total CSV rows: 55, exported fields: 56, skipped: 0
+
+tuberculose:
+  - name: NU_PRONTUA
+    field: "nu_prontuario"
+    type: string
+    description_pt: "Nº do prontuário do paciente na unidade de saúde"
+    type_info: "Varchar2(10)"
+  - name: TRATAMENTO
+    field: "tp_entrada"
+    type: string
+    description_pt: "Preencher com o código correspondente ao tipo de entrada do paciente na unidade de saúde. O “caso novo” é todo paciente que nunca se submeteu ao tratamento de tuberculose, ou o fez por até 30 dias. Os retratamentos podem acontecer por: “recidiva” após cura e “reingresso após abandono”, quando ocorre interrupção de um tratamento por mais de 30 dias. O “Não sabe” deve ser preenchido apenas quando esgotadas as possibilidades de investigação das entradas anteriores do paciente. A “transferência” se refere ao paciente encaminhado de outro serviço para seguimento do tratamento. Os casos com entrada “Pós- óbito” são aqueles identificados tardiamente, ou seja, no momento ou após a morte do paciente."
+    type_info: "Varchar2(1)"
+  - name: POP_LIBER
+    field: "tp_pop_liberdade"
+    type: string
+    description_pt: "Informar situação do paciente quanto à condição de vulnerabilidade. Sendo considerada População Privada de Liberdade a população prisional segundo a secretaria de administração penitenciária e/ou de justiça e a população cumprindo medida sócio educativa de restrição de liberdade."
+    type_info: "Varchar2(1)"
+  - name: POP_RUA
+    field: "tp_pop_rua"
+    type: string
+    description_pt: "Informar situação do paciente quanto à condição de vulnerabilidade."
+    type_info: "Varchar2(1)"
+  - name: POP_SAUDE
+    field: "tp_pop_saúde"
+    type: string
+    description_pt: "Informar situação do paciente quanto à condição de vulnerabilidade."
+    type_info: "Varchar2(1)"
+  - name: POP_IMIG
+    field: "tp_pop_imigrante"
+    type: string
+    description_pt: "Informar situação do paciente quanto à condição de vulnerabilidade. Sendo considerado Imigrante, o estrangeiro residente no Brasil por menos de 2 anos."
+    type_info: "Varchar2(1)"
+  - name: BENEF_GOV
+    field: "tp_benef_gov"
+    type: string
+    description_pt: "Preencher com o código correspondente, se beneficiário de programa de transferência de renda do governo"
+  - name: FORMA
+    field: "tp_forma"
+    type: string
+    description_pt: "Forma clínica da tuberculose, por ocasião da notificação, segundo a sua localização."
+    type_info: "Varchar2(1)"
+  - name: EXTRAPU_N
+    field: "tp_extrapulmonar"
+    type: string
+    description_pt: "Localização extrapulmonar da tuberculose nos casos em que o paciente apresente a forma clínica igual a 2 ou 3. O item “outra” se refere às formas extrapulmonares que não estão contidas nas categorias de 1 a 9."
+    type_info: "Varchar2(2)"
+  - name: EXTRAPUL_O
+    field: "ds_extrapulmonar_outro"
+    type: string
+    description_pt: "Se extrapulmonar outro tipo que não os listados especificar"
+    type_info: "Varchar2(30)"
+  - name: AGRAVAIDS
+    field: "st_agravo_aids"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVALCOO
+    field: "st_agravo_alcolismo"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVDIABE
+    field: "st_agravo_diabete"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVDOENC
+    field: "st_agravo_mental"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVDROGAS
+    field: "st_agravo_drogas"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVTABACO
+    field: "st_agravo_tabaco"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVOUTRA
+    field: "st_agravo_outro"
+    type: string
+    description_pt: "Informar se existem agravos associados à tuberculose por ocasião da notificação"
+    type_info: "Varchar2(1)"
+  - name: AGRAVOUTDE
+    field: "ds_agravo_outro"
+    type: string
+    description_pt: "Especificar qual outros agravos associados"
+    type_info: "Varchar2(30)"
+  - name: BACILOSC_E
+    field: "st_baciloscopia_escarro"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo álcool ácido resistente) realizada em 1ª e 2ª amostras para diagnóstico O resultado positivo em qualquer das baciloscopia de diagnóstico deve ser informado. Usa-se o a opção 4=Não se aplica para os casos cujo campo 35 (Forma) = 2 (Extrapulmonar)."
+    type_info: "Varchar2(1)"
+  - name: RAIOX_TORA
+    field: "tp_raio_x"
+    type: string
+    description_pt: "Resultado da radiografia do tórax por ocasião da notificação (a opção 3 diz respeito a outras alterações não compatíveis com a tuberculose)"
+    type_info: "Varchar2(1)"
+  - name: HIV
+    field: "tp_hiv"
+    type: string
+    description_pt: "Resultado da sorologia para o vírus da imunodeficiência adquirida, realizado anterior ou posteriormente a notificação de TB. Objetiva avaliar a coinfecção pelo HIV e não a oferta do teste aos pacientes de TB."
+    type_info: "varchar(1)"
+  - name: ANTIRRETROVIRAL
+    field: "tp_antirretroviral_tratament"
+    type: string
+    description_pt: "Monitorar o uso da Terapia Antirretroviral para HIV/AIDS durante o tratamento de tuberculose"
+    type_info: "Varchar2(1)"
+  - name: HISTOPATOL
+    field: "tp_histopatologia"
+    type: string
+    description_pt: "Resultado do exame histopatólogico para diagnóstico de TB"
+    type_info: "Varchar2(1)"
+  - name: CULTURA_ES
+    field: "tp_cultura_escarro"
+    type: string
+    description_pt: "Resultado da cultura de escarro ou outro material realizada para tuberculose"
+    type_info: "varchar(1)"
+  - name: TESTE_MOLEC
+    field: "tp_molecular"
+    type: string
+    description_pt: "Resultado do exame do Teste Molecular Rápido para TB realizado para M. tuberculosis e resistência a rifampicina (amostra para diagnóstico)"
+    type_info: "Varchar2(1)"
+  - name: TEST_SENSIBILID
+    field: "tp_sensibilidade"
+    type: string
+    description_pt: "Resultado do teste de sensibilidade do paciente para conhecimento oportuno do padrão de resistência às drogas do esquema básico."
+  - name: DT_INIC_TR
+    field: "dt_inicio_tratamento"
+    type: date
+    description_pt: "Data em que o paciente iniciou o tratamento atual. Em situações de transferência essa data deverá ser igual a data de início do tratamento onde o paciente diagnosticou e iniciou o tratamento."
+  - name: NU_COMU_ID
+    field: "nu_contato_identificados"
+    type: string
+    description_pt: "Preencher o total de Contatos identificados pelo paciente na ocasião do diagnóstico do caso."
+    type_info: "Number(2)"
+  - name: SG_UF_ATUAL
+    field: "co_uf_atual"
+    type: string
+  - name: ID_MUNIC_AT
+    field: "co_municipio_atual"
+    type: string
+  - name: NU_NOTI_AT
+    field: "nu_notificacao_atual"
+    type: string
+  - name: DT_NOTI_AT
+    field: "dt_notificacao_atual"
+    type: string
+  - name: ID_UNID_AT
+    field: "co_unidade_saude_atual"
+    type: string
+  - name: SG_UF_2
+    field: "co_uf_residencia_atual"
+    type: string
+  - name: ID_MUNIC_2
+    field: "co_municipio_residencia_atual"
+    type: string
+  - name: NU_CEP2
+    field: "nu_cep_residencia_atual"
+    type: string
+    description_pt: "CEP de residência atual do paciente"
+  - name: D_DISTR_2
+    field: "co_distrito_residencia_atual"
+    type: string
+  - name: ID_BAIRRO2
+    field: "co_bairro_residencia_atual no_bairro_residencia_atual"
+    type: string
+  - name: NM_BAIRRO2
+    field: "co_bairro_residencia_atual no_bairro_residencia_atual"
+    type: string
+  - name: BACILOSC_1
+    field: "st_baciloscopia_1_mes"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo Alcóol- Resistentes) realizada em amostra colhida ao final do 1º mês de tratamento"
+  - name: BACILOSC_2
+    field: "st_baciloscopia_2_mes"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo Alcóol- Resistentes) realizada em amostra colhida ao final do 2º mês de tratamento"
+  - name: BACILOSC_3
+    field: "st_baciloscopia_3_mes"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo Alcóol- Resistentes) realizada em amostra colhida ao final do 3º mês de Tratamento"
+  - name: BACILOSC_4
+    field: "st_baciloscopia_4_mes"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo Alcóol- Resistentes) realizada em amostra colhida ao final do 4º mês de tratamento"
+  - name: BACILOSC_5
+    field: "st_baciloscopia_5_mes"
+    type: string
+    description_pt: "Resultado da baciloscopia de escarro para BAAR (Bacilo Alcóol- Resistentes) realizada em amostra colhida ao final do 5º mês de tratamento"
+  - name: BACILOSC_6
+    field: "st_baciloscopia_6_mes"
+    type: string
+    description_pt: "Resultado das baciloscopias de escarro para BAAR (Bacilo Alcóol- Resistentes) realizadas em amostras colhidas no 6º mês de tratamento."
+  - name: BACILOSC_APOS_6
+    field: "st_baciloscopia_apos_6_mes"
+    type: string
+    description_pt: "Resultado das baciloscopias de escarro para BAAR (Bacilo Alcóol- Resistentes) realizadas em amostras colhidas após o 6º mês de Tratamento."
+  - name: NU_PRONT_AT
+    field: "nu_prontuario_atual"
+    type: string
+    description_pt: "Identificador do prontuário atual na unidade de saúde"
+  - name: TRATSUP_AT
+    field: "tp_tratamento_acompanhame nto"
+    type: string
+    description_pt: "Informar se foi realizado o Tratamento Diretamente Observado durante todo o tratamento do Caso Para ser considerado TDO realizado são necessárias 24 doses observadas na fase intensiva e 48 doses observadas na fase de manutenção."
+  - name: NU_CONT_EX
+    field: "nu_contato_examinado"
+    type: string
+    description_pt: "Preencher com o total de contatos examinados na investigação e acompanhamento do caso."
+  - name: SITUA_ENCE
+    field: "tp_situacao_encerramento"
+    type: string
+    description_pt: "Situação de encerramento do caso notificado"
+  - name: TRANSF
+    field: "tp_transf"
+    type: string
+    description_pt: "Preencher com o código correspondente se a situação de encerramento for por “transferência”."
+  - name: SG_UF_TRANSF
+    field: "co_uf_transf"
+    type: string
+    description_pt: "UF de Transferência, para os pacientes que forem transferidos para outro município e/ou outro estado"
+  - name: MUN_TRANSF
+    field: "co_municipio_transf"
+    type: string
+    description_pt: "Município de transferência para onde o paciente foi transferido"
+  - name: DT_ENCERRA
+    field: "dt_encerramento Date"
+    type: string
+  - name: OPORTU
+    type: string
+    description_pt: "Oportunidade de encerramento Dados preenchidos automaticamente a partir de cálculo do intervalo entre a data de encerramento e a data de notificação"
+  - name: DT_OPORTU
+    type: string

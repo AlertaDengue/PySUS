@@ -192,3 +192,4 @@ cython_debug/
 .idea/
 pyrightconfig.json
 roadmap*.md
+tests/epic_test.py

@@ -1,0 +1,492 @@
+# Column schemas for SINAN - DENG
+# Source: DENG.csv from SINAN metadata tarball
+# Total CSV rows: 87, exported fields: 86, skipped: 2
+
+dengue:
+  - name: ID_AGRAVO
+    type: string
+    description_pt: "Especifica a suspeição do agravo."
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1-Dengue 2-Chikungunya"
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Informar a data da investigação"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "VARCHAR(6)"
+  - name: FEBRE
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: MIALGIA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: CEFALEIA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: EXANTEMA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: VOMITO
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: NAUSEA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: DOR_COSTAS
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: CONJUNTVIT
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ARTRITE
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ARTRALGIA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: LEUCOPENIA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: LACO
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: DOR_RETRO
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: DIABETES
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: HEMATOLOG
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: HEPATOPAT
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: RENAL
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: HIPERTENSA
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: AUTO_IMUNE
+    type: string
+    description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: DT_CHIK_S1
+    field: "dt_coleta_exame"
+    type: date
+    description_pt: "Data da Coleta Exame Sorológico (IgM) Chikungunya soro 1"
+  - name: DT_CHIK_S2
+    field: "dt_coleta_exame"
+    type: date
+    description_pt: "Data da Coleta Exame Sorológico (IgM) Chikungunya soro 2"
+  - name: DT_PRNT
+    field: "dt_coleta_exame"
+    type: date
+    description_pt: "Data da Coleta Exame PRNT"
+  - name: RES_CHIKS1
+    field: "tp_result_exame"
+    type: string
+    description_pt: "Resultado do Exame Sorológico (IgM) soro 1 para Chikunugnya"
+    type_info: "VARCHAR(1)"
+    categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+  - name: RES_CHIKS2
+    field: "tp_result_exame"
+    type: string
+    description_pt: "Resultado do Exame Sorológico (IgM) soro 2 para Chikunugnya"
+    type_info: "VARCHAR(1)"
+    categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+  - name: RESUL_PRNT
+    field: "tp_result_exame"
+    type: string
+    description_pt: "Resultado do Exame Sorológico (IgM) PRNT"
+    type_info: "VARCHAR(1)"
+    categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+  - name: DT_SORO
+    field: "dt_coleta_exame"
+    type: date
+    description_pt: "Data da Coleta Exame Sorológico (IgM) Dengue"
+  - name: RESUL_SORO
+    field: "tp_result_exame"
+    type: string
+    description_pt: "Resultado do Exame Sorológico (IgM) Dengue"
+    type_info: "VARCHAR(1)"
+    categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+  - name: DT_NS1
+    field: "dt_coleta_NS1"
+    type: date
+    description_pt: "Data da coleta Exame Sorologia ELISA"
+  - name: RESUL_NS1
+    field: "Tp_result_NS1"
+    type: string
+    description_pt: "Resultado do Exame Sorologia ELISA"
+    type_info: "VARCHAR(1)"
+    categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+  - name: DT_VIRAL
+    field: "dt_coleta_isolamento"
+    type: date
+    description_pt: "Data da Coleta Isolamento Viral"
+  - name: RESUL_VI_N
+    field: "tp_result_isolamento"
+    type: string
+    description_pt: "Resultado Exame de Isolamento Viral"
+    type_info: "VARCHAR(1)"
+    categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+  - name: DT_PCR
+    field: "dt_coleta_rtpcr"
+    type: date
+    description_pt: "Data de Coleta do Exame de RT-PCR"
+  - name: RESUL_PCR_
+    field: "tp_result_rtpcr"
+    type: string
+    description_pt: "Resultado do Exame de RT-PCR"
+    type_info: "VARCHAR(1)"
+    categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+  - name: SOROTIPO
+    field: "tp_sorotipo"
+    type: string
+    description_pt: "Sorotipo"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1-DEN 1 2-DEN 2 3 DEN 3 4-DEN 4"
+  - name: HISTOPA_N
+    field: "tp_result_histopatologia"
+    type: string
+    description_pt: "Resultado Exame de Histopatologia"
+    type_info: "VARCHAR(1)"
+    categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+  - name: IMUNOH_N
+    field: "tp_result_imunohistoquimica"
+    type: string
+    description_pt: "Resultado Exame de Imunohistoquímica"
+    type_info: "VARCHAR(1)"
+    categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+  - name: HOSPITALIZ
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informa se ocorreu hospitalização"
+    type_info: "VARCHAR(1)"
+    categories: "1-Sim 2-Não 9-Ignorado"
+  - name: DT_INTERNA
+    field: "dt_internacao"
+    type: date
+    description_pt: "Informar a data de internação do paciente"
+  - name: UF
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Sigla da UF onde o paciente foi hospitalizado"
+    type_info: "VARCHAR(2)"
+  - name: MUNICIPIO
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Código e nome completo do município onde o paciente foi hospitalizado"
+    type_info: "VARCHAR(6)"
+  - name: HOSPITAL
+    field: "co_unidade_hospital"
+    type: string
+    description_pt: "Nome completo da unidade de saúde em que o paciente foi notificado"
+    type_info: "VARCHAR(8)"
+  - name: DDD_HOSP
+    field: "nu_ddd_hospital"
+    type: string
+    description_pt: "Código DDD do telefone da unidade de saúde onde o paciente foi hospitalizado"
+    type_info: "VARCHAR(2)"
+  - name: TEL_HOSP
+    field: "nu_telefone_hospital"
+    type: string
+    description_pt: "Telefone da unidade de saúde onde o paciente foi hospitalizado"
+    type_info: "VARCHAR(9)"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    categories: "1 – Sim 2 – Não 3 – Indeterminado"
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    categories: "Tabela com siglas e código padronizados pelo IBGE"
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    categories: "Tabela com código e descrição de paises."
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    categories: "Tabela com Códigos e nomes padronizados pelo IBGE"
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela."
+    type_info: "varchar2(4)"
+    categories: "Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan."
+  - name: CO_BAINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "Tabela de localidades (código e nomes) carregada a partir do sistema LOCALIDADE."
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "Tabela de localidades (código e nomes) carregada a partir do sistema LOCALIDADE."
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Informar a classificação do caso."
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "5-Descartado 10-Dengue 11-Dengue com sinais de alarme 12-Dengue grave 13-Chikungunya"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informar o critério de confirmação/descarte"
+    type_info: "VARCHAR(2)"
+    required: true
+    categories: "1-Laboratório 2-Clínico Epidemiológico 3-Em investigação"
+  - name: CLINIC_CHIK
+    type: string
+    description_pt: "Informar a apresentação clínica do caso de Chikungunya"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1- Aguda 2- Crônica"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso."
+    type_info: "VARCHAR(1)"
+    categories: "1- cura 2- óbito pelo agravo 3- óbito por outras causas 4- óbito em investigação 9- ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar a data do óbito."
+    required: true
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data do encerramento do caso"
+    required: true
+  - name: ALRM_HIPOT
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_PLAQ
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_VOM
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_ABDOM
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_LETAR
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_SANG
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_HEMAT
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_HEPAT
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: ALRM_LIQ
+    type: string
+    description_pt: "Informar qual sinal de alarme foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: DT_ALRM
+    type: date
+    description_pt: "Informar data de início dos sinais de alarme. Considerar a data do primeiro sinal de alarme manifestado."
+    required: true
+  - name: GRAV_PULSO
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_CONV
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_ENCH
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_INSUF
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_TAQUI
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_EXTRE
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_HIPOT
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_HEMAT
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_MELEN
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_METRO
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_SANG
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_AST
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_MIOC
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_CONSC
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    type_info: "VARCHAR(1)"
+    required: true
+    categories: "1 – Sim 2 – Não"
+  - name: GRAV_ORGAO
+    type: string
+    description_pt: "Informar qual sinal de gravidade foi encontrado"
+    required: true
+  - name: DT_GRAV
+    type: date
+    description_pt: "Informar data de início dos sinais de alarme. Considerar a data do primeiro sinal de alarme manifestado."
+    required: true
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    description_pt: "Informações complementares e observações adicionais a respeito do caso.(Ex: descrever manifestações hemorrágicas não citadas na ficha)"
+    type_info: "VARCHAR(255)"

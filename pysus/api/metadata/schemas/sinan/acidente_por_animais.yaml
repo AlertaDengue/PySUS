@@ -1,0 +1,350 @@
+# Column schemas for SINAN - ANIM
+# Source: ANIM.csv from SINAN metadata tarball
+# Total CSV rows: 58, exported fields: 57, skipped: 1
+
+acidente_por_animais:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Informe a Data da investigação do caso."
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar(6)"
+  - name: ANT_DT_ACI
+    field: "dt_acidente"
+    type: date
+    description_pt: "Informar o nome do município onde ocorreu o acidente"
+    required: true
+  - name: ANT_UF
+    field: "co_uf_ocorrência"
+    type: string
+    description_pt: "Unidade Federativa"
+    type_info: "varchar(2)"
+    required: true
+  - name: ANT_MUNIC_
+    field: "co_municipio_ocorrencia"
+    type: string
+    description_pt: "Informar o nome do município onde ocorreu o acidente"
+    type_info: "varchar(6)"
+    required: true
+  - name: ANT_LOCALI
+    field: "ds_localidade_ocorrencia"
+    type: string
+    type_info: "varchar(60)"
+  - name: ANT_ZONA
+    field: "tp_zona_ocorrencia"
+    type: string
+    description_pt: "Informar o local onde ocorreu o acidente"
+    type_info: "varchar(1)"
+    categories: "1 – Urbana 2 – Rural 3 – Periurbana 9 – Ignorado"
+  - name: ANT_TEMPO_
+    field: "tp_tempo_decorrido"
+    type: string
+    description_pt: "Informar o tempo decorrido entre o acidente e o atendimento"
+    type_info: "varchar(1)"
+    categories: "1- 0 - 1h 2- 1 - 3h 3- 3 - 6h 4- 6 - 12h 5- 12 e 24h 6- 24 e +h 9- Ignorado"
+  - name: ANT_LOCA_1
+    field: "tp_local_picada"
+    type: string
+    description_pt: "Informar a localização da picada"
+    type_info: "varchar(1)"
+    required: true
+    categories: "01 – Cabeça 02 – Braço 03 – Ante-Braço 04 – Mão 05 – Dedo da Mão 06 – tronco 07 – Coxa 08 – Perna 09 – Pé 10 – Dedo do Pé 99 – Ignorado"
+  - name: MCLI_LOCAL
+    field: "st_manifestacao_local"
+    type: string
+    description_pt: "Informar se houve manifestações locais"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_DOR
+    field: "st_manifestacao_dor"
+    type: string
+    description_pt: "Se manifestações locais sim, informar se houve dor"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_EDEMA
+    field: "st_manifestacao_edema"
+    type: string
+    description_pt: "Se manifestações locais sim, informar se houve (edema)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_EQUIMO
+    field: "st_manifestacao_equimose"
+    type: string
+    description_pt: "Se manifestações locais sim, informar se houve (equimose)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_NECROS
+    field: "st_manifestacao_necrose"
+    type: string
+    description_pt: "Se manifestações locais sim, informar se houve (necrose)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_LOCAL_
+    field: "st_manifestacao_outro"
+    type: string
+    description_pt: "Se manifestações locais sim, informar se houve (outras)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_LOCA_1
+    field: "ds_manifestacao_outro"
+    type: string
+    description_pt: "Especificar outras manifestações locais"
+    type_info: "varchar(30)"
+  - name: MCLI_SIST
+    field: "st_manifestacao_sistemica"
+    type: string
+    description_pt: "Informar se houve manifestações sistêmicas"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_NEURO
+    field: "st_manifestacao_sist_neuropara"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim, informar se houve manifestações neuroparalíticas (ptose palpebral, turvação visual)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_HEMORR
+    field: "st_manifestacao_sist_hemorrag"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim, informar se houve manifestações hemorrágicas(gengivorra gia, outros sangramentos)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_VAGAIS
+    field: "st_manifestacao_sist_vagais"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim, informar se houve manifestações vagais (vômitos/ diarréia)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_MIOLIT
+    field: "st_manifestacao_sist_miolitica"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim, informar se houve manifestações miolíticas (mialgia, anemia, urina escura)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_RENAL
+    field: "st_manifestacao_sist_renal"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim, informar se houve manifestações renais (oligúria/ anúria)."
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_OUTR_2
+    field: "st_manifestacao_sist_outro"
+    type: string
+    description_pt: "Se manifestações sistêmicas sim informar se houve outras"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: CLI_OUTR_3
+    field: "ds_manifestacao_sist_outro"
+    type: string
+    description_pt: "Especificar outras manifestações sistêmicas"
+    type_info: "varchar(30)"
+  - name: CLI_TEMPO_
+    field: "tp_tempo_coagulacao"
+    type: string
+    description_pt: "Informar o tempo de coagulação"
+    type_info: "varchar(1)"
+    categories: "1 – Normal 2 – Alterado 9 – Não realizado"
+  - name: TP_ACIDENT
+    field: "tp_animal"
+    type: string
+    description_pt: "Informar o tipo de acidente segundo o animal responsável pela agressão"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Serpente 2 – Aranha 3 – Escorpião 4 – Lagarta 5 – Abelha 6 – Outros 9 – Ignorado"
+  - name: ANI_TIPO_1
+    field: "ds_animal_outro"
+    type: string
+    description_pt: "Especificar outro animal responsável pela agressão"
+    type_info: "varchar(30)"
+  - name: ANI_SERPEN
+    field: "tp_serpente"
+    type: string
+    description_pt: "Informar o tipo de acidente ofídico conforme as manifestações clinicas do envenenamento"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Botrópico 2 – Crotálico 3 – Elapídico 4 – Laquético 5 –Serpente não peçonhenta 9 – Ignorado"
+  - name: ANI_ARANHA
+    field: "tp_aranha"
+    type: string
+    description_pt: "Informar o tipo de acidente araneídico conforme as manifestações clinicas do envenenamento."
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Foneutrismo 2 – Loxoscelismo 3 – Latrodectismo 4 – Outra aranha 9 – Ignorado"
+  - name: ANI_LAGART
+    field: "tp_lagarta"
+    type: string
+    description_pt: "Informar o tipo de acidente conforme as manifestações clinicas do envenenamento"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Lonomia 2 – Outra lagarta 9 – Ignorado"
+  - name: TRA_CLASSI
+    field: "tp_classificacao_caso"
+    type: string
+    description_pt: "Informar a classificação do caso segundo a gravidade do envenenamento"
+    type_info: "varchar(1)"
+    categories: "1 – Leve 2 – Moderado 3 – Grave 9 – Ignorado"
+  - name: CON_SOROTE
+    field: "st_soroterapia"
+    type: string
+    description_pt: "Informar se foi feita Soroterapia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: NU_AMPOLAS
+    field: "nu_antibotropico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antibrotópico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_1
+    field: "nu_anticrotalico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro anticrotálico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_8
+    field: "nu_antiaracnidico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antiaracnídico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_6
+    field: "nu_antibotropico_laquetico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antibrotópico-crotálico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_4
+    field: "nu_antielapidico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antielapídico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_7
+    field: "nu_antiloxoscelico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antiloxoscélico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_5
+    field: "nu_antilbotropico_crotalico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antibrotópico-crotálico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_9
+    field: "nu_antiescorpionico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antiescorpiônico)"
+    type_info: "number(2)"
+  - name: NU_AMPOL_3
+    field: "nu_antilonomico"
+    type: string
+    description_pt: "Informar o número de ampolas aplicadas (soro antilonômico)"
+    type_info: "number(2)"
+  - name: COM_LOC
+    field: "st_complicacao_local"
+    type: string
+    description_pt: "Informar se houve complicações locais"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_SECUND
+    field: "st_complicacao_local_infeccao"
+    type: string
+    description_pt: "Se complicações locais sim, informar se houve infecção Secundária"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_NECROS
+    field: "st_complicacao_local_necrose"
+    type: string
+    description_pt: "Se complicações locais sim, informar se houve Necrose Extensa"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_COMPAR
+    field: "st_complicacao_local_sindrome"
+    type: string
+    description_pt: "Se complicações locais sim, informar se houve Síndrome Comportamental"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_DEFICT
+    field: "st_complicacao_local_deficit"
+    type: string
+    description_pt: "Se complicações locais sim, informar se houve Déficit Funcional"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_APUTAC
+    field: "st_complicacao_local_amputacao"
+    type: string
+    description_pt: "Se complicações locais sim, informar se houve Amputação"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_SISTEM
+    field: "st_complicacao_sistemica"
+    type: string
+    description_pt: "Informar se houve complicações sistêmicas"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_RENAL
+    field: "st_complicacao_sist_renal"
+    type: string
+    description_pt: "Se complicações sistemicas sim, informar se houve Insuficiência Renal"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_EDEMA
+    field: "st_complicacao_sist_respiratoria"
+    type: string
+    description_pt: "Se complicações sistêmicas sim, informar se houve Insuficiência Respiratória"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_SEPTIC
+    field: "st_complicacao_sist_septicemia"
+    type: string
+    description_pt: "Se complicações sistêmicas sim, informar se houve Edema Pulmonar Aguda"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: COM_CHOQUE
+    field: "st_complicacao_sist_choque"
+    type: string
+    description_pt: "Se complicações sistêmicas sim, Informar se houve Choque"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DOENCA_TRA
+    field: "st_acidente_trabalho"
+    type: string
+    description_pt: "Informar se a doença é relacionada ao trabalho"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    type_info: "varchar(1)"
+    categories: "1 – Cura 2 – óbito por acidente por animais peçonhentos 3 – Óbito por outras causas 9 – Ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    required: true
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro (transferência vertical)"
+    type_info: "varchar(7)"
+    categories: "Descrever aqui a estrutura da composição do número do lote"

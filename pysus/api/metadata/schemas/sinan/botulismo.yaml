@@ -1,0 +1,707 @@
+# Column schemas for SINAN - BOTU
+# Source: BOTU.csv from SINAN metadata tarball
+# Total CSV rows: 121, exported fields: 120, skipped: 1
+
+botulismo:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita ao paciente"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar(6)"
+  - name: DTATEND
+    field: "dt_atendimento"
+    type: date
+    description_pt: "Data do 1º atendimento médico do paciente em posto de saúde, unidade de saúde ou hospital."
+  - name: NUATEND
+    field: "nu_atendimento"
+    type: string
+    description_pt: "Informar o Nº total de atendimentos até a suspeita clínica de botulismo. Caso não haja atendimento médico, informar 0 (zero) atendimentos"
+    type_info: "number(4,0)"
+  - name: DTSUSPEIC
+    field: "dt_suspeicao"
+    type: date
+    description_pt: "Informar a data da suspeita clínica"
+  - name: STHOSPITAL
+    field: "st_ocorreu_hospitalizacao"
+    type: string
+    description_pt: "Informar se o paciente foi internado"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DTINTERNA
+    field: "dt_internacao"
+    type: date
+  - name: DTALTA
+    field: "dt_alta"
+    type: date
+    description_pt: "Data em que o paciente teve alta hospitalar e retornou ao domicílio"
+  - name: UF_HOSP
+    field: "co_uf_hospital"
+    type: string
+    description_pt: "Informe a sigla da UF onde o paciente foi internado"
+    type_info: "varchar(2)"
+  - name: MUN_HOSP
+    field: "co_municipio_hospital"
+    type: string
+    description_pt: "Informe Nome do município onde o paciente foi internado"
+    type_info: "varchar(6)"
+  - name: UNID_HOSP
+    field: "co_unidade_hospital"
+    type: string
+    description_pt: "Informe o nome do Hospital"
+    type_info: "number(7)"
+  - name: STFEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "Informar se o paciente apresentou Febre"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STNAUSEA
+    field: "st_sinais_nausea"
+    type: string
+    description_pt: "Informar se o paciente apresentou Náusea"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STVOMITO
+    field: "st_sinais_vomito"
+    type: string
+    description_pt: "Informar se o paciente apresentou Vômito"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDIARREIA
+    field: "st_sinais_diarreia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Diarréia"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STCONSTIPA
+    field: "st_sinais_constipacao"
+    type: string
+    description_pt: "Informar se o paciente apresentou Constipação"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STCEFALEIA
+    field: "st_sinais_cefaleia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Cefaléia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STTONTURA
+    field: "st_sinais_tontura"
+    type: string
+    description_pt: "Informar se o paciente apresentou Tontura"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STVISAO
+    field: "st_sinais_visao_turva"
+    type: string
+    description_pt: "Informar se o paciente apresentou Visão turva"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDIPLOPIA
+    field: "st_sinais_diplopia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Diplopia (visão dupla)"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDISARTRI
+    field: "st_sinais_disartria"
+    type: string
+    description_pt: "Informar se o paciente apresentou Disartria (dificuldade para falar)"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDISFONIA
+    field: "st_sinais_disfonia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Disfonia (alteração da voz)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDISFAGIA
+    field: "st_sinais_disfagia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Disfagia (dificuldade para engolir)"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STBOCA
+    field: "st_sinais_boca_seca"
+    type: string
+    description_pt: "Informar se o paciente apresentou Boca seca"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STFERIMENT
+    field: "st_sinais_ferimento"
+    type: string
+    description_pt: "Informar se o paciente apresenta algum Ferimento aberto ou em cicatrização"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STFLACIDEZ
+    field: "st_sinais_flacidez_pescoco"
+    type: string
+    description_pt: "Informar se o paciente apresentou Flacidez de pescoço"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDISPNEIA
+    field: "st_sinais_dispneia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Dispnéia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STRESPIRA
+    field: "st_sinais_insufic_respiratoria"
+    type: string
+    description_pt: "Informar se o paciente apresentou Insuficiência respiratória"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STCARDIACA
+    field: "st_sinais_insuf_cardiaca"
+    type: string
+    description_pt: "Informar se o paciente apresentou Insuficiência cardíaca"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STCOMA
+    field: "st_sinais_coma"
+    type: string
+    description_pt: "Informar se o paciente entrou em Coma"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STPARESTES
+    field: "st_sinais_parestesia"
+    type: string
+    description_pt: "Informar se o paciente apresentou Parestesia e o local do corpo"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_PARES
+    field: "ds_sinais_parestesia_onde"
+    type: string
+    description_pt: "Informar onde o paciente apresentou Parestesia"
+    type_info: "varchar(30)"
+  - name: STOUTROSIN
+    field: "st_sinais_outro"
+    type: string
+    description_pt: "Informar se o paciente apresentou outro(s) sinal(is) e sintoma(s) e descrever qual(is)"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_OUTROSI
+    field: "ds_sinais_outro"
+    type: string
+    description_pt: "Especificar o outro sinal e sintoma do paciente"
+    type_info: "varchar(30)"
+  - name: STPTOSE
+    field: "st_exame_ptose_palpebral"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Ptose palpebral"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STOFTALMO
+    field: "st_exame_oftalmoparesia"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Oftalmoparesia / Oftalmoplegia"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STMIDRIASE
+    field: "st_exame_midriase"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Midríase"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STFACIAL
+    field: "st_exame_paralisia_facial"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Paralisia Facial"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STBULBAR
+    field: "st_exame_musculatura_bulbar"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Comprometimento da Musculatura Bulbar"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STMEMSUP
+    field: "st_exame_fraq_membro_sup"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Fraqueza em Membros Superiores"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STMEMINF
+    field: "st_exame_fraq_membro_inf"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Fraqueza em Membros Inferiores"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STDESCENDE
+    field: "st_exame_fraq_descendente"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Fraqueza Descendente"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STSIMETRIC
+    field: "st_exame_fraq_simetrica"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Fraqueza Simétrica"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STSENSIVEL
+    field: "st_exame_altera_sensibilidade"
+    type: string
+    description_pt: "Informar se o exame neurológico apresentou Alterações de Sensibilidade"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: TPNEURO
+    field: "tp_reflexo_neurologico"
+    type: string
+    description_pt: "Informar os reflexos neurológicos do paciente"
+    type_info: "varchar(1)"
+    categories: "1 – Normais 2 – Aumentados 3 – Reduzidos/ Ausentes 9 – Ignorado"
+  - name: STALIMENTO
+    field: "st_transmissao_alimentar"
+    type: string
+    description_pt: "Informar se o caso de botulismo é de suspeita de origem alimentar"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DSALIMENTO
+    field: "ds_alimento_suspeito"
+    type: string
+    description_pt: "Se o caso for de origem alimentar, informar qual foi o alimento suspeito"
+    type_info: "varchar(30)"
+    required: true
+  - name: STCOMERCIO
+    field: "st_alimento_industrial"
+    type: string
+    description_pt: "Informar se o alimento suspeito é comercializado e/ou produzido em indústria alimentícia"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STCASEIRA
+    field: "st_alimento_caseira"
+    type: string
+    description_pt: "Informar se o alimento é produzido de forma artesanal"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_INDUS
+    field: "ds_alimento_industrial"
+    type: string
+    description_pt: "Informar o nome comercial, nome da empresa produtora, data de validade e lote do alimento industrial Suspeito"
+    type_info: "varchar(30)"
+  - name: STEXPALIM
+    field: "tp_exposicao_alimento"
+    type: string
+    description_pt: "Informar se o paciente ingeriu o alimento suspeito somente uma vez (exposição única)."
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_INGEST
+    field: "ds_hr_unica_ingest_sintoma"
+    type: string
+    description_pt: "Informar o tempo (em horas) decorrido entre ingestão do alimento suspeito e início dos sintomas Ex.: Hora da ingestão – Hora início dos sintomas"
+    type_info: "varchar(4)"
+  - name: DS_INI_GES
+    field: "ds_hr_multi_ini_ingest_sintoma"
+    type: string
+    description_pt: "Informar o tempo decorrido entre a 1ª ingestão do alimento suspeito e início dos sintomas Ex.: Hora da 1ª ingestão – Hora início dos sintomas"
+    type_info: "varchar(4)"
+  - name: DS_FIM_GES
+    field: "ds_hr_multi_fim_ingest_sintoma"
+    type: string
+    description_pt: "Informar o tempo decorrido entre a última ingestão do alimento suspeito e início dos sintomas Ex.: Hora da última ingestão – Hora início dos sintomas"
+    type_info: "varchar(4)"
+  - name: STDOMICILI
+    field: "st_local_domicilio"
+    type: string
+    description_pt: "Informar se o local da ingestão do alimento suspeito foi no domicílio do paciente"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STESCOLA
+    field: "st_local_creche"
+    type: string
+    description_pt: "Informar se o local da ingestão do alimento suspeito foi em creche ou escola"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STTRABALHO
+    field: "st_local_trabalho"
+    type: string
+    description_pt: "Informar se o local da ingestão do alimento suspeito foi no trabalho"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STRESTAURA
+    field: "st_local_restaurante"
+    type: string
+    description_pt: "Informar se o local da ingestão do alimento suspeito foi em restaurante, bar e/ou lanchonete"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STFESTA
+    field: "st_local_festa"
+    type: string
+    description_pt: "Informar se o local da ingestão do alimento suspeito foi em uma festa"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STOUTROLOC
+    field: "st_local_outro"
+    type: string
+    description_pt: "Caso a ingestão do alimento suspeito não se enquadre em nenhuma das alternativas anteriores, marcar “Outro”"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_OUTR_LO
+    field: "ds_local_outro"
+    type: string
+    description_pt: "Especificar o local da ingestão do alimento suspeito"
+    type_info: "varchar(30)"
+    required: true
+  - name: UF_ING
+    field: "co_uf_ingestao"
+    type: string
+    description_pt: "Unidade Federada da ingestão do alimento suspeito"
+    type_info: "varchar(2)"
+  - name: MUN_ING
+    field: "co_municipio_ingestao"
+    type: string
+    description_pt: "Município da ingestão do alimento suspeito e código do IBGE"
+    type_info: "varchar(6)"
+  - name: NUCONSOME
+    field: "nu_pessoa_consume_alimento"
+    type: string
+    description_pt: "Informar o número de pessoas que ingeriu o alimento suspeito de ter causado botulismo"
+    type_info: "number(4)"
+  - name: STVENTILA
+    field: "st_trata_ventilatoria"
+    type: string
+    description_pt: "Informar se o paciente necessitou de assistência ventilatória (ventilação mecânica)"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STANTIBIO
+    field: "st_trata_antibioticoterapia"
+    type: string
+    description_pt: "Informar se o paciente foi tratado com antibiótico"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STSORO
+    field: "st_trata_soro_antibotulinico"
+    type: string
+    description_pt: "Informar se o paciente foi tratado com soro antibotulínico"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STOUTROTRA
+    field: "st_trata_outro"
+    type: string
+    description_pt: "Informar se o paciente necessitou fazer outro tipo de tratamento"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DS_TRAT
+    field: "ds_trata_outro"
+    type: string
+    description_pt: "Descrever outro tipo de tratamento feito no paciente (ex. traqueostomia)"
+    type_info: "varchar(30)"
+  - name: DTSORO
+    field: "dt_soro_antibotulinico"
+    type: date
+    description_pt: "Caso o paciente tenha sido tratado com soro antibotulínico, informar a data da administração"
+    required: true
+  - name: STANTIBOTU
+    field: "st_antibotulinico_coleta"
+    type: string
+    description_pt: "Caso o paciente tenha sido tratado com soro antibotulínico, informar se a administração do soro foi posterior a coleta de material clínico do paciente"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STSOROMAT
+    field: "st_botuli_soro_coletado"
+    type: string
+    description_pt: "Informar se foi coletado soro do paciente"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DTSOROCOL
+    field: "dt_botuli_soro_coleta"
+    type: date
+    description_pt: "Informar a data da coleta do soro do paciente"
+    required: true
+  - name: STSORORES
+    field: "st_botuli_soro_resultado"
+    type: string
+    description_pt: "Informar o resultado da análise do soro do paciente"
+    type_info: "varchar(1)"
+    categories: "1- Presença de toxina 2- Ausência de toxina 3- Inconclusivo 4- Não realizado"
+  - name: TPSOROTOX
+    field: "tp_botuli_soro_toxina"
+    type: string
+    description_pt: "Se houver presença de toxina no soro, informar o tipo de toxina botulínica"
+    type_info: "varchar(1)"
+    categories: "1- A 2- B 3- AB 4- E 5- F 6- G 7- Outra 9- Ign"
+  - name: STFEZESMAT
+    field: "st_botuli_fezes_coletado"
+    type: string
+    description_pt: "Informar se foi coletado fezes do paciente"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DTFEZESCOL
+    field: "dt_botuli_fezes_coleta"
+    type: date
+    description_pt: "Informar a data da coleta das fezes do paciente"
+    required: true
+  - name: STFEZESRES
+    field: "st_botuli_fezes_resultado"
+    type: string
+    description_pt: "Informar o resultado da análise das fezes do paciente"
+    type_info: "varchar(1)"
+    categories: "1- Presença de toxina 2- Ausência de toxina 3- Inconclusivo 4- Não realizado"
+  - name: TPFEZESTOX
+    field: "tp_botuli_fezes_toxina"
+    type: string
+    description_pt: "Se houver presença de toxina nas fezes, informar o tipo de toxina botulínica"
+    type_info: "varchar(1)"
+    categories: "1- A 2- B 3- AB 4- E 5- F 6- G 7- Outra 9- Ign"
+  - name: DS_ALI1OUT
+    field: "ds_botuli_alimento1_outro"
+    type: string
+    description_pt: "Especificar alimento suspeito 1 encaminhado para análise"
+    type_info: "varchar(30)"
+  - name: ST_ALI1COL
+    field: "st_botuli_alimento1_coletado"
+    type: string
+    description_pt: "Informar se foi coletado alimento suspeito 1 para análise"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DT_ALI1COL
+    field: "dt_botuli_alimento1_coleta"
+    type: date
+    description_pt: "Informar a data da coleta do alimento 1"
+    required: true
+  - name: RESALIM1
+    field: "st_botuli_alimento1_resultado"
+    type: string
+    description_pt: "Informar o resultado da análise do alimento 1"
+    type_info: "varchar(1)"
+    categories: "1- Presença de toxina 2- Ausência de toxina 3- Inconclusivo 4- Não realizado"
+  - name: TP_ALI1TOX
+    field: "tp_botuli_alimento1_toxina"
+    type: string
+    description_pt: "Se houver presença de toxina no alimento 1, informar o tipo de toxina botulínica"
+    type_info: "varchar(1)"
+    categories: "1- A 2- B 3- AB 4- E 5- F 6- G 7- Outra 9- Ign"
+  - name: DS_ALI2OUT
+    field: "ds_botuli_alimento2_outro"
+    type: string
+    description_pt: "Especificar alimento suspeito 2 encaminhado para análise"
+    type_info: "varchar(30)"
+  - name: ST_ALI2COL
+    field: "st_botuli_alimento2_coletado"
+    type: string
+    description_pt: "Informar se foi coletado alimento suspeito 2 para análise"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DT_ALI2COL
+    field: "dt_botuli_alimento2_coleta"
+    type: date
+    description_pt: "Informar a data da coleta do alimento 2"
+    required: true
+  - name: RESALIM2
+    field: "st_botuli_alimento2_resultado"
+    type: string
+    description_pt: "Informar o resultado da análise do alimento 2"
+    type_info: "varchar(1)"
+    categories: "1- Presença de toxina 2- Ausência de toxina 3- Inconclusivo 4- Não realizado"
+  - name: TP_ALI2TO
+    field: "tp_botuli_alimento2_toxina"
+    type: string
+    description_pt: "Se houver presença de toxina no alimento 2, informar o tipo de toxina botulínica"
+    type_info: "varchar(1)"
+    categories: "1- A 2- B 3- AB 4- E 5- F 6- G 7- Outra 9- Ign"
+  - name: DS_OUTRO
+    field: "ds_botuli_outro"
+    type: string
+    description_pt: "Especificar o material coletado"
+    type_info: "varchar(30)"
+  - name: TP_COLOUT
+    field: "tp_botuli_coletado_outro"
+    type: string
+    description_pt: "Informar e especificar se houve coleta de outro alimento ou material clínico para pesquisa de toxina botulínica ou presença de esporos de Clostridium botulinum (ex. lavado intestinal, lavado gástrico, vísceras, tecido de feridas)"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: DT_COLOUT
+    field: "dt_botuli_coleta_outro"
+    type: date
+    description_pt: "Informar a data da coleta deste outro material coletado"
+    required: true
+  - name: RESALIMOUT
+    field: "tp_botuli_resultado_outro"
+    type: string
+    description_pt: "Informar o resultado da análise do outro material"
+    type_info: "varchar(1)"
+    categories: "1- Presença de toxina 2- Ausência de toxina 3- Inconclusivo 4- Não realizado"
+  - name: TP_TOXOUTR
+    field: "tp_botuli_toxina_outro"
+    type: string
+    description_pt: "Se houver presença de toxina, informar o tipo de toxina botulínica"
+    type_info: "varchar(1)"
+    categories: "1- A 2- B 3- AB 4- E 5- F 6- G 7- Outra 9- Ign"
+  - name: TP_LIQUOR
+    field: "tp_liquor"
+    type: string
+    description_pt: "Informar se líquor foi coletado"
+    type_info: "varchar(1)"
+    categories: "1 – Realizado 2 – Não Realizado"
+  - name: DT_LIQUOR
+    field: "dt_liquor_coleta"
+    type: date
+    description_pt: "Informar a data da coleta do líquor"
+  - name: NU_CELULA
+    field: "nu_liquor_celula"
+    type: string
+    description_pt: "Informar o número de células/ mm3"
+    type_info: "varchar(5)"
+  - name: NU_PROTEI
+    field: "nu_liquor_proteina"
+    type: string
+    description_pt: "Informar o número de Proteínas mg%"
+    type_info: "varchar(5)"
+  - name: STELETRO
+    field: "st_eletroneuromiografia"
+    type: string
+    description_pt: "Informar se houve exame complementar Eletroneuromiografia"
+    type_info: "varchar(1)"
+    categories: "1 – Realizado 2 – Não Realizado"
+  - name: DTELETRO
+    field: "dt_eletroneuro_realizada"
+    type: date
+    description_pt: "Informar a data do exame complementar Eletroneuromiografia"
+  - name: TP_SENSITI
+    field: "tp_eletroneuro_sensitiva"
+    type: string
+    description_pt: "Informar resultado da Neurocondução Sensitiva"
+    type_info: "varchar(1)"
+    categories: "1 – Normal 2 – Diminuição de amplitude 3 – Lentificações"
+  - name: TP_MOTORA
+    field: "tp_eletroneuro_motora"
+    type: string
+    description_pt: "Informar resultado da Neurocondução Motora"
+    type_info: "varchar(1)"
+    categories: "1 – Normal 2 – Diminuição de amplitude 3 – Lentificações"
+  - name: TP_REPETE
+    field: "tp_eletroneuro_repetitiva"
+    type: string
+    description_pt: "Informar resultado da Estimulação repetitiva"
+    type_info: "varchar(1)"
+    categories: "1 – Normal 2 – Decremento (freq baixa) 3 – Incremento (freq alta)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Informar se o caso foi confirmado ou descartado"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Confirmado 2- Descartado (especificar outro agente)"
+  - name: AGENTE_OUT
+    field: "ds_classificacao_final"
+    type: string
+    description_pt: "Especificar outro agente se descartado"
+    type_info: "varchar(30)"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informar o critério em que o caso foi confirmado ou descartado"
+    type_info: "varchar(1)"
+    categories: "1- Laboratorial 2- Clínico-epidemiológico"
+  - name: TPBOTULISM
+    field: "tp_botulismo"
+    type: string
+    description_pt: "Em confirmação do caso de botulismo, informar a forma de transmissão do Botulismo"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1- Alimentar 2- Intestinal 3- Por ferimento 4- Outra"
+  - name: STCLINICA
+    field: "st_butolinica_clinica"
+    type: string
+    description_pt: "Informar se houve isolamento de toxina botulínica na amostra clínica"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: STBROMATO
+    field: "st_butolinica_bromatologica"
+    type: string
+    description_pt: "Informar se houve isolamento de toxina botulínica na amostra bromatológica"
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: TPCLINICA
+    field: "tp_tox_isolada_clinica"
+    type: string
+    description_pt: "Se houver presença de toxina, informar o tipo de toxina botulínica na amostra clínica"
+    type_info: "varchar(1)"
+    categories: "1 – A 2 – B 3 – AB 4 – E 5 – F 6 – G 7 – Outra 9 – Ignorado"
+  - name: TPBROMATO
+    field: "tp_tox_isolada_bromatologica"
+    type: string
+    description_pt: "Se houver presença de toxina, informar o tipo de toxina botulínica na amostra bromatológica"
+    type_info: "varchar(1)"
+    categories: "1 – A 2 – B 3 – AB 4 – E 5 – F 6 – G 7 – Outra 9 – Ignorado"
+  - name: DSCAUSALIM
+    field: "ds_causa"
+    type: string
+    description_pt: "Informar a causa do botulismo (ex. ferimento) e/ou especificar o alimento incriminado e/ou alimento potencialmente suspeito"
+    type_info: "varchar(30)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
+    type_info: "varchar(1)"
+    categories: "1 – Sim 2 – Não 9 – Ignorado"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso"
+    type_info: "varchar(1)"
+    categories: "1 – Cura 2 – Óbito por botulismo 3 – Óbito por outras causas 9 – Ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Em caso de óbito, informar a data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data de encerramento da investigação do caso. Lembrar que é necessário o acompanhamento do paciente até ele receber alta médica"
+    required: true
+  - name: DS_ALI1
+    field: "ds_tp_alimento_1"
+    type: string
+    description_pt: "Descrever alimentos potencialmente suspeitos para botulismo, ingeridos nos últimos 10 dias anteriores do início dos sintomas Tipo de alimento 1"
+    type_info: "varchar(30)"
+  - name: DS_ALI2
+    field: "ds_tp_alimento_2"
+    type: string
+    description_pt: "Descrever alimentos potencialmente suspeitos para botulismo, ingeridos nos últimos 10 dias anteriores do início dos sintomas Tipo de alimento 2"
+    type_info: "varchar(30)"
+  - name: DS_LOCAL1
+    field: "ds_local_consumo_1"
+    type: string
+    description_pt: "Descrever alimentos potencialmente suspeitos para botulismo, ingeridos nos últimos 10 dias anteriores do início dos sintomas Local de consumo 1"
+    type_info: "varchar(30)"
+  - name: DS_LOCAL2
+    field: "ds_local_consumo_2"
+    type: string
+    description_pt: "Descrever alimentos potencialmente suspeitos para botulismo, ingeridos nos últimos 10 dias anteriores do início dos sintomas Local de consumo 2"
+    type_info: "varchar(30)"

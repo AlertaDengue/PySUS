@@ -1,0 +1,297 @@
+# Column schemas for SINAN - LEIV
+# Source: LEIV.csv from SINAN metadata tarball
+# Total CSV rows: 54, exported fields: 55, skipped: 0
+
+leishmaniose_visceral:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a data da 1ª visita ao paciente"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar2(6)"
+  - name: FEBRE
+    field: "st_sinais_febre"
+    type: string
+    description_pt: "Informar se o paciente apresenta febre"
+    type_info: "varchar2(1)"
+    required: true
+  - name: FRAQUEZA
+    field: "st_sinais_fraqueza"
+    type: string
+    description_pt: "Informar se o paciente apresenta fraqueza"
+    type_info: "varchar2(1)"
+    required: true
+  - name: EDEMA
+    field: "st_sinais_edema"
+    type: string
+    description_pt: "Informar se o paciente apresenta edema"
+    type_info: "varchar2(1)"
+    required: true
+  - name: EMAGRA
+    field: "st_sinais_emagrecimento"
+    type: string
+    description_pt: "Informar se o paciente apresenta emagrecimento"
+    type_info: "varchar2(1)"
+    required: true
+  - name: TOSSE
+    field: "st_sinais_tosse"
+    type: string
+    description_pt: "Informar se o paciente apresenta tosse e/ou diarréia"
+    type_info: "varchar2(1)"
+    required: true
+  - name: PALIDEZ
+    field: "st_sinais_palidez"
+    type: string
+    description_pt: "Informar se o paciente apresenta palidez"
+    type_info: "varchar2(1)"
+    required: true
+  - name: BACO
+    field: "st_sinais_aumento_baco"
+    type: string
+    description_pt: "Informar se o paciente apresenta aumento do baço"
+    type_info: "varchar2(1)"
+    required: true
+  - name: INFECCIOSO
+    field: "st_sinais_infeccioso"
+    type: string
+    description_pt: "Informar se o paciente apresenta quadro infeccioso"
+    type_info: "varchar2(1)"
+    required: true
+  - name: FEN_HEMORR
+    field: "st_sinais_hemorragico"
+    type: string
+    description_pt: "Informar se o paciente apresenta fenômenos hemorrágicos"
+    type_info: "varchar2(1)"
+    required: true
+  - name: FIGADO
+    field: "st_sinais_figado"
+    type: string
+    description_pt: "Informar se o paciente apresenta aumento do fígado"
+    type_info: "varchar2(1)"
+    required: true
+  - name: ICTERICIA
+    field: "st_sinais_ictericia"
+    type: string
+    description_pt: "Informar se o paciente apresenta icterícia"
+    type_info: "varchar2(1)"
+    required: true
+  - name: OUTROS
+    field: "st_sinais_outro"
+    type: string
+    description_pt: "Informar se o paciente apresenta outros sinais e sintomas"
+    type_info: "varchar2(1)"
+    required: true
+  - name: OUTROS_ESP
+    field: "ds_sinal_sintoma_outro"
+    type: string
+    description_pt: "Especificar outros sinais e sintomas que o paciente apresenta"
+    type_info: "varchar2(30)"
+  - name: HIV
+    field: "st_infeccao_hiv"
+    type: string
+    description_pt: "Informar se o paciente apresenta infecções intercorrentes – HIV"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DIAG_PAR_N
+    field: "st_diagnostico_parasitologico"
+    type: string
+    description_pt: "Informar o resultado do diagnóstico parasitológico"
+    type_info: "varchar2(1)"
+    required: true
+  - name: IFI
+    field: "st_diagnostico_imunologico"
+    type: string
+    description_pt: "Informar o resultado do diagnóstico Imunológico IFI"
+    type_info: "varchar2(1)"
+    required: true
+  - name: OUTRO
+    field: "st_diagnostico_outro"
+    type: string
+    description_pt: "Informar o resultado do diagnóstico imunológico OUTRO"
+    type_info: "varchar2(1)"
+    required: true
+  - name: ENTRADA
+    field: "tp_tipo_entrada"
+    type: string
+    type_info: "varchar2(1)"
+    required: true
+  - name: TRATAMENTO
+    field: "dt_inicio_tratamento"
+    type: date
+    description_pt: "Informar a data do início do tratamento"
+  - name: DROGA
+    field: "tp_droga_inicial"
+    type: string
+    description_pt: "Informar o medicamento prescrito para o tratamento inicial"
+    type_info: "varchar2(1)"
+  - name: PESO
+    field: "nu_peso"
+    type: string
+    description_pt: "Informar o peso do paciente em Kg"
+    type_info: "number(3)"
+  - name: DOSE
+    field: "tp_dose_prescrita"
+    type: string
+    description_pt: "Informar a dose prescrita para o tratamento do paciente"
+    type_info: "varchar2(1)"
+  - name: AMPOLAS
+    field: "nu_total_ampola_pescrita"
+    type: string
+    description_pt: "Informar o número total de ampolas prescritas no tratamento inicial"
+    type_info: "number(3)"
+  - name: FALENCIA
+    field: "tp_droga_utilizada"
+    type: string
+    description_pt: "Informar qual droga foi utilizada na falência do tratamento inicial"
+    type_info: "varchar2(1)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Identificar a classificação final."
+    type_info: "varchar2(2)"
+    required: true
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informar o critério de confirmação"
+    type_info: "varchar2(2)"
+    required: true
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Informar a unidade federada do local provável da fonte de infecção"
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Preencher se o caso foi infectado em outro país"
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "Informar o município do local provável da fonte de infecção"
+    type_info: "varchar(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Informar o Distrito do local provável da fonte de infecção"
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccao"
+    type: string
+    description_pt: "Identificar o Bairro do local provável da fonte de infecção"
+    type_info: "varchar2(9)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccaono_bairro_infeccao"
+    type: string
+    description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente"
+    type_info: "varchar(8) varchar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccaono_bairro_infeccao"
+    type: string
+    description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente"
+    type_info: "varchar(8) varchar2(60)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informar a evolução do caso"
+    type_info: "varchar2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a data do óbito"
+    type_info: "varchar2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar a data do encerramento do caso"
+    required: true
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Data"
+    required: true
+  - name: DT_DESLC1
+    field: "dt_desloca_1"
+    type: date
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Local e Município"
+  - name: DS_MUN_1
+    field: "ds_desloca_local_municipio_1"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) UF"
+    type_info: "varchar2(60)"
+  - name: CO_UF_1
+    field: "co_uf_desloca_1"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) País"
+    type_info: "varchar2(2)"
+  - name: CO_PAIS_1
+    field: "co_pais_desloca_1"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Meio de transporte 1"
+    type_info: "number(3)"
+  - name: DS_TRANS_1
+    field: "ds_meio_transporte_1"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Data"
+    type_info: "varchar2(30)"
+  - name: DT_DESLC2
+    field: "dt_desloca_2"
+    type: date
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Local e Município"
+  - name: DS_MUN_2
+    field: "ds_desloca_local_municipio_2"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) UF"
+    type_info: "varchar2(60)"
+  - name: CO_UF_2
+    field: "co_uf_desloca_2"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) País"
+    type_info: "varchar2(2)"
+  - name: CO_PAIS_2
+    field: "co_pais_desloca_2"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Meio de transporte 2"
+    type_info: "number(3)"
+  - name: DS_TRANS_2
+    field: "ds_meio_transporte_2"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Data"
+    type_info: "varchar2(30)"
+  - name: DT_DESLC3
+    field: "dt_desloca_3"
+    type: date
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Local e Município"
+  - name: DS_MUN_3
+    field: "ds_desloca_local_municipio_3"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) UF"
+    type_info: "varchar2(60)"
+  - name: CO_UF_3
+    field: "co_uf_desloca_3"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento (datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) País"
+    type_info: "varchar2(2)"
+  - name: CO_PAIS_3
+    field: "co_pais_desloca_3"
+    type: string
+    description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Meio de transporte 3"
+    type_info: "number(3)"
+  - name: DS_TRANS_3
+    field: "ds_meio_transporte_3"
+    type: string
+    description_pt: "Informações complementares e observações Anotar todas as informações consideradas importantes e que não estão nas fichas (ex: outros dados clínicos, dados laboratoriais, laudos de outros exames e necropsia etc.)"
+    type_info: "varchar2(30)"
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    type_info: "varchar2(255)"

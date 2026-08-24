@@ -110,6 +110,7 @@ class SyncEngine:
         await self.pysus.__aenter__()
 
         self._ducklake = await self.pysus.get_ducklake()
+        assert self._ducklake is not None
         if self.access_key and self.secret_key:
             await self._ducklake.login(
                 access_key=self.access_key,

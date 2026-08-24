@@ -1,0 +1,148 @@
+# Column schemas for SINAN - ESQU
+# Source: ESQU.csv from SINAN metadata tarball
+# Total CSV rows: 28, exported fields: 29, skipped: 0
+
+esquistossomose:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita feita ao portador de esquistossomose."
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente (portador de esquistossomose) no setor formal, informal ou autônomo ou sua última atividade exercida quando o portador for desempregado. O ramo de atividade econômica do portador refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
+    type_info: "varchar2(6)"
+  - name: DT_COPRO
+    field: "dt_coproscopia"
+    type: date
+    description_pt: "Informar a data de realização da coproscopia"
+    required: true
+  - name: AN_QUANT
+    field: "nu_kato_katz"
+    type: string
+    description_pt: "Informar o número de ovos que foi encontrado no exame Kato-Katz."
+    type_info: "number(4)"
+  - name: AN_QUALI
+    field: "st_hoffman"
+    type: string
+    description_pt: "Anotar o CÓDIGO 3 se o exame Hoffman não foi realizado e 1 ou 2, respectivamente, conforme o resultado tenha sido positivo ou negativo."
+    type_info: "varchar2(1)"
+  - name: OUTROS
+    field: "st_outro"
+    type: string
+    description_pt: "Anotar o CÓDIGO 3 se outro exame não foi realizado e 1 ou 2 , respectivamente, conforme o resultado tenha sido positivo ou negativo."
+    type_info: "varchar2(1)"
+  - name: OUTRO_EX
+    field: "ds_exame_outro"
+    type: string
+    description_pt: "Anotar no campo 37, qual o nome do outro exame realizado."
+    type_info: "varchar2(40)"
+  - name: TRATAM
+    field: "tp_tratamento"
+    type: string
+    type_info: "varchar2(1)"
+    required: true
+  - name: DTTRAT
+    field: "dt_tratamento"
+    type: date
+    required: true
+  - name: TRATANAO
+    field: "tp_nao_tratamento"
+    type: string
+    type_info: "varchar2(1)"
+  - name: STCURA1
+    field: "st_cura_afirmativo_1"
+    type: string
+    description_pt: "Informar no quadrado correspondente à 1a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
+    type_info: "varchar2(1)"
+  - name: STCURA2
+    field: "st_cura_afirmativo_2"
+    type: string
+    description_pt: "Informar no quadrado respectivo à 2a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
+    type_info: "varchar2(1)"
+  - name: STCURA3
+    field: "st_cura_afirmativo_3"
+    type: string
+    description_pt: "Informar no quadrado respectivo à 3a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
+    type_info: "varchar2(1)"
+  - name: DT_RESU3
+    field: "dt_resultado_amostra3"
+    type: date
+    required: true
+  - name: FORMA
+    field: "tp_anatomo_clinica"
+    type: string
+    description_pt: "Informar no quadrado do campo 43 os CÓDIGOS 1 se a classificação da forma anátomo-clínica for intestinal, 2 se a forma hepato intestinal, 3 se hepato esplênica, 4 se foram aguda 3 5 para outra forma."
+    type_info: "varchar2(1)"
+  - name: DS_FORMA
+    field: "ds_anatomo_clinica_outro"
+    type: string
+    type_info: "varchar2(30)"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    type_info: "varchar2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Local provável da fonte de infecção UF"
+    type_info: "varchar2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País provável da fonte de infecção"
+    type_info: "varchar2(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Município provável da fonte de infecção"
+    type_info: "varchar2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccao"
+    type: string
+    description_pt: "Distrito provável da fonte de infecção"
+    type_info: "varchar2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Bairro provável da fonte de infecção"
+    type_info: "varchar2(8) varchar2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao no_bairro_infeccao"
+    type: string
+    description_pt: "Bairro provável da fonte de infecção"
+    type_info: "varchar2(8) varchar2(60)"
+  - name: NOPROPIN
+    field: "no_propriedade_infeccao"
+    type: string
+    description_pt: "Informar o nome da propriedade onde ocorreu a transmissão, se área rural."
+    type_info: "varchar2(100)"
+  - name: NOCOLINF
+    field: "no_colecao_infeccao"
+    type: string
+    description_pt: "Informar o nome da coleção hídrica onde ocorreu a transmissão."
+    type_info: "varchar2(100)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informar no quadrado do campo 52 o CÓDIGO 1 se o caso , estiver relacionado ao trabalho, 2 se não relacionado ao trabalho ou 9 se ignorado,"
+    type_info: "varchar2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar no quadrado do campo 53 o CÓDIGO 1 for cura, 2 para não cura, 3 para óbito por esquistossomose, 4 para óbito por outras causas ou 9 se ignorado."
+    type_info: "varchar2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar a data do óbito."
+    required: true
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data do encerramento do caso."

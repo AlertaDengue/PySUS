@@ -1,0 +1,484 @@
+# Column schemas for SINAN - CHAG
+# Source: CHAG.csv from SINAN metadata tarball
+# Total CSV rows: 81, exported fields: 83, skipped: 0
+
+chagas:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita ao paciente"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar(6)"
+  - name: ANT_UF_1
+    field: "co_uf_desloca_1"
+    type: string
+    description_pt: "Deslocamento(Datas e locais freqüentados no período de 15 meses anteriores ao inicio dos sinais e sintomas) Informar a UF de Deslocamento"
+    type_info: "varchar(2)"
+  - name: MUN_1
+    field: "co_municipio_desloca_1"
+    type: string
+    description_pt: "Informar o Município de Deslocamento"
+    type_info: "varchar(6)"
+  - name: ANT_UF_2
+    field: "co_uf_desloca_2"
+    type: string
+    description_pt: "Informar a UF de Deslocamento"
+    type_info: "varchar(2)"
+  - name: MUN_2
+    field: "co_municipio_desloca_2"
+    type: string
+    description_pt: "Informar o Município de Deslocamento"
+    type_info: "varchar(6)"
+  - name: ANT_UF_3
+    field: "co_uf_desloca_3"
+    type: string
+    description_pt: "Informar a UF de Deslocamento"
+    type_info: "varchar(2)"
+  - name: MUN_3
+    field: "co_municipio_desloca_3"
+    type: string
+    description_pt: "Informar o Município de Deslocamento"
+    type_info: "varchar(6)"
+  - name: PRESENCA
+    field: "st_presenca_triatomideos"
+    type: string
+    description_pt: "Presença de vestígios de triatomídeos intra- domicílio"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim; 2-não; 3-não realizado 9-ignorado"
+  - name: PARASITO
+    field: "dt_encontro_parasito"
+    type: date
+    description_pt: "Data do encontro do parasito"
+  - name: HISTORIA
+    field: "st_uso_sangue_hemoderivado"
+    type: string
+    description_pt: "História de uso de sangue ou hemoderivados nos últimos 90 dias"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: CONTROLE
+    field: "st_controle_sorologico"
+    type: string
+    description_pt: "Existência de controle sorológico na unidade de hemoterapia, onde o paciente fez uso de sangue ou hemoderivados"
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-sim; 2-não; 3- não se aplica 9- ignorado"
+  - name: MANIPULA
+    field: "tp_manipulacao_tcruzi"
+    type: string
+    description_pt: "Se o paciente manipulou material com Tripanossoma Cruzi"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: MAECHAGA
+    field: "tp_recem_nascido"
+    type: string
+    description_pt: "Se o recém-nascido é filho de mãe com infecção chagásica"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: ORAL
+    field: "st_transmissao_oral"
+    type: string
+    description_pt: "Possibilidade de transmissão por via oral"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: ASSINTOMA
+    field: "st_sinais_assintomatico"
+    type: string
+    description_pt: "Se o paciente é assintomático."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: EDEMA
+    field: "st_sinais_edema"
+    type: string
+    description_pt: "Se o paciente apresentou edema."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: MENINGOE
+    field: "st_sinais_meningoencefalite"
+    type: string
+    description_pt: "Se o paciente apresentou meningoencefalite."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: POLIADENO
+    field: "st_sinais_poliadenopatia"
+    type: string
+    description_pt: "Se o paciente apresentou POLIADENOPATIA."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: FEBRE
+    field: "st_sinais_febre_persistente"
+    type: string
+    description_pt: "Se o paciente apresentou febre persistente."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: HEPATOME
+    field: "st_sinais_hepatomegalia"
+    type: string
+    description_pt: "Se o paciente apresentou hepatomegalia."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: SINAIS_ICC
+    field: "st_sinais_icc"
+    type: string
+    description_pt: "Se o paciente apresentou sinais de Insuficiência Cardíaca Congestiva."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: ARRITMIAS
+    field: "st_sinais_taquicardia"
+    type: string
+    description_pt: "Se o paciente apresentou TAQUICARDIA PERSISTENTE."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: ASTENIA
+    field: "st_sinais_astenia"
+    type: string
+    description_pt: "Se o paciente apresentou astenia."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: ESPLENOM
+    field: "st_sinais_esplenomegalia"
+    type: string
+    description_pt: "Se o paciente apresentou esplenomegalia."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: CHAGOMA
+    field: "st_sinais_chagoma"
+    type: string
+    description_pt: "Se o paciente apresentou Chagoma de Inoculação (sinal de Romana ou outro)."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: OUTRO_SIN
+    field: "st_sinal_outro"
+    type: string
+    description_pt: "Se o paciente apresentou outros sinais e sintomas"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: OUTRO_ESP
+    field: "ds_sinal_outro"
+    type: string
+    description_pt: "Especificar qual outro sinais e sintomas"
+    type_info: "varchar(30)"
+  - name: DT_COL_DIR
+    field: "dt_coleta_parasita_direto"
+    type: date
+    description_pt: "Data de coleta do material para realização do exame parasitológico"
+  - name: EXAME
+    field: "tp_parasotologico_fresco"
+    type: string
+    description_pt: "Se foi realizado parasitológico exame a fresco."
+    type_info: "varchar(1)"
+    categories: "1-positivo; 2-negativo; 3-não realizado;"
+  - name: MICRO_HEMA
+    field: "tp_parasotologico_hematocrito"
+    type: string
+    description_pt: "Se foi realizado parasitológico Micro- hematócrito"
+    type_info: "varchar(1)"
+    categories: "1-positivo; 2-negativo 3-não realizado"
+  - name: OUTRO
+    field: "ttp_parasotologico_outro"
+    type: string
+    description_pt: "Se foi realizado parasitológico Outro"
+    type_info: "varchar(1)"
+    categories: "1-positivo; 2-negativo 3-não realizado"
+  - name: DT_COL_IND
+    field: "dt_coleta_parasita_indireto"
+    type: date
+    description_pt: "Data de coleta do material para realização do exame parasitológico"
+  - name: XENODIAG
+    field: "tp_xenodiagnostico"
+    type: string
+    description_pt: "Se foi realizado parasitológico exame a fresco."
+    type_info: "varchar(1)"
+    categories: "1-positivo; 2-negativo; 3-não realizado;"
+  - name: HEMOCULT
+    field: "tp_hemocultivo"
+    type: string
+    description_pt: "Se foi realizado parasitológico exame a fresco."
+    type_info: "varchar(1)"
+    categories: "1-positivo; 2-negativo; 3-não realizado;"
+  - name: DT_COL_S1
+    field: "dt_coleta_s1"
+    type: date
+    description_pt: "Data de coleta do material para realização do exame parasitológico"
+  - name: DT_COL_S2
+    field: "dt_coleta_s2"
+    type: date
+    description_pt: "Data de coleta do material para realização do exame parasitológico"
+  - name: ELI_IGM_S1
+    field: "tp_elisa_igm_s1"
+    type: string
+    description_pt: "Resultado ELISA IgM S1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: ELI_IGG_S1
+    field: "tp_elisa_igg_s1"
+    type: string
+    description_pt: "Resultado ELISA IgG S1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: ELI_IGM_S2
+    field: "tp_elisa_igm_s2"
+    type: string
+    description_pt: "Resultado ELISA IgM S2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: ELI_IGG_S2
+    field: "tp_elisa_igg_s2"
+    type: string
+    description_pt: "Resultado ELISA IgG S2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: HEM_IGM_S1
+    field: "tp_hemoaglutinacao_igm_s1"
+    type: string
+    description_pt: "Resultado hemoaglutinação IgM S1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: HEM_IGG_S1
+    field: "tp_hemoaglutinacao_igg_s1"
+    type: string
+    description_pt: "Resultado hemoaglutinação IgGS1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: HEM_IGM_S2
+    field: "tp_hemoaglutinacao_igm_s2"
+    type: string
+    description_pt: "Resultado hemoaglutinação IgM S2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: HEM_IGG_S2
+    field: "tp_hemoaglutinacao_igg_s2"
+    type: string
+    description_pt: "Resultado hemoaglutinação IgGS2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: IMU_IGM_S1
+    field: "tp_resultado_igm_s1"
+    type: string
+    description_pt: "Resultado imunofluorescencia indireta IgM S1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: TIT_IGM_S1
+    field: "ds_resultado_titulo_igm_s1"
+    type: string
+    description_pt: "Título Resultado imunofluorescencia indireta IgM S1"
+    type_info: "varchar(5)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: IMU_IGM_S2
+    field: "tp_resultado_igm_s2"
+    type: string
+    description_pt: "Resultado imunofluorescencia indireta IgM S2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: TIT_IGM_S2
+    field: "ds_resultado_titulo_igm_s2"
+    type: string
+    description_pt: "Título Resultado imunofluorescencia indireta IgM S2"
+    type_info: "varchar(5)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: IMU_IGG_S1
+    field: "tp_resultado_igg_s1"
+    type: string
+    description_pt: "Resultado imunofluorescencia indireta IgG S1"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: TIT_IGG_S1
+    field: "tp_resultado_igg_s1"
+    type: string
+    description_pt: "Título Resultado imunofluorescencia indireta IgG S1"
+    type_info: "varchar(5)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: IMU_IGG_S2
+    field: "tp_resultado_igg_s2"
+    type: string
+    description_pt: "Resultado imunofluorescencia indireta IgG S2"
+    type_info: "varchar(1)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: TIT_IGG_S2
+    field: "ds_resultado_titulo_igg_s2"
+    type: string
+    description_pt: "Título Resultado imunofluorescencia indireta IgG S2"
+    type_info: "varchar(5)"
+    categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+  - name: RESUL_HIS
+    field: "dt_coleta_histopatologico"
+    type: date
+    description_pt: "Data da Coleta do exame histopatológico"
+  - name: RES_HIST
+    field: "tp_resultado_necropsia"
+    type: string
+    description_pt: "Resultado do exame histopatológico"
+    type_info: "varchar(1)"
+    categories: "1. positivo 2. negativo 3. não realizado 9. ignorado"
+  - name: ESPECIFICO
+    field: "st_tratamento_especifico"
+    type: string
+    description_pt: "Tipo de Tratamento específico."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: SINTOMATIC
+    field: "st_tratamento_sintomatico"
+    type: string
+    description_pt: "Tipo de Tratamento Sintomático"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 9-ignorado"
+  - name: DROGA
+    field: "tp_droga_utilizada"
+    type: string
+    description_pt: "Droga utilizada."
+    type_info: "varchar(1)"
+    categories: "1- benznidazol 2-outro"
+  - name: TEMPO
+    field: "qt_dia_tratamento"
+    type: numeric
+    type_info: "numeric(3)"
+  - name: CON_TRIAT
+    field: "tp_ocorre_triatomideos"
+    type: string
+    description_pt: "Controle de triatomídeos."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: BIOSSEG
+    field: "tp_ocorre_bioseguranca"
+    type: string
+    description_pt: "Se ocorreu implantação de normas de biossegurança em laboratório"
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: FISCALIZA
+    field: "tp_ocorre_fiscalizacao"
+    type: string
+    description_pt: "Se ocorreu fiscalização sanitária em Unidade de Hemoterapia."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: MED_OUTRO
+    field: "tp_ocorre_outro"
+    type: string
+    description_pt: "Se ocorreu outra medida de controle."
+    type_info: "varchar(1)"
+    categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+  - name: OUTRO_DES
+    field: "ds_ocorre_outro"
+    type: string
+    description_pt: "Descrição de outras medidas de controle"
+    type_info: "varchar(30)"
+  - name: CLASSI_FIN
+    field: "tp_classificacao_final"
+    type: string
+    description_pt: "Conclusão da investigação."
+    type_info: "varchar(1)"
+    required: true
+    categories: "1-confirmado 2-descartado"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Critério de Confirmação e descarte investigação."
+    type_info: "varchar(1)"
+    categories: "1-laboratório 2-clínico- epidemiológic o 3-clínico"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso."
+    type_info: "varchar(1)"
+    categories: "1 – vivo 2- óbito por chagas 3- óbito por outras causas 9- ignorado"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar a data do óbito."
+    categories: "dd/mm/aaaa"
+  - name: CON_PROVAV
+    field: "st_modo_transmissao"
+    type: string
+    description_pt: "Fonte provável da Infecção."
+    type_info: "varchar(1)"
+    categories: "1- transfusional 2-vetorial 3- transplacentá ria 4-acidental 5-oral 6-outra 9-ignorada"
+  - name: CON_OUTRA
+    field: "ds_modo_infeccao_outro"
+    type: string
+    description_pt: "Fonte provável da Infecção."
+    type_info: "varchar(30)"
+  - name: CON_LOCAL
+    field: "tp_local_infeccao"
+    type: string
+    description_pt: "Local provável da infecção (no período de 90 dias)"
+    type_info: "varchar(1)"
+    categories: "1- unidade de hemoterapia 2- domicílio 3- laboratório 4- outro 9- ignorado"
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "varchar2(1)"
+    required: true
+    categories: "1 – sim 2 – não 3 – indeterminado"
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
+    type_info: "varchar2(2)"
+    required: true
+    categories: "tabela com siglas e código padronizados pelo ibge"
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "varchar(4)"
+    required: true
+    categories: "tabela com código e descrição de paises."
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "varchar2(6)"
+    required: true
+    categories: "tabela com códigos e nomes padronizados pelo ibge"
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "varchar2(4)"
+    categories: "tabela com códigos e nomes padronizados segundo tabela disponibilizad a pelo sistema para cadastrament o pelo gestor municipal do sinan"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "tabela códigos e nomes padronizados segundo tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do sinan"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "tabela códigos e nomes padronizados segundo tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do sinan"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "tabela códigos e nomes padronizados segundo tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do sinan"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "number(8) vachar2(60)"
+    categories: "tabela códigos e nomes padronizados segundo tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do sinan"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente."
+    type_info: "varchar(1)"
+    categories: "1 – sim 2 – não 9 – ignorado"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data do encerramento do caso."
+    required: true
+    categories: "dd/mm/aaaa"
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    description_pt: "Informações complementares e observações a respeito do caso se necessário."
+    type_info: "varchar(255)"

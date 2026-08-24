@@ -1,0 +1,175 @@
+# Column schemas for SINAN - LTAN
+# Source: LTAN.csv from SINAN metadata tarball
+# Total CSV rows: 44, exported fields: 32, skipped: 13
+
+leishmaniose_tegumentar:
+  - name: DT_INVEST
+    field: "dt_investigacao"
+    type: date
+    description_pt: "Informe a Data de início da investigação do caso"
+    required: true
+  - name: ID_OCUPA_N
+    field: "co_cbo_ocupacao"
+    type: string
+    description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
+    type_info: "varchar2(6)"
+  - name: CLI_CUTANE
+    field: "st_lesao_cultanea"
+    type: string
+    description_pt: "Informar o tipo de lesão que o paciente apresenta"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CLI_MUCOSA
+    field: "st_lesao_mucosa"
+    type: string
+    description_pt: "Informar o tipo de lesão que o paciente apresenta"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CLI_CICATR
+    field: "st_cicatriz_cultanea"
+    type: string
+    description_pt: "Informar se há presença de cicatriz cutânea em casos de presença de lesão mucosa"
+    type_info: "varchar2(1)"
+  - name: CLI_CO_HIV
+    field: "st_coinfeccao"
+    type: string
+    description_pt: "Informar se o paciente apresenta co-infecção LTA/HIV"
+    type_info: "varchar2(1)"
+    required: true
+  - name: LAB_PARASI
+    field: "st_parasitologico_direto"
+    type: string
+    description_pt: "Informar o resultado do exame do parasitológico direto"
+    type_info: "varchar2(1)"
+    required: true
+  - name: LAB_IRM
+    field: "st_irm"
+    type: string
+    description_pt: "Informar o resultado do IRM (Intradermoreação de Montenegro)"
+    type_info: "varchar2(1)"
+    required: true
+  - name: LAB_HISTOP
+    field: "tp_histopatologia"
+    type: string
+    description_pt: "Informar o resultado do exame histopatológico"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CLA_TIPO_N
+    field: "tp_tipo_entrada"
+    type: string
+    description_pt: "Informar o tipo de entrada do caso"
+    type_info: "varchar2(1)"
+    required: true
+  - name: CLAS_FORMA
+    field: "tp_forma_clinica"
+    type: string
+    description_pt: "Informar a forma clínica"
+    type_info: "varchar2(1)"
+    required: true
+  - name: DT_INIC_TR
+    field: "dt_inicio_tratamento"
+    type: date
+    description_pt: "Informar a data do início do tratamento"
+  - name: TRA_DROGA_
+    field: "tp_droga_administrada"
+    type: string
+    description_pt: "Informar o medicamento prescrito para o tratamento inicial"
+    type_info: "varchar2(1)"
+  - name: TRA_PESO
+    field: "nu_peso"
+    type: string
+    description_pt: "Informar o peso do paciente em Kg"
+    type_info: "number(3)"
+  - name: TRA_DOSE
+    field: "tp_dose_prescrita"
+    type: string
+    description_pt: "Informar a dose prescrita para o tratamento do paciente"
+    type_info: "varchar2(1)"
+  - name: TRA_AMPOLA
+    field: "nu_ampola_prescrita"
+    type: string
+    description_pt: "Informar o número total de ampolas prescritas no tratamento inicial"
+    type_info: "number(3)"
+  - name: TRA_OUTR_N
+    field: "tp_tratamento_inicial"
+    type: string
+    description_pt: "Informar qual droga foi utilizada na falência do tratamento inicial"
+    type_info: "varchar2(1)"
+  - name: CRITERIO
+    field: "tp_criterio_confirmacao"
+    type: string
+    description_pt: "Informar o critério de confirmação"
+    type_info: "VARCHAR2(2)"
+    required: true
+  - name: CON_CLASS_
+    field: "tp_classifica_epidemiologica"
+    type: string
+    type_info: "VARCHAR2(1)"
+    required: true
+  - name: TPAUTOCTO
+    field: "tp_autoctone_residencia"
+    type: string
+    description_pt: "Indica se o caso é autóctone do município de residência ."
+    type_info: "VARCHAR2(1)"
+    required: true
+  - name: COUFINF
+    field: "co_uf_infeccao"
+    type: string
+    description_pt: "Sigla da unidade federada onde o paciente foi provavelment e infectado."
+    type_info: "VARCHAR2(2)"
+    required: true
+  - name: COPAISINF
+    field: "co_pais_infeccao"
+    type: string
+    description_pt: "País onde o paciente foi provavelmente infectado."
+    type_info: "VARCHAR(4)"
+    required: true
+  - name: COMUNINF
+    field: "co_municipio_infeccao"
+    type: string
+    description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
+    type_info: "VARCHAR2(6)"
+    required: true
+  - name: CODISINF
+    field: "co_distrito_infeccão"
+    type: string
+    description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
+    type_info: "VARCHAR2(4)"
+  - name: CO_BAINFC
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "NUMBER(8) VACHAR2(60)"
+  - name: NOBAIINF
+    field: "co_bairro_infeccao, no_bairro_infeccao"
+    type: string
+    description_pt: "Código do bairro provável de Infecção do caso. Nome do bairro provável de infecção do caso."
+    type_info: "NUMBER(8) VACHAR2(60)"
+  - name: DOENCA_TRA
+    field: "st_doenca_trabalho"
+    type: string
+    description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente"
+    type_info: "VARCHAR2(1)"
+  - name: EVOLUCAO
+    field: "tp_evolucao_caso"
+    type: string
+    description_pt: "Informar a evolução do caso"
+    type_info: "VARCHAR2(1)"
+  - name: DT_OBITO
+    field: "dt_obito"
+    type: date
+    description_pt: "Informar a data do óbito"
+  - name: DT_ENCERRA
+    field: "dt_encerramento"
+    type: date
+    description_pt: "Informar a data do encerramento do caso"
+  - name: NU_LOTE_I
+    field: "nu_lote_vertical"
+    type: string
+    description_pt: "Identifica o Lote da transferência da investigação um nível do sistema para outro ( transferência vertical)"
+    type_info: "VARCHAR(7)"
+  - name: DS_OBS
+    field: "ds_observacao"
+    type: string
+    description_pt: "Anotar todas as informações consideradas importantes e que não estão na ficha (ex: outros dados clínicos, dados laboratoriais, laudos de outros exames e necrópsia, etc.)"
+    type_info: "VARCHAR2(255)"
