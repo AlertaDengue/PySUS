@@ -34,18 +34,24 @@ def _skip_pydantic_internals(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    import warnings
+    import logging
+
+    from sphinx.util.logging import SphinxWarningHandler
 
     app.connect("autodoc-skip-member", _skip_pydantic_internals)
-    # Sphinx 5.3 autodoc re-emits docutils RST parsing warnings when
+
+    # Sphinx 5.3 autodoc emits docutils RST parsing warnings when
     # processing inherited class attributes on exception subclasses.
-    # These are cosmetic (the docs render correctly) and cannot be
-    # suppressed via suppress_warnings.
-    warnings.filterwarnings(
-        "ignore",
-        message="Inline literal start-string without end-string",
-        module="docutils",
-    )
+    # Filter these at the logging level (Sphinx uses logging, not warnings).
+    _orig = SphinxWarningHandler.emit
+
+    def _filtered_emit(self, record):
+        msg = record.getMessage()
+        if "Inline literal start-string without end-string" in msg:
+            return
+        return _orig(self, record)
+
+    SphinxWarningHandler.emit = _filtered_emit
     print("DEBUG: skip-member handler registered", flush=True)
 
 intersphinx_mapping = {
