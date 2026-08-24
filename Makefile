@@ -27,6 +27,8 @@ SERVICE :=
 SEMANTIC_RELEASE = npx --yes \
           -p semantic-release \
           -p conventional-changelog-conventionalcommits \
+          -p conventional-changelog@^8 \
+          -p conventional-changelog-writer@^9 \
           -p "@semantic-release/commit-analyzer" \
           -p "@semantic-release/release-notes-generator" \
           -p "@semantic-release/changelog" \
@@ -72,4 +74,4 @@ release:
 
 .PHONY: release-dry
 release-dry:
-	$(SEMANTIC_RELEASE) --dry-run
+	$(SEMANTIC_RELEASE) --dry-run --no-ci
