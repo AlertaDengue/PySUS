@@ -151,14 +151,6 @@ Package Root
    :undoc-members:
    :noindex:
 
-Exceptions
-----------
-
-.. automodule:: pysus.api.errors
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Metadata Models
 ---------------
 
