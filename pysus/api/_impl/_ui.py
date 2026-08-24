@@ -38,7 +38,10 @@ def _collect_datasets() -> list[dict[str, str]]:
                     "name": spec.name,
                     "origin": "Saude",
                     "auth": "no",
-                    "description": spec.long_name,
+                    "description": _SAUDE_DESC.get(
+                        spec.name,
+                        spec.long_name,
+                    ),
                 },
             )
     except Exception:  # noqa: BLE001
@@ -183,4 +186,25 @@ _DADOSGOV_DESC: dict[str, str] = {
     "SINAN": "Notifiable disease information system",
     "SINASC": "Live birth information system",
     "COVID19": "Confirmed COVID-19 cases",
+}
+
+_SAUDE_DESC: dict[str, str] = {
+    "ARBOVIROSES": "Arboviroses (dengue, chikungunya, zika, yellow fever)",
+    "ASSISTENCIASAUDE": "Hospital and health facility data",
+    "ATENCAOPRIMARIA": "Primary care (Previne Brasil, SISAB)",
+    "BNAFAR": "Pharmaceutical assistance (Hórus medication stock)",
+    "CIENCIATECNOLOGIA": "Science & technology (Conitec, RIPSA)",
+    "DIAGNOSTICOSTRATAMENTOS": "Diagnostics & treatment protocols",
+    "ECONOMIASAUDE": "Health economics (BPS, ApuraSUS, SIOPS)",
+    "EDUCACAOSAUDE": "Health education (PVC)",
+    "MACROSAUDE": "Macro-regions and health regions (MGDI)",
+    "OUVIDORIA": "SUS ombudsman complaints",
+    "OUTROSTEMAS": "Miscellaneous CED coordination data",
+    "PDA": "Digital health and open data plan",
+    "PREVENCAOPROMOCAO": "Prevention & promotion (EPI distribution)",
+    "SISAGUA": "Water quality surveillance",
+    "SISVAN": "Food & nutrition surveillance",
+    "SAUDEINDIGENA": "Indigenous health (Siasi/SasiSUS/Sesai)",
+    "VACINACAO": "Vaccination (PNI doses, ESAVI)",
+    "VIGILANCIAMEIOAMBIENTE": "Environmental surveillance (SRAG, mpox)",
 }

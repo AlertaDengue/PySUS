@@ -1,7 +1,10 @@
 import asyncio
+import pathlib
 import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pandas as pd
 import pytest
 
 
@@ -579,3 +582,394 @@ class TestListFiles:
 
             assert len(result) == 3
             assert mock_pysus.query.call_count == 2
+
+
+class TestCovid19:
+    def test_covid19_calls_fetch_data(self):
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = MagicMock()
+            from pysus.api._impl.databases import covid19
+
+            covid19()
+            mock_fetch.assert_called_once()
+            args = mock_fetch.call_args
+            assert args.kwargs["dataset"] == "covid19"
+
+
+class TestSaudeConvenienceFunctions:
+    """Tests for the 18 Saude-portal convenience functions."""
+
+    SAUDE_FUNCTIONS = [
+        ("arboviroses", "arboviroses"),
+        ("assistencia_saude", "assistencia_saude"),
+        ("atencao_primaria", "atencao_primaria"),
+        ("bnafar", "bnafar"),
+        ("ciencia_tecnologia", "ciencia_tecnologia"),
+        ("diagnosticos_tratamentos", "diagnosticos_tratamentos"),
+        ("economia_saude", "economia_saude"),
+        ("educacao_saude", "educacao_saude"),
+        ("macro_saude", "macro_saude"),
+        ("ouvidoria", "ouvidoria"),
+        ("outros_temas", "outros_temas"),
+        ("pda", "pda"),
+        ("prevencao_promocao", "prevencao_promocao"),
+        ("sisagua", "sisagua"),
+        ("sisvan", "sisvan"),
+        ("saude_indigena", "saude_indigena"),
+        ("vacinacao", "vacinacao"),
+        ("vigilancia_meio_ambiente", "vigilancia_meio_ambiente"),
+    ]
+
+    @pytest.mark.parametrize("func_name,dataset", SAUDE_FUNCTIONS)
+    def test_calls_fetch_data_with_saude_origin(self, func_name, dataset):
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = MagicMock()
+            import pysus.api._impl.databases as mod
+
+            fn = getattr(mod, func_name)
+            fn()
+            mock_fetch.assert_called_once()
+            args = mock_fetch.call_args
+            assert args.kwargs["dataset"] == dataset
+            assert args.kwargs["origin"] == "Saude"
+
+    @pytest.mark.parametrize("func_name,dataset", SAUDE_FUNCTIONS)
+    def test_passes_kwargs_through(self, func_name, dataset):
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = MagicMock()
+            import pysus.api._impl.databases as mod
+
+            fn = getattr(mod, func_name)
+            fn(as_dataframe=True, columns=["A", "B"])
+            args = mock_fetch.call_args
+            assert args.kwargs["as_dataframe"] is True
+            assert args.kwargs["columns"] == ["A", "B"]
+
+
+class TestFetchDataSaudeRouting:
+    """Verify _fetch_data routes to _fetch_saude for Saude origin."""
+
+    def test_saude_origin_routes_to_fetch_saude(self):
+        with patch(
+            "pysus.api._impl.databases._fetch_saude",
+            new_callable=AsyncMock,
+            return_value=pd.DataFrame({"x": [1]}),
+        ) as mock_saude:
+            from pysus.api._impl.databases import _fetch_data
+
+            result = _fetch_data(
+                dataset="arboviroses",
+                origin="Saude",
+                as_dataframe=True,
+            )
+            mock_saude.assert_called_once()
+            assert isinstance(result, pd.DataFrame)
+
+    def test_non_saude_origin_routes_to_fetch_ducklake(self):
+        with patch(
+            "pysus.api._impl.databases._fetch_ducklake",
+            new_callable=AsyncMock,
+            return_value=[],
+        ) as mock_dl:
+            from pysus.api._impl.databases import _fetch_data
+
+            _fetch_data(dataset="sinan", year=2024)
+            mock_dl.assert_called_once()
+
+    def test_none_origin_routes_to_fetch_ducklake(self):
+        with patch(
+            "pysus.api._impl.databases._fetch_ducklake",
+            new_callable=AsyncMock,
+            return_value=[],
+        ) as mock_dl:
+            from pysus.api._impl.databases import _fetch_data
+
+            _fetch_data(dataset="sinan", year=2024)
+            mock_dl.assert_called_once()
+
+
+class TestFetchSaude:
+    """Tests for the _fetch_saude async helper."""
+
+    def test_empty_entries_returns_empty_df(self):
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+                saude_mock = AsyncMock()
+                saude_mock.list_datasets = AsyncMock(return_value=[])
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                )
+                assert isinstance(result, pd.DataFrame)
+                assert len(result) == 0
+
+        asyncio.run(_run())
+
+    def test_empty_entries_returns_empty_list(self):
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+                saude_mock = AsyncMock()
+                saude_mock.list_datasets = AsyncMock(return_value=[])
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=False,
+                )
+                assert result == []
+
+        asyncio.run(_run())
+
+    def test_downloads_csv_resources(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "dengue-2024"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "res1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    return_value=Path("/tmp/test.csv"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    show_progress=False,
+                )
+                assert len(result) == 1
+                saude_mock.download_resource.assert_called_once()
+
+        asyncio.run(_run())
+
+    def test_skips_non_csv_resources(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "dataset-x"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "res1"
+                resource.url = "https://example.com/data.pdf"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock()
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    show_progress=False,
+                )
+                assert result == []
+                saude_mock.download_resource.assert_not_called()
+
+        asyncio.run(_run())
+
+    def test_exception_in_fetch_dataset_continues(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry1 = MagicMock()
+                entry1.name = "bad-dataset"
+                entry2 = MagicMock()
+                entry2.name = "good-dataset"
+                saude_mock.list_datasets = AsyncMock(
+                    return_value=[entry1, entry2],
+                )
+
+                resource = MagicMock()
+                resource.id = "res1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+
+                saude_mock.fetch_dataset = AsyncMock(
+                    side_effect=[RuntimeError("boom"), pkg],
+                )
+                saude_mock.download_resource = AsyncMock(
+                    return_value=Path("/tmp/test.csv"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    show_progress=False,
+                )
+                assert len(result) == 1
+
+        asyncio.run(_run())
+
+    def test_as_dataframe_reads_csv_files(self):
+        import tempfile
+
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    suffix=".csv",
+                    delete=False,
+                ) as f:
+                    f.write("col_a,col_b\n1,2\n3,4\n")
+                    tmp_path = Path(f.name)
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "dataset-y"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "res1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    return_value=tmp_path,
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                    show_progress=False,
+                )
+                assert isinstance(result, pd.DataFrame)
+                assert len(result) == 2
+                assert "col_a" in result.columns
+
+                tmp_path.unlink(missing_ok=True)
+
+        asyncio.run(_run())
+
+    def test_column_filter_in_dataframe(self):
+        import tempfile
+
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    suffix=".csv",
+                    delete=False,
+                ) as f:
+                    f.write("col_a,col_b\n1,2\n")
+                    tmp_path = Path(f.name)
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "ds-z"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    return_value=tmp_path,
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                    columns=["col_a"],
+                    show_progress=False,
+                )
+                assert list(result.columns) == ["col_a"]
+
+                tmp_path.unlink(missing_ok=True)
+
+        asyncio.run(_run())

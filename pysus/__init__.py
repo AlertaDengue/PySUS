@@ -60,7 +60,7 @@ from pysus.api._impl import *  # noqa: E402,F401,F403
 from pysus.api._impl import __all__ as _impl_all  # noqa: E402,F401
 from pysus.api._impl import info_table as info  # noqa: E402,F401
 
-__all__: list[str] = list(_impl_all) + ["set_cache", "CACHEPATH"]
+__all__ = [*_impl_all, "set_cache", "CACHEPATH"]  # type: ignore[has-type]
 
 
 def _first_run_message() -> None:  # pragma: no cover
