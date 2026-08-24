@@ -1,6 +1,20 @@
 Release Notes
 ---
 
+## [2.10.0](https://github.com/AlertaDengue/PySUS/compare/2.9.0...2.10.0) (2026-08-24)
+
+### Features
+
+* add SIM death-certificate column metadata ([#322](https://github.com/AlertaDengue/PySUS/issues/322)) ([88eb8b8](https://github.com/AlertaDengue/PySUS/commit/88eb8b813603accc4f7b9a8e4ce2856a630dafca))
+* first-run experience and friendly error messages ([#321](https://github.com/AlertaDengue/PySUS/issues/321)) ([606430e](https://github.com/AlertaDengue/PySUS/commit/606430e110da4c4ebed5fb8d1336dafa7d26321e)), closes [#320](https://github.com/AlertaDengue/PySUS/issues/320)
+* OpenDataSUS catalog client and unified metadata layer ([#320](https://github.com/AlertaDengue/PySUS/issues/320)) ([b6f7580](https://github.com/AlertaDengue/PySUS/commit/b6f7580936a994d480838d0062d8e5bfa8f14ec2))
+
+### Bug Fixes
+
+* install conventional-changelog-writer v9 ([#323](https://github.com/AlertaDengue/PySUS/issues/323)) ([5e0b0d9](https://github.com/AlertaDengue/PySUS/commit/5e0b0d9345799c35e8bce46633c5b276b2ca18b9))
+* release ([#325](https://github.com/AlertaDengue/PySUS/issues/325)) ([05d7e27](https://github.com/AlertaDengue/PySUS/commit/05d7e27764fcd42e2ab1b034e161ec9a004657d5))
+* remove release cmds from makefile ([#324](https://github.com/AlertaDengue/PySUS/issues/324)) ([a8d3eb6](https://github.com/AlertaDengue/PySUS/commit/a8d3eb62ab8ecc04f08edb8ce98e6e799f5c70b6))
+
 ## [2.9.0](https://github.com/AlertaDengue/PySUS/compare/2.8.0...2.9.0) (2026-08-19)
 
 ### Features
