@@ -21,8 +21,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  build:
-    name: Build and release
+  release:
+    name: Semantic Release
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
@@ -31,18 +31,54 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install poetry
+      - name: Install Poetry
         run: pipx install poetry
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Create release environment
+        run: |
+          mkdir -p release-tools
+          cd release-tools
+          npm init -y
+
+      - name: Install semantic-release dependencies
+        working-directory: release-tools
+        run: |
+          npm install \
+            semantic-release \
+            conventional-changelog-conventionalcommits \
+            conventional-changelog@^8 \
+            conventional-changelog-writer@^9 \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            @semantic-release/changelog \
+            @semantic-release/exec \
+            @semantic-release/github \
+            @semantic-release/git \
+            semantic-release-replace-plugin
+
+      - name: Show installed dependencies
+        working-directory: release-tools
+        run: |
+          npm ls \
+            semantic-release \
+            @semantic-release/commit-analyzer \
+            @semantic-release/release-notes-generator \
+            conventional-changelog-conventionalcommits \
+            conventional-changelog \
+            conventional-changelog-writer \
+            --all
 
       - name: Test release
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make release-dry
+        run: |
+          release-tools/node_modules/.bin/semantic-release --dry-run --no-ci
 
       - name: Release
         if: github.event_name == 'workflow_dispatch'
@@ -51,7 +87,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           poetry config pypi-token.pypi "${PYPI_TOKEN}"
-          make release
+          release-tools/node_modules/.bin/semantic-release --ci
 
   docker-push:
     name: Push Docker image
@@ -138,7 +174,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install poetry
+      - name: Install Poetry
         run: pipx install poetry
 
       - name: Extract version

@@ -24,19 +24,6 @@ help:
 
 DOCKER = docker compose -p pysus
 SERVICE :=
-SEMANTIC_RELEASE = npx --yes \
-          -p semantic-release \
-          -p conventional-changelog-conventionalcommits \
-          -p conventional-changelog@^8 \
-          -p conventional-changelog-writer@^9 \
-          -p "@semantic-release/commit-analyzer" \
-          -p "@semantic-release/release-notes-generator" \
-          -p "@semantic-release/changelog" \
-          -p "@semantic-release/exec" \
-          -p "@semantic-release/github" \
-          -p "@semantic-release/git" \
-          -p "semantic-release-replace-plugin" \
-          semantic-release
 
 #* Docker basic
 .PHONY: run-jupyter-pysus
@@ -63,15 +50,3 @@ test-pysus-with-coverage: ## run tests with coverage report
 .PHONY: lint
 lint:
 	pre-commit run --all-files
-
-# RELEASE
-# =======
-
-.PHONY: release
-release:
-	$(SEMANTIC_RELEASE) --ci
-
-
-.PHONY: release-dry
-release-dry:
-	$(SEMANTIC_RELEASE) --dry-run --no-ci
