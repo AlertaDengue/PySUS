@@ -49,7 +49,6 @@ def setup(app):
             )
 
     logging.getLogger("sphinx").addFilter(_InlineLiteralFilter())
-    print("DEBUG: skip-member handler registered", flush=True)
 
 intersphinx_mapping = {
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),
