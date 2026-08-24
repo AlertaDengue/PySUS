@@ -25,9 +25,7 @@ class TestLoadEndpointColumns:
         assert len(cols) > 0
 
     def test_load_sim_schema_from_resource_filename(self):
-        cols = load_endpoint_columns(
-            "vigilanciameioambiente", "DO24OPEN_csv"
-        )
+        cols = load_endpoint_columns("vigilanciameioambiente", "DO24OPEN_csv")
         assert len(cols) >= 8
         names = [c["name"] for c in cols]
         assert "TIPOBITO" in names
@@ -131,7 +129,9 @@ class TestApplyColumnDescriptions:
             dataset="vigilanciameioambiente",
             endpoint="DO24OPEN_csv",
         )
-        assert updated >= 8
+        # The return value counts schema definitions processed; the query
+        # below verifies that the matching database column was persisted.
+        assert updated == 9
         cursor.execute(
             "SELECT description FROM pysus.dataset_columns WHERE id = 1"
         )
