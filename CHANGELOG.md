@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.1](https://github.com/AlertaDengue/PySUS/compare/2.10.0...2.10.1) (2026-08-25)
+
+### Bug Fixes
+
+* include a management cli command to sync and check databasese on s3 ([#326](https://github.com/AlertaDengue/PySUS/issues/326)) ([0476060](https://github.com/AlertaDengue/PySUS/commit/047606017b35615f678960290ef039938e061791))
+
 ## [2.10.0](https://github.com/AlertaDengue/PySUS/compare/2.9.0...2.10.0) (2026-08-24)
 
 ### Features
