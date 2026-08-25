@@ -8,97 +8,129 @@ raiva:
     type: date
     description_pt: "Data em que iniciou a investigação – informar a Data da 1ª visita"
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
     type_info: "varchar(6)"
+    characteristics: Campo Essencial
   - name: ARRANHAO
     field: "st_exposicao_arranhao"
     type: string
     description_pt: "Forma de exposição ao vírus da raiva"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Campo preenchido automaticamente com 2 se campo Tipo de exposição ao vírus rábico Contato Indireto=1(sim)
   - name: LAMBEDURA
     field: "st_exposicao_lambedura"
     type: string
     description_pt: "Forma de exposição ao vírus da raiva"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Campo preenchido automaticamente com 2 se campo Tipo de exposição ao vírus rábico Contato Indireto=1(sim)
   - name: MORDEDURA
     field: "st_exposicao_moderdura"
     type: string
     description_pt: "Forma de exposição ao vírus da raiva"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Campo preenchido automaticamente com 2 se campo Tipo de exposição ao vírus rábico Contato Indireto=1(sim)
   - name: CONTATO
     field: "st_exposicao_contato_indireto"
     type: string
     description_pt: "Forma de exposição ao vírus da raiva"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório
   - name: MUCOSA
     field: "st_localizacao_mucosa"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Localização) for igual a “Sim”, então campo 35 (Ferimento) é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1 (Único).
   - name: CABECA
     field: "st_localizacao_cabeca_pescoco"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Localização) for igual a “Sim”, então campo (Ferimento) é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo (Ferimento) = 1(Único).
   - name: MAOS_N
     field: "st_localizacao_maos"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Localização) for igual a “Sim”, então campo (Ferimento) é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1(Único).
   - name: PES
     field: "st_localizacao_pes"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Tipo de exposição ao Vírus Rábico) for igual a “Sim”, então campo Ferimento é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1(Único).
   - name: TRONCO
     field: "st_localizacao_tronco"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Tipo de exposição ao Vírus Rábico) for igual a “Sim”, então campo Ferimento é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1 (Único).
   - name: SUPERIORES
     field: "st_localizacao_membro_superior"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Tipo de exposição ao Vírus Rábico) for igual a “Sim”, então campo Ferimento é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1 (Único).
   - name: INFERIORES
     field: "st_localizacao_membro_inferior"
     type: string
     description_pt: "Localização do ferimento"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se mais de um item do campo (Tipo de exposição ao Vírus Rábico) for igual a “Sim”, então campo Ferimento é igual a 2 (Múltiplo); Se apenas um deles for “Sim”, campo Ferimento = 1 (Único).
   - name: FERIMENT_N
     field: "tp_ferimento"
     type: string
     description_pt: "Quantidade de ferimentos no paciente"
     type_info: "varchar(1)"
+    categories: 1. único 2. múltiplo 3. sem ferimento 9. ignorado
+    characteristics: Campo Essencial Não permitir preencher categoria 1 (único) ou 2(múltiplo) se todos os itens do campo 34- localização(mucosa,cabeça/ pescoço, mãos, pés, tronco, membros superiores e membros inferiores) = 2 ou 9. Se campo = 3 (Sem ferimento) ou 9 (Ignorado), pular para campo 38 (Tem antecedentes de tratamento anti-rábico?)
   - name: PROFUNDO
     field: "st_ferimento_profundo"
     type: string
     description_pt: "Informa se tipo de ferimento Profundo"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial O campo “profundo” deve ser diferente de 1 se os campos “superficial” ou “dilacerante” = 1.
   - name: SUPERFICIA
     field: "st_ferimento_superficial"
     type: string
     description_pt: "Informa se tipo de ferimento Superficial"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial O campo “superficial” deve ser diferente de 1 se os campos “profundo” ou “dilacerante” = 1.
   - name: DILACERANT
     field: "st_ferimento_desconhecido"
     type: string
     description_pt: "Informa se tipo de ferimento Desconhecido"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial O campo “dilacerante” deve ser diferente de 1 se os campos “superficial” ou “profundo” = 1.
   - name: DT_EXPO
     field: "dt_exposicao"
     type: date
@@ -107,44 +139,59 @@ raiva:
     field: "st_antecedente_pre_exposicao"
     type: string
     type_info: "varchar(1)"
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo Essencial Se pré-exposição e pós- exposição diferente de 1, pular para campo 41 (espécie do animal agressor)
   - name: ANTEC_POS
     field: "st_atencedente_pos_exposicao"
     type: string
     type_info: "varchar(1)"
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo Essencial Se pré-exposição e pós- exposição diferente de 1, pular para campo 41 (espécie do animal agressor)
   - name: NUM_DOSES
     field: "nu_dose"
     type: numeric
     description_pt: "Informa nºde doses aplicadas"
     type_info: "numeric(2)"
+    characteristics: 02 dígitos
   - name: DT_TR_RAB
     field: "dt_ultima_dose"
     type: date
+    characteristics: Campo Essencial
   - name: ESPECIE_N
     field: "tp_especie_agressor"
     type: string
     description_pt: "Espécie do animal agressor"
     type_info: "varchar(1)"
     required: true
+    categories: 1. canina 2. felina 3. quiróptera(m orcego) 4. primata (macaco) 5. raposa 6. herbívora 7. outra 9. ignorada
+    characteristics: Campo obrigatório Se campo= 7, habilitar a opção Outros especificar Se espécie =3 ou 4 ou 5, o campo 42 (animal vacinado) deve ser igual a 2 e pular para o campo 43 (ocorreu hospitalização) Se espécie = 9, campo 42 = 9 e pular para campo 43.
   - name: ESP_OUT
     field: "ds_especie_agressor_outro"
     type: string
     description_pt: "Se espécie de animal agressor for outra além das discriminadas acima, especificar"
     type_info: "varchar(30)"
+    characteristics: Habilitado se campo 41 (Espécie do animal do agressor) = 7.
   - name: VACINAD
     field: "st_animal_vacinado"
     type: string
     description_pt: "Se o animal foi vacinado com vacina anti-rábica"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Preenchimento automático com 2-não, quando campo 41- espécie do animal agressor for = 3, 4 ou 5 e preenchimento automático com 9- ignorado, quando o campo 41 for = 9.
   - name: HOSPITALIZ
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Se ocorreu hospitalização do paciente"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se categoria = 2 ou 9 pular para campo 48 (Principais sinais/sintomas).
   - name: DT_INTERNA
     field: "dt_internacao"
     type: date
     description_pt: "Data de internação, caso tenha ocorrido"
+    categories: Dd/mm/aaaa
+    characteristics: Campo Essencial se campo 43 (Ocorreu hospitalização) = 1 (sim). Habilitado se campo 43 (Ocorreu Hospitalização) = 1 (sim). Data da internação deve ser >= a Data dos primeiros sintomas.
   - name: UF
     field: "co_uf_hospital"
     type: string
@@ -165,159 +212,203 @@ raiva:
     type: string
     description_pt: "Se apresentou aerofobia"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: HIDROFOBI
     field: "st_sinais_hidrofobia"
     type: string
     description_pt: "Se apresentou hidrofobia"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: DISFAGIA
     field: "st_sinais_disfagia"
     type: string
     description_pt: "Se apresentou disfagia"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: PARESTESI
     field: "st_sinais_parestesia"
     type: string
     description_pt: "Se apresentou parestesia"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: AGRESSIVI
     field: "st_sinais_agressividade"
     type: string
     description_pt: "Se apresentou agressividade"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: PARALISIA
     field: "st_sinais_paralisia"
     type: string
     description_pt: "Se apresentou paralisia"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: AGITACAO
     field: "st_sinais_psicomotora"
     type: string
     description_pt: "Se apresentou agitação psicomotora"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: FEBRE
     field: "st_sinais_febre"
     type: string
     description_pt: "Se apresentou febre"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: OUTRO
     field: "st_sinais_outro"
     type: string
     description_pt: "Se apresentou outros sinais/ sintomas"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: OUTRO_DES
     field: "ds_sinais_outro"
     type: string
     description_pt: "Informa se apresentou outros sinais e sintomas"
     type_info: "varchar(30)"
+    characteristics: Habilitar se o campo 48 (Principais sinais/sintomas – outros) =1 (sim).
   - name: ANTI_RAB
     field: "st_aplicacao_vacina"
     type: string
     description_pt: "Se o paciente foi submetido a tratamento anti-rábico atualmente"
     type_info: "varchar(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo obrigatório Se igual a 2 ou 9 pular para campo 54 (Foi Aplicado Soro?).
   - name: DT_R_TRA
     field: "dt_inicio_tratamento"
     type: date
     description_pt: "Data do início do tratamento"
+    characteristics: Campo Essencial
   - name: DOSES_A
     field: "nu_dose_aplicada"
     type: numeric
     description_pt: "Número de doses aplicadas no tratamento"
     type_info: "numeric(2)"
+    characteristics: Campo Essencial
   - name: DT_VAC1
     field: "dt_primeira_dose"
     type: date
     description_pt: "Data da primeira dose aplicada no tratamento"
+    characteristics: Campo Essencial
   - name: DT_VAC_ULT
     field: "dt_ultima_dose_vacina"
     type: date
     description_pt: "Data da última dose aplicada no tratamento"
+    characteristics: Campo Essencial
   - name: TRA_SORO
     field: "st_aplicado_soro"
     type: string
     description_pt: "Se foi aplicado o soro no tratamento"
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Se igual a 2 ou 9 pular para campo 58 (Diagnóstico laboratorial).
   - name: DT_APLI_SO
     field: "dt_aplicacao"
     type: date
     description_pt: "Data da aplicação do soro"
     required: true
+    characteristics: Campo Obrigatório se campo 56 (Quantidade de Soro Aplicado) for diferente de null e maior que 0.
   - name: QUANTID
     field: "qt_soro_aplicado"
     type: numeric
     description_pt: "Quantidade do soro aplicado em ml"
     type_info: "numeric(3)"
+    characteristics: 03 dígitos
   - name: INFILTRA
     field: "tp_infiltracao"
     type: string
     description_pt: "Informa se houve infiltração no local do ferimento"
     type_info: "varchar(1)"
+    categories: 1. Sim total 2- Sim parcial 3. Não 9. Ignorado
   - name: IMUNO_DIRE
     field: "st_diag_lmunofluorescenc ia"
     type: string
     description_pt: "Se foi realizado exame de imunofluorescência direta"
     type_info: "varchar(1)"
+    categories: 1. Positivo 2. Negativo 3.Inconclusivo 4. Não realizado
+    characteristics: Campo Essencial
   - name: PROVA_BIOL
     field: "st_diag_prova_biologica"
     type: string
     description_pt: "Informa se foi realizada Prova Biológica"
     type_info: "varchar(1)"
+    categories: 1. Positivo 2. Negativo 3.Inconclusivo 4. Não realizado
+    characteristics: Campo Essencial
   - name: IMUNO_INDI
     field: "st_diag_imuno_indireta"
     type: string
     description_pt: "Se foi realizado exame de imunofluorescência indireta"
     type_info: "varchar(1)"
+    categories: 1. Positivo 2. Negativo 3.Inconclusivo 4. Não realizado
+    characteristics: Campo Essencial Se imunofluorescência indireta =1, pular para campo 59 (Variante)
   - name: HISTOLOG_N
     field: "st_diag_histologico"
     type: string
     description_pt: "Se foi realizado exame histológico"
     type_info: "varchar(1)"
+    categories: 1. Positivo 2. Negativo 3.Inconclusivo 4. Não realizado
+    characteristics: Campo Essencial
   - name: VARIA_VIR
     field: "nu_variante_viral"
     type: numeric
     description_pt: "Informa qual variante foi identificada"
     type_info: "numeric(2)"
     required: true
+    characteristics: Campo obrigatório se campo 58- Diagnóstico laboratorial – Imunofluorescência indireta for =1-positivo
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     type_info: "varchar(1)"
     required: true
+    categories: 1. Confirmado 2. Descartado
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido. Preencher automaticamente = 1 se algum dos campos 58 Diagnóstico laboratorial ( Imunofluorescência direta, Imunofluorescência indireta, histologia e prova biológica) = 1
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Especifica o tipo de diagnóstico utilizado"
     type_info: "varchar(1)"
+    categories: 1. Laboratório 2. Óbito com clínica compatível + vínculo epidemiológico 3. Evolução Clínica incompatível
+    characteristics: Campo Essencial Preencher automaticamente com 1 se algum dos campos 58 (Diagnóstico laboratorial) = 1 Preencher automaticamente com 2 (Óbito com clínica compatível + Vínculo Epidemiológico) SE todos os itens do campo 58 (Diagnóstico Laboratorial) forem igual a 2 (Negativo) E o campo 60 (Classificação Final) for igual a 1 (Confirmado).
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de Infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi Provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo obrigatório e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan.
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1 (confirmado) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CO_BAINFC
     field: "co_bairro_infeccao, no_bairro_infeccao"
     type: string
@@ -332,22 +423,31 @@ raiva:
     field: "tp_zona_exposicao"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1-Urbana 2-Rural 3-Periurbana 9-Ignorado
+    characteristics: Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Informa se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
     type_info: "varchar(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    categories: Dd/mm/aaaa
+    characteristics: Campo Essencial Data deve ser maior ou igual às Datas de Primeiros Sintomas (campo 7) E da Última Dose da Vacina (campo 53).
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação"
     required: true
+    categories: Dd/mm/aaaa
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido Data encerramento maior ou igual Data de investigação.
   - name: DS_OBS
     field: "ds_observacao"
     type: string
     description_pt: "Informações complementares a respeito do caso"
     type_info: "varchar(255)"
+    characteristics: Informações disponíveis no sistema e visualizadas com o aplicativo Sinan. Campo exportado para a base em DBF.

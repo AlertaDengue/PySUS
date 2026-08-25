@@ -8,6 +8,7 @@ teti_neonatal:
     type: date
     description_pt: "Data completa do início da investigação (data da primeira ação desenvolvida após o conhecimento do caso) dd/mm/aaaa"
     required: true
+    characteristics: Campo obrigatório Data de investigação > ou = Data de notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -18,248 +19,326 @@ teti_neonatal:
     type: string
     description_pt: "Informar número de consultas de pré-natal realizadas durante a última gestação"
     type_info: "varchar2(1)"
+    categories: 1- Uma 2- Duas 3- De 3 a 5 4- 6 e mais 5- Nenhuma 9- Ignorado
+    characteristics: Campo Essencial
   - name: CS_VACTETA
     field: "tp_antecedente_vacinal"
     type: string
     description_pt: "Antecedentes vacinais da mãe – vacina contra tétano"
     type_info: "varchar2(1)"
+    categories: 1. Vacinada (comprovado pelo cartão) 2. Não Vacinada 9. ignorado
+    characteristics: Campo Essencial se campo = 2 ou 9 pular para campo 39 (Idade da mãe) Se campo = 1, preencher os campos data das doses recebidas.
   - name: DT_1_DOSE
     field: "dt_dose_1"
     type: date
     description_pt: "Data da 1ª dose de vacina contra tétano (DPT, DT, dT ou TT)"
     required: true
+    characteristics: Campo Obrigatório se campo 34 (Antecedentes vacinais contra tétano - mãe)=1 ( comprovado pelo cartão de vacina). Data deve ser menor que a Data de Nascimento do filho.
   - name: DT_2_DOSE
     field: "dt_dose_2"
     type: date
     description_pt: "Data da 2ª dose de vacina contra tétano (DPT, DT, dT ou TT)"
+    characteristics: Habilitado se campo 34 (Antecedentes vacinais contra tétano)=1 e se campo Data da 1ª dose (duas doses, comprovado pelo cartão de vacina) estiver preenchido. - Campo 2º dose com data > que 1º dose - Data deve ser inferior a Data de Nascimento do filho
   - name: DT_3_DOSE
     field: "dt_dose_3"
     type: date
     description_pt: "Data da 3ª dose de vacina contra tétano (DPT, DT, dT ou TT)"
+    characteristics: Campo Habilitado se campo 34 (Antecedentes vacinais contra tétano)=1 e se campo Data da 2ª dose (três doses, comprovado pelo cartão de vacina) estiver preenchido. - Campo 3º dose com data > que 2º dose Data deve ser inferior a Data de Nascimento do filho
   - name: DT_REFORCO
     field: "dt_ultimo_reforco"
     type: date
     description_pt: "Data do último reforço da vacina contra tétano (DPT, DT, dT ou TT)"
+    characteristics: Campo Habilitado se Campo 34 (Antecedentes vacinais contra tétano) =1 e se campo Data da 3ª dose estiver preenchido. Data deve ser menor que a Data de Nascimento do filho e > que a data da 3º Dose
   - name: IDADE_MAE
     field: "nu_idade_mae"
     type: string
     description_pt: "Idade da mãe por ocasião do nascimento do último recém-nascido"
     type_info: "number(3)"
+    characteristics: Campo Essencial
   - name: NU_GESTA
     field: "tp_numero_gestacao"
     type: string
     description_pt: "Informar o número de gestações ocorridas inclusive aborto caso tenha ocorrido"
     type_info: "varchar2(1)"
+    categories: 1- Uma 2- Duas 3- Três 4- Quatro 5- Cinco e mais 9- Ignorado
+    characteristics: Campo Essencial
   - name: CS_NASCIDO
     field: "tp_ocorrencia_parto"
     type: string
     description_pt: "Local de ocorrência do parto"
     type_info: "varchar2(1)"
+    categories: 1. hospital 2. domicílio 3. casa de parto 4.outro 9. ignorado
+    characteristics: Campo Essencial Se campo diferente de 4 pular para campo 43 (Parto atendido por)
   - name: NO_OUPARTO
     field: "ds_ocorrencia_parto_outro"
     type: string
     description_pt: "Informar o outro local onde ocorreu o parto"
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial se campo local de ocorrência do parto = 4 (outro). Campo habilitado se campo local de ocorrência do parto = 4 (outro).
   - name: CS_ATEND_N
     field: "tp_parto_atendido"
     type: string
     description_pt: "quem realizou o parto"
     type_info: "varchar2(1)"
+    categories: 1. médico 2. enfermeiro 3. auxiliar de enfermagem 4. parteira treinada 5. parteira não treinada 6. outros 9. ignorado
+    characteristics: Campo essencial Se campo diferente de 6 pular para campo 44 (Sugou normalmente após o nascimento).
   - name: NO_ATENOUT
     field: "ds_parto_atendido_outro"
     type: string
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial se campo Parto atendido por = 6 (outros). Campo habilitado se campo Parto atendido por = 6 (outros).
   - name: CS_SUGOU
     field: "st_sugou_nascimento"
     type: string
     description_pt: "se o recém nascido sugou (mamou) normalmente após o nascimento."
     type_info: "varchar2(1)"
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo Essencial
   - name: CS_MAMAR
     field: "st_sinais_dificuldade"
     type: string
     description_pt: "Se o recém-nascido apresentou dificuldade para mamar igual a um"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_TRISMO
     field: "st_sinais_trismo"
     type: string
     description_pt: "Se o recém-nascido apresentou dificuldade em abrir a boca"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_NUCA
     field: "st_sinais_nuca"
     type: string
     description_pt: "Se o recém-nascido apresentou dificuldade em movimentar o pescoço"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_CHORO
     field: "st_sinais_choro"
     type: string
     description_pt: "Se o recém-nascido apresentou choro imotivado além do normal"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_RISO
     field: "st_sinais_riso"
     type: string
     description_pt: "Se o recém-nascido apresentou contratura muscular labial"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_ABDOMEN
     field: "st_sinais_abdominal"
     type: string
     description_pt: "Se o recém-nascido apresentou endurecimento da musculatura da barriga"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_INF_COT
     field: "st_sinais_umbilical"
     type: string
     description_pt: "Se a ferida umbilical apresentou anormalidade Presença de pus mal cheiro, vermelhidão ou outros sinais"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_OPISTOT
     field: "st_sinais_opistotono"
     type: string
     description_pt: "Se o recém-nascido apresentou contratura da musculatura dorsal em formato de um arco"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_MEMBROS
     field: "st_sinais_membro"
     type: string
     description_pt: "Se o recém-nascido apresentou contratura da musculatura das pernas e/ou braços"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_CRISE
     field: "st_sinais_crise"
     type: string
     description_pt: "Se o recém-nascido apresentou crises de contraturas musculares generalizadas inicialmente pelo simples toque, ou estímulos sonoros ou luminosos e, posteriormente espontaneamente"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo obrigatório
   - name: CS_OUTROS
     field: "ds_sinais_outro"
     type: string
     description_pt: "Se outros sinais e sintomas apresentados pelo recém-nascido, além dos mencionados acima"
     type_info: "varchar(1)"
+    categories: 1. sim 2. não 9. ignorado
   - name: NM_OUT_SIN
     field: "ds_sinais_outro"
     type: string
     description_pt: "Se o recém-nascido apresentou outros sinais e sintomas além dos mencionados acima cite- os"
     type_info: "varchar2(30)"
+    characteristics: Habilitado se os sinais e sintomas-Outros= 1(sim)
   - name: DT_TRISMO
     field: "dt_trismo"
     type: date
     description_pt: "Data da ocorrência do início do trismo"
     required: true
+    characteristics: Campo obrigatório se campo 45 (Sinais e sintomas – Trismo) for igual a 1. Campo habilitado se campo 45 (Sinais e sintomas – Trismo) for igual a 1. Deve ser maior do que a data de primeiros sintomas (campo 7).
   - name: CS_ORIGEM
     field: "tp_origem_caso"
     type: string
     description_pt: "Origem da fonte de identificação do caso"
     type_info: "varchar2(1)"
+    categories: 1. notificação 2. busca ativa 3. declaração de óbito
   - name: CS_HOSPITA
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Se ocorreu hospitalização do recém-nascido, após primeiros sintomas da suspeita de tétano neonatal"
     type_info: "varchar(1)"
+    categories: 1- sim 2- não 9 - ignorado
+    characteristics: Campo essencial
   - name: CS_COBERTU
     field: "tp_cobertura"
     type: string
     description_pt: "Se o local de residência da mãe está coberto pelo Programa da Atenção Básica."
     type_info: "varchar2(1)"
+    categories: 1. PACS 2. PSF 3. PACS/PSF 4. Nenhum 5 – Outro 9 – Ignorado
+    characteristics: Campo essencial
   - name: NO_COBOUTR
     field: "ds_cobertura_outro"
     type: string
     description_pt: "Se o local de residência da mãe está coberto por Outro Programa de Atenção Básica, além dos mencionados anteriormente especificar."
     type_info: "varchar2(30)"
+    characteristics: Habilitado se campo Local de residência coberto pelo= 5(outro)
   - name: CS_VACINAC
     field: "st_medida_atualizacao"
     type: string
     description_pt: "Se foi atualizado ou iniciado o esquema vacinal contra tétano da mãe"
     type_info: "varchar2(1)"
+    categories: 1. sim 2. não 9. ignorado
+    characteristics: Campo Essencial
   - name: CS_CADASTR
     field: "st_medida_cadastro"
     type: string
     description_pt: "Se foi realizado cadastro e capacitação de parteiras atuantes na área."
     type_info: "varchar2(1)"
+    categories: 1- sim 2- não 9- ignorado
+    characteristics: Campo Essencial
   - name: CS_DIVULGA
     field: "st_medida_divulgacao"
     type: string
     description_pt: "Se foi realizada a divulgação do caso para autoridades e profissionais de saúde"
     type_info: "varchar2(1)"
+    categories: 1- sim 2- não 9- ignorado
+    characteristics: Campo Essencial
   - name: CS_BUSCAAT
     field: "st_medida_busca"
     type: string
     description_pt: "Se foi realizada busca ativa de outros casos de Tétano Neonatal (TNN) na comunidade, em unidades de internação, em registros de óbitos para avaliar subnotificação"
     type_info: "varchar(1)"
+    categories: 1- sim 2- não 9- ignorado
+    characteristics: Campo Essencial
   - name: CS_ORIENTA
     field: "st_medida_orientacao"
     type: string
     description_pt: "Se a parturiente foi orientada como cuidar do coto umbilical"
     type_info: "varchar2(1)"
+    categories: 1- sim 2- não 9- ignorado
+    characteristics: Campo Essencial
   - name: CS_ANALISE
     field: "st_medida_analise"
     type: string
     description_pt: "Se foi realizada a análise da CV de MIF e vacinação discriminada em MIF contra o tétano"
     type_info: "varchar2(1)"
+    categories: 1- sim 2- não 9- ignorado
+    characteristics: Campo Essencial
   - name: CS_OUTRAS
     field: "st_medida_outro"
     type: string
     description_pt: "Se foram adotadas outras medidas além das citadas"
     type_info: "varchar2(1)"
+    characteristics: Campo Essencial
   - name: NO_OUTRAS
     field: "ds_medida_outro"
     type: string
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial se campo Medidas adotadas (outras)= 1
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Conclusão do caso"
     type_info: "varchar(1)"
     required: true
+    categories: 1. confirmado 2. descartado
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido. Se classificação final = 2 pular para o campo 60. Evolução do caso.
   - name: DS_INF_LOC
     field: "tp_local_infeccao"
     type: string
     description_pt: "Local onde provavelmente ocorreu a infecção"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Hospital 2- Domicílio 3- Casa de Parto 4- Outro Local 9- IGN
+    characteristics: Campo Obrigatório se o campo (Classificação final) for = 1 confirmado Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: DS_INF_OUT
     field: "ds_local_infeccao_outro"
     type: string
     description_pt: "Se Outro Local da provável fonte de infecção, especificar."
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial se campo Local provável da fonte de infecção=4(outro local) Habilitado se campo Local provável da fonte de infecção=4(outro local)
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, Unidade, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Unidade, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente Infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final = 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COUNIDINF
     field: "co_unidade_infeccao"
     type: string
     description_pt: "Unidade de Saúde onde provalvel mente ocorreu a infecção,recém nato esteve em hospital ou casa de parto"
     type_info: "varchar(7)"
     required: true
+    characteristics: Campo obrigatório se campo 52 (Local provável da fonte de infecção) for = 1 ou 3. Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1 (confirmado) Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CO_BAINFC
     field: "co_bairro_infeccao no_bairro_infeccao"
     type: string
@@ -275,12 +354,16 @@ teti_neonatal:
     type: string
     description_pt: "Evolução do caso"
     type_info: "varchar2(1)"
+    categories: 1. cura 2. óbito por TNN 3. óbito por outras causas 9-ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final=1,2 ou Null. Não aceitar categoria 2, se campo Classificação Final for diferente de 1.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data por ocasião do óbito"
+    characteristics: Campo Essencial se Evolução do caso=2(óbito por TNN) ou 3(obito por outras causas). Campo habilitado se campo 60. Evolução do caso =2 (bito por TNN) ou 3(óbito por outras causas)
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação"
     required: true
+    characteristics: Campo Obrigatório se campo 51 (Classificação Final) estiver preenchido. Data encerramento >= Data da investigação (campo 31).

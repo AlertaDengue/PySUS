@@ -104,6 +104,10 @@ def _load_yaml_metadata(
                             "description_en": col_def.get("description_en", ""),
                             "format": col_def.get("format", ""),
                             "required": col_def.get("required", False),
+                            "categories": col_def.get("categories", ""),
+                            "characteristics": col_def.get(
+                                "characteristics", ""
+                            ),
                         }
 
     # Also check saude/schemas (existing location — SINAN disease groups)
@@ -131,6 +135,10 @@ def _load_yaml_metadata(
                                 ),
                                 "format": col_def.get("format", ""),
                                 "required": col_def.get("required", False),
+                                "categories": col_def.get("categories", ""),
+                                "characteristics": col_def.get(
+                                    "characteristics", ""
+                                ),
                             }
 
     return result

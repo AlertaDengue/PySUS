@@ -8,6 +8,7 @@ difteria:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª ação desenvolvida após a notificação"
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -19,11 +20,13 @@ difteria:
     description_pt: "Local em que o paciente teve contato com caso semelhante nas últimas 2 semanas, anterior ao início dos sinais e sintomas."
     type_info: "varchar(1)"
     categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro Estado/Município 7. Outro 8. Sem história de contato 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 8 (Sem história de contato) ou 9 (Ignorado) pular para campo (Nº de doses da vacina tríplice (DTP) ou Tetravalente DTP + Hib) ou Dupla (DT ou dT))
   - name: ANT_OUTROS
     field: "ds_contato_difteria_outro"
     type: string
     description_pt: "Identificação de outro local em que o paciente teve contato não referido acima"
     type_info: "varchar(30)"
+    characteristics: Habilitado somente se o local de contato com caso suspeito ou confirmado de difteria (outros)=7
   - name: ANT_NOMECO
     field: "no_contato"
     type: string
@@ -40,10 +43,12 @@ difteria:
     description_pt: "Número de doses da vacina tríplice (DPT) ou tetravalente (DTP+Hib) ou dupla (DT ou dT) que o paciente recebeu."
     type_info: "varchar(1)"
     categories: "1. Uma 2. Duas 3. Três 4. Três + 1 reforço 5. Três + 2 reforços 6. Nunca vacinado 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 6 (Nunca Vacinado) ou 9 (Ignorado) pular para campo (Sinais e Sintomas)
   - name: ANT_ULTI_D
     field: "dt_ultima_dose"
     type: date
     description_pt: "Informe a Data da última dose da vacina tríplice (DTP) ou dupla (DT ou dT) que o paciente recebeu."
+    characteristics: Campo Essencial Se campo 36 diferente de 6 (nunca vacinado) ou 9(Ignorado) Não permitir data posterior à data de notificação; Não pode ser anterior a data de nascimento
   - name: CLI_EDEMAG
     field: "st_sinais_edema_ganglionar"
     type: string
@@ -74,6 +79,7 @@ difteria:
     description_pt: "Informa se o paciente apresentou pseudomembranas"
     type_info: "varchar(1)"
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Se categoria <> 1(Sim), não habilitar para preenchimento o campo (Localização de pseudomembranas)
   - name: CLI_PALIDE
     field: "st_sinais_palidez"
     type: string
@@ -92,6 +98,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_AMIGDA
     field: "st_pseudomembrana_amigdala"
     type: string
@@ -99,6 +106,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_CORDAO
     field: "st_pseudomembrana_cordao"
     type: string
@@ -106,6 +114,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_FARING
     field: "st_pseudomembrana_faringe"
     type: string
@@ -113,6 +122,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_LARING
     field: "st_pseudomembrana_laringe"
     type: string
@@ -120,6 +130,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_ORGAOS
     field: "st_pseudomembrana_genital"
     type: string
@@ -127,6 +138,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_PALATO
     field: "st_pseudomembrana_palato"
     type: string
@@ -134,6 +146,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_CONDUT
     field: "st_pseudomembrana_auditivo"
     type: string
@@ -141,6 +154,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_TRAQUE
     field: "st_pseudomembrana_traqueia"
     type: string
@@ -148,6 +162,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_PELE
     field: "st_pseudomembrana_pele"
     type: string
@@ -155,6 +170,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_CONJUN
     field: "st_pseudomembrana_conjuntiva"
     type: string
@@ -162,6 +178,7 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Obrigatório se campo Sinais e Sintomas (Pseudomembrana) =1(sim)
   - name: CLI_MIOCAR
     field: "st_complicacao_miocardite"
     type: string
@@ -209,16 +226,19 @@ difteria:
     type: string
     description_pt: "Especifica outro tipo de complicação além das referidas acima"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 41- Complicações Existiram (Outras) for = 1
   - name: ATE_HOSPIT
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informa se o paciente foi internado devido ao agravo que está sendo notificado"
     type_info: "varchar(1)"
     categories: "1- Sim 2- Não 9 Ignorado"
+    characteristics: Campo Essencial Se categoria = 2 (Não) ou 9 (Ignorado) ou null pular para campo (Material coletado)
   - name: ATE_INTERN
     field: "dt_internacao"
     type: date
     description_pt: "Data de internação, caso tenha ocorrido"
+    characteristics: Campo Essencial se campo 42( ocorreu hospitalização)= 1(sim). Data de Internação deve ser maior ou igual à Data de Primeiros Sintomas.
   - name: ATE_UF_INT
     field: "co_uf_hospital"
     type: string
@@ -235,42 +255,50 @@ difteria:
     description_pt: "Nome completo e código da unidade de saúde (ou outra fonte notificadora) onde o paciente foi internado"
     type_info: "numeric(8)"
     categories: "Código e nome do estabelecimento segundo tabela disponibilizada para cadastramento pelo usuário"
+    characteristics: Digitação do nome da unidade de saúde ou do código. Quando digitado o nome, o código é preenchido automaticamente e vice- versa.
   - name: LAB_MATE_N
     field: "st_material_coletado"
     type: string
     description_pt: "Informa se foi realizada coleta de material da orofaringe, nasofaringe e/ ou lesão de pele ou mucosa."
     type_info: "varchar(1)"
     categories: "1-Orofaringe 2-Nasofaringe 3-Orofaringe e nasofaringe 4-Não coletado 9-Ignorado"
+    characteristics: Campo Essencial Se categoria = 4 (não coletado) preencher automaticamente os campos (Cultura para difteria) e campo (Prova de toxigenicidade) com categoria 3 (Não realizado), e pular para o campo 51 (Data de aplicação do soro). Se categoria = 9 (Ignorado) preencher automaticamente campos 49 (Cultura para Difteria) e 50 (Prova de Toxigenicidade) com categoria 9 (Ignorado), e pular para campo 51 (Data da aplicação do soro). Se categoria =null, pular para campo 51 (Data da aplicação do soro)
   - name: LAB_DATA_C
     field: "dt_coleta"
     type: date
     description_pt: "Data em que foi colhido o material."
+    characteristics: Campo Essencial Se campo 47(material coletado) for diferente de 4(não coletado) e 9(ignorado) Data da Coleta deve ser maior ou igual à Data dos Primeiros Sintomas.
   - name: LAB_CULTUR
     field: "tp_cultura_difteria"
     type: string
     description_pt: "Resultado da cultura para C. diphteriae."
     type_info: "varchar(1)"
     categories: "1. Positiva para C. diphteriae 2. Negativa para C. diphteriae 3. Não realizada 9. Ignorado"
+    characteristics: Campo Essencial Se campo 47(material coletado) for diferente de 4(não coletado) e 9(ignorado) Se categoria <> 1, pular automaticamente para o campo 51- (Data de aplicação do soro)
   - name: LAB_PROVAS
     field: "tp_prova_toxigenicidade"
     type: string
     description_pt: "resultado das provas de toxigenicidade."
     type_info: "varchar(1)"
     categories: "1. Positiva 2. Negativa 3. Não realizada 9. Ignorado"
+    characteristics: Campo Essencial Se campo 47(material coletado) for diferente de 4(não coletado) e 9(ignorado)
   - name: TRA_DATA_S
     field: "dt_aplicacao_soro"
     type: date
     description_pt: "data de aplicação do soro"
+    characteristics: Campo Essencial A data não pode ser anterior à Data de internação
   - name: TRA_ANTIBI
     field: "st_antibiotico"
     type: string
     description_pt: "Informa se o paciente foi tratado com antibiótico"
     type_info: "varchar(1)"
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Se categoria = 2 (Não) ou 9 (Ignorado), pular para campo 54- (Realizada identificação dos comunicantes íntimos).
   - name: TRA_DATA_A
     field: "dt_antibiotico"
     type: date
     description_pt: "Data de início da administração do antibiótico utilizado no tratamento"
+    characteristics: Data do Antibiótico deve ser maior que a data dos 1º Sintomas
   - name: MED_IDEN_C
     field: "st_comunicante_intimo"
     type: string
@@ -278,12 +306,14 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Se categoria = 2 ou 9 ou null, pular para campo 60-Medidas de prevenção e controle. Se categoria = 1, campos 55-Se sim, quantos e 56-Quantos casos secundários foram confirmados entre os comunicantes são de preenchimento obrigatório.
   - name: MED_QUAN_C
     field: "qt_comunicante_intimo"
     type: numeric
     description_pt: "número de comunicantes íntimos identificados"
     type_info: "numeric(3)"
     required: true
+    characteristics: Campo Obrigatório se campo 54- Realizada identificação dos comunicantes íntimos = 1
   - name: MED_CASO_S
     field: "tp_comunicante_confirmado"
     type: string
@@ -291,30 +321,35 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Nenhum 2. Um 3. Dois ou mais 9. Ignorado"
+    characteristics: Campo Obrigatório se campo 54-Realizada identificação dos comunicantes íntimos = 1
   - name: MED_MATERI
     field: "st_comunicante_material"
     type: string
     description_pt: "Informa se foi realizada coleta de material de comunicantes"
     type_info: "varchar(1)"
     categories: "1-Sim 2-Não 9.Ignorado"
+    characteristics: Se categoria = 2 ou 9 ou null, pular para campo 60- Medidas de prevenção/controle
   - name: MED_QUAN_M
     field: "qt_comunicante_material"
     type: numeric
     description_pt: "Nº de comunicantes em que foi coletado o material"
     type_info: "numeric(3)"
     required: true
+    characteristics: Campo Obrigatório se campo 57-Realizada Coleta de Material dos Comunicantes for = 1
   - name: MED_QUAN_P
     field: "qt_comunicante_portador"
     type: numeric
     description_pt: "Nº de portadores identificados entre os comunicantes"
     type_info: "numeric(3)"
     required: true
+    characteristics: Campo Obrigatório se campo 57-Realizada Coleta de Material dos Comunicantes for = 1
   - name: MED_PREVEN
     field: "st_medida_prevencao"
     type: string
     description_pt: "Informa o tipo de bloqueio realizado"
     type_info: "varchar(1)"
     categories: "1. Bloqueio vacinal 2. Quimioprofilaxia 3. Ambos 4. Não 9. Ignorado"
+    characteristics: Campo Essencial
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
@@ -322,36 +357,43 @@ difteria:
     type_info: "varchar(1)"
     required: true
     categories: "1. Confirmado 2. Descartado"
+    characteristics: CAMPO OBRIGATÓRIO quando o campo data de encerramento estiver preenchido
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Critérios de confirmação do caso"
     type_info: "varchar(1)"
     categories: "1. Cultura com prova de toxigenicidade 2. Cultura sem prova de toxigenicidade 3. Vínculo epidemiológico 4. Morte pós clínica compatível 5. Clínico 6. Necrópsia"
+    characteristics: Campo Essencial Retirada observação.
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Informa se o paciente adquiriu a doença em decorrência das condições/situação de trabalho"
     type_info: "varchar(1)"
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Retirada observação. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2 (descartado) os dados desse campo são automaticamente apagados.
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Evolução do paciente"
     type_info: "varchar(1)"
     categories: "1. Cura c/ sequela 2. Cura s/ sequela 3. Óbito por difteria 4. Óbito por outras causas 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 1, 2, 9 ou null, pular para o campo Data do encerramento. Se categoria = 3 ou 4, habilitar o campo Data de Óbito. Não permitir óbito por difteria se o campo 61- Classificação Final for <> 1-confirmado. Campo habilitado se classificação final= 1, 2 ou null.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    characteristics: Campo Essencial Se campo 64 (evolução) =3(óbito por difteria) ou 4(óbito por outras causas) Data de Óbito deve ser maior ou igual à Data dos 1º Sintomas
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação do caso"
     required: true
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido. Data do encerramento maior ou igual Data da investigação.
   - name: NU_LOTE_I
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
     type_info: "varchar(7)"
     categories: "Descrever aqui a estrutura da composição do número do lote."
+    characteristics: Preenchida quando realizada transferência vertical

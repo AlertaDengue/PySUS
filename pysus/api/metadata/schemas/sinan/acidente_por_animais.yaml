@@ -8,28 +8,33 @@ acidente_por_animais:
     type: date
     description_pt: "Informe a Data da investigação do caso."
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
     type_info: "varchar(6)"
+    characteristics: Se digitado % seguido de enter, abrir tabela para pesquisa.
   - name: ANT_DT_ACI
     field: "dt_acidente"
     type: date
     description_pt: "Informar o nome do município onde ocorreu o acidente"
     required: true
+    characteristics: Campo obrigatório. Deve ser anterior ou igual à Data de Diagnóstico e da Notificação. Deve ser no máximo 2 anos antes da Data de Notificação e da Data de Diagnostico.
   - name: ANT_UF
     field: "co_uf_ocorrência"
     type: string
     description_pt: "Unidade Federativa"
     type_info: "varchar(2)"
     required: true
+    characteristics: Campo Obrigatório Se digitado % seguido de enter, abrir tabela para pesquisa.
   - name: ANT_MUNIC_
     field: "co_municipio_ocorrencia"
     type: string
     description_pt: "Informar o nome do município onde ocorreu o acidente"
     type_info: "varchar(6)"
     required: true
+    characteristics: Campo Obrigatório Se digitado % seguido de enter, abrir tabela para pesquisa.
   - name: ANT_LOCALI
     field: "ds_localidade_ocorrencia"
     type: string
@@ -40,12 +45,14 @@ acidente_por_animais:
     description_pt: "Informar o local onde ocorreu o acidente"
     type_info: "varchar(1)"
     categories: "1 – Urbana 2 – Rural 3 – Periurbana 9 – Ignorado"
+    characteristics: Campo Essencial
   - name: ANT_TEMPO_
     field: "tp_tempo_decorrido"
     type: string
     description_pt: "Informar o tempo decorrido entre o acidente e o atendimento"
     type_info: "varchar(1)"
     categories: "1- 0 - 1h 2- 1 - 3h 3- 3 - 6h 4- 6 - 12h 5- 12 e 24h 6- 24 e +h 9- Ignorado"
+    characteristics: Campo Essencial
   - name: ANT_LOCA_1
     field: "tp_local_picada"
     type: string
@@ -53,12 +60,14 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "01 – Cabeça 02 – Braço 03 – Ante-Braço 04 – Mão 05 – Dedo da Mão 06 – tronco 07 – Coxa 08 – Perna 09 – Pé 10 – Dedo do Pé 99 – Ignorado"
+    characteristics: Campo Obrigatório Deve ser formatado com 2 dígitos.
   - name: MCLI_LOCAL
     field: "st_manifestacao_local"
     type: string
     description_pt: "Informar se houve manifestações locais"
     type_info: "varchar(1)"
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo Essencial Se opção = 2 (não) ou 9 (ignorado), pular para o campo 42- Manifestações sistêmicas.
   - name: CLI_DOR
     field: "st_manifestacao_dor"
     type: string
@@ -66,6 +75,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 40 – Manifestações locais =1
   - name: CLI_EDEMA
     field: "st_manifestacao_edema"
     type: string
@@ -73,6 +83,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 40 – Manifestações locais =1
   - name: CLI_EQUIMO
     field: "st_manifestacao_equimose"
     type: string
@@ -80,6 +91,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 40 – Manifestações locais =1
   - name: CLI_NECROS
     field: "st_manifestacao_necrose"
     type: string
@@ -87,6 +99,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 40 – Manifestações locais =1
   - name: CLI_LOCAL_
     field: "st_manifestacao_outro"
     type: string
@@ -94,17 +107,20 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 40 – Manifestações locais =1
   - name: CLI_LOCA_1
     field: "ds_manifestacao_outro"
     type: string
     description_pt: "Especificar outras manifestações locais"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo Se Manifestações locais sim, especificar (Outras) = 1
   - name: MCLI_SIST
     field: "st_manifestacao_sistemica"
     type: string
     description_pt: "Informar se houve manifestações sistêmicas"
     type_info: "varchar(1)"
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Se opção = 2 (não) ou 9 (ignorado), pular para o campo 44- Tempo de coagulação. Se campo 42(manifestações sistêmicas)=1(sim) pelo menos uma das opções do campo 43(Se manifestações sistêmicas sim, especificar )deve ser igual a 1.
   - name: CLI_NEURO
     field: "st_manifestacao_sist_neuropara"
     type: string
@@ -112,6 +128,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim).
   - name: CLI_HEMORR
     field: "st_manifestacao_sist_hemorrag"
     type: string
@@ -119,6 +136,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim)
   - name: CLI_VAGAIS
     field: "st_manifestacao_sist_vagais"
     type: string
@@ -126,6 +144,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim)
   - name: CLI_MIOLIT
     field: "st_manifestacao_sist_miolitica"
     type: string
@@ -133,6 +152,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim)
   - name: CLI_RENAL
     field: "st_manifestacao_sist_renal"
     type: string
@@ -140,6 +160,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim)
   - name: CLI_OUTR_2
     field: "st_manifestacao_sist_outro"
     type: string
@@ -147,11 +168,13 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se 42- Manifestações sistêmicas=1(sim)
   - name: CLI_OUTR_3
     field: "ds_manifestacao_sist_outro"
     type: string
     description_pt: "Especificar outras manifestações sistêmicas"
     type_info: "varchar(30)"
+    characteristics: Habilitar se 43-Se manifestações sistêmicas sim, especificar (Outras) igual a 1 .
   - name: CLI_TEMPO_
     field: "tp_tempo_coagulacao"
     type: string
@@ -165,11 +188,13 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Serpente 2 – Aranha 3 – Escorpião 4 – Lagarta 5 – Abelha 6 – Outros 9 – Ignorado"
+    characteristics: Campo obrigatório Se opção = 1 (serpente), pular para o campo 46- Serpente – Tipo de acidente. Se opção = 2 (aranha), pular para o campo 47- Aranha – Tipo de acidente Se opção = 3 (escorpião), pular para o campo 49- Classificação do caso Se opção = 4 (lagarta), pular para o campo 48-Lagarta – Tipo de acidente. Se opção 5 (abelha), 6 (outro) ou 9 (ignorado), pular para o campo 49- Classificação do caso.
   - name: ANI_TIPO_1
     field: "ds_animal_outro"
     type: string
     description_pt: "Especificar outro animal responsável pela agressão"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 45 - Tipo de Acidente = 6 outros.
   - name: ANI_SERPEN
     field: "tp_serpente"
     type: string
@@ -177,6 +202,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Botrópico 2 – Crotálico 3 – Elapídico 4 – Laquético 5 –Serpente não peçonhenta 9 – Ignorado"
+    characteristics: Campo Obrigatório se 45-Campo Tipo de Acidente= 1(serpente)
   - name: ANI_ARANHA
     field: "tp_aranha"
     type: string
@@ -184,6 +210,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Foneutrismo 2 – Loxoscelismo 3 – Latrodectismo 4 – Outra aranha 9 – Ignorado"
+    characteristics: Campo Obrigatório se 45-Campo Tipo de Acidente= 2(aranha)
   - name: ANI_LAGART
     field: "tp_lagarta"
     type: string
@@ -191,6 +218,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Lonomia 2 – Outra lagarta 9 – Ignorado"
+    characteristics: Campo Obrigatório se 45-Campo Tipo de Acidente = 4 (Lagarta).
   - name: TRA_CLASSI
     field: "tp_classificacao_caso"
     type: string
@@ -204,6 +232,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório Se opção = 2 (não) ou 9 (ignorado), pular para o campo 52- Complicações Locais.
   - name: NU_AMPOLAS
     field: "nu_antibotropico"
     type: string
@@ -255,6 +284,7 @@ acidente_por_animais:
     description_pt: "Informar se houve complicações locais"
     type_info: "varchar(1)"
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Se opção = 2 (não) ou 9 (ignorado), pular para o campo 54- Complicações Sistêmicas.
   - name: COM_SECUND
     field: "st_complicacao_local_infeccao"
     type: string
@@ -262,6 +292,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 52- Complicações Locais = 1
   - name: COM_NECROS
     field: "st_complicacao_local_necrose"
     type: string
@@ -269,6 +300,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 52- Complicações Locais = 1
   - name: COM_COMPAR
     field: "st_complicacao_local_sindrome"
     type: string
@@ -276,6 +308,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 52- Complicações Locais = 1.
   - name: COM_DEFICT
     field: "st_complicacao_local_deficit"
     type: string
@@ -283,6 +316,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 52- Complicações Locais = 1.
   - name: COM_APUTAC
     field: "st_complicacao_local_amputacao"
     type: string
@@ -290,12 +324,14 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 52- Complicações Locais = 1
   - name: COM_SISTEM
     field: "st_complicacao_sistemica"
     type: string
     description_pt: "Informar se houve complicações sistêmicas"
     type_info: "varchar(1)"
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Se opção = 2 (não) ou 9 (ignorado), pular para o campo 56- Acidente relacionado ao trabalho.
   - name: COM_RENAL
     field: "st_complicacao_sist_renal"
     type: string
@@ -303,6 +339,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 54- Complicações Sistêmicas = 1
   - name: COM_EDEMA
     field: "st_complicacao_sist_respiratoria"
     type: string
@@ -310,6 +347,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 54- Complicações Sistêmicas = 1
   - name: COM_SEPTIC
     field: "st_complicacao_sist_septicemia"
     type: string
@@ -317,6 +355,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 54- Complicações Sistêmicas = 1
   - name: COM_CHOQUE
     field: "st_complicacao_sist_choque"
     type: string
@@ -324,6 +363,7 @@ acidente_por_animais:
     type_info: "varchar(1)"
     required: true
     categories: "1 – Sim 2 – Não 9 – Ignorado"
+    characteristics: Campo obrigatório se campo 54- Complicações Sistêmicas = 1
   - name: DOENCA_TRA
     field: "st_acidente_trabalho"
     type: string
@@ -335,16 +375,20 @@ acidente_por_animais:
     type: string
     type_info: "varchar(1)"
     categories: "1 – Cura 2 – óbito por acidente por animais peçonhentos 3 – Óbito por outras causas 9 – Ignorado"
+    characteristics: Campo Essencial Se preenchido 1- sim ou 9- ignorado ou null, pular para campo 59- Data de encerramento.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
+    characteristics: Campo habilitado se campo 57- Evolução=2 ou 3. Data do óbito maior ou igual a Data de diagnóstico e Data do Acidente. Data do óbito menor ou igual a Data atual.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     required: true
+    characteristics: Campo obrigatório se campo 57 - Evolução do caso estiver preenchido Data encerramento maior ou igual Data de investigação.
   - name: NU_LOTE_I
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro (transferência vertical)"
     type_info: "varchar(7)"
     categories: "Descrever aqui a estrutura da composição do número do lote"
+    characteristics: Preenchida pelo sistema quando realizada transferência vertical da investigação

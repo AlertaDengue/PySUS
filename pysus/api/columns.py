@@ -1,7 +1,8 @@
 """Searchable column metadata across SUS health datasets.
 
-Provides a unified interface to look up column names, types, and
-bilingual descriptions across all available schema sources.
+Provides a unified interface to look up column names, types, bilingual
+descriptions, value categories and field characteristics across all
+available schema sources (saude endpoints and SINAN disease forms).
 
 Examples
 --------
@@ -14,9 +15,13 @@ Examples
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
+import yaml  # type: ignore[import-untyped]
 from pysus.api.mappings import PT_TO_EN
+
+_SINAN_SCHEMAS_DIR = Path(__file__).parent / "metadata" / "schemas" / "sinan"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,9 +40,20 @@ class ColumnInfo:
         Data type string (e.g. ``"integer"``, ``"string"``,
         ``"VARCHAR(1)"``).
     dataset : str
-        Parent dataset name (e.g. ``"arboviroses"``).
+        Parent dataset name (e.g. ``"arboviroses"``, ``"sinan"``).
     endpoint : str
-        Sub-grouping within the dataset (e.g. ``"dengue"``).
+        Sub-grouping within the dataset (e.g. ``"dengue"``, or the
+        SINAN disease form such as ``"peste"``).
+    categories : str
+        Value codes of the field (e.g. ``"1-Sim 2-Não 9-Ignorado"``),
+        or empty when unavailable.
+    characteristics : str
+        Field rules and notes from the official dictionary (obligatory,
+        dependencies, validation), or empty when unavailable.
+    required : bool
+        Whether the field is mandatory on the notification form.
+    format : str
+        Expected format hint (e.g. ``"YYYYMMDD"``), if any.
     """
 
     name: str
@@ -46,6 +62,10 @@ class ColumnInfo:
     dtype: str = ""
     dataset: str = ""
     endpoint: str = ""
+    categories: str = ""
+    characteristics: str = ""
+    required: bool = False
+    format: str = ""
 
 
 def search_columns(
@@ -59,14 +79,15 @@ def search_columns(
     Parameters
     ----------
     dataset : str, optional
-        Restrict to a specific dataset name (e.g. ``"arboviroses"``).
-        When ``None``, searches all datasets.
+        Restrict to a specific dataset name (e.g. ``"arboviroses"`` or
+        ``"sinan"``). When ``None``, searches all datasets.
     query : str, optional
         Case-insensitive substring match against column name and
         descriptions (both PT and EN).  When ``None``, returns all
         columns for the given dataset.
     endpoint : str, optional
-        Restrict to a specific endpoint within the dataset.
+        Restrict to a specific endpoint within the dataset (e.g.
+        ``"dengue"``, or a SINAN disease form such as ``"peste"``).
 
     Returns
     -------
@@ -77,21 +98,24 @@ def search_columns(
     --------
     >>> search_columns("arboviroses", "date")
     [ColumnInfo(name='dt_notific', description='Data da notificação', ...)]
+    >>> search_columns("sinan", endpoint="peste")
+    [ColumnInfo(name='con_classi', description='', ...)]
     """
     results: list[ColumnInfo] = []
 
-    # Source 1: YAML schemas
+    # Source 1: YAML schemas (saude endpoints + SINAN disease forms)
     results.extend(_search_yaml_schemas(dataset, query, endpoint))
 
     # Source 2: SINAN typecast (types only)
     results.extend(_search_typecast(dataset, query))
 
-    # Deduplicate by (dataset, name), keeping the entry with most info
+    # Deduplicate by (dataset, name), merging fields so no source is lost
     seen: dict[tuple[str, str], ColumnInfo] = {}
     for col in results:
         key = (col.dataset, col.name)
-        existing = seen.get(key)
-        if existing is None or len(col.description) > len(existing.description):
+        if key in seen:
+            seen[key] = _merge_columns(seen[key], col)
+        else:
             seen[key] = col
 
     output = sorted(seen.values(), key=lambda c: c.name)
@@ -103,9 +127,27 @@ def search_columns(
             if q in c.name.lower()
             or q in c.description.lower()
             or q in c.description_en.lower()
+            or q in c.categories.lower()
+            or q in c.characteristics.lower()
         ]
 
     return output
+
+
+def _merge_columns(a: ColumnInfo, b: ColumnInfo) -> ColumnInfo:
+    """Merge two entries for the same column, keeping any available field."""
+    return ColumnInfo(
+        name=a.name,
+        description=a.description or b.description,
+        description_en=a.description_en or b.description_en,
+        dtype=a.dtype or b.dtype,
+        dataset=a.dataset,
+        endpoint=a.endpoint or b.endpoint,
+        categories=a.categories or b.categories,
+        characteristics=a.characteristics or b.characteristics,
+        required=a.required or b.required,
+        format=a.format or b.format,
+    )
 
 
 def _search_yaml_schemas(
@@ -127,18 +169,44 @@ def _search_yaml_schemas(
             if endpoint_filter and ep_name != endpoint_filter:
                 continue
             for col_def in cols:
-                results.append(
-                    ColumnInfo(
-                        name=col_def["name"].lower(),
-                        description=col_def.get("description_pt", ""),
-                        description_en=col_def.get("description_en", ""),
-                        dtype=col_def.get("type", ""),
-                        dataset=ds_name,
-                        endpoint=ep_name,
+                results.append(_column_info(col_def, ds_name, ep_name))
+
+    # SINAN disease forms (metadata/schemas/sinan/*.yaml)
+    if dataset in (None, "sinan"):
+        for yaml_file in sorted(_SINAN_SCHEMAS_DIR.glob("*.yaml")):
+            if endpoint_filter and yaml_file.stem != endpoint_filter:
+                continue
+            with open(yaml_file, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            for _ep_name, cols in data.items():
+                if not isinstance(cols, list):
+                    continue
+                for col_def in cols:
+                    if not isinstance(col_def, dict) or "name" not in col_def:
+                        continue
+                    results.append(
+                        _column_info(col_def, "sinan", yaml_file.stem)
                     )
-                )
 
     return results
+
+
+def _column_info(
+    col_def: dict[str, Any], dataset: str, endpoint: str
+) -> ColumnInfo:
+    """Build a ColumnInfo from a YAML column definition dict."""
+    return ColumnInfo(
+        name=str(col_def["name"]).lower(),
+        description=str(col_def.get("description_pt", "")),
+        description_en=str(col_def.get("description_en", "")),
+        dtype=str(col_def.get("type", "")),
+        dataset=dataset,
+        endpoint=endpoint,
+        categories=str(col_def.get("categories", "")),
+        characteristics=str(col_def.get("characteristics", "")),
+        required=bool(col_def.get("required", False)),
+        format=str(col_def.get("format", "")),
+    )
 
 
 def _search_typecast(

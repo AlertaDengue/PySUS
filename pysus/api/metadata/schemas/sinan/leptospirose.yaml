@@ -8,6 +8,7 @@ leptospirose:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a data da 1ª visita ao paciente"
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -17,130 +18,193 @@ leptospirose:
     field: "st_risco_agua"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_CRI
     field: "st_risco_animal"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_CAI
     field: "st_risco_caixa_dagua"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_FOS
     field: "st_risco_fossa"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_SIN
     field: "st_risco_local_roedor"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_PLA
     field: "st_risco_plantio"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_COR
     field: "st_risco_rio"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_ROE
     field: "st_risco_roedor"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_GRA
     field: "st_risco_graos"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_TER
     field: "st_risco_terreno"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_LIX
     field: "st_risco_lixo"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_CB_OUT
     field: "st_risco_outro"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_OU_DES
     field: "ds_risco_outro"
     type: string
     type_info: "VARCHAR2(30)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Habilitar se campo Situações de risco ocorrida nos 30 dias que antecederam os primeiros sintomas Outras for =1
   - name: ANT_HUMANO
     field: "st_caso_humano"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANT_ANIMAI
     field: "st_caso_animal"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_DT_ATE
     field: "dt_atendimento"
     type: date
     required: true
+    characteristics: Campo Obrigatório Data de Atendimento deve ser maior ou igual à Data dos primeiros sintomas
   - name: CLI_FEBRE
     field: "st_sinais_febre"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_MIALGI
     field: "st_sinais_mialgia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_CEFALE
     field: "st_sinais_cefaleia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_PROST
     field: "st_sinais_prostacao"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_CONGES
     field: "st_sinais_congestao"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_PANTUR
     field: "st_sinais_panturrilha"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_VOMITO
     field: "st_sinais_vomito"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_DIARRE
     field: "st_sinais_diarreia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_ICTERI
     field: "st_sinais_ictericia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_RENAL
     field: "st_sinais_renal"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_RESPIR
     field: "st_sinais_respiratoria"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_CARDIA
     field: "st_sinais_cardiaca"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_HEMOPU
     field: "st_sinais_hemorragia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_HEMORR
     field: "st_sinais_outro_hemorragia"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_MENING
     field: "st_sinais_meningismo"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial
   - name: CLI_OUTROS
     field: "st_sinais_outro"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: Campo Essencial Se categoria = 1, habilitar campo para Especificar
   - name: CLI_OTRDES
     field: "ds_sinal_outro"
     type: string
@@ -150,14 +214,18 @@ leptospirose:
     type: string
     description_pt: "Se o paciente foi hospitalizado"
     type_info: "VARCHAR2(1)"
+    categories: 1- Sim; 2- Não; 9- Ignorado
+    characteristics: 'Campo Essencial Se campo = 2, 9 ou null, pular para campo 43- (Sorologia IgM – Elisa: Data da Coleta – 1ª amostra).'
   - name: ATE_DT_INT
     field: "dt_internacao"
     type: date
     description_pt: "Data de internação, caso tenha ocorrido"
+    characteristics: Campo Essencial Data de internação deve ser maior ou igual à Data do atendimento.
   - name: ATE_DT_ALT
     field: "dt_alta"
     type: date
     description_pt: "Data alta > ou = Data de internação"
+    characteristics: Campo Essencial se campo 38_data da internação estiver preenchido. Data da alta deve ser maior ou igual à data da internação.
   - name: ATE_UF
     field: "co_uf_hospital"
     type: string
@@ -176,20 +244,26 @@ leptospirose:
   - name: LAB_DT_1
     field: "dt_coleta_elisa_1"
     type: date
+    characteristics: Campo Essencial Deve ser maior ou igual à data de Primeiros Sintomas.
   - name: LAB_ELIS_1
     field: "tp_resultado_elisa_1"
     type: string
     type_info: "VARCHAR(1)"
+    categories: 1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo Essencial
   - name: LAB_DT_2
     field: "dt_coleta_elisa_2"
     type: date
+    characteristics: Deve ser maior que a data da 1ª amostra.
   - name: LAB_ELIS_2
     field: "tp_resultado_elisa_2"
     type: string
     type_info: "VARCHAR(1)"
+    categories: 1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado
   - name: DTMICRO1
     field: "dt_coleta_micro_1"
     type: date
+    characteristics: Deve ser maior ou igual à data de Primeiros Sintomas.
   - name: MICRO1_S1
     field: "ds_amostra1_sorovar_1"
     type: string
@@ -199,6 +273,7 @@ leptospirose:
     type: string
     type_info: "VARCHAR2(4)"
     required: true
+    characteristics: Campo Obrigatório se campo 48 – Micro 1ª amostra 1ª sovorar estiver preenchido.
   - name: MICRO1_S_2
     field: "ds_amostra1_sorovar_2"
     type: string
@@ -208,13 +283,16 @@ leptospirose:
     type: string
     type_info: "VARCHAR2(5)"
     required: true
+    characteristics: Campo Obrigatório se campo 49 – Micro 1ª amostra 2º sovorar estiver preenchido.
   - name: LAB_MICR_1
     field: "tp_resultado_micro_1"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1-Reagente 2-Não Reagente 3-Não Realizada 9-Ignorado
   - name: DTMICRO2
     field: "dt_coleta_micro_2"
     type: date
+    characteristics: Deve ser maior que a data de coleta – Micro 1ª amostra.
   - name: MICRO2_S1
     field: "ds_amostra2_sorovar_1"
     type: string
@@ -224,6 +302,7 @@ leptospirose:
     type: string
     type_info: "VARCHAR2(4)"
     required: true
+    characteristics: Campo Obrigatório se campo 52 – Micro 2ª amostra 1ª sorovar estiver preenchido
   - name: MICRO2_S_2
     field: "ds_amostra2_sorovar_2"
     type: string
@@ -233,69 +312,91 @@ leptospirose:
     type: string
     type_info: "VARCHAR2(4)"
     required: true
+    characteristics: Campo Obrigatório se campo 53 – Micro 2ª amostra 2ª sorovar estiver preenchido
   - name: LAB_MICR_2
     field: "tp_resultado_micro_2"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1-Reagente 2-Não Reagente 3-Não Realizada 9-Ignorado
   - name: DTISOLA
     field: "dt_coleta_isolamento"
     type: date
+    characteristics: Data da Coleta deverá ser maior ou igual à Data dos Primeiros Sintomas
   - name: RES_ISOL
     field: "tp_resultado_isolamento"
     type: string
     type_info: "VARCHAR(1)"
+    categories: 1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado
   - name: DTIMUNO
     field: "dt_coleta_imunohistoquimica"
     type: date
+    characteristics: Data da Coleta deverá ser maior ou igual à Data dos Primeiros Sintomas
   - name: RES_IMUNO
     field: "tp_resultado_imunohistoquimica"
     type: string
     type_info: "VARCHAR(1)"
+    categories: 1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado
   - name: DT_PCR
     field: "dt_coleta_rtpcr"
     type: date
+    characteristics: Data da Coleta deverá ser maior ou igual à Data dos Primeiros Sintomas
   - name: RES_PCR
     field: "tp_resultado_rtpcr"
     type: string
     type_info: "VARCHAR(1)"
+    categories: 1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     type_info: "VARCHAR2(2)"
     required: true
+    categories: 1- Confirmado 2- Descartado
+    characteristics: CAMPO OBRIGATÓRIO quando o campo data de encerramento estiver preenchido.
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     type_info: "VARCHAR2(2)"
+    categories: 1-Clínico Laboratorial 2-Clínico Epidemiológico
+    characteristics: Campo Essencial
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados. os campos distrito e bairro (se país de
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi Provavelmente infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo obrigatório e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1 ou Null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1 (confirmado) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: CO_BAINFC
     field: "co_bairro_infeccao No_bairro_infeccao"
     type: string
@@ -310,30 +411,40 @@ leptospirose:
     field: "tp_area_infeccao"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1-Urbana 2-Rural 3-Peri-Urbana 9-Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CON_AMBIEN
     field: "tp_ambiente_infeccao"
     type: string
     type_info: "VARCHAR2(1)"
+    categories: 1-Domiciliar 2-Trabalho 3-Lazer 4-Outro 9-Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Se o paciente adquiriu a doença em decorrência das condições/situação do trabalho"
     type_info: "VARCHAR2(1)"
+    categories: 1-Sim; 2-Não; 9-Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "evolução do caso"
     type_info: "VARCHAR2(1)"
+    categories: 1-Cura; 2-Óbito por leptospirose 3 Óbito por outras causas 9-Ignorado
+    characteristics: Campo Essencial Se categoria=1 ou 9, pular para o campo (Data do encerramento) Não permitir categoria 2 se Classificação Final é diferente de 1 Campo habilitado se classificação final= 1,2 ou null.. Retirada observação..
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data da ocorrência do óbito"
     required: true
+    characteristics: Campo Obrigatório se campo Evolução do caso= 2(Óbito por leptospirose) ou 3 (óbito por outras causas) Data de óbito deve ser igual ou posterior a Data dos primeiros sintomas e do atendimento Campo habilitado se campo Evolução do caso for igual a 2-Óbito por leptospirose ou 3-Óbito por outras causas.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação"
     required: true
+    characteristics: CAMPO OBRIGATÓRIO quando campo Classificação final estiver preenchido Data de encerramento maior ou igual Data de investigação
   - name: DT_RISCO1
     field: "dt_risco_1"
     type: date

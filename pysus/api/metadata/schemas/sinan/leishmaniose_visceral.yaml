@@ -8,6 +8,7 @@ leishmaniose_visceral:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a data da 1ª visita ao paciente"
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -19,115 +20,153 @@ leishmaniose_visceral:
     description_pt: "Informar se o paciente apresenta febre"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9 -Ignorado
+    characteristics: Campo obrigatório
   - name: FRAQUEZA
     field: "st_sinais_fraqueza"
     type: string
     description_pt: "Informar se o paciente apresenta fraqueza"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2 Não 9 Ignorado
+    characteristics: Campo obrigatório
   - name: EDEMA
     field: "st_sinais_edema"
     type: string
     description_pt: "Informar se o paciente apresenta edema"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo obrigatório
   - name: EMAGRA
     field: "st_sinais_emagrecimento"
     type: string
     description_pt: "Informar se o paciente apresenta emagrecimento"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2-Não 9- Ignorado
+    characteristics: Campo obrigatório
   - name: TOSSE
     field: "st_sinais_tosse"
     type: string
     description_pt: "Informar se o paciente apresenta tosse e/ou diarréia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: PALIDEZ
     field: "st_sinais_palidez"
     type: string
     description_pt: "Informar se o paciente apresenta palidez"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo obrigatório
   - name: BACO
     field: "st_sinais_aumento_baco"
     type: string
     description_pt: "Informar se o paciente apresenta aumento do baço"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2 - Não 9 - Ignorado
+    characteristics: Campo obrigatório
   - name: INFECCIOSO
     field: "st_sinais_infeccioso"
     type: string
     description_pt: "Informar se o paciente apresenta quadro infeccioso"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9- Ignorado
+    characteristics: Campo obrigatório
   - name: FEN_HEMORR
     field: "st_sinais_hemorragico"
     type: string
     description_pt: "Informar se o paciente apresenta fenômenos hemorrágicos"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2 -Não 9 -Ignorado
+    characteristics: Campo obrigatório
   - name: FIGADO
     field: "st_sinais_figado"
     type: string
     description_pt: "Informar se o paciente apresenta aumento do fígado"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: ICTERICIA
     field: "st_sinais_ictericia"
     type: string
     description_pt: "Informar se o paciente apresenta icterícia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9 -Ignorado
+    characteristics: Campo obrigatório
   - name: OUTROS
     field: "st_sinais_outro"
     type: string
     description_pt: "Informar se o paciente apresenta outros sinais e sintomas"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: OUTROS_ESP
     field: "ds_sinal_sintoma_outro"
     type: string
     description_pt: "Especificar outros sinais e sintomas que o paciente apresenta"
     type_info: "varchar2(30)"
+    characteristics: Campo essencial se campo Sinais e Sintomas(Outros)=1 (sim).
   - name: HIV
     field: "st_infeccao_hiv"
     type: string
     description_pt: "Informar se o paciente apresenta infecções intercorrentes – HIV"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: DIAG_PAR_N
     field: "st_diagnostico_parasitologico"
     type: string
     description_pt: "Informar o resultado do diagnóstico parasitológico"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Positivo 2. Negativo 3. Não realizado
+    characteristics: Campo obrigatório Se campo Diagnóstico parasitológico = 1, o campo 45- Critério de confirmação deverá ser preenchido automaticamente com 1 (Laboratorial). Se categoria=1 preencher campo 44-classificação final=1- confirmado.
   - name: IFI
     field: "st_diagnostico_imunologico"
     type: string
     description_pt: "Informar o resultado do diagnóstico Imunológico IFI"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Positivo 2. Negativo 3. Não realizado
+    characteristics: Campo obrigatório Se campo Diagnóstico Imunológico = 1, o campo 45- Critério de confirmação deverá ser preenchido automaticamente com 1 (Laboratorial). Se categoria=1 preencher campo 44-classificação final=1- confirmado.
   - name: OUTRO
     field: "st_diagnostico_outro"
     type: string
     description_pt: "Informar o resultado do diagnóstico imunológico OUTRO"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Positivo 2. Negativo 3. Não realizado
+    characteristics: Campo obrigatório Se campo Diagnóstico Imunológico Outro = 1, o campo45- Critério de confirmação deverá ser preenchido automaticamente com 1 (Laboratorial). Se categoria=1 preencher campo 44-classificação final=1- confirmado.
   - name: ENTRADA
     field: "tp_tipo_entrada"
     type: string
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Caso novo 2. Recidiva 3. Transferência 9. Ignorado
+    characteristics: Campo obrigatório
   - name: TRATAMENTO
     field: "dt_inicio_tratamento"
     type: date
     description_pt: "Informar a data do início do tratamento"
+    characteristics: Campo essencial Data deve ser >= a data da notificação
   - name: DROGA
     field: "tp_droga_inicial"
     type: string
     description_pt: "Informar o medicamento prescrito para o tratamento inicial"
     type_info: "varchar2(1)"
+    categories: 1. Antimonial Pentavalente 2. anfotericina b 3. Pentamidina 4. anfotericina b lipossomal 5. outras 6. Não utilizada
+    characteristics: Campo essencial Se = 1 (Antimonial pentavalente), habilitar o campo 40 (Peso). Se ≠ 1 (Antimonial pentavalente), pular para o campo 44 (Classificação final). Se o campo 44 estiver automaticamente preenchido pular para o próximo campo habilitado.
   - name: PESO
     field: "nu_peso"
     type: string
@@ -138,6 +177,8 @@ leishmaniose_visceral:
     type: string
     description_pt: "Informar a dose prescrita para o tratamento do paciente"
     type_info: "varchar2(1)"
+    categories: 1. Maior ou igual a 10 e menor que 15 2. Maior ou igual a 15 e menor que 20 3. Maior ou igual a 20
+    characteristics: Campo essencial Habilitado se campo 39 (Droga Inicial Administrada) =1 (Antimonial Pentavalente).
   - name: AMPOLAS
     field: "nu_total_ampola_pescrita"
     type: string
@@ -148,47 +189,57 @@ leishmaniose_visceral:
     type: string
     description_pt: "Informar qual droga foi utilizada na falência do tratamento inicial"
     type_info: "varchar2(1)"
+    categories: 1 – Anfotericina B 2 – Anfotericina B lipossomal 3 – Outras 4 – Não se aplica
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Identificar a classificação final."
     type_info: "varchar2(2)"
     required: true
+    categories: 1. Confirmado 2. Descartado
+    characteristics: Campo obrigatório se o campo 55 (Data de encerramento) estiver preenchido. Se campo 35 (Diagnóstico parasitológico) ou 36 (Diagnóstico imunológico/IFI) ou 36 (Diagnóstico imunológico/outro) = 1; preencher automaticamente com 1 (confirmado). Se todos os itens do campo 33 (Manifestações Clínicas) e 35 (Diagnóstico parasitológico) e 36 (Diagnóstico imunológico) = 2; preencher automaticamente com 2 (Descartado).
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Informar o critério de confirmação"
     type_info: "varchar2(2)"
     required: true
+    characteristics: Campo obrigatório se o campo 44 (Classificação Final) = 1 (Confirmado). Se campo 35 (Diagnóstico parasitológico) ou 36 (Diagnóstico imunológico/IFI) ou 36 (Diagnóstico imunológico/outro) = 1; preencher automaticamente com 1 (Laboratorial). Se campo 35 (Diagnóstico parasitológico) E 36 (Diagnóstico imunológico/IFI) E 36 (Diagnóstico imunológico/outro) <> 1 E o campo 44 (classificação final) =1; preencher automaticamente com 2 (Clínico- Epidemiológico). Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Informar a unidade federada do local provável da fonte de infecção"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-sim 2-não 3-Indeterminado
+    characteristics: CAMPO OBRIGATÓRIO se campo classificação final=1(confirmado). Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonteR de infecção) Campo habilitado se
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Preencher se o caso foi infectado em outro país"
     type_info: "varchar2(2)"
     required: true
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final=1 ou null. Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "Informar o município do local provável da fonte de infecção"
     type_info: "varchar(4)"
     required: true
+    characteristics: Campo obrigatório e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1 ou null. Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Informar o Distrito do local provável da fonte de infecção"
     type_info: "varchar2(6)"
     required: true
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso Campo habilitado se classificação final=1ou null. Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CODISINF
     field: "co_distrito_infeccao"
     type: string
     description_pt: "Identificar o Bairro do local provável da fonte de infecção"
     type_info: "varchar2(9)"
+    characteristics: Campo Essencial país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1(confirmado). Campo habilitado se classificação final= 1ou null. Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CO_BAINFC
     field: "co_bairro_infeccaono_bairro_infeccao"
     type: string
@@ -204,21 +255,27 @@ leishmaniose_visceral:
     type: string
     description_pt: "Informar a evolução do caso"
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo habilitado se classificação final=1 ou null. Se campo 44 (Classificação final) = 2(descartado) os dados desse campo são automaticamente apagados.
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a data do óbito"
     type_info: "varchar2(1)"
+    categories: 1. Cura 2. Abandono 3. Óbito por LV 4. Óbito por outras causas 5. Transferênci a
+    characteristics: Campo essencial Se campo = 3 ou 4, pular para o campo 54 (Data do Óbito). Se campo ≠ 3 ou 4, pular para o campo 55 (Data do encerramento). Campo habilitado se classificação final=1,2 ou null. Se classificação final=2(descartado) não permitir o preenchimento com a opção 3 (óbito por LV).
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do encerramento do caso"
     required: true
+    characteristics: Campo Obrigatório se campo Evolução do Caso = 3 ou 4 (óbito) Data do Óbito deve ser maior ou igual à Data dos Primeiros Sintomas Campo habilitado se campo Evolução= 3- Óbito por LV ou 4-Óbito por outras causas.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informações complementares e observações Deslocamento(datas e locais freqüentados nos últimos seis meses anterior ao início dos sinais e sintomas) Data"
     required: true
+    characteristics: Campo Obrigatório se campo Classificação final estiver preenchido Data Encerramento deve ser maior ou igual à Data de Investigação
   - name: DT_DESLC1
     field: "dt_desloca_1"
     type: date

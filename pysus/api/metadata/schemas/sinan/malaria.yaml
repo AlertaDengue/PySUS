@@ -8,6 +8,7 @@ malaria:
     type: date
     description_pt: "Informe a data do início da investigação."
     required: true
+    characteristics: Campo obrigatório. Data da investigação >= Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -19,29 +20,38 @@ malaria:
     description_pt: "Atividade que provavelmente estava envolvida na causa da transmissão da malária. Permite avaliar as atividades de risco para doença"
     type_info: "varchar2(2)"
     required: true
+    categories: 1 – agricultura 2 – Pecuária 3 – Doméstica 4- Turismo 5 – Garimpagem 6 – Exploração vegetal 7- caça/pesca 8 – construtor de estradas / barragens 9 – Mineração 10 – Viajante 11 – Outros 99 - ignorado
+    characteristics: Campo obrigatório
   - name: AT_LAMINA
     field: "tp_lamina"
     type: string
     description_pt: "Identificar se é um caso novo (BA/BP) ou uma recaída/recrudescência (LVC)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – BP 2 – BA 3 - LVC
+    characteristics: Campo obrigatório
   - name: AT_SINTOMA
     field: "tp_sintoma"
     type: string
     description_pt: "Identificar se o paciente está com ou sem sintomas característicos da malária. Permite avaliar a existência de assintomáticos interferindo na transmissão da doença"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Com sintomas 2. Sem sintomas
+    characteristics: Campo obrigatório
   - name: DEXAME
     field: "dt_exame"
     type: date
     description_pt: "Data em que foi realizado o exame. Permite avaliar se o exame está sendo realizado no prazo previsto"
     required: true
+    characteristics: Campo obrigatório Data do exame > ou = Data da notificação
   - name: RESULT
     field: "tp_resultado_exame"
     type: string
     description_pt: "Resultado do exame identificando as espécies e formas parasitárias. Orienta o tratamento e permite a avaliação das espécies parasitárias existentes"
     type_info: "varchar2(2)"
     required: true
+    categories: 1 – negativo 2 – F 3 – F + FG 4 – V 5 – F+ V 6 – V + FG 7 – FG 8 – M 9 – F+ M 10 – O
+    characteristics: Campo obrigatório Quando preenchido 1 (negativo) deve ir para o campo 50 (Data de Encerramento) e preencher automático o campo 42 (Classificação Final) como DESCARTADO.
   - name: PMM
     field: "tp_resultado_exame"
     type: numeric
@@ -53,54 +63,72 @@ malaria:
     description_pt: "Densidade parasitária por plasmódio em cruzes. Permite avaliar o nível de gravidade da doença e atraso no tratamento"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. menor ½ + (Menor que meia cruz) 2. 1/2 + (Meia cruz) 3. + (Uma cruz) 4. ++ (Duas cruzes) 5. +++ (Três cruzes) 6. ++++ (Quatro cruzes)
+    characteristics: "Campo obrigatório se não preenchido o campo 38 (parasitos por mm³). Preencher automático e desabilitar quando preenchido o campo 38 (parasitos por mm³), de acordo com o seguinte critério: Se Parasitos por mm3 < 200 preencher com Parasitemia em Cruzes = '1' Se (Parasitos por mm3 >= 200) e (Parasitos por mm3 <= 300) preencher com Parasitemia em Cruzes = '2' Se (Parasitos por mm3 >= 301) e (Parasitos por mm3 <= 500) preencher com Parasitemia em Cruzes = '3' Se (Parasitos por mm3 >= 501) Se (Parasitos por mm3 >= 10001) e (Parasitos por mm3 <= 100000) preencher com Parasitemia em Cruzes = '5' Se (Parasitos por mm3 > 100000) preencher com Parasitemia em Cruzes = '6'; e (Parasitos por mm3 <= 10000) preencher com Parasitemia em Cruzes = '4'"
   - name: TRA_ESQUEM
     field: "tp_esquema_tratamento"
     type: string
     description_pt: "Esquema de tratamento utilizado de acordo com o manual de terapêutica da malária"
     type_info: "varchar2(2)"
+    categories: '1- Infecções por Pv com Cloroquina em 3 dias e Primaquina em 7 dias; 2- Infecções por Pf com Quinina em 3 dias + Doxiciclina em 5 dias + primaquina no 6º dia; 3- Infecções mistas por Pv + Pf com Mefloquina em dose única e primaquina em 7 dias; 4- Infecções por Pm com cloroquina em 3 dias; 5- Infecções por Pv em crianças apresentando vômitos, com cápsulas retais de artesunato em 4 dias e Primaquina em 7 dias; 6- Infecções por Pf com Mefloquina em dose única e primaquina no segundo dia; 7- Infecções por Pf com Quinina em 7 dias; 8- Infecções por Pf de crianças com cápsulas retais de artesunato em 4 dias e dose única de Mefloquina no 3º dia e Primaquina no 5º ida; 9- Infecções mistas por Pv + doxiciclina em 5 dias e Primaquina em 7 dias; 10- Prevenção de recaída da malária por Pv com Cloroquina em dose única semanal durante 3 meses; 11- Malária grave e complicada 99- Outro esquema utilizado (por médico) – descrever: Pf com Quinina em 3 dias,'
+    characteristics: Campo Essencial se campo 37 (resultado do exame) for diferente de 1.
   - name: DSTRAESQUE
     field: "ds_esquema_tratamento_outro"
     type: string
     type_info: "varchar(30)"
+    characteristics: Habilitado se campo 40- esquema de tratamento utilizado for = 99
   - name: DTRATA
     field: "dt_inicio_tratamento"
     type: date
     description_pt: "Data em que iniciou o tratamento. Permite avaliar se o tratamento está sendo realizado imediatamente após o diagnóstico."
     required: true
+    characteristics: Campo obrigatório se campo 37 (resultado do exame) for diferente de 1 e se 40 estiver preenchido. Data do início do tratamento > ou = Data do exame
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Conclusão da investigação"
     type_info: "varchar2(2)"
     required: true
+    categories: 1. Confirmado 2. Descartado
+    characteristics: CAMPO OBRIGATÓRIO se campo 50 (data do encerramento) estiver preenchida
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo obrigatório se campo classificação final = 1(confirmado). Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Tabela com siglas e código padronizados pelo IBGE"
     required: true
+    categories: varchar2(2)
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo não habilitado se classificação final diferente de 1- confirmado.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CODISINF
     field: "co_distrito_infeccao"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CO_BAINFC
     field: "no_bairro_infeccaoco_bairro_infeccao"
     type: string
@@ -116,13 +144,17 @@ malaria:
     type: string
     description_pt: "Localidade provável de infecção. Orienta as ações de controle"
     type_info: "varchar(60)"
+    characteristics: Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação"
     required: true
+    characteristics: Campo Obrigatório se campo 42 (classificação final) estiver preenchida. Data de Encerramento deve ser maior ou igual à Data de Investigação
   - name: NU_LOTE_I
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
     type_info: "varchar(7)"
+    categories: Descrever aqui a estrutura da composição do número do lote.
+    characteristics: Preenchida quando realizada transferência vertical.

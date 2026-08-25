@@ -9,6 +9,7 @@ coqueluche:
     description_pt: "Data completa do inicio da investigação iniciada (Data da primeira ação desenvolvida após o conhecimento do caso)"
     required: true
     categories: "dd/mm/aa"
+    characteristics: Campo Obrigatório Data da investigação maior ou igual à Data da notificação Data da investigação deve ser menor ou igual a data atual
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -22,17 +23,20 @@ coqueluche:
     type_info: "Varchar(1)"
     required: true
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo obrigatório
   - name: FC_CONTATO
     field: "tp_contato_coqueluche"
     type: string
     description_pt: "Local em que o paciente teve contato com caso semelhante nos últimos 14 dias, anterior ao início dos Sintomas"
     type_info: "Varchar(1)"
     categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro Estado/ Município 7. Outro 8. Sem história de contato 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 8 ou 9 pular para campo 37 (Nº de doses da vacina tríplice (DPT) ou tetravalente (DTP + Hib))
   - name: OUT_CONTAT
     field: "ds_contato_coqueluche_outro"
     type: string
     description_pt: "Outro local de contato além dos referidos no campo LO_CONTATO"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 34 - Contato com caso Suspeito ou Confirmado de Coqueluche (Até 14 Dias antes do Início dos Sinais e Sintomas) Outro For = 7
   - name: NM_CONTATO
     field: "no_contato"
     type: string
@@ -49,15 +53,18 @@ coqueluche:
     description_pt: "Número de doses da vacina que o paciente recebeu. (informação em cartão de vacina)"
     type_info: "varchar(1)"
     categories: "1. Uma 2. Duas 3. Três 4. Três + 1 Reforço 5. Três + 2 Reforços 6. Nunca Vacinado 9. Ignorado"
+    characteristics: Campo Essencial Se a categoria = 6 ou 9 pular para campo 39 (Data do início da tosse)
   - name: DT_ULT_DOS
     field: "dt_ultima_dose"
     type: date
     description_pt: "Data da última dose da vacina tríplice (DTP) que o paciente recebeu. Não deve ser menor ou igual a data de nascimento."
+    characteristics: Campo Essencial se campo 37(n º de doses de vacina tríplice (dpt) ou tetravalente (dtp + Hib) for diferente de 6 (nunca vacinado)ou 9(ignorado) Deve ser maior que a data de nascimento Data < ou = Data atual
   - name: DT_CATARRA
     field: "dt_inicio_tosse"
     type: date
     description_pt: "Data do início da tosse. Essa data deverá ser inferior a 14 dias a data de notificação"
     required: true
+    characteristics: Campo obrigatório Data < que a data de notificação Aparecer a mensagem “data de inicio da tosse não confere com a definição do caso”, se a data de inicio da tosse estiver no intervalo de tempo entre o 1º ou 14º dia anterior à data de Notificação.
   - name: CS_TOSSE_E
     field: "st_sinais_tosse"
     type: string
@@ -65,6 +72,7 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo obrigatório
   - name: CS_TOSSE_P
     field: "st_sinais_tosse_paroxistica"
     type: string
@@ -72,6 +80,7 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo obrigatório
   - name: CS_CRISE
     field: "st_sinais_respiracao"
     type: string
@@ -79,6 +88,7 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo obrigatório
   - name: CS_CIANOSE
     field: "st_sinais_cianose"
     type: string
@@ -92,6 +102,7 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo obrigatório
   - name: CS_APNEIA
     field: "st_sinais_apneia"
     type: string
@@ -121,6 +132,7 @@ coqueluche:
     type: string
     description_pt: "descreve outro sinal ou sintoma não referido nos campos anteriores"
     type_info: "varchar(30)"
+    characteristics: Habilitado somente se Sinais e sintomas (Outros) = 1
   - name: CS_PNEUMON
     field: "st_complicacao_pneumonia"
     type: string
@@ -162,16 +174,19 @@ coqueluche:
     type: string
     description_pt: "Especifica outras complicações, além das referidas."
     type_info: "varchar(30)"
+    characteristics: Habilitado somente se campo 41-complicações (outras)= 1
   - name: CS_HOSPITA
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informa se o paciente foi hospitalizado"
     type_info: "varchar(1)"
     categories: "1- Sim 2- Não 9 - Ignorado"
+    characteristics: Campo Essencial Se categoria = 2 ou 9 pular para campo 47 (Utilizou antibiótico)
   - name: DT_INTERNA
     field: "dt_internacao"
     type: date
     description_pt: "data de internação, caso tenha ocorrido."
+    characteristics: Campo Essencial se campo 42(Ocorreu Hospitalização)=1.
   - name: COD_UF_HOS
     field: "co_uf_hospital"
     type: string
@@ -195,10 +210,12 @@ coqueluche:
     description_pt: "Informa se o paciente fez uso de Antibióticos/antimicrobian os no tratamento."
     type_info: "varchar(1)"
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 2 ou 9, pular para campo 49 (Coleta de material da nasofaringe)
   - name: DT_ADM_ANT
     field: "dt_antibiotico"
     type: date
     description_pt: "Data da administração do antibiótico/antimicrobiano"
+    characteristics: Campo Essencial se campo 47(utilizou antibiótico)=1(sim). Deve ser > ou = Data de nascimento. Data < ou = Data atual
   - name: CS_COLETA
     field: "st_coleta_material"
     type: string
@@ -206,11 +223,13 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 2 ou 9, pular para campo 52 (Realizada identificação dos comunicantes Íntimos) Se categoria = 1 campos 50 (Data da coleta do material) e 51 (Resultado da cultura) são obrigatórios.
   - name: DT_COLETA
     field: "dt_coleta"
     type: date
     description_pt: "Data da coleta do material da nasofaringe"
     required: true
+    characteristics: Campo obrigatório se campo 49 (Coleta de material da nasofaringe) = 1. Deve ser > ou = Data de nascimento. Data < ou = Data atual
   - name: CS_CULTURA
     field: "tp_resultado_cultura"
     type: string
@@ -218,23 +237,27 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1. Positiva 2. Negativa 3. Não realizada 9. Ignorado"
+    characteristics: Campo obrigatório se campo 49 (Coleta de material da nasofaringe) = 1
   - name: MED_IDEN_C
     field: "st_identificacao_comunicante"
     type: string
     description_pt: "Informar se foram identificados comunicantes íntimos (os comunicantes podem ser identificados na residência, creche, escola, orfanatos, quartéis e outros locais que possibilitam o contato íntimo com o caso)"
     type_info: "varchar(1)"
     categories: "1- Sim 2- Não 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 2 ou 9, pular para 58 (Medidas de prevenção / controle) foi realizado bloqueio.
   - name: MED_QUAN_C
     field: "qt_identificacao"
     type: numeric
     description_pt: "Número de comunicantes íntimos"
     type_info: "numeric(3)"
+    characteristics: Campo Essencial se campo 52(Realizada identificação dos comunicantes íntimos)= 1(sim)
   - name: MED_CASO_S
     field: "tp_caso_confirmado"
     type: string
     description_pt: "Nº de casos secundários identificados entre os comunicantes."
     type_info: "varchar(1)"
     categories: "0. Nenhum 1. Um 2. Dois ou mais 9. Ignorado"
+    characteristics: Campo Essencial se campo 52(Realizada identificação dos comunicantes íntimos)=1(sim)
   - name: COLET_COMU
     field: "st_coleta_material_comunicante"
     type: string
@@ -242,24 +265,28 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Se categoria = 2 ou 9, pular para campo 58(Medidas de prevenção /controle), foi realizado bloqueio. Se categoria = 1, campos 56 (Se sim, quantos) e 57 (Em quantos comunicantes o resultado da cultura foi positivo?) são obrigatórios.
   - name: QUAN_COMUN
     field: "qt_comunicante"
     type: numeric
     description_pt: "número de comunicantes em que foi coletado o material"
     type_info: "numeric(3)"
     required: true
+    characteristics: Campo obrigatório se campo 55 (Realizada coleta de material da nasofaringe dos comunicantes) = 1
   - name: QUAN_POSIT
     field: "nu_comunicante_positivo"
     type: numeric
     description_pt: "número de comunicantes com resultado da cultura positivo"
     type_info: "numeric(3)"
     required: true
+    characteristics: Campo obrigatório se campo 55 (Realizada coleta de material da nasofaringe dos comunicantes) = 1
   - name: MED_BLOQUE
     field: "tp_medida_controle"
     type: string
     description_pt: "Informa se foi realizado bloqueio e qual tipo do bloqueio"
     type_info: "varchar(1)"
     categories: "1. Bloqueio vacinal 2. Quimioprofilaxi a 3. Ambos 4. Não 9. Ignorado"
+    characteristics: Campo Essencial
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
@@ -267,12 +294,14 @@ coqueluche:
     type_info: "varchar(1)"
     required: true
     categories: "1. Confirmado 2. Descartado"
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "critério utilizado para confirmação do caso ou descarte do suspeito"
     type_info: "varchar(1)"
     categories: "1. Laboratorial 2. Vínculo Epidemiológico 3. Clínico"
+    characteristics: Campo Essencial
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
@@ -291,12 +320,15 @@ coqueluche:
     description_pt: "Evolução do caso"
     type_info: "varchar(1)"
     categories: "1. Cura 2. Óbito por coqueluche 3. Óbito por outras causas 9.Ignorado"
+    characteristics: Campo Essencial Se categoria = 1 ou 9, pular para campo 64 (Data do encerramento). Se classificação final=2(descartado) não permitir a opção o preenchimento com a opção 2(óbito por coqueluche).
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    characteristics: Campo Essencial se campo 62 (evolução) = 2 (óbito por coqueluche) ou 3 (óbito por outras causas). Data do óbito deve ser >= a data de Primeiros Sintomas (campo7).
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento do caso"
     required: true
+    characteristics: Campo Obrigatório se campo 59 (Classificação final) estiver preenchido. Data de encerramento >= data de investigação (campo 31). Data de encerramento <= Data atual.
