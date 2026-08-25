@@ -33,6 +33,7 @@ This documentation covers PySUS 2.0+.
    Quickstart <quickstart>
    Guides <guides/index>
    Data Sources <databases/data-sources>
+   Working with DATASUS data <working-with-datasus-data>
    Tutorials <tutorials>
    API Reference <api>
    Migration <migration>
