@@ -7,6 +7,7 @@ tracking, comparison and catalog persistence operate uniformly.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -387,11 +388,79 @@ class SyncReport:
     def needs_token(self) -> list[SyncOutcome]:
         return [o for o in self.outcomes if o.status == "needs_token"]
 
+    @property
+    def needs_update(self) -> list[SyncOutcome]:
+        return [o for o in self.outcomes if o.status == "needs_update"]
+
     def summary(self) -> dict[str, int]:
         return {
             "total": len(self.outcomes),
+            "needs_update": len(self.needs_update),
             "uploaded": len(self.uploaded),
             "skipped": len(self.skipped),
             "failed": len(self.failed),
             "needs_token": len(self.needs_token),
         }
+
+
+def outcome_to_journal(
+    outcome: SyncOutcome, ts: str | None = None
+) -> dict[str, Any]:
+    """Serialize an outcome as one resume-journal line."""
+    return {
+        "dataset": outcome.key.dataset,
+        "group": outcome.key.group,
+        "year": outcome.key.year,
+        "month": outcome.key.month,
+        "state": outcome.key.state,
+        "stem": outcome.key.stem,
+        "status": outcome.status,
+        "ts": ts or datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def write_journal_line(path: Path, outcome: SyncOutcome) -> None:
+    """Append one outcome line to the resume journal (flushed).
+
+    Appending is incremental and flushed per line so a killed process
+    never loses already-completed files.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(outcome_to_journal(outcome)) + "\n")
+        fh.flush()
+
+
+def load_journal_keys(path: Path) -> set[IdentityKey]:
+    """Return the identity keys recorded as ``uploaded`` in a journal.
+
+    These are the files a paused run already finished, so a resumed run
+    can skip them without re-downloading and re-converting.
+    """
+    keys: set[IdentityKey] = set()
+    if not path.exists():
+        return keys
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if data.get("status") != "uploaded":
+            continue
+        try:
+            keys.add(
+                IdentityKey(
+                    dataset=data["dataset"],
+                    group=data.get("group"),
+                    year=data.get("year"),
+                    month=data.get("month"),
+                    state=data.get("state"),
+                    stem=data["stem"],
+                )
+            )
+        except (KeyError, TypeError):
+            continue
+    return keys

@@ -163,6 +163,10 @@ class CatalogWriter:
             return None
 
         name = name.strip().upper()
+        # ``long_name`` is NOT NULL; fall back to the group code itself when
+        # the source carries no long name (e.g. SIM's legacy "D" group).
+        if not long_name:
+            long_name = name
         cursor.execute(
             "SELECT id, long_name, description FROM pysus.dataset_groups "
             "WHERE dataset_id = ? AND name = ?",

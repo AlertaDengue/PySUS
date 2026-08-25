@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from datetime import datetime
-from logging import error
+from logging import error, warning
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
@@ -39,9 +39,11 @@ from .records import (
     DOWNLOAD_PRIORITY,
     FileComparison,
     FileRecord,
+    IdentityKey,
     SyncOutcome,
     SyncReport,
     compose_s3_key,
+    write_journal_line,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -510,6 +512,7 @@ class SyncEngine:
         self,
         datasets: list[str] | None = None,
         force: bool = False,
+        dry_run: bool = False,
         callback: Callable[[int, int], None] | None = None,
         save_snapshots: bool = True,
         checkpoint_every: int | None = None,
@@ -517,6 +520,9 @@ class SyncEngine:
         workers: int = 16,
         ftp_connections: int = 6,
         origins: tuple[str, ...] | None = None,
+        reupload_before: datetime | None = None,
+        resume: set[IdentityKey] | None = None,
+        journal: Path | None = None,
     ) -> SyncReport:
         """Run the full pipeline and return a :class:`SyncReport`.
 
@@ -524,6 +530,22 @@ class SyncEngine:
         ``force`` or the source size proves a change (trust-the-catalog
         policy); FTP is preferred over DadosGov, which requires
         ``dadosgov_token``.
+
+        ``reupload_before`` re-processes every file whose S3 catalog row
+        was written before the given datetime, even when the catalog is
+        otherwise current — used to regenerate artifacts produced by an
+        older converter (e.g. the pre-latin-1 DBF reader).
+
+        ``journal`` (a path to a resume journal) appends one line per
+        outcome so a paused run can be resumed later. ``resume`` is the
+        set of :class:`~pysus.management.records.IdentityKey` already
+        completed in a prior run (e.g. loaded from that journal): those
+        files are skipped instead of re-downloaded and re-converted.
+
+        With ``dry_run=True`` no downloads, uploads or catalog writes
+        happen: every file that would be updated is reported with the
+        ``needs_update`` outcome instead (streamed via ``on_outcome`` as
+        usual), so callers can preview or feed the list to another tool.
 
         Missing files are ingested in parallel: ``workers`` asyncio tasks
         download (via a pool of ``ftp_connections`` FTP clients), convert
@@ -537,10 +559,20 @@ class SyncEngine:
         report = SyncReport(dataset=",".join(datasets) if datasets else None)
         active_origins = origins or ("ducklake", "ftp", "dadosgov", "saude")
 
+        def emit(outcome: SyncOutcome) -> None:
+            """Record an outcome: report + callback + resume journal."""
+            report.outcomes.append(outcome)
+            if on_outcome:
+                on_outcome(outcome)
+            if journal is not None and not dry_run:
+                write_journal_line(journal, outcome)
+
         async def collect_with_retry(origin: str, datasets=None, **kwargs):
             for attempt in range(3):
                 try:
-                    return await self.inventory.collect(origin, **kwargs)
+                    return await self.inventory.collect(
+                        origin, datasets=datasets, **kwargs
+                    )
                 except (*_RETRYABLE, httpx.HTTPError):
                     if attempt == 2:
                         raise
@@ -566,39 +598,76 @@ class SyncEngine:
 
         # Pre-connect every adapter involved so concurrent workers never
         # race the initial catalog download.
-        await self._preconnect_adapters(records)
+        if not dry_run:
+            await self._preconnect_adapters(records)
 
-        # Deduplicate: when the same logical file has artifacts from more
-        # than one origin on S3 (legacy ETL), keep only the most updated
-        # one — the bucket must never hold duplicate copies.
-        await self._dedupe_s3_artifacts(records["ducklake"])
+        if not dry_run:
+            # Deduplicate: when the same logical file has artifacts from more
+            # than one origin on S3 (legacy ETL), keep only the most updated
+            # one — the bucket must never hold duplicate copies.
+            await self._dedupe_s3_artifacts(records["ducklake"])
 
-        # Repair rows cataloged by the old SIA formatter, which merged
-        # part suffixes into the month (e.g. BIRJ2504_2 -> month 42).
-        await self._fix_misparsed_metadata(records["ducklake"])
+            # Repair rows cataloged by the old SIA formatter, which merged
+            # part suffixes into the month (e.g. BIRJ2504_2 -> month 42).
+            await self._fix_misparsed_metadata(records["ducklake"])
 
         parallel: list[tuple[FileComparison, FileRecord]] = []
         for comparison in comparisons:
             if comparison.is_on_s3 and not (
-                force or self._s3_is_stale(comparison)
+                force
+                or self._s3_is_stale(comparison)
+                or self._cataloged_before(comparison, reupload_before)
             ):
-                outcome = SyncOutcome(
-                    key=comparison.key,
-                    origin="ducklake",
-                    status="skipped",
+                emit(
+                    SyncOutcome(
+                        key=comparison.key,
+                        origin="ducklake",
+                        status="skipped",
+                    )
                 )
-                report.outcomes.append(outcome)
-                if on_outcome:
-                    on_outcome(outcome)
                 continue
             record = self._pick_source(comparison)
             if record is None:
+                if dry_run:
+                    emit(
+                        SyncOutcome(
+                            key=comparison.key,
+                            origin="ducklake",
+                            status="needs_update",
+                            detail=f"{self._label(comparison)} (on S3)",
+                        )
+                    )
+                    continue
                 outcome = await self._process_comparison(
-                    comparison, force=force, callback=callback
+                    comparison,
+                    force=force,
+                    callback=callback,
+                    reupload_before=reupload_before,
                 )
-                report.outcomes.append(outcome)
-                if on_outcome:
-                    on_outcome(outcome)
+                emit(outcome)
+                continue
+            if dry_run:
+                emit(
+                    SyncOutcome(
+                        key=comparison.key,
+                        origin=record.origin,
+                        status="needs_update",
+                        detail=f"{self._label(comparison)} ({record.origin})",
+                    )
+                )
+                continue
+            if resume and comparison.key in resume:
+                emit(
+                    SyncOutcome(
+                        key=comparison.key,
+                        origin="ducklake",
+                        status="skipped",
+                        detail=(
+                            "already processed in a prior run: "
+                            f"{self._label(comparison)}"
+                        ),
+                    )
+                )
                 continue
             parallel.append((comparison, record))
 
@@ -736,9 +805,7 @@ class SyncEngine:
                                 ),
                             )
 
-                    report.outcomes.append(outcome)
-                    if on_outcome:
-                        on_outcome(outcome)
+                    emit(outcome)
                     if (
                         outcome.status == "uploaded"
                         and checkpoint_every
@@ -775,7 +842,7 @@ class SyncEngine:
             for _ in range(workers):
                 await write_queue.put(None)
 
-        writers_total = len(gov_workers_tasks)
+        writers_total = max(1, len(gov_workers_tasks))
         writer_task = asyncio.create_task(catalog_writer())
         await asyncio.gather(*ftp_tasks, *gov_workers_tasks)
         for _ in processor_tasks:
@@ -785,10 +852,14 @@ class SyncEngine:
             await write_queue.put(None)
         await writer_task
 
-        if self._changed_catalog and checkpoint_every is not None:
+        if (
+            not dry_run
+            and self._changed_catalog
+            and checkpoint_every is not None
+        ):
             await self._checkpoint()
 
-        if save_snapshots:
+        if save_snapshots and not dry_run:
             for origin, items in records.items():
                 self.inventory.save_snapshot(origin, items)
 
@@ -961,7 +1032,14 @@ class SyncEngine:
             if r.origin in ("ftp", "dadosgov", "saude")
         }
         for name in datasets:
-            await self._dataset_adapter_by_name(name).ensure_connected()
+            try:
+                await self._dataset_adapter_by_name(name).ensure_connected()
+            except Exception as exc:  # noqa: B902 — best-effort preconnect
+                warning(
+                    "could not pre-connect catalog for dataset "
+                    f"{name!r}: {exc}. It will be fetched on demand if "
+                    "needed for a write."
+                )
 
     async def _dedupe_s3_artifacts(
         self,
@@ -1191,6 +1269,7 @@ class SyncEngine:
         comparison: FileComparison,
         force: bool = False,
         callback: Callable[[int, int], None] | None = None,
+        reupload_before: datetime | None = None,
     ) -> SyncOutcome:
         key = comparison.key
         label = (
@@ -1199,11 +1278,28 @@ class SyncEngine:
         )
 
         if comparison.is_on_s3:
-            if not force and not self._s3_is_stale(comparison):
+            if not (
+                force
+                or self._s3_is_stale(comparison)
+                or self._cataloged_before(comparison, reupload_before)
+            ):
                 return SyncOutcome(key=key, origin="ducklake", status="skipped")
+            force = force or self._cataloged_before(comparison, reupload_before)
             return await self._reprocess(comparison, callback, force, label)
 
         return await self._reprocess(comparison, callback, force, label)
+
+    @staticmethod
+    def _cataloged_before(
+        comparison: FileComparison, cutoff: datetime | None
+    ) -> bool:
+        """True when the S3 artifact's catalog row predates *cutoff*."""
+        if cutoff is None:
+            return False
+        s3_record = comparison._pick("ducklake")
+        if s3_record is None or s3_record.modified is None:
+            return False
+        return s3_record.modified < cutoff
 
     @staticmethod
     def _s3_is_stale(comparison: FileComparison) -> bool:
