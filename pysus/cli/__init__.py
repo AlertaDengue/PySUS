@@ -49,6 +49,15 @@ try:
 except ImportError:
     pass
 
+try:
+    import pysus.management  # noqa: F401  # dev-only, excluded from PyPI
+
+    from .management import app as management_app
+
+    app.add_typer(management_app, name="management")
+except ImportError:
+    pass
+
 
 def _is_colab() -> bool:
     return "COLAB_RELEASE_TAG" in os.environ

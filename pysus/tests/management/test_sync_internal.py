@@ -403,3 +403,302 @@ class TestDedupeS3Artifacts:
             "DELETE FROM pysus.files" in str(c.args[0]) for c in cursor_calls
         )
         assert adapter.mark_dirty.called
+
+
+class TestRunFtpOnlyTerminates:
+    """Regression: an FTP-only run used to hang because writers_total
+    was 0 (no gov workers) so the catalog writer never got a sentinel."""
+
+    @pytest.mark.asyncio
+    async def test_ftp_only_run_completes(self, engine, monkeypatch):
+        from pysus.management.records import FileRecord
+
+        ftp_rec = FileRecord(
+            origin="ftp",
+            dataset="SINAN",
+            name="DENGBR25.dbc",
+            path="/ftp/sinan/DENG/2025/DENGBR25.dbc",
+            year=2025,
+            group="DENG",
+            size=100,
+            file=MagicMock(),
+        )
+
+        records = {
+            "ducklake": [],
+            "ftp": [ftp_rec],
+            "dadosgov": [],
+            "saude": [],
+        }
+
+        mock_inv = MagicMock()
+        mock_inv.collect = AsyncMock(
+            side_effect=lambda origin, **kw: records.get(origin, [])
+        )
+
+        ducklake = MagicMock()
+        ducklake.catalog_adapter.ensure_connected = AsyncMock()
+        ducklake.catalog_adapter.connect = AsyncMock()
+        ducklake.columns_adapter.ensure_connected = AsyncMock()
+        ducklake.columns_adapter.connect = AsyncMock()
+        ducklake.get_dataset_adapter.return_value = MagicMock(
+            ensure_connected=AsyncMock(),
+            transaction=MagicMock(),
+            mark_dirty=MagicMock(),
+        )
+
+        class _Ctx:
+            def __init__(self):
+                self.conn = MagicMock()
+
+            def __enter__(self):
+                return self.conn, self.conn
+
+            def __exit__(self, *a):
+                return False
+
+        ducklake.catalog_adapter.transaction = MagicMock(return_value=_Ctx())
+        ducklake.columns_adapter.transaction = MagicMock(return_value=_Ctx())
+        dataset_ctx = _Ctx()
+        dataset_adapter = MagicMock(
+            ensure_connected=AsyncMock(),
+            transaction=MagicMock(return_value=dataset_ctx),
+            mark_dirty=MagicMock(),
+        )
+        ducklake.get_dataset_adapter.return_value = dataset_adapter
+
+        client = MagicMock()
+        client.connect = AsyncMock()
+        client.ftp = MagicMock()
+
+        engine._ducklake = ducklake
+        engine.access_key = "ak"
+        engine.secret_key = "sk"
+
+        writer = MagicMock()
+        writer.ensure_dataset.return_value = 1
+        writer.ensure_group.return_value = 1
+        writer.get_file.return_value = (1, None)
+        writer.link_columns = MagicMock()
+        writer.upsert_file = MagicMock()
+        writer._ensure_management_columns = MagicMock()
+
+        async def fake_convert_and_upload(file, raw, callback=None):
+            return {
+                "s3_key": "k",
+                "size": 1,
+                "rows": 1,
+                "schema": MagicMock(),
+                "raw_digest": "a" * 64,
+                "parquet_digest": "b" * 64,
+            }
+
+        engine._convert_and_upload = AsyncMock(
+            side_effect=fake_convert_and_upload
+        )
+        engine._download_raw_with_retry = AsyncMock(return_value=MagicMock())
+
+        with patch.object(engine, "_require_pysus", return_value=MagicMock()):
+            with patch(
+                "pysus.management.sync.Inventory", return_value=mock_inv
+            ):
+                with patch(
+                    "pysus.api.ftp.client.FTP", return_value=client
+                ) as mock_ftp_cls:
+                    mock_ftp_cls.return_value.connect = AsyncMock()
+                    with patch.object(engine, "_checkpoint", new=AsyncMock()):
+                        with patch.object(
+                            SyncEngine,
+                            "writer",
+                            new_callable=PropertyMock,
+                        ) as mock_writer_prop:
+                            mock_writer_prop.return_value = writer
+                            report = await engine.run(
+                                datasets=["SINAN"],
+                                checkpoint_every=500,
+                            )
+
+        assert report.summary()["uploaded"] == 1
+
+
+class TestCatalogedBefore:
+    """``_cataloged_before`` drives the ``--reupload-before`` re-upload."""
+
+    def _comparison(self, modified):
+        s3 = _record(
+            "ducklake",
+            "DENGBR25.parquet",
+            modified=modified,
+            file=MagicMock(),
+        )
+        return FileComparison(key=s3.identity_key(), records=[s3])
+
+    def test_none_cutoff_never_matches(self):
+        comparison = self._comparison(modified=None)
+        assert SyncEngine._cataloged_before(comparison, None) is False
+
+    def test_old_s3_row_matches(self):
+        from datetime import datetime
+
+        comparison = self._comparison(modified=datetime(2026, 6, 1))
+        cutoff = datetime(2026, 7, 6)
+        assert SyncEngine._cataloged_before(comparison, cutoff) is True
+
+    def test_new_s3_row_does_not_match(self):
+        from datetime import datetime
+
+        comparison = self._comparison(modified=datetime(2026, 8, 1))
+        cutoff = datetime(2026, 7, 6)
+        assert SyncEngine._cataloged_before(comparison, cutoff) is False
+
+    def test_missing_modified_does_not_match(self):
+        from datetime import datetime
+
+        comparison = self._comparison(modified=None)
+        cutoff = datetime(2026, 7, 6)
+        assert SyncEngine._cataloged_before(comparison, cutoff) is False
+
+
+class TestPreconnectResilient:
+    """Pre-connecting a dataset catalog must not crash the whole run.
+
+    Some datasets (e.g. saude-only ``arboviroses``) have no public
+    catalog duckdb on the object storage (403). Preconnect is
+    best-effort: the adapter is fetched on demand if a write needs it.
+    """
+
+    @pytest.mark.asyncio
+    async def test_preconnect_skips_unavailable_catalog(self, engine):
+        ducklake = MagicMock()
+        ducklake.catalog_adapter.ensure_connected = AsyncMock()
+        ducklake.columns_adapter.ensure_connected = AsyncMock()
+        engine._ducklake = ducklake
+
+        records = {
+            "ducklake": [],
+            "ftp": [_record("ftp", "DENGBR25.dbc", dataset="SINAN")],
+            "dadosgov": [],
+            "saude": [_record("saude", "x.jsonl", dataset="arboviroses")],
+        }
+        failing = MagicMock()
+        failing.ensure_connected = AsyncMock(
+            side_effect=RuntimeError("403 Forbidden")
+        )
+        good = MagicMock()
+        good.ensure_connected = AsyncMock()
+
+        engine._dataset_adapter_by_name = MagicMock(
+            side_effect=lambda name: (good if name == "sinan" else failing)
+        )
+
+        await engine._preconnect_adapters(records)
+
+        failing.ensure_connected.assert_awaited_once()
+        good.ensure_connected.assert_awaited_once()
+
+
+class TestResumeJournal:
+    """The resume journal records completed files for pause/resume."""
+
+    def test_journal_roundtrip(self, tmp_path):
+        from pysus.management.records import (
+            IdentityKey,
+            SyncOutcome,
+            load_journal_keys,
+            write_journal_line,
+        )
+
+        key = IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2025,
+            month=None,
+            state=None,
+            stem="dengbr25",
+        )
+        journal = tmp_path / "reupload-2026-07-07.jsonl"
+        write_journal_line(
+            journal,
+            SyncOutcome(key=key, origin="ftp", status="uploaded"),
+        )
+        write_journal_line(
+            journal,
+            SyncOutcome(
+                key=key,
+                origin="ftp",
+                status="failed",
+                detail="transient",
+            ),
+        )
+        keys = load_journal_keys(journal)
+        assert keys == {key}
+
+    def test_load_journal_missing_file(self, tmp_path):
+        from pysus.management.records import load_journal_keys
+
+        assert load_journal_keys(tmp_path / "nope.jsonl") == set()
+
+
+class TestRunResumeSkipsDoneFiles:
+    """A resumed run must not re-download files already processed."""
+
+    @pytest.mark.asyncio
+    async def test_resume_skips_uploaded_key(self, engine, monkeypatch):
+        from pysus.management.records import IdentityKey
+
+        ftp_rec = _record("ftp", "DENGBR25.dbc", year=2025, group="DENG")
+        records = {
+            "ducklake": [],
+            "ftp": [ftp_rec],
+            "dadosgov": [],
+            "saude": [],
+        }
+
+        mock_inv = MagicMock()
+        mock_inv.collect = AsyncMock(
+            side_effect=lambda origin, **kw: records.get(origin, [])
+        )
+
+        ducklake = MagicMock()
+        ducklake.catalog_adapter.ensure_connected = AsyncMock()
+        ducklake.catalog_adapter.connect = AsyncMock()
+        ducklake.columns_adapter.ensure_connected = AsyncMock()
+        ducklake.columns_adapter.connect = AsyncMock()
+        engine._ducklake = ducklake
+        engine.access_key = "ak"
+        engine.secret_key = "sk"
+
+        engine._convert_and_upload = AsyncMock()
+        engine._download_raw_with_retry = AsyncMock()
+
+        resume_key = ftp_rec.identity_key()
+        assert resume_key == IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2025,
+            month=None,
+            state=None,
+            stem="dengbr25",
+        )
+
+        with patch.object(engine, "_require_pysus", return_value=MagicMock()):
+            with patch(
+                "pysus.management.sync.Inventory", return_value=mock_inv
+            ):
+                with patch(
+                    "pysus.api.ftp.client.FTP", return_value=MagicMock()
+                ):
+                    with patch.object(
+                        SyncEngine,
+                        "writer",
+                        new_callable=PropertyMock,
+                    ) as mock_writer_prop:
+                        mock_writer_prop.return_value = MagicMock()
+                        report = await engine.run(
+                            datasets=["SINAN"],
+                            resume={resume_key},
+                        )
+
+        assert report.summary()["uploaded"] == 0
+        assert report.summary()["skipped"] == 1
+        engine._convert_and_upload.assert_not_awaited()
