@@ -108,7 +108,9 @@ The Saude catalog can apply curated column descriptions during a sync. The
 SIM Declaração de Óbito resource is covered by
 ``pysus/api/saude/schemas/vigilanciameioambiente.yaml``. Its field names and
 Portuguese descriptions are transcribed from the official SIM data dictionary
-(updated July 2025); no records are bundled with PySUS.
+(portal resource updated 9 June 2025; the file is marked 06/2025); no records
+are bundled with PySUS. The source is the
+`official SIM data dictionary <https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/Dicionario_SIM_2025.pdf>`_.
 
 The schema is keyed by the downloaded resource basename, so it can be applied
 without relying on a particular data file or downloading a sample:

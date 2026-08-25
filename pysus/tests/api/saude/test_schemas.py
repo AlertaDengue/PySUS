@@ -26,10 +26,37 @@ class TestLoadEndpointColumns:
 
     def test_load_sim_schema_from_resource_filename(self):
         cols = load_endpoint_columns("vigilanciameioambiente", "DO24OPEN_csv")
-        assert len(cols) >= 8
-        names = [c["name"] for c in cols]
-        assert "TIPOBITO" in names
-        assert "CODMUNRES" in names
+        assert [c["name"] for c in cols] == [
+            "TIPOBITO",
+            "DTOBITO",
+            "HORAOBITO",
+            "DTNASC",
+            "SEXO",
+            "RACACOR",
+            "CODESTAB",
+            "CODMUNRES",
+            "CAUSABAS",
+        ]
+
+    def test_load_sim_schema_aliases(self):
+        expected = [
+            "TIPOBITO",
+            "DTOBITO",
+            "HORAOBITO",
+            "DTNASC",
+            "SEXO",
+            "RACACOR",
+            "CODESTAB",
+            "CODMUNRES",
+            "CAUSABAS",
+        ]
+        for endpoint in (
+            "DO24OPEN_csv",
+            "Mortalidade_Geral_2024_csv",
+            "Mortalidade Geral 2024",
+        ):
+            cols = load_endpoint_columns("vigilanciameioambiente", endpoint)
+            assert [c["name"] for c in cols] == expected
 
     def test_unknown_dataset_returns_empty(self):
         cols = load_endpoint_columns("nonexistent", "endpoint")

@@ -1,9 +1,13 @@
 # Column descriptions for the SIM Declaração de Óbito (DO) resource.
-# Source: Ministry of Health, CGIAE, SIM data dictionary (updated 2025-07).
-# https://svs.aids.gov.br/daent/cgiae/sistemas-informacao/sim/documentacao/dicionario-de-dados-SIM-tabela-DO.pdf
+# Source: Ministry of Health, CGIAE, SIM data dictionary. The portal resource
+# was last updated on 2025-06-09 and the PDF identifies the file as updated
+# in 06/2025.
+# https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SIM/Dicionario_SIM_2025.pdf
 #
-# The same resource is exposed by the portal with different filenames. Keep
-# these aliases so catalog syncs can apply the same schema to the 2024 file.
+# The current official CSV resource is published as DO24OPEN_csv.zip. The
+# resource title is "Mortalidade Geral 2024". Keep the normalized
+# Mortalidade_Geral_2024_csv key as a compatibility alias for catalog syncs;
+# it is not the current official basename.
 
 DO24OPEN_csv: &sim_do_columns
   - name: TIPOBITO
@@ -16,32 +20,32 @@ DO24OPEN_csv: &sim_do_columns
     description_en: "Date of death, in ddmmyyyy format."
   - name: HORAOBITO
     type: string
-    description_pt: "Horário do óbito, no padrão de 24 horas."
-    description_en: "Time of death, using the 24-hour format."
+    description_pt: "Horário do óbito, em números, no padrão de 24 horas (00:00)."
+    description_en: "Time of death, in numbers, using the 24-hour format (00:00)."
   - name: DTNASC
     type: string
-    description_pt: "Data de nascimento do falecido, no formato ddmmaaaa."
-    description_en: "Date of birth of the deceased, in ddmmyyyy format."
+    description_pt: "Data de nascimento do falecido, no formato ddmmaaaa; em óbito fetal, igual à data do óbito."
+    description_en: "Date of birth of the deceased, in ddmmyyyy format; for fetal deaths, equal to the date of death."
   - name: SEXO
     type: string
     description_pt: "Sexo do falecido: M/1 masculino; F/2 feminino; I/0/9 ignorado."
-    description_en: "Sex of the deceased: M/1 male; F/2 female; I/0/9 unknown."
+    description_en: "Sex of the deceased: M/1 male; F/2 female; I/0/9 ignored."
   - name: RACACOR
     type: string
-    description_pt: "Cor/raça informada: 1 branca; 2 preta; 3 amarela; 4 parda; 5 indígena."
-    description_en: "Self-reported race/colour: 1 white; 2 black; 3 yellow; 4 brown; 5 Indigenous."
-  - name: CODESTRES
+    description_pt: "Cor informada pelo responsável pelas informações do falecido: 1 branca; 2 preta; 3 amarela; 4 parda; 5 indígena."
+    description_en: "Race/colour reported by the person responsible for the deceased's information: 1 white; 2 black; 3 yellow; 4 brown; 5 Indigenous."
+  - name: CODESTAB
     type: string
-    description_pt: "Código da Unidade Federativa de residência."
-    description_en: "Code of the Federative Unit of residence."
+    description_pt: "Código do estabelecimento de saúde constante do Cadastro Nacional de Estabelecimento de Saúde (CNES), em números."
+    description_en: "Code of the health establishment registered in the National Registry of Health Establishments (CNES), in numbers."
   - name: CODMUNRES
     type: string
-    description_pt: "Código do município de residência."
-    description_en: "Code of the municipality of residence."
+    description_pt: "Código do município de residência, em números; em óbito fetal, considerar o município de residência da mãe."
+    description_en: "Code of the municipality of residence, in numbers; for fetal deaths, use the mother's municipality of residence."
   - name: CAUSABAS
     type: string
-    description_pt: "Causa básica da Declaração de Óbito."
-    description_en: "Underlying cause of death on the death certificate."
+    description_pt: "Causa básica da Declaração de Óbito (DO): asterisco, letras e números."
+    description_en: "Underlying cause of death on the Death Certificate (DO): asterisk, letters and numbers."
 
 Mortalidade_Geral_2024_csv: *sim_do_columns
 Mortalidade Geral 2024: *sim_do_columns
