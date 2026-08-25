@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.2](https://github.com/AlertaDengue/PySUS/compare/2.10.1...2.10.2) (2026-08-25)
+
+### Bug Fixes
+
+* reinclude some sinan metadata missging when parsing the tarballs ([#328](https://github.com/AlertaDengue/PySUS/issues/328)) ([796bfa0](https://github.com/AlertaDengue/PySUS/commit/796bfa07ef7d0bf57c94f316ac5bf095a0ccf8e8))
+
 ## [2.10.1](https://github.com/AlertaDengue/PySUS/compare/2.10.0...2.10.1) (2026-08-25)
 
 ### Bug Fixes
