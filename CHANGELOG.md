@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.3](https://github.com/AlertaDengue/PySUS/compare/2.10.2...2.10.3) (2026-08-25)
+
+### Bug Fixes
+
+* correct SIM metadata source and descriptions ([#327](https://github.com/AlertaDengue/PySUS/issues/327)) ([7bbd771](https://github.com/AlertaDengue/PySUS/commit/7bbd771b4651782398b8135bbb5024129121e96c))
+
 ## [2.10.2](https://github.com/AlertaDengue/PySUS/compare/2.10.1...2.10.2) (2026-08-25)
 
 ### Bug Fixes
