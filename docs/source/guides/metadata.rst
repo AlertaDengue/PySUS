@@ -75,9 +75,9 @@ Merging across origins
 ----------------------
 
 :func:`~pysus.api.metadata.models.merge_bags` combines bags from
-different origins with a documented per-facet precedence
-(``roadmap_saude.md`` §1.7): Saude wins for descriptive fields,
-DuckLake for structure and content fingerprints, and so on:
+different origins with a documented per-facet precedence: Saude wins
+for descriptive fields, DuckLake for structure and content fingerprints,
+and so on:
 
 .. code-block:: python
 
@@ -104,8 +104,11 @@ any network access:
 Curated column descriptions
 ---------------------------
 
-The Saude catalog can apply curated column descriptions during a sync. The
-SIM Declaração de Óbito resource is covered by
+PySUS ships curated YAML schemas with field names and Portuguese descriptions
+transcribed from official data dictionaries. These cover SIM Declaração de Óbito,
+SINAN disease notifications (dengue, peste, chikungunya, etc.), and other datasets.
+
+The SIM schema is covered by
 ``pysus/api/saude/schemas/vigilanciameioambiente.yaml``. Its field names and
 Portuguese descriptions are transcribed from the official SIM data dictionary
 (portal resource updated 9 June 2025; the file is marked 06/2025); no records
@@ -123,3 +126,21 @@ without relying on a particular data file or downloading a sample:
        "vigilanciameioambiente", "DO24OPEN_csv"
    )
    assert any(column["name"] == "TIPOBITO" for column in columns)
+
+SINAN column metadata includes categories and characteristics
+extracted from the official tarball dictionaries:
+
+.. code-block:: python
+
+   from pysus import search_columns, available_databases, load_column_metadata
+
+   # List available curated schemas
+   print(available_databases())  # ["sim", "sinan"]
+
+   # Load column metadata for a specific SINAN disease
+   columns = load_column_metadata("sinan", "Dengue")
+
+   # Search for a column across all SINAN diseases
+   results = search_columns("CON_CLASSI")
+   for r in results:
+       print(r.dataset, r.name, r.categories)

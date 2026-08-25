@@ -1,48 +1,131 @@
-==================
-Files and Formats
-==================
+=================
+Files & Formats
+=================
 
-Every download (any client) returns a local file wrapper from
-:mod:`pysus.api.extensions`, chosen by extension via
-:class:`pysus.api.extensions.ExtensionFactory`.
+PySUS handles the lifecycle of SUS data files: download, decompress,
+convert, and read — transparently across five formats.
 
-Supported formats
+Supported Formats
 -----------------
 
-* ``.dbc`` / ``.dbf`` — legacy DATASUS formats (:class:`DBC`, :class:`DBF`)
-* ``.csv`` — plain text tabular (:class:`CSV`)
-* ``.zip`` — compressed archives (:class:`BaseCompressedFile`)
-* ``.parquet`` — the canonical format (:class:`Parquet`)
+.. list-table::
+   :header-rows: 1
 
-Common interface
+   * - Format
+     - Extension
+     - Notes
+   * - Parquet
+     - ``.parquet``
+     - Preferred. Columnar, compressed, fast. Default download target.
+   * - DBC
+     - ``.dbc``
+     - DBF compressed with blast/SIGL. Auto-decompressed on read.
+   * - DBF
+     - ``.dbf``
+     - dBASE III. Legacy DATASUS format. Read via ``DBFReader``.
+   * - CSV
+     - ``.csv``
+     - Standard comma-separated. Used by OpenDataSUS/Saude.
+   * - ZIP
+     - ``.zip``
+     - Archive container. Auto-extracted to find DBC/DBF/CSV inside.
+
+Common Interface
 ----------------
 
+All file handlers expose a common interface via
+:class:`~pysus.api.extensions.ExtensionFactory`:
+
 .. code-block:: python
 
-   local = await remote_file.download()
+   from pysus.api.extensions import ExtensionFactory
 
-   df = await local.load()              # full DataFrame
-   async for chunk in local.stream():   # chunked iteration
+   # Auto-detect format from extension
+   ext = await ExtensionFactory.instantiate(Path("DENGBR25.parquet"))
+
+   # Full DataFrame
+   df = await ext.load()
+
+   # Chunked streaming
+   async for chunk in ext.stream(chunk_size=50000):
        process(chunk)
 
-   print(local.name, local.extension, local.size, local.modify)
+   # Metadata without loading data
+   print(ext.size, ext.rows, ext.columns)
 
-Tabular files also expose:
+DBC Decompression
+-----------------
 
-.. code-block:: python
-
-   print(local.columns)                 # list of Column(name, description, dtype)
-   print(local.rows)                    # row count
-
-Converting to Parquet
----------------------
-
-Any tabular or compressed file converts with one call:
+DBC files (``.dbc``) are blast-compressed dBASE files. PySUS handles
+decompression automatically:
 
 .. code-block:: python
 
-   parquet = await local.to_parquet()                       # next to the source
-   parquet = await local.to_parquet(output_path="out.parquet")
+   from pysus.api.extensions import ExtensionFactory
 
-The conversion streams in chunks (default 10 000 rows), so large DBC
-files never need to fit in memory at once.
+   ext = await ExtensionFactory.instantiate(Path("SINAN/DENGBR25.dbc"))
+   df = await ext.load()  # decompresses, parses DBF, returns DataFrame
+
+The decompression uses Python's ``blast`` module. For large files
+(>100 MB), consider streaming:
+
+.. code-block:: python
+
+   async for chunk in ext.stream(chunk_size=100000):
+       yield chunk
+
+.. note::
+
+   DBC files with NUL bytes or corrupted headers will raise
+   ``ConversionError``. Re-downloading the file usually resolves this.
+
+DBF Encoding
+------------
+
+DBF files use either ``latin-1`` or ``cp1252`` encoding. PySUS uses
+``latin-1`` by default (since v2.6.3). If you encounter mojibake,
+check the file's origin:
+
+- **DATASUS FTP** → ``latin-1`` (correct default)
+- **Legacy Windows exports** → ``cp1252`` (rare)
+
+Parquet Conversion
+------------------
+
+Downloads are converted to Parquet by default. The conversion is handled
+by :class:`~pysus.api.extensions.ExtensionFactory`:
+
+.. code-block:: python
+
+   from pysus import PySUS
+
+   async with PySUS() as pysus:
+       # download_to_parquet handles DBC→Parquet conversion
+       parquet = await pysus.download_to_parquet(file)
+
+       # Read the converted file
+       df = pysus.read_parquet([parquet.path])
+
+CSV Handling
+------------
+
+OpenDataSUS/Saude resources are distributed as CSV files. These are
+read directly without conversion:
+
+.. code-block:: python
+
+   from pysus import arboviroses
+
+   df = arboviroses(disease="dengue", year=2024)
+
+ZIP Archives
+------------
+
+ZIP files are auto-extracted. The first DBC/DBF/CSV inside is used:
+
+.. code-block:: python
+
+   from pysus.api.extensions import ExtensionFactory
+
+   ext = await ExtensionFactory.instantiate(Path("data.zip"))
+   df = await ext.load()  # extracts and reads the first data file

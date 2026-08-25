@@ -20,12 +20,6 @@ For the local web interface:
 
    pip install pysus[web]
 
-For the terminal user interface (TUI):
-
-.. code-block:: bash
-
-   pip install pysus[tui]
-
 Docker
 ------
 

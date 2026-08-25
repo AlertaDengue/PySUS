@@ -109,3 +109,125 @@ hierarchical key::
 Missing attributes use ``_`` (national files use ``BR`` as the state).
 Duplicate logical files are not kept — when the same data arrived from
 multiple origins, only the most updated artifact remains.
+
+Group Codes
+-----------
+
+SINAN Disease Groups
+^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :header-rows: 1
+
+   * - Group
+     - Disease
+   * - ``DENG``
+     - Dengue
+   * - ``CHIK``
+     - Chikungunya
+   * - ``ZIKA``
+     - Zika
+   * - ``CHAG``
+     - Doença de Chagas
+   * - ``MALA``
+     - Malária
+   * - ``TB``
+     - Tuberculose
+   * - ``HANS``
+     - Hanseníase
+   * - ``HEPA``
+     - Hepatites
+   * - ``MENI``
+     - Meningite
+   * - ``COQ``
+     - Coqueluche
+   * - ``RAIV``
+     - Raiva
+   * - ``FAMA``
+     - Febre Amarela
+   * - ``PEST``
+     - Peste
+   * - ``LEIT``
+     - Leishmaniose Tegumentar
+   * - ``LEIV``
+     - Leishmaniose Visceral
+   * - ``LEPT``
+     - Leptospirose
+   * - ``ESQU``
+     - Esquistossomose
+   * - ``HANT``
+     - Hantavirose
+   * - ``SIFC``
+     - Sífilis Congênita
+   * - ``SIFG``
+     - Sífilis Gestacional
+   * - ``TETN``
+     - Tétano Neonatal
+   * - ``TETA``
+     - Tétano
+   * - ``FT``
+     - Febre Tifoide
+   * - ``FM``
+     - Febre Maculosa
+   * - ``COL``
+     - Cólera
+   * - ``DIF``
+     - Difteria
+   * - ``BOT``
+     - Botulismo
+   * - ``INTOX``
+     - Intoxicação Exógena
+   * - ``ACID``
+     - Acidente por Animais
+
+SIM Groups
+^^^^^^^^^^
+
+- ``DO`` — Declaração de Óbito (death certificate)
+- ``DOR`` — Declaração de Óbito Relacionado ao Aborto
+
+SIA Groups
+^^^^^^^^^^
+
+- ``PA`` — Procedimentos Ambulatoriais
+- ``BI`` — Bolsa Integrada
+- ``AD`` — Administração
+- ``AM`` — Atenção Médica
+- ``AN`` — Análise da Situação de Saúde
+- ``AQ`` — Atenção à Saúde
+- ``AR`` — Assistência Recursal
+
+SIH Groups
+^^^^^^^^^^
+
+- ``RD`` — AIH RDI (produção hospitalar)
+- ``RJ`` — AIH RJ (resumo de internação)
+- ``ER`` — AIH ER (estabelecimentos)
+- ``SP`` — AIH SP (scheda de parto)
+
+CNES Subgroups
+^^^^^^^^^^^^^^
+
+- ``DC`` — Direção/Assistência
+- ``EE`` — Estabelecimento Ensino
+- ``EQ`` — Equipamento
+- ``EP`` — Equipe
+- ``GM`` — Gestão/Mantenedora
+- ``HB`` — Habilitação
+- ``IN`` — Instrumento de Trabalho
+- ``LT`` — Leito
+- ``PF`` — Profissional
+- ``RC`` — Regra de Cobertura
+- ``SR`` — Serviços Especializados
+- ``ST`` — Estabelecimento (Cadastro)
+
+IBGE Groups
+^^^^^^^^^^^
+
+- ``POP`` — População
+- ``ALF`` — Alfabetização
+- ``ESCA`` — Escolaridade A
+- ``ESCB`` — Escolaridade B
+- ``RENDA`` — Renda
+- ``IDOSO`` — Idoso
+- ``PROJ`` — Projeções Populacionais

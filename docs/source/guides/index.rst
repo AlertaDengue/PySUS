@@ -11,6 +11,10 @@ Guides
    saude
    ducklake
    metadata
+   columns
    files-and-formats
    datasets
+   transform
+   quality
+   export
    web-ui

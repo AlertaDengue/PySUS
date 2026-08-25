@@ -50,6 +50,15 @@ def setup(app):
 
     logging.getLogger("sphinx").addFilter(_InlineLiteralFilter())
 
+    # Dataclasses document fields both as __init__ params and class
+    # attributes.  Suppress the resulting "duplicate object description"
+    # warnings — the output is correct, just double-indexed.
+    class _DuplicateDataclassFilter(logging.Filter):
+        def filter(self, record):
+            return "duplicate object description" not in record.getMessage()
+
+    logging.getLogger("sphinx").addFilter(_DuplicateDataclassFilter())
+
 intersphinx_mapping = {
     "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),
 }

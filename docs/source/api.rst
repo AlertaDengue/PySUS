@@ -3,7 +3,7 @@ API Reference
 
 The ``pysus.api`` package provides a layered architecture for discovering,
 downloading, and reading data from Brazilian public health databases
-(DATASUS). It supports three remote data sources.
+(DATASUS). It supports four remote data sources.
 
 Architecture Overview
 ---------------------
@@ -21,7 +21,12 @@ concrete implementations::
     │   └── databases.py     # High-level convenience functions
     ├── ducklake/            # S3 DuckLake catalog client
     ├── ftp/                 # FTP client
-    └── dadosgov/            # dados.gov.br API client
+    ├── dadosgov/            # dados.gov.br API client
+    ├── saude/               # OpenDataSUS catalog client
+    ├── quality/             # Data quality and profiling
+    ├── transform/           # Data transformation
+    ├── export/              # Export to CSV/Excel/GeoJSON/SQL
+    └── diff/                # DataFrame comparison
 
 Quick Start
 -----------
@@ -89,6 +94,145 @@ High-Level Data Functions
    :undoc-members:
    :show-inheritance:
 
+Column Metadata
+---------------
+
+.. automodule:: pysus.api.columns
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.mappings
+   :members:
+   :undoc-members:
+
+Errors & Warnings
+-----------------
+
+.. automodule:: pysus.api.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Cache Management
+----------------
+
+.. automodule:: pysus.api.cache_utils
+   :members:
+   :undoc-members:
+
+Input Validation
+----------------
+
+.. automodule:: pysus.api.validate
+   :members:
+   :undoc-members:
+
+Data Quality
+------------
+
+.. automodule:: pysus.api.quality.statistics
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.quality.missing
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.quality.score
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.quality.validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.quality.profiling
+   :members:
+   :undoc-members:
+
+Data Transformation
+-------------------
+
+.. automodule:: pysus.api.transform.aggregation
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.aliases
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.linking
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.masking
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.precision
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.streaming
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.transform.units
+   :members:
+   :undoc-members:
+
+Export
+------
+
+.. automodule:: pysus.api.export
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.export.csv_excel
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.export.geojson
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.export.sql
+   :members:
+   :undoc-members:
+
+Data Diff
+---------
+
+.. automodule:: pysus.api.diff.comparison
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Metadata Models
+---------------
+
+.. automodule:: pysus.api.metadata.models
+   :members:
+   :undoc-members:
+
+.. automodule:: pysus.api.metadata.report
+   :members:
+   :undoc-members:
+
+OpenDataSUS Client
+------------------
+
+.. automodule:: pysus.api.saude.client
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: pysus.api.saude.schemas
+   :members:
+   :undoc-members:
+
 DuckLake Client
 ---------------
 
@@ -151,17 +295,6 @@ Package Root
    :undoc-members:
    :noindex:
 
-Metadata Models
----------------
-
-.. automodule:: pysus.api.metadata.models
-   :members:
-   :undoc-members:
-
-.. automodule:: pysus.api.metadata.report
-   :members:
-   :undoc-members:
-
 DuckLake Internals
 ------------------
 
@@ -196,7 +329,9 @@ Legacy Data Readers
    :members:
    :undoc-members:
 
-.. Comment out CLI docs until saude.py is committed to the repo.
-.. .. automodule:: pysus.cli
-..    :members:
-..    :undoc-members:
+CLI
+---
+
+.. automodule:: pysus.cli
+   :members:
+   :undoc-members:
