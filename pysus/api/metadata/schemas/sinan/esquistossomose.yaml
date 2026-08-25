@@ -8,105 +8,136 @@ esquistossomose:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita feita ao portador de esquistossomose."
     required: true
+    characteristics: Campo obrigatório Data da investigação deve ser maior ou igual à Data da notificação (campo 3).
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente (portador de esquistossomose) no setor formal, informal ou autônomo ou sua última atividade exercida quando o portador for desempregado. O ramo de atividade econômica do portador refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
     type_info: "varchar2(6)"
+    characteristics: Campo essencial
   - name: DT_COPRO
     field: "dt_coproscopia"
     type: date
     description_pt: "Informar a data de realização da coproscopia"
     required: true
+    characteristics: Campo obrigatório Data da Coproscopia deve ser maior ou igual à Data de Diagnóstico (campo 7).
   - name: AN_QUANT
     field: "nu_kato_katz"
     type: string
     description_pt: "Informar o número de ovos que foi encontrado no exame Kato-Katz."
     type_info: "number(4)"
+    categories: 0 –0(zero) 1- 1 (um) ou mais ovos
+    characteristics: Campo essencial
   - name: AN_QUALI
     field: "st_hoffman"
     type: string
     description_pt: "Anotar o CÓDIGO 3 se o exame Hoffman não foi realizado e 1 ou 2, respectivamente, conforme o resultado tenha sido positivo ou negativo."
     type_info: "varchar2(1)"
+    categories: 1. Positivo 2. Negativo 3. Não realizado
+    characteristics: Campo essencial
   - name: OUTROS
     field: "st_outro"
     type: string
     description_pt: "Anotar o CÓDIGO 3 se outro exame não foi realizado e 1 ou 2 , respectivamente, conforme o resultado tenha sido positivo ou negativo."
     type_info: "varchar2(1)"
+    categories: 1. Positivo 2. Negativo 3. Não realizado
+    characteristics: Campo essencial
   - name: OUTRO_EX
     field: "ds_exame_outro"
     type: string
     description_pt: "Anotar no campo 37, qual o nome do outro exame realizado."
     type_info: "varchar2(40)"
+    characteristics: Campo essencial Habilitar se campo 36 (Outros) for diferente de 3 (não realizado).
   - name: TRATAM
     field: "tp_tratamento"
     type: string
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim, Praziquantel 2. Sim, Oxaminiquine 3. Não 9. Ignorado
+    characteristics: Campo obrigatório Se = 1 ou 2 habilitar o campo 39 (Data do Tratamento). Se = 3 pular para campo 40 (Caso não tenha feito tratamento, qual o motivo). Se = 9 pular para campo 41 (Resultado da análise de verificação de cura – 1ª amostra).
   - name: DTTRAT
     field: "dt_tratamento"
     type: date
     required: true
+    characteristics: Campo obrigatório se campo 38 (Fez tratamento?) =1 ou 2.
   - name: TRATANAO
     field: "tp_nao_tratamento"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Contra- indicação 2. Recusa 3. Ausente 9. Ignorado
+    characteristics: Campo essencial Habilitado se campo 38 (Fez Tratamento?) =3 (não).
   - name: STCURA1
     field: "st_cura_afirmativo_1"
     type: string
     description_pt: "Informar no quadrado correspondente à 1a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
     type_info: "varchar2(1)"
+    categories: 0 – 0 (zero) 1- 1 ou + 2. Não Realizado
+    characteristics: Campo essencial
   - name: STCURA2
     field: "st_cura_afirmativo_2"
     type: string
     description_pt: "Informar no quadrado respectivo à 2a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
     type_info: "varchar2(1)"
+    categories: 0 – 0 (zero) 1- 1 ou + 2. Não Realizado
+    characteristics: Campo essencial
   - name: STCURA3
     field: "st_cura_afirmativo_3"
     type: string
     description_pt: "Informar no quadrado respectivo à 3a amostra o CÓDIGO 1 ou 2, conforme o número de ovos detectados no exame tenha sido, respectivamente, 0 ou mais de 1."
     type_info: "varchar2(1)"
+    categories: 0 – 0 (zero) 1- 1 ou + 2. Não Realizado
+    characteristics: Campo essencial
   - name: DT_RESU3
     field: "dt_resultado_amostra3"
     type: date
     required: true
+    characteristics: Campo obrigatório Se campo 41 (Resultado da análise de verificação de cura - 3ª amostra) = 0 ou 1.
   - name: FORMA
     field: "tp_anatomo_clinica"
     type: string
     description_pt: "Informar no quadrado do campo 43 os CÓDIGOS 1 se a classificação da forma anátomo-clínica for intestinal, 2 se a forma hepato intestinal, 3 se hepato esplênica, 4 se foram aguda 3 5 para outra forma."
     type_info: "varchar2(1)"
+    categories: 1. Intestinal 2. Hepato intestinal 3. Hepato esplênica 4. Aguda 5. Outra,
+    characteristics: Campo essencial
   - name: DS_FORMA
     field: "ds_anatomo_clinica_outro"
     type: string
     type_info: "varchar2(30)"
+    characteristics: Habilitar se campo 43 (Especificar forma clinica) = 5.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     type_info: "varchar2(1)"
     required: true
+    categories: 1-sim 2-não 3- indeterminado
+    characteristics: Campo obrigatório Se = 1 (sim), o sistema preenche automaticamente os campos 45, 46 e 47 (UF, País e Município) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro. Se país de residência não for Brasil, a UF e município de infecção podem ficar em branco). Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de Infecção).
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Local provável da fonte de infecção UF"
     type_info: "varchar2(2)"
     required: true
+    characteristics: Campo obrigatório se país de infecção= Brasil Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País provável da fonte de infecção"
     type_info: "varchar2(4)"
     required: true
+    characteristics: Campo obrigatório Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Município provável da fonte de infecção"
     type_info: "varchar2(6)"
     required: true
+    characteristics: Campo obrigatório se país de infecção= Brasil Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso.
   - name: CODISINF
     field: "co_distrito_infeccao"
     type: string
     description_pt: "Distrito provável da fonte de infecção"
     type_info: "varchar2(4)"
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito.
   - name: CO_BAINFC
     field: "co_bairro_infeccao no_bairro_infeccao"
     type: string
@@ -122,27 +153,37 @@ esquistossomose:
     type: string
     description_pt: "Informar o nome da propriedade onde ocorreu a transmissão, se área rural."
     type_info: "varchar2(100)"
+    characteristics: Campo essencial se campo Zona (notificação) = 2(rural).
   - name: NOCOLINF
     field: "no_colecao_infeccao"
     type: string
     description_pt: "Informar o nome da coleção hídrica onde ocorreu a transmissão."
     type_info: "varchar2(100)"
+    characteristics: Campo essencial
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Informar no quadrado do campo 52 o CÓDIGO 1 se o caso , estiver relacionado ao trabalho, 2 se não relacionado ao trabalho ou 9 se ignorado,"
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo essencial
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar no quadrado do campo 53 o CÓDIGO 1 for cura, 2 para não cura, 3 para óbito por esquistossomose, 4 para óbito por outras causas ou 9 se ignorado."
     type_info: "varchar2(1)"
+    categories: 1. Cura 2, Não Cura 3. Óbito por esquistossomose 4-Óbito por outras causas 9. Ignorado
+    characteristics: Campo essencial
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do óbito."
     required: true
+    categories: dd/mm/aaaa
+    characteristics: Campo obrigatório se campo 53 (Evolução do caso) = 3 ou 4 (óbito). Habilitado se campo 53 (Evolução do caso) = 3 ou 4 (óbito). Data óbito maior ou igual Data de primeiros sintomas (campo 7).
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento do caso."
+    categories: dd/mm/aaaa
+    characteristics: Campo essencial Data encerramento maior ou igual Data de investigação (campo 31).

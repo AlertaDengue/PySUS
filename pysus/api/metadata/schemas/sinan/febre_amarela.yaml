@@ -8,6 +8,7 @@ febre_amarela:
     type: date
     description_pt: "Informe a data do início da investigação."
     required: true
+    characteristics: Campo Obrigatório. Data da investigação >= Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -18,26 +19,32 @@ febre_amarela:
     type: string
     description_pt: "Informar os dados da investigação entomológica (mosquitos) e epizootias Ocorrência de Epizootias (Mortandade de macaco conhecido como guariba , bugio, sagüis, micos, macaco aranha, macaco prego, guigó, soim, etc.)"
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: ISOL_VIR_N
     field: "st_ento_isolamento_virus"
     type: string
     description_pt: "Informar os dados da investigação entomológica (mosquitos) e epizootias Isolamento de vírus em mosquitos"
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: VETOR_A
     field: "st_ento_presenca_mosquito"
     type: string
     description_pt: "Informar os dados da investigação entomológica (mosquitos) e epizootias Presença de mosquito Aedes Aegypti presente em área urbana"
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: VACINADO
     field: "st_vacinado_febre_amarela"
     type: string
     description_pt: "Se o paciente foi vacinado contra febre amarela"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se categoria = 2 ou 9, pular para Sinais e sintomas
   - name: DT_VACINA
     field: "dt_vacinado_febre_amarela"
     type: date
     description_pt: "Data da vacinação contra febre amarela."
+    characteristics: Data da vacina < = Data de Notificação
   - name: UF_VAC
     field: "co_uf_antecedente"
     type: string
@@ -58,117 +65,145 @@ febre_amarela:
     type: string
     description_pt: "Informar os sinais e sintomas do paciente caso seja Dor Abdominal"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
   - name: SINT_HEM_N
     field: "st_sinais_hemorragico"
     type: string
     description_pt: "Informar os sinais e sintomas do paciente caso seja sinais hemorrágicos (Hematêmese, melena, epistaxe, gengivorragia, etc.)"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
   - name: FAGET
     field: "st_sinais_faget"
     type: string
     description_pt: "Informar os sinais e sintomas do paciente caso seja sinal de Faget (temperatura alta e freqüência cardíaca lenta)"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
   - name: EXCR_RENA_
     field: "st_sinais_excrecao_renal"
     type: string
     description_pt: "Informar os sinais e sintomas do paciente caso seja Distúrbios de excreção renal (oligúria e/ou anúria)"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
   - name: HOSPITALIZ
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informar se ocorreu hospitalização do paciente"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9 - Ignorado
+    characteristics: Campo Obrigatório Se categoria = 2 ou 9 pular para campo Exames inespecíficos
   - name: DT_INTERNA
     field: "dt_internacao"
     type: date
     description_pt: "Data do início da internação do paciente"
+    characteristics: 'A data da internação não pode ser menor que a data do início dos sintomas. Emitir mensagem: A data da internação deve ser maior ou igual à data do início dos sintomas.'
   - name: UF
     field: "co_uf_hospital"
     type: string
     description_pt: "Sigla da UF onde o paciente foi internado"
     type_info: "varchar2(2)"
+    categories: '-'
   - name: MUNICIPIO
     field: "co_municipio_hospital"
     type: string
     description_pt: "Nome completo do município onde o paciente foi internado"
     type_info: "varchar2(6)"
+    categories: '-'
   - name: HOSPITAL
     field: "co_unidade_hospital"
     type: string
     description_pt: "Nome completo do Hospital onde o paciente foi internado"
     type_info: "number(8,0)"
+    categories: '-'
   - name: BT
     field: "nu_exame_total"
     type: string
     description_pt: "Anotar maior valor encontrado independente da data do Resultado do exame Bilirrubina Total (mg/dl)"
     type_info: "varchar2(6)"
+    characteristics: 04 dígitos sendo 02 decimais
   - name: AST
     field: "nu_exame_ast"
     type: string
     description_pt: "Anotar maior valor encontrado independente da data do AST(TGO) UI"
     type_info: "number(5)"
+    characteristics: Os valores para inclusão de dados referentes aos exames AST e ALT contêm no máximo 5 dígitos, sem casas decimais.
   - name: BD
     field: "nu_exame_direta"
     type: string
     description_pt: "Anotar maior valor encontrado independente da data do Resultado do exame Bilirrubina Direta (mg/dl)"
     type_info: "varchar2(6)"
+    characteristics: 04 dígitos sendo 02 decimais
   - name: ALT
     field: "nu_exame_alt"
     type: string
     description_pt: "Anotar maior valor encontrado independente da data do ALT(TGP) UI"
     type_info: "number(5)"
+    characteristics: Os valores para inclusão de dados referentes aos exames AST e ALT contêm no máximo 5 dígitos, sem casas decimais.
   - name: DT_COL_1
     field: "dt_sorologico_coleta_1"
     type: date
     description_pt: "Data da coleta da 1ª amostra de sorologia"
+    characteristics: Data da 1ª coleta >= Data de Primeiros Sintomas
   - name: S1_IGM
     field: "tp_sorologico_resultado_1"
     type: string
     type_info: "varchar2(1)"
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado
   - name: DT_COL_2
     field: "dt_sorologico_coleta_2"
     type: date
     description_pt: "Data da coleta da 2ª amostra de sorologia"
+    characteristics: Data da 2ª coleta >= Data da 1ª coleta
   - name: S2_IGM
     field: "tp_sorologico_resultado_2"
     type: string
     type_info: "varchar2(1)"
+    categories: 1 -Reagente 2- Não reagente 3- Inconclusivo 4 -Não realizado
   - name: MAT_COLETA
     field: "st_viral_coletado"
     type: string
     description_pt: "Informar se foi colhido material para realização de isolamento viral"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Se categoria = 2 ou 9 pular para campo Histopatologia
   - name: DT_COLETA
     field: "dt_viral_coleta"
     type: date
     description_pt: "Data da coleta do material"
+    characteristics: Data da coleta >= Data de Primeiros Sintomas
   - name: RES_ISOLAM
     field: "tp_resultado_isolamento"
     type: string
     type_info: "varchar2(1)"
+    categories: 1- Reagente 2- Não Reagente 3- Inconclusivo 4- Não Realizado
   - name: HISTOPA
     field: "tp_histopatologia"
     type: string
     type_info: "varchar2(1)"
+    categories: 1- Reagente 2- Não Reagente 3- Inconclusivo 4- Não Realizado
   - name: IMUNOH
     field: "tp_imunohitoquimica"
     type: string
     type_info: "varchar2(1)"
+    categories: 1- Reagente 2- Não Reagente 3- Inconclusivo 4- Não Realizado
   - name: DT_PTPCR
     field: "Dt_pcr_coleta"
     type: date
     description_pt: "Data da coleta do PCR"
+    characteristics: Data da coleta >= Data de Primeiros Sintomas
   - name: RES_PTPCR
     field: "tp_pcr_resultado"
     type: string
     type_info: "varchar2(1)"
+    categories: 1- Positivo 2- Negativo 3- Inconclusivo 4- Não realizado
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Conclusão da investigação"
     type_info: "varchar2(2)"
     required: true
+    categories: 1. Febre Amarela silvestre 2. Febre Amarela urbana 3. Descartado
+    characteristics: 'Campo Obrigatório quando o campo data de encerramento estiver preenchido Se categoria = 2 emitir a mensagem: confirma caso de febre amarela urbana? Se sim, pular para o campo 58. Se não permanecer no mesmo campo. Se categoria = 3 habilitar campo Classificação Final Descartado – especificar'
   - name: CLASFIN_ES
     field: "ds_classificacao_final"
     type: string
@@ -179,35 +214,47 @@ febre_amarela:
     type: string
     description_pt: "Critério utilizado para confirmação ou descarte do caso"
     type_info: "varchar2(2)"
+    categories: 1. Laboratorial 2. Clínico- epidemiológic o
+    characteristics: '-Não aceitar se Campo 58 Crit de Conf/Descarte = 1 (Laboratorial) e Campo 57 Classificação Final = 3 (Descartado) e Campos 47, 49, 52, 53 e 54 e 56 = Não realizado. Emitir mensagem: Não é possível descarte laboratorial sem exame realizado. -Não aceitar se Campo 58 Crit de Conf/Descarte = 1 (Laboratorial) e Campo 57 Classificação Final = 1 ou 2 (Febre Amarela) e Campos 49 e 52 e 53 e 54 e 56 = 2 ou 3. Emitir mensagem: Impossível confirmação laboratorial de caso sem exame positivo ou não realizado. -Não aceitar se Campo 58 Crit de Conf/Descarte = 2 (Clin-Epid) se Campo 57 Classificação Final = 1 ou 2 (Febre Amarela) e Campos 49 ou 52 ou 53 ou 54 ou 56 = 1 (Positivo). Emitir mensagem: Impossível confirmação Clinico-Epid, de caso com exame positivo. Retirada observação'
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo Obrigatório se campo classificação final=1(Febre Amarela Silvestre) ou (Febre Amarela urbana) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente Apagados.
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção= Brasil e se campo classificação final=1 ou 2. se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente apagados
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo Obrigatório se campo classificação final=1 ou 2. Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente Apagados
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção = Brasil e se campo classificação final=1 ou 2. Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente apagados se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente Apagados
   - name: CO_BAINFC
     field: "co_bairro_infeccao no_bairro_infeccao"
     type: string
@@ -222,26 +269,35 @@ febre_amarela:
     field: "no_localidade_infeccao"
     type: string
     description_pt: "Localidade de infecção"
+    characteristics: Não há nada vinculado a esse campo no modelo de dados Campo não habilitado se classificação final = 3 descartado. Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são Automaticamente apagados
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Informar Se o paciente adquiriu a doença em decorrência das condições/situação de trabalho"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo não habilitado se classificação final = 3 descartado. Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente apagados
   - name: CON_ATIVID
     field: "tp_atividade_infeccao"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Trabalho 2. Turismo 3. Lazer 9. Ignorado
+    characteristics: Campo não habilitado se classificação final = 3 descartado Campo habilitado se classificação final= 1,2 ou null. Quando a classificação final for preenchida com 3(descartado) os dados desse campo são automaticamente apagados
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Evolução do caso"
     type_info: "varchar2(1)"
+    categories: 1- Cura 2- Óbito por febre amarela 3- Óbito por outras causas 9- Ignorado
+    characteristics: 'Se categoria diferente de 2 ou 3, pular para campo Data do encerramento - Não aceitar categoria 2 - Óbito por febre amarela se Campo 57 classificação final diferente de 1 ou 2 (Febre Amarela). Emitir mensagem: Não é permitido óbito pelo agravo em notificação Descartada.'
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    characteristics: Data de Óbito deve ser maior ou igual à Data dos Primeiros Sintomas Retirada Observação. Campo habilitado se evolução do caso=2 (Óbito por febre amarela) ou 3(Óbito por outras causas).
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação"
     required: true
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido Data de Encerramento deve ser maior ou igual à Data de Investigação

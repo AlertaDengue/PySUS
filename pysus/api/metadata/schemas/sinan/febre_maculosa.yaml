@@ -8,337 +8,450 @@ febre_maculosa:
     type: date
     description_pt: "Data de investigação do caso"
     required: true
+    categories: Dd/mm/aaaa
+    characteristics: Campo Obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
     type_info: "varchar2(6)"
+    characteristics: Campo Essencial
   - name: FEBRE
     field: "st_sinais_febre"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de febre"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: CEFALEIA
     field: "st_sinais_cefaleia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Cefaféia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: ABDOMINAL
     field: "st_sinais_abdominal"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Dor Abdominal"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: MIALGIA
     field: "st_sinais_mialgia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Mialgia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: NAUSEA
     field: "st_sinais_nausea"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Náusea/vômito"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: EXANTEMA
     field: "st_sinais_exantema"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Exantema"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: DIARREIA
     field: "st_sinais_diarreia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Diarréia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: ICTERICIA
     field: "st_sinais_ictericia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Icterícia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: HIPEREMIA
     field: "st_sinais_hiperemia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Hiperemia Conjuntival"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: HEPATOME
     field: "st_sinais_hepatomealgia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Hepatomegalia/Espleno megalia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: PETEQUIAS
     field: "st_sinais_petequias"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Petéquias"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: HEMORRAG
     field: "st_sinais_hemorragicas"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Manifestações Hemorrágicas"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: LINFADENO
     field: "st_sinais_linfadenopatia"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Linfadenopatia"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: CONVULSAO
     field: "st_sinais_convulsao"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Convulsão"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: NECROSE
     field: "st_sinais_necrose"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Necrose de extremidades"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: PROSTACAO
     field: "st_sinais_prostacao"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Prostração"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: CHOQUE
     field: "st_sinais_choque"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Choque/Hipotensão"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: COMA
     field: "st_sinais_estupor"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Estupor/Coma"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: HEMORRAGI
     field: "st_sinais_sufusao"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Sufusão Hemorrágica"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: RESPIRATO
     field: "st_sinais_respiratorias"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Alterações Respiratórias"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo obrigatório
   - name: OLIGURIA
     field: "st_sinais_oliguria"
     type: string
     description_pt: "Informar se o paciente teve sinais/sintomas de Oligúria/Anúria"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: OUTROS
     field: "st_sinais_outro"
     type: string
     description_pt: "Informar se o paciente teve outros sinais/sintomas"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Obrigatório
   - name: OUTRO_ESP
     field: "ds_sinais_outro"
     type: string
     description_pt: "Especificar outros sinais/sintomas"
     type_info: "varchar2(30)"
+    characteristics: Habilitar se campo 33- Sinais e Sintomas Outros for = 1 (sim)
   - name: CARRAPATO
     field: "st_contato_animal_carrapato"
     type: string
     description_pt: "Informar se o paciente teve contato com carrapato"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: CAPIVARA
     field: "st_contato_animal_capivara"
     type: string
     description_pt: "Informar se o paciente teve contato com capirava"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: CAO_GATO
     field: "st_cotnato_animal_caogato"
     type: string
     description_pt: "Informar se o paciente teve contato com cão/gato"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: BOVINO
     field: "st_contato_animal_bovino"
     type: string
     description_pt: "Informar se o paciente teve contato com Bovinos"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: EQUINOS
     field: "st_contato_animal_equino"
     type: string
     description_pt: "Informar se o paciente teve contato com Eqüinos"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: OUTROANI
     field: "st_contato_animal_outro"
     type: string
     description_pt: "Informar se o paciente teve contato com outros animais"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: ANIM_ESP
     field: "ds_contato_animal_outro"
     type: string
     description_pt: "Especificar qual outro animal"
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial
   - name: FOI_MATA
     field: "st_frenquentou_ambiente"
     type: string
     description_pt: "Informar se o paciente Freqüentou ambientes com vegetação (mata, floresta, rios, cachoeiras, etc)"
     type_info: "Varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Campo Essencial
   - name: HOSPITAL
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informar se ocorreu Hospitalização"
     type_info: "varchar2(1)"
+    categories: 1- Sim 2- Não 9- Ignorado
+    characteristics: Se opção for = 2 ou 9 ir para campo 42- Diagnóstico Laboratorial
   - name: DTINTERNA
     field: "dt_internacao"
     type: date
     description_pt: "Informar a Data da Hospitalização"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial se campo 36(Ocorreu Hospitalização) =1. Data da internação deve ser maior ou igual à Data de primeiros Sintomas.
   - name: DTALTA
     field: "dt_alta"
     type: date
     description_pt: "Informar a Data da alta"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial se campo 36(Ocorreu Hospitalização) =1 Data da internação deve ser maior ou igual à Data de primeiros.
   - name: COUFHOSP
     field: "co_uf_hospital"
     type: string
     description_pt: "UF do hospital onde ocorreu o tratamento"
     type_info: "varchar2(2)"
+    characteristics: Campo Essencial se campo 36(Ocorreu Hospitalização) =1
   - name: COMUNHOSP
     field: "co_municipio_hospital"
     type: string
     description_pt: "Município do hospital onde ocorreu o tratamento"
     type_info: "varchar2(6)"
+    characteristics: Campo Essencial se campo 36(Ocorreu Hospitalização) =1
   - name: COUNIHOSP
     field: "co_unidade_hospital"
     type: string
     description_pt: "Nome do hospital onde ocorreu o tratamento"
     type_info: "number(7)"
+    characteristics: Campo Essencialse campo 36(Ocorreu Hospitalização) =1
   - name: DIAGNO_LAB
     field: "st_diagnostico_laboratorial"
     type: string
     description_pt: "Informar se houve diagnóstico laboratorial"
     type_info: "varchar2(1)"
+    categories: 1 – Sim 2 – Não 9- Ignorado
+    characteristics: Campo Essencial Se opção for = 2 ou 9 ir para campo 49- Classificação Final
   - name: DTS1
     field: "dt_amostra_s1"
     type: date
     description_pt: "Informar data da amostra S1"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial se campo 42(Diagnóstico Laboratorial)=1(sim)
   - name: DTS2
     field: "dt_amostra_s2"
     type: date
     description_pt: "Informar data da amostra S2"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial se campo 42(Diagnóstico Laboratorial)=1(sim)
   - name: IGM_S1
     field: "tp_sorologia_igms1"
     type: string
     description_pt: "Informar o resultado da amostra S1 IgM"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo Data da Coleta S1 estiver preenchido.
   - name: TIT_IGM_S1
     field: "nu_sorologia_igm_titulos1"
     type: string
     description_pt: "Informar títulos da S1 IgM"
     type_info: "varchar(5)"
+    characteristics: Campo Essencial se campo Resultados sorologia S1 IgM for diferente de 4 (não realizado).
   - name: IGG_S1
     field: "tp_sorologia_iggs1"
     type: string
     description_pt: "Informar o resultado da amostra S1 IgG"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo Data da Coleta S1 estiver preenchido.
   - name: TIT_IGG_S1
     field: "nu_sorologia_igg_titulos1"
     type: string
     description_pt: "Informar títulos da S1 IgG"
     type_info: "number(5)"
+    characteristics: Campo Essencial se campo Resultado sorologia S1 IgG for diferente de 4(não realizado)
   - name: IGM_S2
     field: "tp_sorologia_igm2"
     type: string
     description_pt: "Informar o resultado da amostra S2IgM"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo Data da Coleta S2 estiver preenchido
   - name: TIT_IGM_S2
     field: "nu_sorologia_igm_titulos2"
     type: string
     description_pt: "Informar títulos da S2 IgM"
     type_info: "number(5)"
+    characteristics: Campo Essencial se campo Resultado sorologia S2 IgM for diferente de 4(não realizado)
   - name: IGG_S2
     field: "tp_sorologia_iggs2"
     type: string
     description_pt: "Informar o resultado da amostra S2 IgG"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo Data da Coleta S2 estiver preenchido
   - name: TIT_IGG_S2
     field: "nu_sorologia_igg_titulos2"
     type: string
     description_pt: "Informar títulos da S2 IgG"
     type_info: "number(5)"
+    characteristics: Campo Essencial se campo Resultado sorologia S2 IgG for diferente de 4(não realizado)
   - name: DT_COLETA
     field: "dt_coleta"
     type: date
     description_pt: "Informar a data da coleta"
+    characteristics: Campo Essencial se campo 42(Diagnóstico Laboratorial=1(sim).
   - name: ISOLAMENTO
     field: "tp_outro_exame_isola mento"
     type: string
     description_pt: "Informar o Resultado o Isolamento."
     type_info: "varchar(1)"
+    categories: 1– Detectado 2- Não Detectado 3- Não realizado
+    characteristics: Campo Essencial se campo 44 (Data da coleta) estiver preenchido.
   - name: AGENTE
     field: "ds_agente"
     type: string
     description_pt: "Informar o remetente"
     type_info: "varchar(30)"
+    characteristics: Campo Essencial se campo 45 (resultado do isolamento)= 1(detectado).
   - name: HISTOPATO
     field: "tp_histopatologia"
     type: string
     description_pt: "Informar o resultado Histopatologia"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo 42(Diagnóstico Laboratorial= 1(sim).
   - name: IMUNOHIST
     field: "tp_outro_exame_imunohisto"
     type: string
     description_pt: "Informar o resultado do Imunohistoquímica"
     type_info: "varchar2(1)"
+    categories: 1 – Positivo 2 – Negativo 3 – Inconclusivo 4 – Não realizado
+    characteristics: Campo Essencial se campo 42(Diagnóstico Laboratorial)= 1(sim).
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Informar o diagnóstico definitivo"
     type_info: "varchar2(2)"
     required: true
+    categories: 1- Confirmado 2- Descartado
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido.
   - name: CRITERIO
     field: "tp_confirmacaodescarte"
     type: string
     type_info: "varchar(1)"
+    categories: 1 – Laboratório 2 – Clínico- Epidemiológico 3 – Clínico
+    characteristics: Campo Essencial Categoria 3 – clinico, inválida na versão 4.0, seguindo orientação da área técnica
   - name: DIAG_DESCA
     field: "ds_diagnostico_outro"
     type: string
     description_pt: "Se descartado, Especificar diagnóstico"
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial Campo não habilitado se 49-classificação final=1(confirmado) ou null. Retirada Observação.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo Obrigatório se campo classificação final=1(confirmado). Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco). Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção). Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção). Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente Infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo Obrigatório se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final=1ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso. Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan.
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1 (confirmado) Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente Apagados.
   - name: CO_BAINFC
     field: "co_bairro_infeccao, no_bairro_infeccao"
     type: string
@@ -354,27 +467,37 @@ febre_maculosa:
     type: string
     description_pt: "Informar a Característica do Local Provável de Infecção - Zona"
     type_info: "varchar2(1)"
+    categories: 1- Urbana 2- Rural 3- Peri-Urbana 9- Ignorado
+    characteristics: Retirada a crítica seguindo orientação da área técnica. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: AMBIENTE
     field: "tp_ambiente"
     type: string
     description_pt: "Informar a Característica do Local Provável de Infecção - Ambiente"
     type_info: "varchar2(1)"
+    categories: 1- Domiciliar 2- Trabalho 3- Lazer 4- Outro 9- Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: DOENCA_TRA
     field: "st_doenca_trabalho"
     type: string
     description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente"
     type_info: "varchar2(1)"
+    categories: 1 – Sim 2 – Não 9 – Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a evolução do caso"
     type_info: "varchar2(1)"
+    categories: 1- Cura 2- Óbito por febre maculosa 3- Óbito por outra causa 9- Ignorado
+    characteristics: Campo Essencial Se opção for = 1 ou 9 pular para campo Data do encerramento. Campo habilitado se classificação final=1,2 ou null. Não permitir preenchimento com a opção 2-óbito por febre maculosa se campo classificação final= 2 (descartado)
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do óbito"
+    characteristics: Campo Essencial Se campo 61(Evolução)= 2 (óbito por febre maculosa) ou 3 (óbito por outra causa) Data do Óbito deve ser maior ou igual à Data dos Primeiros Sintomas Campo habilitado se 61- Evolução = 2 (Óbito por febre maculosa ) ou 3(Óbito por outra causa)
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento"
     required: true
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido. Data encerramento deve ser maior ou igual Data de investigação.

@@ -8,133 +8,179 @@ leishmaniose_tegumentar:
     type: date
     description_pt: "Informe a Data de início da investigação do caso"
     required: true
+    categories: dd/mm//aaaa
+    characteristics: Campo obrigatório Data da investigação deve ser ≥ a Data da notificação E ≤ data atual.
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
     type_info: "varchar2(6)"
+    categories: Nomes e códigos das ocupações e ramos de atividades da tabela correspondente
+    characteristics: Campo Essencial
   - name: CLI_CUTANE
     field: "st_lesao_cultanea"
     type: string
     description_pt: "Informar o tipo de lesão que o paciente apresenta"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não
+    characteristics: Campo obrigatório Se = 1 e campo 33 mucosa = 2, então campo Forma clínica deve ser preenchido automaticamente com 1 (Cutânea). Pelo menos um dos campos Presença de Lesão Cutânea ou Presença de Lesão Mucosa deve ser preenchido com 1, se não este não é um caso de LTA
   - name: CLI_MUCOSA
     field: "st_lesao_mucosa"
     type: string
     description_pt: "Informar o tipo de lesão que o paciente apresenta"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não
+    characteristics: Campo obrigatório Se campo Presença de lesão mucosa = 1, habilitar campo 34 (Em caso de presença de lesão mucosa, há presença de cicatrizes cutâneas) Se preenchido com 2, passar automaticamente para o campo 35 (Co- infecção). Se preenchido com 1 (Sim), o campo 40 (Forma clínica) deverá ser preenchido automaticamente com 2 (Mucosa). Pelo menos um dos campos Presença de Lesão Cutânea ou Presença de Lesão Mucosa deve ser preenchido com 1, se não este não é um caso de LTA
   - name: CLI_CICATR
     field: "st_cicatriz_cultanea"
     type: string
     description_pt: "Informar se há presença de cicatriz cutânea em casos de presença de lesão mucosa"
     type_info: "varchar2(1)"
+    categories: 1 – Sim 2 – Não
+    characteristics: Só estará habilitado para preenchimento quando no campo Presença de lesão for mucosa = 1(Sim).
   - name: CLI_CO_HIV
     field: "st_coinfeccao"
     type: string
     description_pt: "Informar se o paciente apresenta co-infecção LTA/HIV"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 9 - ignorado
+    characteristics: Campo obrigatório
   - name: LAB_PARASI
     field: "st_parasitologico_direto"
     type: string
     description_pt: "Informar o resultado do exame do parasitológico direto"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Positivo 2 – Negativo 3 – Não realizado
+    characteristics: Campo obrigatório Se igual a 1 (Positivo), o campo 47 (Critério de confirmação) deverá ser preenchido automaticamente com 1 (Laboratorial).
   - name: LAB_IRM
     field: "st_irm"
     type: string
     description_pt: "Informar o resultado do IRM (Intradermoreação de Montenegro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Positivo 2 – Negativo 3 – Não Realizado
+    characteristics: Campo obrigatório Se igual a 1 (positivo), o campo 47 (Critério de confirmação) deverá ser preenchido automaticamente com 1 (Laboratorial).
   - name: LAB_HISTOP
     field: "tp_histopatologia"
     type: string
     description_pt: "Informar o resultado do exame histopatológico"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Encontro do Parasita 2 – Compatível 3 – Não Compatível 4 – Não Realizado
+    characteristics: Campo obrigatório Se campo = 1 ou = 2, então o campo 47 (Critério de confirmação) deverá ser preenchido automaticamente com 1.
   - name: CLA_TIPO_N
     field: "tp_tipo_entrada"
     type: string
     description_pt: "Informar o tipo de entrada do caso"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Caso Novo 2 – Recidiva 3 – Transferência 9 – Ignorado
+    characteristics: Campo obrigatório
   - name: CLAS_FORMA
     field: "tp_forma_clinica"
     type: string
     description_pt: "Informar a forma clínica"
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Cutânea 2 – Mucosa 9 - Ignorada
+    characteristics: 'Campo obrigatório Se campo 33 (Presença de lesão for mucosa) = 1 (Sim), então campo Forma clínica deverá ser preenchido automaticamente com 2, independente da outra opção do campo Cutânea. Se campo 33 (Presença de lesão for cutânea) = 1 e mucosa = 2, então campo Forma clínica deverá ser preenchido automaticamente com 1. Se campo 33 (Presença de lesão cutânea) = 1 (Sim) e mucosa = 1 (Sim), o campo Forma clínica deverá ser preenchido automaticamente com 2 (Mucosa). OBS: A categoria ignorada é necessária para registros provenientes da base DOS. Não havia obrigatoriedade de preenchimento do campo tipo de lesão, que alimentava o campo forma clínica.'
   - name: DT_INIC_TR
     field: "dt_inicio_tratamento"
     type: date
     description_pt: "Informar a data do início do tratamento"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial Data deve ser >ou= a data do diagnóstico
   - name: TRA_DROGA_
     field: "tp_droga_administrada"
     type: string
     description_pt: "Informar o medicamento prescrito para o tratamento inicial"
     type_info: "varchar2(1)"
+    categories: 1 – Antimonial Pentavalente 2 – Anfotericina B 3 – Pentamidina 4 – Outras 5 – Não Utilizada
+    characteristics: Campo Essencial Se campo Droga inicial administrada for = 1, habilitar o campo 43 (Peso). Se campo Droga inicial administrada for ≠ 1, passar automaticamente para o campo 48 (Classificação Epidemiológica).
   - name: TRA_PESO
     field: "nu_peso"
     type: string
     description_pt: "Informar o peso do paciente em Kg"
     type_info: "number(3)"
+    characteristics: Habilitado se campo 42 (Droga Inicial Administrada) = 1.
   - name: TRA_DOSE
     field: "tp_dose_prescrita"
     type: string
     description_pt: "Informar a dose prescrita para o tratamento do paciente"
     type_info: "varchar2(1)"
+    categories: 1 - Menor que 10 2 - Maior ou igual a 10 e menor que 15 3 - Igual a 15 4 - Maior ou igual a 15 e menor que 20 5 Maior ou igual a 20
+    characteristics: Habilitado se campo 42 (Droga Inicial Administrada) = 1.
   - name: TRA_AMPOLA
     field: "nu_ampola_prescrita"
     type: string
     description_pt: "Informar o número total de ampolas prescritas no tratamento inicial"
     type_info: "number(3)"
+    characteristics: Habilitado se campo 42 (Droga Inicial Administrada) = 1.
   - name: TRA_OUTR_N
     field: "tp_tratamento_inicial"
     type: string
     description_pt: "Informar qual droga foi utilizada na falência do tratamento inicial"
     type_info: "varchar2(1)"
+    categories: 1 – Anfotericina B 2 – Pentamidina 3 – Outros 4 – Não se aplica
+    characteristics: Habilitado se campo 42 (Droga Inicial Administrada) = 1.
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Informar o critério de confirmação"
     type_info: "VARCHAR2(2)"
     required: true
+    categories: 1 – Laboratorial 2 – Clínico Epidemiológico
+    characteristics: Campo obrigatório Campo preenchido automaticamente a partir dos campos Parasitológico direto), IRM e Histopatologia. Quando campo Parasitológico direto ou IRM for = 1, OU o campo Histopatologia for = 1 ou 2, o campo Critério de confirmação deverá ser preenchido automaticamente com 1. Se campo Parasitológico direto e IRM for = 2 ou 3 e campo Histopatologia for = 3 ou 4, então o campo Critério de confirmação deverá ser preenchido automaticamente com 2.
   - name: CON_CLASS_
     field: "tp_classifica_epidemiologica"
     type: string
     type_info: "VARCHAR2(1)"
     required: true
+    categories: 1 – autóctone 2 – importado 3 - indeterminado
+    characteristics: Campo obrigatório
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "VARCHAR2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo obrigatório Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção)
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelment e infectado."
     type_info: "VARCHAR2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção= Brasil Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "VARCHAR(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo obrigatório se campo 49 (O caso é autóctone do município de residência) for diferente de 3. Se o campo 49 (O caso é autóctone do município de residência) = 1 (sim), preencher automaticamente com o País de residência do Caso.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "VARCHAR2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo obrigatório se país de infecção= Brasil Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "VARCHAR2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial
   - name: CO_BAINFC
     field: "co_bairro_infeccao, no_bairro_infeccao"
     type: string
@@ -150,24 +196,33 @@ leishmaniose_tegumentar:
     type: string
     description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente"
     type_info: "VARCHAR2(1)"
+    categories: 1 – Sim 2 – Não 9 – Ignorado
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a evolução do caso"
     type_info: "VARCHAR2(1)"
+    categories: 1 – Alta por cura 2 – Abandono 3 – Óbito por LTA 4- Óbito por outras causas 5 Transferência 6 – Mudança de diagnóstico
+    characteristics: Campo Essencial Se = 3 ou 4 (Óbito), passar automaticamente para o campo 57 (Data do óbito). Se ≠ 3 e 4 (Óbito), pular para o campo 58 (Data do encerramento).
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do óbito"
+    categories: dd/mm/aaaa
+    characteristics: Habilitado se o campo 56 (Evolução do caso) = 3 e 4. Data do Óbito deve ser maior ou igual à Data do Diagnóstico.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento do caso"
+    categories: dd/mm/aaaa
+    characteristics: Campo Essencial Data Encerramento maior ou igual Data de Investigação
   - name: NU_LOTE_I
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação um nível do sistema para outro ( transferência vertical)"
     type_info: "VARCHAR(7)"
+    categories: Descrever aqui a estrutura da composição do número do lote.
+    characteristics: Preenchida quando realizada transferência vertical da investigação
   - name: DS_OBS
     field: "ds_observacao"
     type: string

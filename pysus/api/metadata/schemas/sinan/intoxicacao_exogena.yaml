@@ -8,56 +8,69 @@ intoxicacao_exogena:
     type: date
     description_pt: "Informar a data de investigação do caso"
     required: true
+    characteristics: Campo obrigatório Data da investigação > = a data da notificação.
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando desempregado"
     type_info: "varchar2(6)"
+    characteristics: Campo essencial
   - name: SIT_TRAB
     field: "tp_mercado_trabalho"
     type: string
     description_pt: "Informar o local de ocorrência da Exposição"
     type_info: "varchar(2)"
+    categories: 01.Empregado registrado com carteira assinada 02.Empregado não registrado 03.Autonomo/conta própria 04. Servidor público estatutário 05. Servidor públlico celetista 06. Aposentado 07. Desempregado 08. Trabalho temporário 09. Cooperativado 10. Trabalhador avulso 11. Empregador 12 Outro 99. Ignorado
+    characteristics: Campo essencial Se campo = 12, preencher o item Outros.
   - name: TRAB_DESC
     field: "ds_mercado_trabalho_outro"
     type: string
     description_pt: "Informar o local de ocorrência da exposição"
     type_info: "varchar2(30)"
+    characteristics: Habilitar se campo 33 – Situação no mercado de trabalho = 12 - outro
   - name: LOC_EXPO
     field: "tp_ocorrencia"
     type: string
     description_pt: "Informar o local de ocorrência da exposição"
     type_info: "varchar2(1)"
+    categories: 1. Residência 2. Ambiente de Trabalho 3. Trajeto do trabalho 4. Serviços de saúde 5. Escola/creche 6. Ambiente Externo 7. Outro 9 Ignorado
+    characteristics: Campo essencial Se campo = 1, preencher automaticamente nos “Dados de Exposição” os campos 40, 41,42, 43, 44, 45, 46, 47 e 48 com os “Dados de Residência” da Notificação. Se campo = 7, preencher o item outro.
   - name: LOC_EXP_DE
     field: "ds_ocorrencia_outro"
     type: string
     description_pt: "Especificar outro local de ocorrência da exposição"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 34 – Local de ocorrência da exposição = 7 – outro
   - name: NOEMPRESA
     field: "no_local_exposicao"
     type: string
     description_pt: "Informar o nome do local/estabelecimento de ocorrência do acidente/exposição"
     type_info: "varchar(70)"
+    characteristics: Campo essencial
   - name: CNAE
     field: "co_cnae"
     type: string
     description_pt: "Informar o nome do local/estabelecimento de ocorrência do acidente/exposição"
     type_info: "varchar(10)"
+    characteristics: Campo essencial
   - name: UF_EMP
     field: "co_uf_exposicao"
     type: string
     description_pt: "Informar a UF de ocorrência o acidente/exposição"
     type_info: "varchar(2)"
+    characteristics: Campo essencial
   - name: MUN_EMP
     field: "co_municipio_exposicao"
     type: string
     description_pt: "Informar o município de ocorrência do acidente/exposição"
     type_info: "varchar(6)"
+    characteristics: Campo essencial
   - name: DIS_EMP
     field: "co_distrito_exposicao"
     type: string
     description_pt: "Informar o Distrito de ocorrência do acidente/exposição"
     type_info: "varchar(9)"
+    characteristics: Campo essencial
   - name: COBAIEMP
     field: "co_bairro_exposicaono_bairro_exposicao"
     type: string
@@ -73,16 +86,21 @@ intoxicacao_exogena:
     type: string
     description_pt: "Informar o Endereço da localidade de ocorrência do acidente/exposição"
     type_info: "varchar2(60)"
+    categories: co_endereco_exposicao no_endereco_exposicao
+    characteristics: Campo essencial
   - name: NU_EMP
     field: "co_endereco_exposicao"
     type: string
     description_pt: "Informar o número do endereço do estabelecimento"
     type_info: "varchar(6)"
+    categories: co_endereco_exposicao
+    characteristics: Campo essencial
   - name: COMP_EMP
     field: "ds_complemento_exposicao"
     type: string
     description_pt: "Informar o complemento do endereço do acidente/exposição"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: REF_EMP
     field: "ds_referencia_exposicao"
     type: string
@@ -93,6 +111,8 @@ intoxicacao_exogena:
     type: string
     description_pt: "Informar o Cep da localidade de ocorrência do acidente/exposição"
     type_info: "varchar2(7)"
+    categories: nu_cep_exposicao
+    characteristics: Campo essencial
   - name: DDD_EMP
     field: "nu_ddd_exposicaonu_telefone_exposicao"
     type: string
@@ -108,21 +128,27 @@ intoxicacao_exogena:
     type: string
     description_pt: "Informar a zona do local de ocorrência do acidente/exposição"
     type_info: "varchar2(1)"
+    categories: 1 Urbana 2 Rural 3 Periurbana 9 Ignorado
+    characteristics: Campo essencial
   - name: PAIS_EXP
     field: "co_pais"
     type: string
     description_pt: "Informar o País se estabelecimento fora do Brasil"
     type_info: "varchar(4)"
+    characteristics: Campo essencial
   - name: AGENTE_TOX
     field: "tp_agente_toxico"
     type: string
     description_pt: "Informar o grupo do agente tóxico /classificação geral"
     type_info: "varchar2(2)"
+    categories: 01 Medicamento 02 Agrotóxico/uso agrícola 03 Agrotóxico/uso doméstico 04 Agrotóxico/uso saúde pública 05 Raticida 06 Produto Veterinário 07 Produto de uso domiciliar 08 Cosmético / higiene pessoal 09 Produto químico de uso industrial 10 Metal 11 Drogas de abuso 12 Planta tóxica 13 Alimento e bebida 14 Outro 99 Ignorado
+    characteristics: Campo essencial Se preencher este campo = 2, 3 ou 4, habilitar os campos 51 - Se agrotóxico, qual a finalidade da utilização, 52 - Se agrotóxico, quais as atividades exercidas na exposição atual (1ª , 2ª e 3ª opção) Se campo = 14, preencher o item outro.
   - name: OUT_AGENTE
     field: "ds_agente_toxico_outro"
     type: string
     description_pt: "Especificar outro agente tóxico"
     type_info: "varchar2(30)"
+    characteristics: Habilitar se campo 49 – Grupo do agente tóxico/ classificação geral = 14 - outro
   - name: COAGTOXMA1
     field: "co_ag_tox_marca_1"
     type: numeric
@@ -133,106 +159,137 @@ intoxicacao_exogena:
     type: string
     description_pt: "Informar o nome comercial;/popular do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: P_ATIVO_1
     field: "ds_principio_ativo_1"
     type: string
     description_pt: "Informar o nome do princípio ativo do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: COAGTOXMA2
     field: "co_ag_tox_marca_1"
     type: numeric
     description_pt: "Código do agente tóxico"
     type_info: "numeric(3)"
+    characteristics: Campo essencial
   - name: AGENTE_2
     field: "ds_agente_toxico_2"
     type: string
     description_pt: "Informar o nome comercial;/popular do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: P_ATIVO_2
     field: "ds_principio_ativo_2"
     type: string
     description_pt: "Informar o nome do princípio ativo do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: COAGTOXMA3
     field: "co_ag_tox_marca_1"
     type: numeric
     description_pt: "Código do agente tóxico"
     type_info: "numeric(3)"
+    characteristics: Campo essencial
   - name: AGENTE_3
     field: "ds_agente_toxico_3"
     type: string
     description_pt: "Informar o nome comercial;/popular do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: P_ATIVO_3
     field: "ds_principio_ativo_3"
     type: string
     description_pt: "Informar o nome do princípio ativo do agente tóxico"
     type_info: "varchar2(60)"
+    characteristics: Campo essencial
   - name: UTILIZACAO
     field: "tp_utilizacao"
     type: string
     description_pt: "Informar, caso o produto químico seja agrotóxico, qual a finalidade da utilização"
     type_info: "varchar2(1)"
+    categories: 1 Inseticida 2 Herbicida 3 Carrapaticida 4 Raticida 5 Fungicida 6 Preservante para madeira 7 Outro 8 Não se aplica 9 Ignorado
+    characteristics: Se no campo 49- (Grupo do agente tóxico / classificação geral) a opção for diferente de 02 - Agrotóxico (uso agrícola); 03 - Agrotóxico (uso doméstico) ou 04 - Agrotóxico (uso saúde pública), pular para o campo 54( Via de exposição / contaminação) (1ª opção) Só habilitar esse campo se o campo Grupo do Agente = 02, 03 ou 04 Se campo = 7, preencher item outro. ?
   - name: UTIL_DESC
     field: "ds_utilizacao_outro"
     type: string
     description_pt: "Especificar outra finalidade"
     type_info: "varchar2(30)"
+    characteristics: Habilitar se campo 51 - Se agrotóxico, qual a finalidade da utilização = 7 - outro
   - name: ATIVIDA_1
     field: "tp_atividade_1"
     type: string
     description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (1ª opção)"
     type_info: "varchar(2)"
+    categories: 01 Diluição 02 Pulverização 03 Tratamento de sementes 04 Armazenagem 05 Colheita 06 Transporte 07 Desinsetização 08 Produção / formulação 09 Outros 10 Não se aplica 99 Ignorado
+    characteristics: Só habilitar esse campo se o campo 49-Grupo do Agente = 02, 03 ou 04.
   - name: ATIVIDA_2
     field: "tp_atividade_2"
     type: string
     description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (2ª opção)"
     type_info: "varchar(2)"
+    categories: 01 Diluição 02 Pulverização 03 Tratamento de sementes 04 Armazenagem 05 Colheita 06 Transporte 07 Desinsetização 08 Produção / formulação 09 Outros 10 Não se aplica 99 Ignorado
+    characteristics: Só habilitar esse campo se o campo 49-Grupo do Agente = 02, 03 e 04 e 52(1ª opção) estiver preenchida. Não permitir repetir categoria cadastrada na 1ª opção.
   - name: ATIVIDA_3
     field: "tp_atividade_3"
     type: string
     description_pt: "Informar, caso o produto químico seja agrotóxico, quais as atividades exercidas na exposição atual (3ª opção)"
     type_info: "varchar(2)"
+    categories: 01 Diluição 02 Pulverização 03 Tratamento de sementes 04 Armazenagem 05 Colheita 06 Transporte 07 Desinsetização 08 Produção / formulação 09 Outros 10 Não se aplica 99 Ignorado
+    characteristics: Só habilitar esse campo se o campo 49-Grupo do Agente = 02, 03 e 04 e 52 (2ª opção) estiver preenchida. Não permitir repetir categoria cadastrada na 1ª opção nem na 2ª opção.
   - name: LAVOURA
     field: "ds_cultura_lavoura"
     type: string
     description_pt: "I Informar, caso o produto químico seja agrotóxico, qual a cultura/lavoura predominante,"
     type_info: "varchar(100)"
+    characteristics: Habilitar se campo 49 Grupo do agente tóxico / classificação geral = 2 - Agrotóxico/uso agrícola ANEXO III
   - name: VIA_1
     field: "tp_via_contaminacao_1"
     type: string
     description_pt: "Informar a via de exposição/ contaminação (1 ª opção)"
     type_info: "varchar2(1)"
+    categories: 1 Digestiva 2 Cutânea 3 Respiratória 4 Ocular 5 Parenteral 6 Vaginal 7 Transplacentária 8 Outra 9 Ignorado
+    characteristics: Campo essencial
   - name: VIA_2
     field: "tp_via_contaminacao_2"
     type: string
     description_pt: "Informar a via de exposição/ contaminação (2 ª opção)"
     type_info: "varchar2(1)"
+    categories: 1 Digestiva 2 Cutânea 3 Respiratória 4 Ocular 5 Parenteral 6 Vaginal 7 Transplacentária 8 Outra 9 Ignorado
+    characteristics: Campo essencial Só habilitar esse campo se o campo 54 (1ª opção) estiver preenchido. Não permitir repetir categoria cadastrada na 1ª opção.
   - name: VIA_3
     field: "tp_via_contaminacao_3"
     type: string
     description_pt: "Informar a via de exposição/ contaminação (3 ª opção)"
     type_info: "varchar2(1)"
+    categories: 1 Digestiva 2 Cutânea 3 Respiratória 4 Ocular 5 Parenteral 6 Vaginal 7 Transplacentária 8 Outra 9 Ignorado
+    characteristics: Campo essencial Só habilitar esse campo se o campo 54 ( 2ª opção) estiver preenchida. Não permitir repetir categoria cadastrada na 1ª opção nem na 2ª opção.
   - name: CIRCUNSTAN
     field: "tp_contaminacao"
     type: string
     description_pt: "Informar em que circunstância ocorreu a exposição/ contaminação"
     type_info: "varchar2(2)"
+    categories: 01 Uso habitual 02 Acidental 03 Ambiental 04 Uso terapêutico 05 Prescrição médica inadequada 06 Erro de administração 07 Automedicação 08 Abuso 09 Ingestão de alimento ou bebida 10 Tentativa de suicídio 11 Tentativa de aborto 12 Violência / homicídio 13 Outra 99 Ignorado
+    characteristics: Campo essencial se campo = 13, preencher item outra.
   - name: CIRCUN_DES
     field: "ds_contaminacao_outro"
     type: string
     description_pt: "Especificar outra circunstância"
     type_info: "varchar2(30)"
+    characteristics: Campo essencial se campo Circunstância da exposição / contaminação=13 (outra)
   - name: DOENCA_TRA
     field: "st_acidente_trabalho"
     type: string
     description_pt: "Informe, em caso de Acidente de Trabalho, se foi feita comunicação do mesmo"
     type_info: "varchar2(1)"
+    categories: 1 Sim 2 Não 9 Ignorado
+    characteristics: Campo essencial
   - name: TPEXP
     field: "tp_exposicao"
     type: string
     description_pt: "Informar o tipo de exposição"
     type_info: "varchar2(1)"
+    categories: 1 Aguda – única 2 Aguda – repetida 3 Crônica 4 Aguda sobre crônica 9 Ignorado
+    characteristics: Campo essencial
   - name: NUTEMPO
     field: "tp_tempo"
     type: string
@@ -248,14 +305,19 @@ intoxicacao_exogena:
     type: string
     description_pt: "Informar o tipo de atendimento"
     type_info: "varchar2(1)"
+    categories: 1 Hospitalar 2 Ambulatorial 3 Domiciliar 4 Nenhum 9 Ignorado
+    characteristics: Campo essencial
   - name: HOSPITAL
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informar se houve Internação hospitalar"
     type_info: "varchar2(1)"
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Se opção = 2-não ou 9-ignorado, pular para o campo 65(Classificação final).
   - name: DTINTERNA
     field: "dt_internacao"
     type: date
+    characteristics: Data da internação deve ser >= a Data de primeiros sintomas.
   - name: UF_HOSP
     field: "co_uf_hospital"
     type: string
@@ -277,32 +339,43 @@ intoxicacao_exogena:
     description_pt: "Informar a classificação final do caso."
     type_info: "varchar(2)"
     required: true
+    categories: 1 Intoxicação Confirmada 2 Exposição 3 Reação adversa 4 Diagnóstico diferencial 5 Síndrome de abstinência 9 Ignorado
+    characteristics: CAMPO OBRIGATÓRIO quando o campo data de encerramento estiver preenchido Se campo diferente de 1, pular para o campo 67- Critério de Confirmação
   - name: DIAG_CONF
     field: "co_cid_diagnostico"
     type: string
     description_pt: "Informar o código do cid 10, se o caso for de intoxicação confirmada"
     type_info: "varchar2(4)"
+    characteristics: Campo essencial se campo Classificação final=1(Intoxicação Confirmada)
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Informar o critério de confirmação do caso"
     type_info: "varchar2(2)"
+    categories: 1 Clínico laboratorial 2 Clínico epidemiológico 3Clínico
+    characteristics: Campo essencial
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a evolução do caso"
     type_info: "varchar2(2)"
+    categories: 1 Cura sem sequela 2 Cura com sequela 3 Óbito por intoxicação exógena 4 Óbito por outra causa 5 Perda do seguimento 9 Ignorada
+    characteristics: Campo essencial Se evolução do caso for = 3 ou 4 habilitar 69-Data do óbito.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar data do óbito"
+    characteristics: Campo essencial Se campo 68- Evolução do caso=3(Óbito por intoxicação exógena) ou 4(Óbito por outra causa). Data do óbito deve ser >= Data dos primeiros sintomas.
   - name: CAT
     field: "tp_comunicacao_acidente_trab"
     type: string
     description_pt: "Informe, em caso de Acidente de Trabalho(CAT), se foi feita comunicação do mesmo"
     type_info: "varchar2(1)"
+    categories: 1 Sim 2 Não 3 Não se aplica 9 Ignorado
+    characteristics: Campo essencial
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento do caso"
     required: true
+    characteristics: CAMPO OBRIGATÓRIO quando campo Classificação final estiver preenchido Data de encerramento deve ser >= a Data da Investigação.

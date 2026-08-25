@@ -8,27 +8,33 @@ hanseniase:
     type: string
     description_pt: "Identificador do prontuário na unidade de saúde"
     type_info: "varchar(10)"
+    categories: Nº/caracter atribuídos pela Unidade de saúde
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)."
     type_info: "varchar(6)"
+    categories: Categorias da classificação brasileira de ocupações (CBO)
   - name: NU_LESOES
     field: "nu_lesao_cultanea"
     type: numeric
     description_pt: "Número de lesões dermatológicas apresentadas pelo paciente por ocasião do diagnóstico"
     type_info: "numeric(2)"
+    characteristics: Até a versão 1.3 era limitada em 20 lesões
   - name: FORMACLINI
     field: "tp_forma_clinica"
     type: string
     description_pt: "Forma clínica inicial por ocasião do diagnóstico, segundo classificação de Madrid"
     type_info: "varchar(1)"
+    categories: 1- I -Indeterminada 2- T - Tuberculóide 3- D - Dimorfa 4- V - Virchowiana 5- Não classificado
   - name: CLASSOPERA
     field: "tp_classfic_operacional"
     type: string
     description_pt: "Classificação operacional, por ocasião do diagnóstico, para eleição do esquema terapêutico"
     type_info: "varchar(1)"
     required: true
+    categories: 1- PB - Paucibacilar 2- MB - Multibacilar
+    characteristics: Campo Obrigatório
   - name: NERVOSAFET
     field: "nu_nervo_afetado"
     type: numeric
@@ -39,27 +45,36 @@ hanseniase:
     type: string
     description_pt: "Avaliação do grau incapacidade física por ocasião do diagnóstico"
     type_info: "varchar(1)"
+    categories: 0 Grau zero 1- Grau I 2- Grau II 3 - Não avaliado
+    characteristics: Campo Essencial
   - name: MODOENTR
     field: "tp_modo_entrada"
     type: string
     description_pt: "Modo de entrada do paciente no sistema"
     type_info: "varchar(1)"
     required: true
+    categories: 1- Caso novo 2- Transferencia do mesmo município (outra unidade) 3- Transferência de outro município (mesma UF) 4- Transferência de outro estado 5- Transferencia de outro país 6- Recidiva 7- Outros reingressos 9- Ignorado
+    characteristics: Campo Obrigatório. Quando este campo for alterado, o campo (Modo de detecção do caso novo) deverá ser limpo automaticamente.
   - name: MODODETECT
     field: "tp_caso_novo"
     type: string
     description_pt: "Modo de detecção do caso novo"
     type_info: "varchar(1)"
+    categories: 1- Encaminhamento 2- Demanda espontânea 3- Exame de coletividade 4- Exame de contatos 5- Outros modos 9- Ignorado
+    characteristics: Campo Essencial Campo habilitado para digitação quando campo (Modo de entrada) = 1.
   - name: DTINICTRAT
     field: "dt_ini_tratamento"
     type: date
     description_pt: "Data do inicio do tratamento"
     required: true
+    characteristics: Campo obrigatório se esquema terapêutico inicial estiver preenchido. Data do início do tratamento  Data do diagnóstico. Preencher automaticamente o campo 11 - Data do último comparecimento, do acompanhamento, somente quando incluída a notificação/investigação pela primeira vez.
   - name: ESQ_INI_N
     field: "tp_esquema_terapeutico"
     type: string
     description_pt: "Esquema terapêutico instituído por ocasião do diagnostico"
     type_info: "varchar(1)"
+    categories: 1. PQT/ PB/ 6 doses 2. PQT/ MB/ 12 doses 3. Outros Esquemas Substitutos
+    characteristics: Campo Essencial Até a versão 1.3 era preenchido automaticamente a partir da classificação operacional no diagnóstico, Permite atualização, por meio de digitação direta de dado.
   - name: CONTREG
     field: "nu_contato_registrado"
     type: numeric
@@ -70,50 +85,64 @@ hanseniase:
     type: string
     description_pt: "Identifica se o registro é oriundo da rotina de migração da base Windows"
     type_info: "varchar2(1)"
+    categories: 11- migrado do Sinan Windows
   - name: UFATUAL
     field: "co_uf_atual"
     type: string
     description_pt: "Sigla da UF onde está localizada a unidade de saúde responsável pelo tratamento atual do paciente"
     type_info: "varchar(2)"
+    categories: Código da UF do cadastro do IBGE
+    characteristics: Preenchimento automático pela primeira vez a partir do município notificante (SG_UF). Quando o paciente muda de unidade de tratamento e é notificado novamente, este campo é atualizado automaticamente ao ser acionada a rotina de vinculação. entre as duas Notificações.
   - name: ID_MUNI_AT
     field: "co_municipio_atual"
     type: string
     description_pt: "Código e nome do município onde está localizada a unidade de saúde responsável pelo tratamento atual do paciente"
     type_info: "varchar(6)"
+    categories: Código e nome dos municípios do cadastro do IBGE
+    characteristics: Preenchimento automático pela primeira vez a partir do município notificante (ID_MUNICIPIO). Quando o paciente muda de unidade de tratamento e é notificado novamente, este campo é atualizado automaticamente ao ser acionada a rotina de vinculação. entre as duas notificações.
   - name: NU_NOT_AT
     field: "nu_notificacao_atual"
     type: string
     description_pt: "Número da ficha de notif./investig. enviada pela unidade de saúde atualmente responsável pelo paciente"
     type_info: "varchar(7)"
+    characteristics: Preenchimento automático pela primeira vez a partir do número de notificação atribuído pela unidade que diagnosticou o caso (NU_NOTIFICACAO). Quando o paciente muda de unidade de tratamento e é notificado novamente, este campo é Atualizado automaticamente ao ser acionada a rotina de vinculação.
   - name: DT_NOTI_AT
     field: "dt_notificacao_atual"
     type: date
     description_pt: "Data de notificação do caso pela unidade de saúde responsável pelo tratamento atual do caso"
+    characteristics: Preenchimento automático pela primeira vez a partir da Data da notificação efetuada pela unidade que diagnosticou o caso (DT_NOTIFICACAO) Quando o paciente muda de unidade de tratamento e é notificado novamente, este campo é atualizado automaticamente ao ser acionada a rotina de Vinculação.
   - name: ID_UNID_AT
     field: "co_unidade_atual"
     type: string
     description_pt: "Nome e código da unidade de saúde responsável pelo tratamento atual do paciente"
     type_info: "varchar(7)"
+    categories: Códigos e nomes de estabelecimentos de saúde (CNES)
+    characteristics: Preenchimento automático pela primeira vez a partir da unidade notificante (ID_UNIDADE). Quando o paciente muda de unidade de tratamento e é notificado novamente, este campo é atualizado automaticamente ao ser acionada a rotina de vinculação.
   - name: UFRESAT
     field: "co_uf_residencia_atual"
     type: string
     description_pt: "Sigla da UF de residência atual do paciente"
     type_info: "varchar(2)"
+    characteristics: Preenchido automaticamente pela primeira vez a partir de UF de residência por ocasião da notificação. Permite atualização, através de digitação direta de dado do acompanhamento do caso.
   - name: MUNIRESAT
     field: "co_municipio_residencia_atual"
     type: string
     description_pt: "código IBGE do município de residência atual do paciente"
     type_info: "varchar(6)"
+    characteristics: Preenchido automaticamente pela primeira vez a partir de município de residência por ocasião da notificação. Permite atualização, através de digitação direta de dado do acompanhamento do caso.
   - name: CEP
     field: "nu_cep_residencia_atual"
     type: string
     description_pt: "Código postal da residência atual do paciente"
     type_info: "varchar(8)"
+    characteristics: Preenchido automaticamente pela primeira vez a partir de CEP de residência por ocasião da notificação Permite atualização, através de digitação direta de dado do acompanhamento do caso.
   - name: DISTRIT_AT
     field: "co_distrito_residencia_atual"
     type: numeric
     description_pt: "Código do distrito de residência atual do paciente, segundo cadastro do módulo de tabelas do SINAN"
     type_info: "numeric(9) varchar(60)"
+    categories: Segundo cadastro do módulo de tabelas do SINAN
+    characteristics: Não será uma variável. A informação sobre distrito será obtida diretamente do bairro de residência atual. Permite atualização, através de digitação direta de dado do acompanhamento do caso.
   - name: BAIRROAT
     field: "no_bairro_residencia_atual co_bairro_residencia_atual"
     type: numeric
@@ -128,53 +157,70 @@ hanseniase:
     field: "dt_ultimo_comparecimento"
     type: date
     description_pt: "Data do último comparecimento do paciente na unidade de saúde ou atendimento por agente de saúde"
+    categories: Dd/mm/aaaa
+    characteristics: Campo Essencial Data do último comparecimento  Data do início do tratamento. Preenchido automaticamente somente pela primeira vez a partir de Data do inicio do tratamento, quando incluída a notificação/investigação. Permite atualização, através de digitação direta de dado do acompanhamento do caso. Sem alterar o campo 41- Data do início do tratamento da investigação.
   - name: CLASSATUAL
     field: "tp_classific_operacao_atual"
     type: string
     description_pt: "Classificação operacional do caso para eleição do esquema terapêutico adequado."
     type_info: "varchar(1)"
     required: true
+    categories: 1. PB (Paucibacilar) 2. MB (Multibacilar)
+    characteristics: Campo Obrigatório Preenchido automaticamente pela primeira vez a partir da classificação operacional por ocasião da notificação. Permite atualização, através de digitação direta de dado do acompanhamento do caso.
   - name: AVAL_ATU_N
     field: "tp_incapacidade_fisica_cura"
     type: string
     description_pt: "Avaliação do grau de incapacidade física no momento da cura"
     type_info: "varchar(1)"
+    categories: 0. grau zero 1. grau I 2. grau II 3. Não avaliado 9- Ignorado
+    characteristics: Campo Essencial
   - name: ESQ_ATU_N
     field: "tp_esquema_terapeutico_atual"
     type: string
     description_pt: "Esquema terapêutico em uso"
     type_info: "varchar(1)"
+    categories: 1- PQT/PB/06 doses 2- PQT/MB/12 doses 3- Outros Esquemas Substitutivos
+    characteristics: Campo Essencial Preenchido automaticamente pela primeira vez a partir do esquema terapêutico inicial por ocasião da notificação. Permite atualização.
   - name: DOSE_RECEB
     field: "nu_dose_recebida"
     type: numeric
     description_pt: "Número de doses supervisionadas recebidas sob supervisão"
     type_info: "numeric(2)"
+    characteristics: Campo Essencial
   - name: EPIS_RACIO
     field: "tp_reacao_tratamento"
     type: string
     description_pt: "Tipo de reação apresentada pelo paciente durante tratamento da hanseníase"
     type_info: "varchar(1)"
+    categories: 1- Reação tipo 1 2- Reação tipo 2 3- Reação tipo 1 e 2
   - name: DTMUDESQ
     field: "dt_mudanca_esquema"
     type: date
     description_pt: "Data de mudança de esquema terapêutico (se pertinente)"
+    categories: Dd/mm/aaaa
   - name: CONTEXAM
     field: "nu_contato_examinado"
     type: numeric
     description_pt: "Número de contatos intradomiciliares submetidos a exame dermatoneurológico"
     type_info: "numeric(2)"
+    characteristics: Este campo não deve aceitar o número maior que o campo 43 Número de contatos Registrados (será sempre = ou <).
   - name: DTALTA_N
     field: "dt_alta"
     type: date
     description_pt: "Data da alta"
     required: true
+    categories: Dd/mm/aaaa
+    characteristics: Campo Obrigatório se campo 19 (Tipo de Saída) e estiver preenchida. Data da alta  Data do sistema Data da alta  Data de início de tratamento
   - name: IN_VINCULA
     field: "st_vincula"
     type: string
     description_pt: "Indica se a notificação foi vinculada"
     type_info: "varchar2(1)"
+    categories: 0 - Não Vinculada 1 - Vinculada
+    characteristics: Categoria 1 atribuída pelo sistema após vinculação de notificações de hanseníase ou tuberculose.
   - name: NU_LOTE_IA
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação e do acompanhamento de um nível do sistema para outro (transferência vertical)"
     type_info: "varchar(7)"
+    characteristics: Preenchida quando realizada transferência vertical da investigação e acompanhamento

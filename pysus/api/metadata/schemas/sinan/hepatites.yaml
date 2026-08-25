@@ -8,6 +8,7 @@ hepatites:
     type: date
     description_pt: "Data em que ocorreu o início da investigação do caso – informar a Data da 1ª visita ao paciente"
     required: true
+    characteristics: Campo obrigatório Data da investigação >= Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -19,336 +20,441 @@ hepatites:
     description_pt: "Informar o tipo de hepatite viral da qual o paciente é suspeito."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Hepatite A 2-Hepatite B/C 3-Não especificada
+    characteristics: Campo obrigatório
   - name: HEPATITA
     field: "tp_vacina_hepatite_a"
     type: string
     description_pt: "Informar se o paciente tem vacinação contra hepatite A com esquema completo, incompleto ou não vacinado comprovado no cartão de vacinação."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Completa 2-Incompleta 3-Não vacinado 9-Ignorado
+    characteristics: Campo obrigatório
   - name: HEPATITB
     field: "tp_vacina_hepatite_b"
     type: string
     description_pt: "Informar se o paciente tem vacinação contra hepatite B com esquema completo, incompleto ou não vacinado comprovado no cartão de vacinação."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Completa 2-Incompleta 3-Não vacinado 9-Ignorado
+    characteristics: Campo obrigatório Habilitado se item anterior estiver preenchido.
   - name: INSTITUCIO
     field: "tp_institucionalizado"
     type: string
     description_pt: "Informar se paciente é institucionalizado e em que tipo de instituição. Havendo mais de uma considerar a de maior tempo de permanência."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Creche 2-Escola 3-Asilo 4-Empresa 5-Penitenciária 6-Hospital/ Clínica 7-Outras 8-Não institucionalizado 9-Ignorado
+    characteristics: Campo obrigatório
   - name: HIV
     field: "st_agravo_associado_aids"
     type: string
     description_pt: "Informar sobre a infecção pelo HIV/Aids diagnosticados no paciente em qualquer momento da vida."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: OUTRA_DST
     field: "st_agravo_associado_dst_outro"
     type: string
     description_pt: "Informar sobre DSTs diagnosticadas no paciente em qualquer momento da vida."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim 2-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: SEXUAL
     field: "tp_contato_paciente_vhb_sexual"
     type: string
     description_pt: "Informar se paciente teve contato sexual com paciente com diagnóstico laboratorial específico de hepatite B ou C e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: DOMICILI
     field: "tp_contato_paciente_vhb_domici"
     type: string
     description_pt: "Informar se paciente teve contato domiciliar (não sexual) com paciente com diagnóstico laboratorial específico de hepatite B ou C e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: OCUPACIO
     field: "tp_contato_paciente_vhb_ocupa"
     type: string
     description_pt: "Informar se paciente teve exposição ocupacional com paciente com diagnóstico laboratorial específico de hepatite B ou C e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: MEDICAMENT
     field: "tp_exp_medicamento_injetavel"
     type: string
     description_pt: "Informar sobre o uso de medicamentos injetáveis pelo paciente e há quanto tempo (considerar a data da investigação como parâmetro). Inclui-se aí, aqueles receitados por profissional ou não como energéticos (ex. gluconergan), anabolizantes, anfetaminas, etc."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: TATU_PIER
     field: "tp_exp_tatuagem"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: MATBIOLOGI
     field: "tp_exp_material_biologico"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório Se opção 1 ou 2, informar a data no campo Data do Acidente ou Transfusão ou Transplante
   - name: INAL_CRACK
     field: "tp_exp_droga_inalavel"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro). Inclui-se no ítem Drogas Inaláveis: cocaína inalável."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: ACUPUNTURA
     field: "tp_exp_acupuntura"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses. 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: TRANSFUSAO
     field: "tp_exp_transfusao_sangue"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório Se opção 1 ou 2, informar a data no campo Data do Acidente ou Transfusão ou Transplante
   - name: INJETAVEIS
     field: "tp_exp_droga_injetavel"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro). Inclui-se no ítem Drogas Injetáveis: silicone industrial, cocaína injetável, etc."
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: CIRURGICO
     field: "tp_exp_trata_cirurgico"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: AGUA_ALIME
     field: "tp_exp_agua_contaminada"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: DENTARIO
     field: "tp_exp_trata_dentario"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: TRESMAIS
     field: "tp_exp_parceiro_sexual"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim, há menos de 6 meses 2-Sim, há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: HEMODIALIS
     field: "tp_exp_hemodialise"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: TRANSPLA
     field: "tp_exp_transplante"
     type: string
     description_pt: "Informar se o paciente submeteu-se a situação de risco e há quanto tempo (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório Se opção 1 ou 2, informar a data no campo Data do Acidente ou Transfusão ou Transplante
   - name: OUTRAS
     field: "tp_exp_outro"
     type: string
     description_pt: "Informar se o paciente submeteu-se outras situações de risco diferentes das existentes no campo, há quanto tempo. Se sim, especificar a situação. (considerar a data da investigação como parâmetro)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Sim há menos de 6 meses 2-Sim há mais de seis meses 3-Não 9-Ignorado
+    characteristics: Campo obrigatório
   - name: DT_ACIDENT
     field: "dt_evento"
     type: date
     description_pt: "Informar data do acidente com material biológico ou data da transfusão de sangue/derivados ou data do transplante."
     required: true
+    characteristics: Campo obrigatório se acidente com material biológico for igual a “1” ou “ “2” ou transfusão de sangue ou hemoderivados = “1” ou “2” ou transplante igual a “1” ou “2”. Data deve ser <= a data de investigação
   - name: CO_UF_EXP
     field: "co_uf_exposicao_1"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(2)"
+    categories: Tabela com Códigos e siglas padronizados pelo IBGE
   - name: CO_MUN_EXP
     field: "co_municipio_exposicao_1"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(6)"
+    categories: Tabela com Código e nome dos municípios do cadastro do IBGE (tabela municipi.dbf)
   - name: DS_LOC_EXP
     field: "ds_local_exposicao_1"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(70)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: NU_TEL_EXP
     field: "nu_telefone_exposicao_1"
     type: string
     description_pt: "Informar o telefone (com o DDD) do local de exposição"
     type_info: "varchar2(9)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: CO_UF_EX2
     field: "co_uf_exposicao_2"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(2)"
+    categories: Tabela com Códigos e siglas padronizados pelo IBGE
   - name: CO_MUN_EX2
     field: "co_municipio_exposicao_2"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(6)"
+    categories: Tabela com Código e nome dos municípios do cadastro do IBGE (tabela municipi.dbf)
   - name: DS_LOC_EX2
     field: "ds_local_exposicao_2"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(70)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: NU_TEL_EX2
     field: "nu_telefone_exposicao_2"
     type: string
     description_pt: "Informar o telefone ( com o DDD) do local de exposição"
     type_info: "varchar2(9)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: CO_UF_EX3
     field: "co_uf_exposicao_3"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(2)"
+    categories: Tabela com Códigos e siglas padronizados pelo IBGE
   - name: CO_MUN_EX3
     field: "co_municipio_exposicao_3"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(6)"
+    categories: Tabela com Código e nome dos municípios do cadastro do IBGE (tabela municipi.dbf)
   - name: DS_LOC_EX3
     field: "ds_local_exposicao_3"
     type: string
     description_pt: "Informar o Local/ Município de exposição. Atentar para a observação, caso seja suspeita de hepatite A anotar a UF, município, local /nome e telefone da instituição referenciada no campo 35. Caso seja suspeita de hepatite B/C, anotar a UF, município, local /nome e telefone do local onde o paciente realizou hemodiálise, recebeu transfusão de sangue/hemoderivados ou transplante."
     type_info: "varchar2(70)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: NU_TEL_EX3
     field: "nu_telefone_exposicao_3"
     type: string
     description_pt: "Informar o telefone ( com o DDD) do local de exposição"
     type_info: "varchar2(9)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin
   - name: BANCOSANGU
     field: "st_paciente_banco_sangue"
     type: string
     description_pt: "Informar se o paciente foi encaminhado à Unidade Notificadora pelo Serviço de Banco de Sangue ou Centro de Testagem e Aconselhamento."
     type_info: "varchar2(1)"
+    categories: 1-Banco de Sangue 2-Centro de Testagem e aconselhamento (CTA) 3-Não se aplica
+    characteristics: CAMPO ESSENCIAL Se 1 ou 2 habilitar os campos 43 e 44. Se = 3- Não se aplica, pula para o campo 45 - Data da Coleta da Sorologia
   - name: DT_COLETA
     field: "dt_coleta_sorologia_1"
     type: date
     description_pt: "Informar a dia, mês e ano da coleta da amostra para sorologia realizada no Banco de Sangue ou Centro de Testagem e Aconselhamento"
+    characteristics: CAMPO ESSENCIAL Se campo 42 – Paciente encaminhado de = 1(banco de sangue) ou 2 (Centro de Testagem e Aconselhamento (CTA) Data da coleta <= a data da investigação
   - name: RES_HBSAG
     field: "tp_resultado_hbsag"
     type: string
     description_pt: "Informar resultado da sorologia (marcador HBsAg) realizada no Banco de Sangue ou Centro de Testagem e Aconselhamento"
     type_info: "varchar2(1)"
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado 9-Ignorado
+    characteristics: CAMPO ESSENCIAL Se campo Paciente encaminhado de= 1(banco de sangue) ou 2(Centro de Testagem e Aconselhamento (CTA)
   - name: RE_ANTIHBC
     field: "tp_resultado_antihbc"
     type: string
     description_pt: "Informar resultado da sorologia (marcador Anti-HBc total) realizada no Banco de Sangue ou Centro de Testagem e Aconselhamento"
     type_info: "varchar2(1)"
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado 9-Ignorado
+    characteristics: CAMPO ESSENCIAL Se campo Paciente encaminhado de= 1(banco de sangue) ou 2(Centro de Testagem e Aconselhamento (CTA)
   - name: RE_ANTIHCV
     field: "tp_resultado_antihcv"
     type: string
     description_pt: "Informar resultado da sorologia (marcador Anti-HCV) realizada no Banco de Sangue ou Centro de Testagem e Aconselhamento"
     type_info: "varchar2(1)"
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado 9-Ignorado
+    characteristics: CAMPO ESSENCIAL Se campo Paciente encaminhado de= 1(banco de sangue) ou 2(Centro de Testagem e Aconselhamento (CTA)
   - name: COLETAMARC
     field: "dt_coleta_sorologia_2"
     type: date
     description_pt: "Informar o dia, mês e ano da coleta da amostra para sorologia realizada na ocasião da investigação."
+    characteristics: CAMPO ESSENCIAL
   - name: ANTIHAVIGM
     field: "tp_soro_antihav_igm"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti -HAV IgM"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHBS
     field: "tp_soro_antihbs"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti -HBs"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHDVIGM
     field: "tp_soro_anti_hdv_igm"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti -HDV IgM"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: AGHBS
     field: "tp_soro_hbsag"
     type: string
     description_pt: "Informar resultado da sorologia para marcador HBsAg"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: AGHBE
     field: "tp_soro_hbeag"
     type: string
     description_pt: "Informar resultado da sorologia para marcador HBeAg"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHEVIGM
     field: "tp_soro_anti_hev_igm"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti - HEV IgM"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHBCIGM
     field: "tp_soro_antihbc_igm"
     type: string
     description_pt: "Informar resultado da sorologia para marcador AntiHBc IgM"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHBE
     field: "tp_soro_antihbe"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti - HBe"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHCV
     field: "tp_soro_hcv"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti-HCV"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: HBC_TOTAL
     field: "tp_soro_antihbc_total"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti-HBc total"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório
   - name: ANTIHDV
     field: "tp_soro_hdv_total"
     type: string
     description_pt: "Informar resultado da sorologia para marcador Anti HDV total"
     type_info: "varchar2(1)"
     required: true
+    categories: 1- Reagente/Reage nte 2-Não reagente/Negativ oNão reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório Retirada regra.
   - name: TP_SOROHCV
     field: "tp_soro_hcv_rna"
     type: string
     description_pt: "Informar resultado de exame de biologia molecular HCV-RNA"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Reagente 2-Não reagente 3-Inconclusivo 4-Não realizado
+    characteristics: Campo obrigatório Quando categoria = 1, habilitar o campo Genótipo para HCV
   - name: GEN_VHC
     field: "tp_genotipo_vhc"
     type: string
     description_pt: "Informar o genótipo do HVC"
     type_info: "varchar2(1)"
+    categories: 1-Genótipo 1 2-Genótipo 2 3-Genótipo 3 4-Genótipo 4 5-Genótipo 5 6-Genótipo 6 7-Não se aplica 9-Ignorado
+    characteristics: Se Anti-HCV <> 1 e HCV- RNA <> 1, preencher automaticamente com 7 – Não se Aplica.
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
     description_pt: "Informar o critério de diagnóstico (*)"
     type_info: "varchar2(1)"
     required: true
+    categories: 1-Confirmação laboratorial 2-Confirmação clínico- epidemiológica 3-Descartado 4-Cicatriz sorológica 8- Inconclusivo
+    characteristics: CAMPO OBRIGATÓRIO quando o campo data de encerramento estiver preenchido Se opção 3 ou 8, pular para campo Data do encerramento Se opção 4 – Cicatriz sorológica pular para campo 50 – Classificação Etiológica
   - name: FORMA
     field: "tp_forma_clinica"
     type: string
     description_pt: "Informar a forma clínica da hepatite (**)"
     type_info: "varchar2(1)"
+    categories: 1-Hepatite Aguda 2-Hepatite Crônica/Portador Assintomático 3-Hepatite Fulminante 4-Inconclusivo
+    characteristics: Campo Essencial Campo não habilitado se classificação final = 3 ou 8
   - name: CLAS_ETIOL
     field: "tp_classificacao_etiologica"
     type: string
     description_pt: "Informar o(s) agente(s) etiológico(s) do caso de acordo com o campo resultado sorológico/virológico"
     type_info: "varchar2(2)"
+    categories: 01.Vírus A 02.Vírus B 03.Vírus C 04.Vírus B e D 05.Vírus E 06.Virus B e C 07.Vírus A e B 08.Virus A e C 09.Outras Hepatites virais 99- Ignorado
+    characteristics: Campo Essencial Campo não habilitado se classificação final = 3 ou 8
   - name: FONTE
     field: "tp_provavel_infeccao"
     type: string
     description_pt: "Informar a provável fonte de infecção ou mecanismo de infecção"
     type_info: "varchar2(2)"
+    categories: 1-Sexual 2-Transfusional 3-Uso de Drogas 4-Vertical 5-Acidente de Trabalho 6-Hemodiális 7-Domiciliar 8-Tratamento cirúrgico 9-Tratamento dentário 10- Pessoa/pessoa 11-Alimento/água contaminad 12-Outros 99-Ignorado
+    characteristics: Campo Essencial Campo não habilitado se classificação final = 3 ou 8
   - name: DSFONTE
     field: "ds_provavel_inveccao_outro"
     type: string
     description_pt: "Descrição de outra fonte/mecanismo de Infecção"
     type_info: "varcahar(30)"
+    characteristics: Conteúdo desse campo pode ser visualizado pela função consulta do Sinan NET ou aplicativo que leia DBF, exceto o Tabwin Campo não habilitado se classificação final = 3 ou 8. Campo habilitado se Provável Fonte/ Mecanismo de infecção= 12(outros).
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar dia, mês e ano da data do encerramento do caso."
     required: true
+    characteristics: CAMPO OBRIGATÓRIO quando campo Classificação final estiver preenchido Data de encerramento deve ser maior ou igual à Data de Investigação

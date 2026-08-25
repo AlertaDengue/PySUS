@@ -22,6 +22,20 @@ class TestColumnInfo:
         assert col.dtype == ""
         assert col.dataset == ""
         assert col.endpoint == ""
+        assert col.categories == ""
+        assert col.characteristics == ""
+        assert col.required is False
+
+    def test_full_metadata_fields(self):
+        col = ColumnInfo(
+            name="con_classi",
+            categories="1. Forma bubônica 2. Forma pneumônica",
+            characteristics="Campo Essencial",
+            required=True,
+        )
+        assert "bubônica" in col.categories
+        assert col.characteristics == "Campo Essencial"
+        assert col.required is True
 
     def test_frozen(self):
         col = ColumnInfo(name="test")
@@ -60,6 +74,18 @@ class TestSearchColumns:
         assert len(results) > 0
         names = {c.name for c in results}
         assert "dt_notific" in names
+
+    def test_search_sinan_endpoint_metadata(self):
+        """SINAN disease forms expose full metadata (categories etc.)."""
+        results = search_columns("sinan", endpoint="peste")
+        con_classi = next(c for c in results if c.name == "con_classi")
+        assert "bubônica" in con_classi.categories
+        assert "confirmado" in con_classi.characteristics
+        assert con_classi.endpoint == "peste"
+
+    def test_search_query_matches_categories(self):
+        results = search_columns("sinan", "bubônica")
+        assert any(c.name == "con_classi" for c in results)
 
     def test_search_no_results(self):
         results = search_columns("arboviroses", "xyz_nonexistent")

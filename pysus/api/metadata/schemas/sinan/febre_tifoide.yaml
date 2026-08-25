@@ -8,20 +8,25 @@ febre_tifoide:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita ao paciente"
     required: true
+    characteristics: Campo Obrigatório Data da investigação >= Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e Comércio)."
     type_info: "varchar2(6)"
+    characteristics: Campo Essencial
   - name: CONTATO
     field: "tp_contato_caso_febre"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro Estado/Município 7. Outros 8. Sem história de contato 9. Ignorado
+    characteristics: Se categoria = 8 ou 9 pular para o campo 36 (Sugestão de vínculo).
   - name: CONT_OUT
     field: "ds_contato_caso_febre_outro"
     type: string
     description_pt: "Descrever qual foi o outro tipo de contato com caso semelhante até 45 dias antes do início dos sinais e sintomas."
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial Preencher se campo Contato compatível com caso de febre tifóide (até 45 dias antes do início dos sinais e sintomas =7(outros)
   - name: NM_CONTAT
     field: "no_contato"
     type: string
@@ -43,6 +48,8 @@ febre_tifoide:
     description_pt: "Identificar fontes de infecção mais comuns."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Consumo de água não tratada 2. Exposição à esgoto 3. Alimento suspeito 4. Deslocamento 5.Outros 9. Ignorado
+    characteristics: Campo Obrigatório
   - name: VINC_OUT
     field: "ds_sugestao_outro"
     type: string
@@ -54,103 +61,140 @@ febre_tifoide:
     description_pt: "O paciente assintomático"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se campo =1. Sim pular para campo 39.Tipo de Atendimento.
   - name: FEBRE
     field: "st_sinais_febre"
     type: string
     description_pt: "O paciente teve febre."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item Sinais e Sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: CEFALEIA
     field: "st_sinais_cefaleia"
     type: string
     description_pt: "O paciente teve cefaléia."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: DIARREIA
     field: "st_sinais_diarreia"
     type: string
     description_pt: "O paciente teve diarréia."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: CONSTIPA
     field: "st_sinais_constiparcao"
     type: string
     description_pt: "O paciente apresentou constipação."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: ASTENIA
     field: "st_sinais_astenia"
     type: string
     description_pt: "O paciente apresentou astenia."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: TOSSE
     field: "st_sinais_tosse"
     type: string
     description_pt: "O paciente teve tosse."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: ESPLENO
     field: "st_sinais_espenomeg"
     type: string
     description_pt: "O paciente apresentava esplenomegalia."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: TIFICA
     field: "st_sinais_roseola_tifica"
     type: string
     description_pt: "Foi identificada Reseola tiphy no paciente."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: NAUSEAS
     field: "st_sinais_nausea"
     type: string
     description_pt: "O paciente apresentou náuseas."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: VOMITOS
     field: "st_sinais_vomito"
     type: string
     description_pt: "O paciente apresentou vômitos."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: DOR
     field: "st_sinais_abdominal"
     type: string
     description_pt: "O paciente apresentou dor abdominal."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: PULSO
     field: "st_sinais_dissociacao"
     type: string
     description_pt: "O paciente teve dissociação pulso/temperatura."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Preenchimento automático dos campos do item sinais e sintomas (com categoria 2-não) quando o primeiro (assintomático) =1-sim)
   - name: ENTERO
     field: "st_complicacao_enterorragia"
     type: string
     description_pt: "Se o paciente apresentou enterorragia."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial
   - name: PERFURA
     field: "st_complicacao_perfuracao"
     type: string
     description_pt: "Se o paciente apresentou perfuração intestinal."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Opção não excludente
   - name: COMP_OUT
     field: "st_complicacao_outro"
     type: string
     description_pt: "O paciente apresentou outras complicações."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Se campo = 2, 9 ou null, pular para campo 39-tipo de atendimento
   - name: COMP_OUT_D
     field: "ds_complicacao_outro"
     type: string
     description_pt: "Especificar se o paciente apresentou outras complicações"
     type_info: "varchar2(30)"
+    characteristics: Campo Essencial Habilitar se campo Complicações (Outras) = 1(sim)
   - name: ATENDIMENT
     field: "tp_atendimento"
     type: string
     description_pt: "Tipo de atendimento recebido pelo paciente em decorrência da suspeita de febre tifóide"
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Hospitalar 2. Ambulatorial 3. Domiciliar 4. Nenhum 9. Ignorado
+    characteristics: Campo Obrigatório Se campo = 4 ou 9 pular para campo 44 (Material coletado Sangue).
   - name: DT_ATENDE
     field: "dt_atendimento"
     type: date
     required: true
+    categories: Dd/mm/aaaa
+    characteristics: Campo Obrigatório se campo 39 (Tipo de atendimento) = 1, 2 ou 3. Data do atendimento deve ser maior ou igual à Data de Primeiros Sintomas (campo 7) Data do atendimento deve ser ≤ data atual
   - name: UF
     field: "co_uf_atendimento"
     type: string
@@ -172,31 +216,41 @@ febre_tifoide:
     description_pt: "Colheu-se sangue para o exame."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se sangue, fezes e urina = 2, pular para campo 47 (Antibióticos Utilizados no Tratamento)
   - name: FEZES
     field: "st_material_coletado_fezes"
     type: string
     description_pt: "Colheu-se fezes para o exame."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se sangue, fezes e urina=2, pular para campo 47 (Antobióticos Utilizados no Tratamento)
   - name: URINA
     field: "st_material_coletado_medular"
     type: string
     description_pt: "Colheu-se urina para o exame."
     type_info: "varchar2(1)"
     required: true
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Obrigatório Se sangue, fezes e urina=2,pular para campo 47 (Antobióticos Utilizados no Tratamento)
   - name: ANTIBIOTIC
     field: "st_uso_antibiotico"
     type: string
     description_pt: "O paciente fez uso de antibiótico antes da coleta para exame."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: DT_HEMO1
     field: "dt_hemocultura_coleta_1"
     type: date
     description_pt: "O exame coletado hemocultura."
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 1ª coleta deve ser ≤ data atual Campo Hemocultura só será habilitado para preenchimento se campo 44. Material Coletado – Sangue for = 1. Sim
   - name: HEMO_R1
     field: "tp_hemocultura_resultado_1"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: HEMO_D_1
     field: "ds_hemocultura_resultado_1"
     type: string
@@ -204,10 +258,13 @@ febre_tifoide:
   - name: DT_HEMO2
     field: "dt_hemocultura_coleta_2"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta>= Data de Primeiros Sintomas Data da 2ª coleta deve ser ≤ data atual
   - name: HEMO_R2
     field: "tp_hemocultura_resultado_2"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: HEMO_D_2
     field: "ds_hemocultura_resultado_2"
     type: string
@@ -215,10 +272,13 @@ febre_tifoide:
   - name: DT_HEMO3
     field: "dt_hemocultura_coleta_3"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 3ª coleta deve ser ≤ data atual
   - name: HEMO_R3
     field: "tp_hemocultura_resultado_3"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: HEMO_D_3
     field: "ds_hemocultura_resultado_3"
     type: string
@@ -227,11 +287,14 @@ febre_tifoide:
     field: "dt_mielocultura_coleta_1"
     type: date
     description_pt: "Data da coleta do material de urocultura"
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta>= Data de Primeiros Sintomas Data da 1ª coleta deve ser ≤ data atual Campo Urocultura só será habilitado para preenchimento se campo 44. Material Coletado – Urina for = 1(Sim).
   - name: URO_R1
     field: "tp_mielocultura_resultado_1"
     type: string
     description_pt: "Resultado da coleta de urocultura"
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: URO_D
     field: "Ds_mielocultura_resultado_1"
     type: string
@@ -240,10 +303,13 @@ febre_tifoide:
     field: "Dt_mielocultura_coleta_2"
     type: date
     description_pt: "O exame coletado foi urocultura."
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta>= Data de Primeiros Sintomas Data da 2ª coleta deve ser ≤ data atual
   - name: URO_R2
     field: "tp_mielocultura_resultado_2"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: URO_D_2
     field: "ds_mielocultura_resultado_2"
     type: string
@@ -252,10 +318,13 @@ febre_tifoide:
     field: "dt_mielocultura_coleta_3"
     type: date
     description_pt: "O exame coletado foi urocultura."
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 3ª coleta deve ser ≤ data atual
   - name: URO_R3
     field: "tp_mielocultura_resultado_3"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: URO_D_3
     field: "ds_mielocultura_resultado_3"
     type: string
@@ -263,10 +332,12 @@ febre_tifoide:
   - name: DT_COPRO1
     field: "dt_coprocultura_coleta_1"
     type: date
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 1ª coleta deve ser ≤ data atual Campo Coprocultura só será habilitado para preenchimento se campo 44. Material Coletado – Fezes for = 1. Sim
   - name: COPRO_R1
     field: "tp_coprocultura_resultado_1"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: COPRO_D_1
     field: "ds_coprocultura_resultado_1"
     type: string
@@ -274,10 +345,12 @@ febre_tifoide:
   - name: DT_COPRO2
     field: "dt_coprocultura_coleta_2"
     type: date
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 2ª coleta deve ser ≤ data atual
   - name: COPRO_R2
     field: "tp_coprocultura_resultado_2"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: COPRO_D_2
     field: "ds_coprocultura_resultado_2"
     type: string
@@ -285,10 +358,13 @@ febre_tifoide:
   - name: DT_COPRO3
     field: "dt_coprocultura_coleta_3"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 3ª coleta deve ser ≤ data atual
   - name: COPRO_R3
     field: "tp_coprocultura_resultado_3"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: COPRO_D_3
     field: "ds_coprocultura_resultado_3"
     type: string
@@ -296,10 +372,13 @@ febre_tifoide:
   - name: DT_OUTR1
     field: "dt_outro_coleta_1"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 1ª coleta deve ser ≤ a data atual
   - name: OUTR_R1
     field: "tp_outro_resultado_1"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: OUTR_D1
     field: "ds_outro_resultado_1"
     type: string
@@ -307,10 +386,13 @@ febre_tifoide:
   - name: DT_OUTR2
     field: "dt_outro_coleta_2"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 2ª coleta deve ser ≤ data atual
   - name: OUTR_R2
     field: "tp_outro_resultado_2"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: OUTR_D2
     field: "ds_outro_resultado_2"
     type: string
@@ -318,10 +400,13 @@ febre_tifoide:
   - name: DT_OUTR3
     field: "dt_outro_coleta_3"
     type: date
+    categories: Dd/mm/aaaa
+    characteristics: Data da Coleta >= Data de Primeiros Sintomas Data da 3ª coleta deve ser ≤ data atual
   - name: OUTR_R3
     field: "tp_outro_resultado_3"
     type: string
     type_info: "varchar2(1)"
+    categories: 1. Salmonella typhi 2. Salmonella SPP 3. Negativo 4. Outro agente
   - name: OUTR_D3
     field: "ds_outro_resultado_3"
     type: string
@@ -331,26 +416,32 @@ febre_tifoide:
     type: string
     description_pt: "O paciente fez uso de Cloranfenicol durante o tratamento."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: AMPICILINA
     field: "st_antibio_trata_ampicilina"
     type: string
     description_pt: "O paciente fez uso de Ampicilina durante o tratamento."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: SULFA
     field: "st_antibio_trata_sulfametox"
     type: string
     description_pt: "O paciente fez uso de Sulfametoxazol durante o tratamento."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: QUINOLONA
     field: "st_antibio_trata_quinolona"
     type: string
     description_pt: "O paciente fez uso de Quinolona durante o tratamento."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
   - name: ANT_OUTR
     field: "st_antibio_trata_outro"
     type: string
     description_pt: "O paciente usou outros tipos de antibióticos."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial
   - name: ANT_OUT_D
     field: "ds_antibio_trata_outro"
     type: string
@@ -367,40 +458,54 @@ febre_tifoide:
     description_pt: "Confirma ou descarta o caso de Febre Tifóide."
     type_info: "varchar2(2)"
     required: true
+    categories: 1. Confirmado 2. Descartado
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido. Não permitir preenchimento com a opção 2-descartado se qualquer resultado do campo 46-Exames Laboratoriais for igual a 1- Samonella typhi.
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Define se o caso foi confirmado pelo critério de laboratório ou clínico- epidemiológico."
     type_info: "varchar2(2)"
+    categories: 1. Laboratorial 2. Clínico epidemiológico
+    characteristics: Campo Essencial Se todos os resultados do campo 46 estiverem em branco, Critério de Confirmação/Descarte deve ser diferente de 1.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     required: true
+    categories: 1 – Sim 2 – Não 3 – Indeterminado
+    characteristics: Campo Obrigatório se campo 48 classificação final=1(confirmado). Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco). Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção). Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção). Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
     type_info: "varchar2(2)"
     required: true
+    categories: Tabela com siglas e código padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     required: true
+    categories: Tabela com código e descrição de paises.
+    characteristics: Campo Obrigatório se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi Provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     required: true
+    categories: Tabela com Códigos e nomes padronizados pelo IBGE
+    characteristics: Campo Obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado). Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso. Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela."
     type_info: "varchar2(4)"
+    categories: Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1 (confirmado) Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CO_BAINFC
     field: "co_bairro_infeccao no_bairro_infeccao"
     type: string
@@ -416,22 +521,32 @@ febre_tifoide:
     type: string
     description_pt: "Se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
     type_info: "varchar2(1)"
+    categories: 1. Sim 2. Não 9. Ignorado
+    characteristics: Campo Essencial Campo habilitado se classificação final=1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Evolução do caso"
     type_info: "varchar2(1)"
+    categories: 1. Cura 2. Óbito por febre tifóide 3. óbito por outras causas 9. Ignorado
+    characteristics: Campo Essencial Se campo = 1, 9 ou null pular para campo 59 (Data do encerramento). Campo habilitado se classificação final=1,2 e null. Se classificação final = 2 (descartado) não permitir a opção o preenchimento com a opção 2 (óbito por febre tifóide).
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    categories: Dd/mm/aaaa
+    characteristics: Campo habilitado se campo 57 (Evolução do caso) for igual a 2 (Óbito por febre tifóide) ou 3 (óbito por outras causas). Data de Óbito deve ser maior ou igual à Data dos Primeiros Sintomas. Data do óbito deve ser ≤ data atual.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento da investigação."
     required: true
+    categories: Dd/mm/aaaa
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido. Data encerramento deve ser maior ou igual Data de investigação. Data do encerramento deve ser ≤ data atual.
   - name: NU_LOTE_I
     field: "nu_lote_vertical"
     type: string
     description_pt: "Identifica o Lote da transferência da investigação de um nível do sistema para outro ( transferência vertical)"
     type_info: "varchar(7)"
+    categories: Descrever aqui a estrutura da composição do número do lote.
+    characteristics: Preenchida quando realizada transferência vertical

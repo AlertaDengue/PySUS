@@ -9,11 +9,13 @@ chikungunya:
     type_info: "VARCHAR(1)"
     required: true
     categories: "1-Dengue 2-Chikungunya"
+    characteristics: Campo Obrigatório Preenchendo o código, a descrição é preenchida automaticamente, e vice-versa.
   - name: DT_INVEST
     field: "dt_investigacao"
     type: date
     description_pt: "Informar a data da investigação"
     required: true
+    characteristics: Campo obrigatório - Não aceitar Data da investigação anterior a Data de notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -25,184 +27,217 @@ chikungunya:
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: MIALGIA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: CEFALEIA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: EXANTEMA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: VOMITO
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: NAUSEA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: DOR_COSTAS
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: CONJUNTVIT
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: ARTRITE
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: ARTRALGIA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: LEUCOPENIA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: LACO
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: DOR_RETRO
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: DIABETES
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: HEMATOLOG
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: HEPATOPAT
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: RENAL
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: HIPERTENSA
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: AUTO_IMUNE
     type: string
     description_pt: "Informar qual sinal clínico ou achados laboratoriais inespecíficos"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório
   - name: DT_CHIK_S1
     field: "dt_coleta_exame"
     type: date
     description_pt: "Data da Coleta Exame Sorológico (IgM) Chikungunya soro 1"
+    characteristics: Campo Essencial Deve ser maior ou igual à data de primeiros sintomas. Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: DT_CHIK_S2
     field: "dt_coleta_exame"
     type: date
     description_pt: "Data da Coleta Exame Sorológico (IgM) Chikungunya soro 2"
+    characteristics: Campo Essencial Deve ser maior que a data da primeira coleta. Não permitir o preenchimento se data da primeira coleta estiver em branco. Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: DT_PRNT
     field: "dt_coleta_exame"
     type: date
     description_pt: "Data da Coleta Exame PRNT"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: RES_CHIKS1
     field: "tp_result_exame"
     type: string
     description_pt: "Resultado do Exame Sorológico (IgM) soro 1 para Chikunugnya"
     type_info: "VARCHAR(1)"
     categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: RES_CHIKS2
     field: "tp_result_exame"
     type: string
     description_pt: "Resultado do Exame Sorológico (IgM) soro 2 para Chikunugnya"
     type_info: "VARCHAR(1)"
     categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: RESUL_PRNT
     field: "tp_result_exame"
     type: string
     description_pt: "Resultado do Exame Sorológico (IgM) PRNT"
     type_info: "VARCHAR(1)"
     categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 2 Chikungunya
   - name: DT_SORO
     field: "dt_coleta_exame"
     type: date
     description_pt: "Data da Coleta Exame Sorológico (IgM) Dengue"
+    characteristics: Campo Essencial Deve ser maior ou igual à data de primeiros sintomas. Habilitado apenas se campo 2-Agravo/doença= 1 Dengue.
   - name: RESUL_SORO
     field: "tp_result_exame"
     type: string
     description_pt: "Resultado do Exame Sorológico (IgM) Dengue"
     type_info: "VARCHAR(1)"
     categories: "1-Reagente 2-Não Reagente 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 1- Dengue
   - name: DT_NS1
     field: "dt_coleta_NS1"
     type: date
     description_pt: "Data da coleta Exame Sorologia ELISA"
+    characteristics: Campo Essencial Deve ser maior ou igual à data de primeiros sintomas. Habilitado apenas se campo 2- Agravo/doença= 1- Dengue
   - name: RESUL_NS1
     field: "Tp_result_NS1"
     type: string
     description_pt: "Resultado do Exame Sorologia ELISA"
     type_info: "VARCHAR(1)"
     categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado apenas se campo 2-Agravo/doença= 1- Dengue
   - name: DT_VIRAL
     field: "dt_coleta_isolamento"
     type: date
     description_pt: "Data da Coleta Isolamento Viral"
+    characteristics: Campo Essencial Deve ser maior ou igual à data de primeiros sintomas. Habilitado para dengue ou chikungunya (campo 2- Agravo/doença)
   - name: RESUL_VI_N
     field: "tp_result_isolamento"
     type: string
     description_pt: "Resultado Exame de Isolamento Viral"
     type_info: "VARCHAR(1)"
     categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo Essencial Habilitado para dengue ou chikungunya (campo 2- Agravo/doença)
   - name: DT_PCR
     field: "dt_coleta_rtpcr"
     type: date
     description_pt: "Data de Coleta do Exame de RT-PCR"
+    characteristics: Campo essencial Deve ser maior ou igual à data de primeiros sintomas. Habilitado para dengue ou chikungunya (campo 2- Agravo/doença)
   - name: RESUL_PCR_
     field: "tp_result_rtpcr"
     type: string
     description_pt: "Resultado do Exame de RT-PCR"
     type_info: "VARCHAR(1)"
     categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo essencial Habilitado para dengue ou chikungunya (campo 2- Agravo/doença)
   - name: SOROTIPO
     field: "tp_sorotipo"
     type: string
@@ -210,83 +245,98 @@ chikungunya:
     type_info: "VARCHAR(1)"
     required: true
     categories: "1-DEN 1 2-DEN 2 3 DEN 3 4-DEN 4"
+    characteristics: Campo obrigatório Se campo 44-Isolamento Viral(resultado) ou campo 46-RT-PCR (resultado)= 1(positivo). Campo desabilitado se campo 44-Isolamento Viral(resultado) e campo 46-RT-PCR(resultado) diferente de 1(positivo). Habilitado apenas se campo 2-Agravo/doença= 1- Dengue
   - name: HISTOPA_N
     field: "tp_result_histopatologia"
     type: string
     description_pt: "Resultado Exame de Histopatologia"
     type_info: "VARCHAR(1)"
     categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo essencial Habilitado apenas se campo 2-Agravo/doença= 1- Dengue
   - name: IMUNOH_N
     field: "tp_result_imunohistoquimica"
     type: string
     description_pt: "Resultado Exame de Imunohistoquímica"
     type_info: "VARCHAR(1)"
     categories: "1-Positivo 2-Negativo 3-Inconclusivo 4-Não realizado"
+    characteristics: Campo essencial Habilitado apenas se campo 2-Agravo/doença= 1- Dengue
   - name: HOSPITALIZ
     field: "st_ocorreu_hospitalizacao"
     type: string
     description_pt: "Informa se ocorreu hospitalização"
     type_info: "VARCHAR(1)"
     categories: "1-Sim 2-Não 9-Ignorado"
+    characteristics: Se campo = 2 – Não ou 9- Ignorado, pular para o campo 56-Local Provável de Infecção
   - name: DT_INTERNA
     field: "dt_internacao"
     type: date
     description_pt: "Informar a data de internação do paciente"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização? =1(sim).
   - name: UF
     field: "co_uf_hospital"
     type: string
     description_pt: "Sigla da UF onde o paciente foi hospitalizado"
     type_info: "VARCHAR(2)"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização? =1(sim).
   - name: MUNICIPIO
     field: "co_municipio_hospital"
     type: string
     description_pt: "Código e nome completo do município onde o paciente foi hospitalizado"
     type_info: "VARCHAR(6)"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização?=1(sim).
   - name: HOSPITAL
     field: "co_unidade_hospital"
     type: string
     description_pt: "Nome completo da unidade de saúde em que o paciente foi notificado"
     type_info: "VARCHAR(8)"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização? =1(sim).
   - name: DDD_HOSP
     field: "nu_ddd_hospital"
     type: string
     description_pt: "Código DDD do telefone da unidade de saúde onde o paciente foi hospitalizado"
     type_info: "VARCHAR(2)"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização? =1(sim).
   - name: TEL_HOSP
     field: "nu_telefone_hospital"
     type: string
     description_pt: "Telefone da unidade de saúde onde o paciente foi hospitalizado"
     type_info: "VARCHAR(9)"
+    characteristics: Habilitado se campo 50- Ocorreu Hospitalização? =1(sim).
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
     description_pt: "Indica se o caso é autóctone do município de residência ."
     type_info: "varchar2(1)"
     categories: "1 – Sim 2 – Não 3 – Indeterminado"
+    characteristics: Campo Essencial se campo 62 (classificação) for diferente de 5 (descartado) ou null. Campo habilitado se classificação =10, 11, 12 ou 13 Se igual a 1 (sim), o sistema deve preencher automaticamente os campos 57 a 59 (UF, País e Município) com os valores registrados nos campos 17, 30 e 18 respectivamente e habilitar para o usuário preencher os campos 60 e 61 (distrito e bairro); Se igual a 2 (Não), o sistema deve habilitar para o usuário preencher os campos de 56 a 60 (UF, País e Município, distrito e bairro); Se igual a 3 (Indeterminado), pular os campos de 56 a 60 (UF, País, Município, Distrito e Bairro). Quando a classificação for preenchida com 5 (descartado) os dados desse campo são automaticamente Apagados.
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
     description_pt: "Sigla da unidade federada onde o paciente foi provavelmente infectado."
     type_info: "varchar2(2)"
     categories: "Tabela com siglas e código padronizados pelo IBGE"
+    characteristics: Campo Essencial se campo 58 (País) for igual a Brasil E campo 62 (classificação) for diferente de 5 (descartado). Se o campo 56 (O caso é autóctone do município de residência) for igual a 1 (sim), o sistema preenche automaticamente com o dado do campo 17 (UF de residência); Quando o campo 62 (classificação) for preenchida com 5 (descartado) os dados desse campo são automaticamente apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
     description_pt: "País onde o paciente foi provavelmente infectado."
     type_info: "varchar(4)"
     categories: "Tabela com código e descrição de paises."
+    characteristics: Campo Essencial se campo 62 (classificação) for diferente de 5 (descartado). Se o campo 56 (O caso é autóctone do município de residência) for igual a 1 (sim), o sistema deve preencher automaticamente com o dado do campo 30 (país de residência); Se país de residência for diferente de BRASIL, o usuário deverá informar o país e acrescentar as demais informações no campo observações adicionais. Se campo 56 (O caso é Autóctone de residência?) for igual a 2 (não) e o usuário preencher o campo 57-UF(provável da fonte de infecção), o sistema preenche automaticamente com o campo 58-País (provável da fonte de infecção) com Brasil. Se o campo 57- UF(provável da fonte de infecção) for apagado pelo usuário o sistema apaga automaticamente o campo 58-País (provável da fonte de infecção) com Brasil. Quando o campo 62. classificação for preenchida com 5(descartado) os dados desse campo são automaticamente Apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
     description_pt: "Código do município onde o paciente foi provavelmente infectado. O nome está associado ao código na tabela de municípios."
     type_info: "varchar2(6)"
     categories: "Tabela com Códigos e nomes padronizados pelo IBGE"
+    characteristics: Campo Essencial se campo 58 (país de infecção) for igual a Brasil e campo 62 (classificação) for diferente de 5 (descartado). Se o campo 56 (O caso é autóctone do município de residência) for igual a 1 (sim), o sistema deve preencher automaticamente com o dado do campo 18 (município de residência). Quando o campo 62 (classificação) for preenchida com 5 (descartado) os dados desse campo são automaticamente Apagados.
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela."
     type_info: "varchar2(4)"
     categories: "Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan."
+    characteristics: Campo Essencial se o município de infecção, informado no campo 58, for subdividido em distrito E campo 58 (país de infecção) for igual a Brasil E campo 62 (classificação) for diferente de 5 (descartado). Quando o campo 62 (classificação) for preenchida com 5 (descartado) os dados desse campo são automaticamente apagados.
   - name: CO_BAINF
     field: "co_bairro_infeccao, no_bairro_infeccao"
     type: string
@@ -306,6 +356,7 @@ chikungunya:
     type_info: "VARCHAR(1)"
     required: true
     categories: "5-Descartado 10-Dengue 11-Dengue com sinais de alarme 12-Dengue grave 13-Chikungunya"
+    characteristics: Campo Obrigatório quando o campo data de encerramento estiver preenchido. Desabilitar categoria 13- Chikungunya se campo 2- Notificação= 1-Dengue. Desabilitar categorias 10- Dengue, 11-Dengue com sinais de alarme e 12- Dengue grave se campo 2-Notificação= 2- Chikungunya
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
@@ -313,180 +364,212 @@ chikungunya:
     type_info: "VARCHAR(2)"
     required: true
     categories: "1-Laboratório 2-Clínico Epidemiológico 3-Em investigação"
+    characteristics: Campo Obrigatório se classificação preenchidaSe campo 62- Classificação = 5, pular para o campo 65 (Evolução do Caso), após o preenchimento do campo 63-Critério de confirmação descarte.
   - name: CLINIC_CHIK
     type: string
     description_pt: "Informar a apresentação clínica do caso de Chikungunya"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1- Aguda 2- Crônica"
+    characteristics: Campo Obrigatório Se campo 62- Classificação=13 Chikungunya e se campo 63-Critério de confirmação/descarte= - Laboratório ou 2-Clínico epidemiológico
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a evolução do caso."
     type_info: "VARCHAR(1)"
     categories: "1- cura 2- óbito pelo agravo 3- óbito por outras causas 4- óbito em investigação 9- ignorado"
+    characteristics: Campo essencial - Se campo Evolução do caso =1(cura) ou 9 (ignorado) ou null, pular para campo 67. Data do encerramento.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do óbito."
     required: true
+    characteristics: Campo Obrigatório se campo 65. Evolução do caso =2 (óbito pelo agravo) ou 3 (óbito por outras causas) ou 4 (óbito em investigação). Data deve ser maior ou igual a Data dos Primeiros Sintomas.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento do caso"
     required: true
+    characteristics: Campo Obrigatório quando campo 62. Classificação estiver preenchido E o campo critério de confirmação (63) for diferente de 3. Campo desabilitado se o campo critério de confirmação (63) for igual A 3. Data deve ser maior ou igual a Data da Investigação
   - name: ALRM_HIPOT
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63. Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue grave.
   - name: ALRM_PLAQ
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63. Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue Grave.
   - name: ALRM_VOM
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63. Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue grave.
   - name: ALRM_ABDOM
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62-Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63. Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue Grave.
   - name: ALRM_LETAR
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63. Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue Grave.
   - name: ALRM_SANG
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63.Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue grave.
   - name: ALRM_HEMAT
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue Grave.
   - name: ALRM_HEPAT
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e campo 63.Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62-Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue Grave.
   - name: ALRM_LIQ
     type: string
     description_pt: "Informar qual sinal de alarme foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue grave.
   - name: DT_ALRM
     type: date
     description_pt: "Informar data de início dos sinais de alarme. Considerar a data do primeiro sinal de alarme manifestado."
     required: true
+    characteristics: Campo obrigatório Se campo 62- Classificação = 11 Dengue com Sinais de Alarme e campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico Epidemiológico Campo habilitado também se campo 62- Classificação = 12- Dengue grave e Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 11-Dengue com Sinais de Alarme e 12-Dengue grave.
   - name: GRAV_PULSO
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave campo 63- Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_CONV
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue Grave 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_ENCH
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_INSUF
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_TAQUI
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_EXTRE
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62-Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_HIPOT
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_HEMAT
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_MELEN
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_METRO
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_SANG
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_AST
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_MIOC
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_CONSC
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     type_info: "VARCHAR(1)"
     required: true
     categories: "1 – Sim 2 – Não"
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: GRAV_ORGAO
     type: string
     description_pt: "Informar qual sinal de gravidade foi encontrado"
     required: true
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: DT_GRAV
     type: date
     description_pt: "Informar data de início dos sinais de alarme. Considerar a data do primeiro sinal de alarme manifestado."
     required: true
+    characteristics: Campo obrigatório Se campo 62- Classificação = 12 Dengue grave e campo 63-Critério de confirmação/descarte=1 Laboratorial ou 2-Clínico epidemiológico. Desabilitado se campo 62- Classificação for diferente de 12-Dengue grave.
   - name: DS_OBS
     field: "ds_observacao"
     type: string
     description_pt: "Informações complementares e observações adicionais a respeito do caso.(Ex: descrever manifestações hemorrágicas não citadas na ficha)"
     type_info: "VARCHAR(255)"
+    characteristics: Habilitado para todas notificações

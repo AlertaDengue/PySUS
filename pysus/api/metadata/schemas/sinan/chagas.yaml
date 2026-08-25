@@ -8,41 +8,49 @@ chagas:
     type: date
     description_pt: "Data em que ocorreu a investigação – informar a Data da 1ª visita ao paciente"
     required: true
+    characteristics: Campo obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
     description_pt: "Informar a atividade exercida pelo paciente no setor formal, informal ou autônomo ou sua última atividade exercida quando paciente for desempregado. O ramo de atividade econômica do paciente refere-se as atividades econômicas desenvolvidas nos processos de produção do setor primário (agricultura e extrativismo); secundário (indústria) ou terciário (serviços e comércio)"
     type_info: "varchar(6)"
+    characteristics: Campo Essencial
   - name: ANT_UF_1
     field: "co_uf_desloca_1"
     type: string
     description_pt: "Deslocamento(Datas e locais freqüentados no período de 15 meses anteriores ao inicio dos sinais e sintomas) Informar a UF de Deslocamento"
     type_info: "varchar(2)"
+    characteristics: Campo Essencial
   - name: MUN_1
     field: "co_municipio_desloca_1"
     type: string
     description_pt: "Informar o Município de Deslocamento"
     type_info: "varchar(6)"
+    characteristics: Campo Essencial
   - name: ANT_UF_2
     field: "co_uf_desloca_2"
     type: string
     description_pt: "Informar a UF de Deslocamento"
     type_info: "varchar(2)"
+    characteristics: Campo Essencial
   - name: MUN_2
     field: "co_municipio_desloca_2"
     type: string
     description_pt: "Informar o Município de Deslocamento"
     type_info: "varchar(6)"
+    characteristics: Campo Essencial
   - name: ANT_UF_3
     field: "co_uf_desloca_3"
     type: string
     description_pt: "Informar a UF de Deslocamento"
     type_info: "varchar(2)"
+    characteristics: Campo Essencial
   - name: MUN_3
     field: "co_municipio_desloca_3"
     type: string
     description_pt: "Informar o Município de Deslocamento"
     type_info: "varchar(6)"
+    characteristics: Campo Essencial
   - name: PRESENCA
     field: "st_presenca_triatomideos"
     type: string
@@ -50,10 +58,12 @@ chagas:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim; 2-não; 3-não realizado 9-ignorado"
+    characteristics: Campo obrigatório Se preenchido diferente de 1 pular para campo 36 (História de uso de sangue ou hemoderivados nos últimos 120 dias)
   - name: PARASITO
     field: "dt_encontro_parasito"
     type: date
     description_pt: "Data do encontro do parasito"
+    characteristics: Habilitar se campo 34- encontro dos vestígios = 1(sim)
   - name: HISTORIA
     field: "st_uso_sangue_hemoderivado"
     type: string
@@ -61,6 +71,7 @@ chagas:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo obrigatório.
   - name: CONTROLE
     field: "st_controle_sorologico"
     type: string
@@ -68,111 +79,130 @@ chagas:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim; 2-não; 3- não se aplica 9- ignorado"
+    characteristics: Campo Obrigatório se campo 36 - História de uso de sangue ou hemoderivados nos últimos 120 dias for = 1
   - name: MANIPULA
     field: "tp_manipulacao_tcruzi"
     type: string
     description_pt: "Se o paciente manipulou material com Tripanossoma Cruzi"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: MAECHAGA
     field: "tp_recem_nascido"
     type: string
     description_pt: "Se o recém-nascido é filho de mãe com infecção chagásica"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: ORAL
     field: "st_transmissao_oral"
     type: string
     description_pt: "Possibilidade de transmissão por via oral"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: ASSINTOMA
     field: "st_sinais_assintomatico"
     type: string
     description_pt: "Se o paciente é assintomático."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial Se categoria = 1 (Sim) ou null, pular para campo 42 (Data da Coleta referente a Exames Realizados)
   - name: EDEMA
     field: "st_sinais_edema"
     type: string
     description_pt: "Se o paciente apresentou edema."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: MENINGOE
     field: "st_sinais_meningoencefalite"
     type: string
     description_pt: "Se o paciente apresentou meningoencefalite."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: POLIADENO
     field: "st_sinais_poliadenopatia"
     type: string
     description_pt: "Se o paciente apresentou POLIADENOPATIA."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: FEBRE
     field: "st_sinais_febre_persistente"
     type: string
     description_pt: "Se o paciente apresentou febre persistente."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: HEPATOME
     field: "st_sinais_hepatomegalia"
     type: string
     description_pt: "Se o paciente apresentou hepatomegalia."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: SINAIS_ICC
     field: "st_sinais_icc"
     type: string
     description_pt: "Se o paciente apresentou sinais de Insuficiência Cardíaca Congestiva."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: ARRITMIAS
     field: "st_sinais_taquicardia"
     type: string
     description_pt: "Se o paciente apresentou TAQUICARDIA PERSISTENTE."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: ASTENIA
     field: "st_sinais_astenia"
     type: string
     description_pt: "Se o paciente apresentou astenia."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: ESPLENOM
     field: "st_sinais_esplenomegalia"
     type: string
     description_pt: "Se o paciente apresentou esplenomegalia."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: CHAGOMA
     field: "st_sinais_chagoma"
     type: string
     description_pt: "Se o paciente apresentou Chagoma de Inoculação (sinal de Romana ou outro)."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: OUTRO_SIN
     field: "st_sinal_outro"
     type: string
     description_pt: "Se o paciente apresentou outros sinais e sintomas"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial
   - name: OUTRO_ESP
     field: "ds_sinal_outro"
     type: string
     description_pt: "Especificar qual outro sinais e sintomas"
     type_info: "varchar(30)"
+    characteristics: Campo Essencial se campo Sinais e sintomas OUTROS=1(sim)
   - name: DT_COL_DIR
     field: "dt_coleta_parasita_direto"
     type: date
     description_pt: "Data de coleta do material para realização do exame parasitológico"
+    characteristics: Não aceitar data anterior a 120 dias da data de primeiros sintomas.
   - name: EXAME
     field: "tp_parasotologico_fresco"
     type: string
     description_pt: "Se foi realizado parasitológico exame a fresco."
     type_info: "varchar(1)"
     categories: "1-positivo; 2-negativo; 3-não realizado;"
+    characteristics: Campo Essencial
   - name: MICRO_HEMA
     field: "tp_parasotologico_hematocrito"
     type: string
@@ -189,126 +219,148 @@ chagas:
     field: "dt_coleta_parasita_indireto"
     type: date
     description_pt: "Data de coleta do material para realização do exame parasitológico"
+    characteristics: Não aceitar data anterior a 120 dias da data de primeiros sintomas
   - name: XENODIAG
     field: "tp_xenodiagnostico"
     type: string
     description_pt: "Se foi realizado parasitológico exame a fresco."
     type_info: "varchar(1)"
     categories: "1-positivo; 2-negativo; 3-não realizado;"
+    characteristics: Campo Essencial
   - name: HEMOCULT
     field: "tp_hemocultivo"
     type: string
     description_pt: "Se foi realizado parasitológico exame a fresco."
     type_info: "varchar(1)"
     categories: "1-positivo; 2-negativo; 3-não realizado;"
+    characteristics: Campo Essencial
   - name: DT_COL_S1
     field: "dt_coleta_s1"
     type: date
     description_pt: "Data de coleta do material para realização do exame parasitológico"
+    characteristics: Não aceitar data anterior a 120 dias da data de primeiros sintomas
   - name: DT_COL_S2
     field: "dt_coleta_s2"
     type: date
     description_pt: "Data de coleta do material para realização do exame parasitológico"
+    characteristics: Não aceitar data anterior a 120 dias da data de primeiros sintomas
   - name: ELI_IGM_S1
     field: "tp_elisa_igm_s1"
     type: string
     description_pt: "Resultado ELISA IgM S1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: ELI_IGG_S1
     field: "tp_elisa_igg_s1"
     type: string
     description_pt: "Resultado ELISA IgG S1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: ELI_IGM_S2
     field: "tp_elisa_igm_s2"
     type: string
     description_pt: "Resultado ELISA IgM S2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: ELI_IGG_S2
     field: "tp_elisa_igg_s2"
     type: string
     description_pt: "Resultado ELISA IgG S2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: HEM_IGM_S1
     field: "tp_hemoaglutinacao_igm_s1"
     type: string
     description_pt: "Resultado hemoaglutinação IgM S1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: HEM_IGG_S1
     field: "tp_hemoaglutinacao_igg_s1"
     type: string
     description_pt: "Resultado hemoaglutinação IgGS1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: HEM_IGM_S2
     field: "tp_hemoaglutinacao_igm_s2"
     type: string
     description_pt: "Resultado hemoaglutinação IgM S2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: HEM_IGG_S2
     field: "tp_hemoaglutinacao_igg_s2"
     type: string
     description_pt: "Resultado hemoaglutinação IgGS2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: IMU_IGM_S1
     field: "tp_resultado_igm_s1"
     type: string
     description_pt: "Resultado imunofluorescencia indireta IgM S1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: TIT_IGM_S1
     field: "ds_resultado_titulo_igm_s1"
     type: string
     description_pt: "Título Resultado imunofluorescencia indireta IgM S1"
     type_info: "varchar(5)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial Hablitar se campo 50 - Resultado da Imunofluorescência Indireta – IFI IgM S1 = 1
   - name: IMU_IGM_S2
     field: "tp_resultado_igm_s2"
     type: string
     description_pt: "Resultado imunofluorescencia indireta IgM S2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: TIT_IGM_S2
     field: "ds_resultado_titulo_igm_s2"
     type: string
     description_pt: "Título Resultado imunofluorescencia indireta IgM S2"
     type_info: "varchar(5)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial Habilitar se campo 50 - Resultado da Imunofluorescência Indireta – IFI IgM S2 = 1
   - name: IMU_IGG_S1
     field: "tp_resultado_igg_s1"
     type: string
     description_pt: "Resultado imunofluorescencia indireta IgG S1"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: TIT_IGG_S1
     field: "tp_resultado_igg_s1"
     type: string
     description_pt: "Título Resultado imunofluorescencia indireta IgG S1"
     type_info: "varchar(5)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial Hablitar se campo 50 - Resultado da Imunofluorescência Indireta – IFI IgG S1 = 1
   - name: IMU_IGG_S2
     field: "tp_resultado_igg_s2"
     type: string
     description_pt: "Resultado imunofluorescencia indireta IgG S2"
     type_info: "varchar(1)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial
   - name: TIT_IGG_S2
     field: "ds_resultado_titulo_igg_s2"
     type: string
     description_pt: "Título Resultado imunofluorescencia indireta IgG S2"
     type_info: "varchar(5)"
     categories: "1- reagente 2- não-reagente 3- inconclusivo 4- não realizado"
+    characteristics: Campo Essencial Hablitar se campo 50 - Resultado da Imunofluorescência Indireta – IFI IgG S2 = 1
   - name: RESUL_HIS
     field: "dt_coleta_histopatologico"
     type: date
     description_pt: "Data da Coleta do exame histopatológico"
+    characteristics: Não aceitar data anterior a 120 dias da data de primeiros sintomas.
   - name: RES_HIST
     field: "tp_resultado_necropsia"
     type: string
@@ -321,12 +373,14 @@ chagas:
     description_pt: "Tipo de Tratamento específico."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Campo Essencial Se item (Especifico) e (Sintomático) preenchidos com 2 (Não) ou 9 (Ignorado), pular para o campo Medidas Tomadas. Critica incluída conforme documento de homologação data 23/06/2005
   - name: SINTOMATIC
     field: "st_tratamento_sintomatico"
     type: string
     description_pt: "Tipo de Tratamento Sintomático"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 9-ignorado"
+    characteristics: Se item (Especifico) e (Sintomático) preenchidos com 2 (Não) ou 9 (Sintomático), pular para o campo Medidas Tomadas. Critica incluída conforme documento de homologação data 23/06/2005
   - name: DROGA
     field: "tp_droga_utilizada"
     type: string
@@ -343,29 +397,34 @@ chagas:
     description_pt: "Controle de triatomídeos."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: BIOSSEG
     field: "tp_ocorre_bioseguranca"
     type: string
     description_pt: "Se ocorreu implantação de normas de biossegurança em laboratório"
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: FISCALIZA
     field: "tp_ocorre_fiscalizacao"
     type: string
     description_pt: "Se ocorreu fiscalização sanitária em Unidade de Hemoterapia."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: MED_OUTRO
     field: "tp_ocorre_outro"
     type: string
     description_pt: "Se ocorreu outra medida de controle."
     type_info: "varchar(1)"
     categories: "1-sim; 2-não; 3-não se aplica; 9- ignorado"
+    characteristics: Campo Essencial
   - name: OUTRO_DES
     field: "ds_ocorre_outro"
     type: string
     description_pt: "Descrição de outras medidas de controle"
     type_info: "varchar(30)"
+    characteristics: Campo Essencial se campo Medidas Tomadas Outros=1(sim)
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
@@ -373,40 +432,47 @@ chagas:
     type_info: "varchar(1)"
     required: true
     categories: "1-confirmado 2-descartado"
+    characteristics: CAMPO OBRIGATÓRIO quando o campo data de encerramento estiver preenchido
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Critério de Confirmação e descarte investigação."
     type_info: "varchar(1)"
     categories: "1-laboratório 2-clínico- epidemiológic o 3-clínico"
+    characteristics: Campo Essencial Retirada observação.
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Informar a evolução do caso."
     type_info: "varchar(1)"
     categories: "1 – vivo 2- óbito por chagas 3- óbito por outras causas 9- ignorado"
+    characteristics: Campo Essencial Se categoria for = 2 (Óbito por Chagas) ou 3 (Óbito por outras causas) ir para o campo Data de Óbito. Campo habilitado se Classificação final=1,2 ou Null. Se classificação final=2(descartado) não permitir a opção o preenchimento com a opção 2(óbito por chagas).
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Informar a data do óbito."
     categories: "dd/mm/aaaa"
+    characteristics: Só será preenchida se o campo Evolução do caso for = 2 (Óbito por Chagas) ou 3 (Óbito por outras causas) Campo habilitado se Evolução do caso= 2-Óbito por Chagas ou 3-Óbito por outras causas. A data deve ser maior ou igual à data dos primeiros sintomas
   - name: CON_PROVAV
     field: "st_modo_transmissao"
     type: string
     description_pt: "Fonte provável da Infecção."
     type_info: "varchar(1)"
     categories: "1- transfusional 2-vetorial 3- transplacentá ria 4-acidental 5-oral 6-outra 9-ignorada"
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CON_OUTRA
     field: "ds_modo_infeccao_outro"
     type: string
     description_pt: "Fonte provável da Infecção."
     type_info: "varchar(30)"
+    characteristics: Campo habilitado se Modo Provável da Infecção =6 (outra).
   - name: CON_LOCAL
     field: "tp_local_infeccao"
     type: string
     description_pt: "Local provável da infecção (no período de 90 dias)"
     type_info: "varchar(1)"
     categories: "1- unidade de hemoterapia 2- domicílio 3- laboratório 4- outro 9- ignorado"
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
@@ -414,6 +480,7 @@ chagas:
     type_info: "varchar2(1)"
     required: true
     categories: "1 – sim 2 – não 3 – indeterminado"
+    characteristics: Campo obrigatório se campo classificação final=1(confirmado) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção). Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
@@ -421,6 +488,7 @@ chagas:
     type_info: "varchar2(2)"
     required: true
     categories: "tabela com siglas e código padronizados pelo ibge"
+    characteristics: Campo obrigatório se país de infecção= Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
@@ -428,6 +496,7 @@ chagas:
     type_info: "varchar(4)"
     required: true
     categories: "tabela com código e descrição de paises."
+    characteristics: Campo obrigatório e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
@@ -435,12 +504,14 @@ chagas:
     type_info: "varchar2(6)"
     required: true
     categories: "tabela com códigos e nomes padronizados pelo ibge"
+    characteristics: Campo obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
     categories: "tabela com códigos e nomes padronizados segundo tabela disponibilizad a pelo sistema para cadastrament o pelo gestor municipal do sinan"
+    characteristics: Campo Essencial país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1(confirmado) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: CO_BAINFC
     field: "co_bairro_infeccao, no_bairro_infeccao"
     type: string
@@ -471,12 +542,14 @@ chagas:
     description_pt: "Informar se a doença está relacionada ao ambiente de trabalho do paciente."
     type_info: "varchar(1)"
     categories: "1 – sim 2 – não 9 – ignorado"
+    characteristics: Campo Essencial Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Informar a data do encerramento do caso."
     required: true
     categories: "dd/mm/aaaa"
+    characteristics: CAMPO OBRIGATÓRIO quando campo Classificação final estiver preenchido A data deve ser maior ou igual à data da investigação
   - name: DS_OBS
     field: "ds_observacao"
     type: string

@@ -8,6 +8,7 @@ colera:
     type: date
     description_pt: "Data da investigação do caso."
     required: true
+    characteristics: Campo Obrigatório Data da investigação > ou = Data da notificação
   - name: ID_OCUPA_N
     field: "co_cbo_ocupacao"
     type: string
@@ -19,10 +20,12 @@ colera:
     description_pt: "Local em que o paciente teve contato com caso semelhante nos últimos 10 dias, anteriores ao início dos sinais e sintomas"
     type_info: "varchar(1)"
     categories: "1. Domicílio 2. Vizinhança 3. Trabalho 4. Creche/escola 5. Posto de saúde/hospital 6. Outro estado/município 7. Outros 8. Sem história de contato 9. Ignorado"
+    characteristics: Campo Essencial Se categoria = 8 (Sem história de contato) ou 9 (Ignorado) pular para campo 37-(Sugestão de vínculo). Se categoria = 7 habilitar e especificar outros.
   - name: FC_CONT_DE
     field: "ds_caso_outro"
     type: string
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 33- Contato com caso suspeito ou confirmado de cólera (até 10 dias antes do início dos sinais e sintomas) for = 7-outros
   - name: NM_CONTATO
     field: "no_contato"
     type: string
@@ -50,11 +53,13 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1- Consumo de água não tratada 2- Exposição à esgoto 3- Alimento 4- Deslocamento 5- Outros 9- Ignorado"
+    characteristics: Campo Obrigatório
   - name: OUT_VINCUL
     field: "ds_vinculo_outro"
     type: string
     description_pt: "Informar se outras sugestões de vínculo que não as de cima especificadas"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 37-Sugestão de vínculo com for = 5-outros
   - name: CS_ASSINTO
     field: "st_sinais_assintomatico"
     type: string
@@ -62,6 +67,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Se Assintomático = 1, desabilita os campos 39(desidratação), 40(Característica de Diarréia), 41(Freqüência/Dia), 42(Presença de Sangue), 43(Presença de Muco) e pular para campo 44 (tipo de atendimento).
   - name: CS_DIARRE
     field: "st_sinais_diarreia"
     type: string
@@ -69,6 +75,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_CAIMBRA
     field: "st_sinais_caimbra"
     type: string
@@ -76,6 +83,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_FEBRE
     field: "st_sinais_febre"
     type: string
@@ -83,6 +91,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_VOMITOS
     field: "st_sinais_vomito"
     type: string
@@ -90,6 +99,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_DOR
     field: "st_sinais_abdominal"
     type: string
@@ -97,6 +107,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_CHOQUE
     field: "st_sinais_choque"
     type: string
@@ -104,12 +115,14 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Preencher automaticamente com 2-não se campo 38-Outros Sinais e Sintomas Assintomático for = 1-sim
   - name: CS_DESIT
     field: "tp_desidratacao"
     type: string
     description_pt: "Grau de desidratação do paciente"
     type_info: "varchar(1)"
     categories: "1. Não 2. Algum grau 3. Grave 9. Ignorado"
+    characteristics: Campo Essencial se preencher o campo 38- Sinais e Sintomas/assintomárico <> 1- sim
   - name: TIP_DIARRE
     field: "tp_caracteristica_diarreia"
     type: string
@@ -122,6 +135,7 @@ colera:
     description_pt: "Quantas evacuações o paciente teve durante 24 horas."
     type_info: "varchar(1)"
     categories: "1. até 5 evacuações 2. de 6 a 10 evacuações 3. de 11 a 20 evacuações 4. acima de 20 evacuações"
+    characteristics: Campo Essencial se preencher o campo 38- Sinais e Sintomas/assintomárico <> 1- sim
   - name: CS_SANGUE
     field: "st_presenca_sangue"
     type: string
@@ -141,15 +155,18 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1. Hospitalar 2. Ambulatorial 3. Domiciliar 4. Nenhum 9. Ignorado"
+    characteristics: Campo Obrigatório Se preencher 4 (Nenhum) ou 9 (Ignorado), pular para campo 50- (Material colhido)
   - name: DT_ATENDIM
     field: "dt_atendimento"
     type: date
     description_pt: "Data em que o paciente foi atendido"
     required: true
+    characteristics: Campo Obrigatório somente se campo (Tipo de atendimento) = 1 (Hospitalar), 2 (Ambulatorial) ou 3 (Domiciliar). A Data do atendimento deve ser maior ou igual à Data dos primeiros sintomas.
   - name: DT_INTERNA
     field: "dt_internacao"
     type: date
     description_pt: "Se hospitalar, Data da internação"
+    characteristics: A Data da internação deve ser maior ou igual à Data do atendimento.
   - name: UF_HOSPITA
     field: "co_uf_hospital"
     type: string
@@ -172,6 +189,7 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Se campo 50(fezes) = 2 e 50(vômito) =2 pular para campo 57-Reidratação.
   - name: CS_VOMITO
     field: "st_materia_colhido_vomito"
     type: string
@@ -179,57 +197,67 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Campo Obrigatório Se campo 50(fezes) = 2 e 50(vômito) =2 pular para campo 57-Reidratação.
   - name: DT_COLETA
     field: "dt_coleta"
     type: date
     description_pt: "Data da coleta do material para exame"
     required: true
     categories: "Dd/mm/aaaa"
+    characteristics: Campo Obrigatório somente se campo 50-(Material colhido), categoria fezes ou vômitos = 1 (Sim). A Data da coleta deve ser maior ou igual à Data dos primeiros sintomas.
   - name: CS_ANTIB
     field: "st_uso_antibiotico"
     type: string
     description_pt: "Se o paciente fez uso de antibiótico antes da coleta para exame"
     type_info: "varchar(1)"
     categories: "1-sim 2-não 9-ignorado"
+    characteristics: Se campo  1, pular para campo 54-(Resultado).
   - name: NM_ANTIBIO
     field: "ds_uso_antibiotico"
     type: string
     description_pt: "Especificar o nome do antibiótico"
     type_info: "varchar(30)"
+    characteristics: Habilitar quando campo 52-Uso de antibiótico antes da coleta do material for = 1-sim
   - name: CS_RESULTA
     field: "st_resultado"
     type: string
     description_pt: "Informar se o exame foi positivo ou negativo"
     type_info: "varchar(1)"
     categories: "1. Positivo 2. Negativo"
+    characteristics: Campo Essencial Se categoria = 2 (Negativo) pular para campo 56- (Caso negativo, especificar)
   - name: CS_POSITIV
     field: "tp_caso_positivo"
     type: string
     description_pt: "Informar o sorotipo"
     type_info: "varchar(1)"
     categories: "1. Ogawa 2. Inaba 3. Hikojima 4. Outro sorotipo 5. Não vibrio"
+    characteristics: Campo Essencial se o campo 54-(Resultado) for = 1 (Positivo).
   - name: CS_NEG_ESP
     field: "ds_caso_negativo"
     type: string
     description_pt: "Acrescentar a opção outro agente etiologico"
     type_info: "varchar(30)"
+    characteristics: Habilitado se o campo 54- (Resultado) for = 2 (Negativo).
   - name: CS_REIDRAT
     field: "tp_reidratacao"
     type: string
     description_pt: "Informar o tipo de tratamento recebido pelo paciente"
     type_info: "varchar(1)"
     categories: "1-via oral 2-venosa 3-oral - venosa"
+    characteristics: Campo Essencial
   - name: CS_ANTIB_T
     field: "st_utilizou_antibiotico"
     type: string
     description_pt: "se o paciente foi tratado com antibióticos"
     type_info: "varchar(1)"
     categories: "1. Sim 2. Não 9. Ignorado"
+    characteristics: Se campo  1, pula para campo 60-(Classificação final)
   - name: ANTIB_DES
     field: "ds_utilizou_antibiotico"
     type: string
     description_pt: "Em caso afirmativo, qual"
     type_info: "varchar(30)"
+    characteristics: Habilitar se campo 58-Utilizou antibióticos for = 1- sim
   - name: CLASSI_FIN
     field: "tp_classificacao_final"
     type: string
@@ -237,12 +265,14 @@ colera:
     type_info: "varchar(1)"
     required: true
     categories: "1. Confirmado 2. Descartado"
+    characteristics: Campo Obrigatório quando o campo71-data de encerramento estiver preenchido.
   - name: CRITERIO
     field: "tp_criterio_confirmacao"
     type: string
     description_pt: "Define se o caso foi confirmado por laboratório ou clínico - epidemiológico"
     type_info: "varchar(1)"
     categories: "1. Laboratorial 2. Clínico- epidemiológico"
+    characteristics: Campo Essencial Não permitir categoria=1 se 60- Classificação final=1 e 54- Resultado=2.
   - name: TPAUTOCTO
     field: "tp_autoctone_residencia"
     type: string
@@ -250,6 +280,7 @@ colera:
     type_info: "varchar2(1)"
     required: true
     categories: "1 – Sim 2 – Não 3 – Indeterminado"
+    characteristics: Campo Obrigatório se campo classificação final=1(confirmado) Se o campo for preenchido com 1 (sim), o sistema preenche automaticamente os campos de autoctonia (UF, País e Município provável da fonte de infecção) com os valores registrados nos campos da notificação e habilita para o usuário preencher os campos distrito e bairro (se país de residência não for Brasil, a UF e município de infecção podem ficar em branco) Se o campo for preenchido com 2 (Não), o sistema habilita para o usuário preencher todos os campos de autoctonia (UF, País e Município, distrito e bairro provável da fonte de infecção) Se o campo for preenchido com 3 (Indeterminado), pular os campos de autoctonia (UF, País, Município, Distrito e Bairro provável da fonte de infecção) Campo habilitado se classificação final= 1 ou null. . Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COUFINF
     field: "co_uf_infeccao"
     type: string
@@ -257,6 +288,7 @@ colera:
     type_info: "varchar2(2)"
     required: true
     categories: "Tabela com siglas e código padronizados pelo IBGE"
+    characteristics: Campo Obrigatório se país de infecção= Brasil e se campo classificação final=1 (confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), o sistema preenche automaticamente com a UF de residência do caso, se o país de residência for Brasil. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COPAISINF
     field: "co_pais_infeccao"
     type: string
@@ -264,6 +296,7 @@ colera:
     type_info: "varchar(4)"
     required: true
     categories: "Tabela com código e descrição de paises."
+    characteristics: Campo Obrigatório se campo classificação final=1 (confirmado) Se o campo (O caso é autóctone do município de residência) for = 1 (sim), preencher automaticamente com o País de residência do caso. Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: COMUNINF
     field: "co_municipio_infeccao"
     type: string
@@ -271,12 +304,14 @@ colera:
     type_info: "varchar2(6)"
     required: true
     categories: "Tabela com Códigos e nomes padronizados pelo IBGE"
+    characteristics: Campo Obrigatório se país de infecção = Brasil e se campo classificação final=1(confirmado) Se o campo (O caso é autóctone do município de residência do caso) for = 1 (sim), o sistema preenche automaticamente com o Município de residência do caso Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CODISINF
     field: "co_distrito_infeccão"
     type: string
     description_pt: "Código do Distrito provável de Infecção do caso. O nome está associado ao código em tabela"
     type_info: "varchar2(4)"
     categories: "Tabela com Códigos e nomes padronizados segundo Tabela disponibilizada pelo sistema para cadastramento pelo gestor municipal do Sinan"
+    characteristics: Campo Essencial quando país de infecção = Brasil e o município de infecção for subdividido em distrito e se campo classificação final for igual a 1(confirmado) Campo habilitado se classificação final= 1 ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: CO_BAINFC
     field: "co_bairro_infeccao no_bairro_infeccao"
     type: string
@@ -295,18 +330,22 @@ colera:
     description_pt: "Se o paciente adquiriu a doença em decorrência das condições/ situação do trabalho."
     type_info: "varchar(1)"
     categories: "1. sim 2. não 9. ignorado"
+    characteristics: Campo habilitado se classificação final= 1ou null. Quando a classificação final for preenchida com 2(descartado) os dados desse campo são automaticamente apagados.
   - name: EVOLUCAO
     field: "tp_evolucao_caso"
     type: string
     description_pt: "Evolução do caso"
     type_info: "varchar(1)"
     categories: "1- cura 2- óbito por cólera 3- óbito por outras causas 9- ignorado"
+    characteristics: Campo Essencial Se categoria  2 (Óbito por cólera) ou  3 (Óbito por outras causas) pular para campo 71- Data do encerramento. Não permitir o preenchimento com a opção 2-óbito por cólera se campo classificação final=2- descartado.
   - name: DT_OBITO
     field: "dt_obito"
     type: date
     description_pt: "Data do óbito"
+    characteristics: Campo essencial Habilitado quando campo 69- (Evolução do caso) for = 2 ou 3. A Data do óbito deve ser maior ou igual à Data dos primeiros sintomas.
   - name: DT_ENCERRA
     field: "dt_encerramento"
     type: date
     description_pt: "Data do encerramento do caso"
     required: true
+    characteristics: Campo Obrigatório quando campo Classificação final estiver preenchido. Data de encerramento deve ser maior ou igual Data de investigação.

@@ -57,6 +57,20 @@ class TestLoadColumnMetadata:
             assert "description_pt" in col_def
             assert "description_en" in col_def
 
+    def test_sinan_categories_and_characteristics(self):
+        """The tarball metadata (categories/characteristics) is restored."""
+        meta = load_column_metadata("sinan", group="peste")
+        con_classi = meta.get("CON_CLASSI")
+        assert con_classi is not None
+        assert con_classi.get("categories") != ""
+        assert con_classi.get("characteristics") != ""
+        assert "bubônica" in con_classi.get("categories", "")
+        assert "confirmado" in con_classi.get("characteristics", "")
+
+        co_risco = meta.get("CO_RISCO")
+        assert co_risco is not None
+        assert co_risco.get("categories") == "1-Sim 2-Não 9-Ignorado"
+
     def test_invalid_database_returns_empty(self):
         """Test that invalid database returns empty dict."""
         meta = load_column_metadata("nonexistent_database")
