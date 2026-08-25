@@ -11,7 +11,7 @@ PySUS provides simplified functions that return pandas DataFrames directly:
 
 .. code-block:: python
 
-    from pysus.api import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
+    from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
 
     # Download SINAN Dengue data
     df = sinan(disease="deng", year=2024)
@@ -30,6 +30,22 @@ PySUS provides simplified functions that return pandas DataFrames directly:
 
     # CNES health facilities
     df = cnes(state="SP", year=2024, month=1)
+
+OpenDataSUS (Saude) functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    from pysus import arboviroses, vacinacao, assistencia_saude
+
+    # Dengue/Chik/Zika notifications
+    df = arboviroses(disease="dengue", year=2024)
+
+    # Vaccination coverage
+    df = vacinacao(state="SP", year=2024)
+
+    # Hospital and health facility data
+    df = assistencia_saude(state="SP", year=2024)
 
 Function Reference
 ^^^^^^^^^^^^^^^^^^
@@ -68,6 +84,43 @@ Function Reference
       - Hospital Admissions
       - state, year, month
 
+OpenDataSUS (Saude) Functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :header-rows: 1
+
+    * - Function
+      - Dataset
+      - Parameters
+    * - ``arboviroses(**kwargs)``
+      - Arboviroses (Dengue/Chik/Zika/YF)
+      - disease, state, year (via kwargs)
+    * - ``vacinacao(**kwargs)``
+      - Vaccination Coverage
+      - state, year (via kwargs)
+    * - ``assistencia_saude(**kwargs)``
+      - Hospital/Facility Data
+      - state, year (via kwargs)
+    * - ``atencao_primaria(**kwargs)``
+      - Primary Care (Previne Brasil)
+      - state, year (via kwargs)
+    * - ``sisvan(**kwargs)``
+      - Nutrition Surveillance
+      - state, year (via kwargs)
+    * - ``sisagua(**kwargs)``
+      - Water Quality
+      - state, year (via kwargs)
+    * - ``covid19(**kwargs)``
+      - COVID-19
+      - state, year (via kwargs)
+    * - ``bnafar(**kwargs)``
+      - Pharmaceutical Assistance
+      - state, year (via kwargs)
+    * - ``saude_indigena(**kwargs)``
+      - Indigenous Health
+      - state, year (via kwargs)
+
 Using the PySUS Client
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -94,7 +147,7 @@ For more control, use the PySUS client directly:
             # Read parquet files
             import glob
             paths = glob.glob("/cache/**/*.parquet")
-            df = pysus.read_parquet(paths, mode="union").df()
+            df = pysus.read_parquet(paths, mode="union")
 
 read_parquet Modes
 ^^^^^^^^^^^^^^^^^^
@@ -105,12 +158,12 @@ read_parquet Modes
 
 .. code-block:: python
 
-    df = pysus.read_parquet(paths, mode="union").df()
-    df = pysus.read_parquet(paths, mode="intersection").df()
-    df = pysus.read_parquet(paths, mode="strict").df()
+    df = pysus.read_parquet(paths, mode="union")
+    df = pysus.read_parquet(paths, mode="intersection")
+    df = pysus.read_parquet(paths, mode="strict")
 
     # With custom SQL
-    df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100").df()
+    df = pysus.read_parquet(paths, sql="SELECT * WHERE column > 100")
 
 ---
 

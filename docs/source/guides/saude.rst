@@ -8,11 +8,6 @@ Brazilian Ministry of Health — `dadosabertos.saude.gov.br
 backend. It exposes the catalog of 138 health datasets, their full CKAN
 metadata, and the resource (file) downloads.
 
-.. note::
-   This is the *catalog* client (Stage 1 of ``roadmap_saude.md``). The
-   structured DEMAS REST API (``apidadosabertos.saude.gov.br``) and the
-   DuckLake sync integration ship in later stages.
-
 No token required
 -----------------
 

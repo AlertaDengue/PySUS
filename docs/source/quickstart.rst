@@ -11,7 +11,7 @@ Install PySUS::
 Then pick a client — the same file hierarchy
 (:class:`~pysus.api.models.BaseRemoteDataset` →
 :class:`~pysus.api.models.BaseRemoteGroup` →
-:class:`~pysus.api.models.BaseRemoteFile`) is shared by all three
+:class:`~pysus.api.models.BaseRemoteFile`) is shared by all four
 sources:
 
 .. code-block:: python
@@ -89,6 +89,37 @@ DadosGov requires an API token (see :ref:`environment-variables`):
        finally:
            await client.close()
 
+    asyncio.run(main())
+
+OpenDataSUS (Saude)
+-------------------
+
+Public access — no token required. The simplest way to query the Ministry of
+Health's open-data catalog:
+
+.. code-block:: python
+
+   from pysus import arboviroses, vacinacao
+
+   # Dengue notifications from OpenDataSUS
+   df = arboviroses(disease="dengue", year=2024)
+
+   # Vaccination coverage
+   df = vacinacao(state="SP", year=2024)
+
+Or use the Saude client directly:
+
+.. code-block:: python
+
+   import asyncio
+   from pysus.api.saude import SaudeClient
+
+   async def main():
+       async with SaudeClient() as client:
+           page = await client.list_datasets(group="arboviroses")
+           for entry in page:
+               print(entry.name, entry.title)
+
    asyncio.run(main())
 
 Next steps
@@ -98,6 +129,7 @@ Next steps
   read parquet)
 * :doc:`guides/ftp` — FTP client details
 * :doc:`guides/dadosgov` — DadosGov client details
+* :doc:`guides/saude` — OpenDataSUS client details
 * :doc:`guides/ducklake` — S3 catalog details
 * :doc:`guides/files-and-formats` — DBF/DBC/CSV/ZIP/Parquet handling
 * :doc:`guides/web-ui` — the Streamlit interface and CLI

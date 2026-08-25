@@ -3,8 +3,8 @@ The PySUS Orchestrator
 ========================
 
 :class:`pysus.api.client.PySUS` is the central entry point: it manages
-the three clients (S3 catalog, FTP, DadosGov), tracks local downloads,
-converts files to Parquet, and reads them back.
+the four clients (S3 catalog, FTP, DadosGov, OpenDataSUS), tracks local
+downloads, converts files to Parquet, and reads them back.
 
 Connecting
 ----------
@@ -50,6 +50,15 @@ Both return wrappers from :mod:`pysus.api.extensions` that expose
 ``load()`` (full DataFrame), ``stream()`` (chunked) and metadata
 (``size``, ``rows``, ``columns``).
 
+Parallel downloads
+------------------
+
+For batch downloads, use ``download_many`` to fetch files concurrently:
+
+.. code-block:: python
+
+   downloaded = await pysus.download_many(files, max_concurrent=5)
+
 Reading parquet files
 ---------------------
 
@@ -63,6 +72,22 @@ Reading parquet files
 ``read_parquet`` returns a DataFrame when geocode columns are found
 (the IBGE verification digit is applied automatically); otherwise a
 DuckDB connection is returned (use ``.df()`` on it).
+
+Searching for datasets
+----------------------
+
+Use ``search`` for keyword-based discovery across all origins:
+
+.. code-block:: python
+
+   results = await pysus.search("dengue")
+
+Or use the standalone ``list_files`` function:
+
+.. code-block:: python
+
+   from pysus import list_files
+   df = list_files("SINAN", group="DENG", year=2024)
 
 Local download history
 ----------------------
