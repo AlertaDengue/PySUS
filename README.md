@@ -68,7 +68,7 @@ Or build locally:
 
 ```bash
 docker compose up --build
-# open http://127.0.0.1:8888/lab
+# Open http://127.0.0.1:8888/lab
 docker compose down
 ```
 
