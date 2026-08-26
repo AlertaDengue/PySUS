@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.4](https://github.com/AlertaDengue/PySUS/compare/2.10.3...2.10.4) (2026-08-26)
+
+### Bug Fixes
+
+* include more SIA groups ([#331](https://github.com/AlertaDengue/PySUS/issues/331)) ([e1dd1b5](https://github.com/AlertaDengue/PySUS/commit/e1dd1b52936ae565bd509ea17b05bf33f4c8676b))
+
 ## [2.10.3](https://github.com/AlertaDengue/PySUS/compare/2.10.2...2.10.3) (2026-08-25)
 
 ### Bug Fixes
