@@ -545,6 +545,11 @@ class SIA(Dataset):
         "AN": "APAC de Nefrologia",
         "AQ": "APAC de Quimioterapia",
         "AR": "APAC de Radioterapia",
+        "AB": "Atenção Básica",
+        "AC": "Alta Complexidade",
+        "AT": "Atenção",
+        "PS": "Procedimentos Especiais",
+        "SA": "Saúde",
     }
 
     @property
@@ -600,7 +605,7 @@ class SIA(Dataset):
         """
         try:
             name = filename.split(".")[0].upper()
-            match = re.match(r"^([A-Z]+)(\d{2})(\d{2})(?:_\d+)?$", name)
+            match = re.match(r"^([A-Z]+)(\d{2})(\d{2})(?:_\d+|[A-Z])?$", name)
             if not match:
                 raise ValueError(f"unrecognized SIA filename: {name}")
 
@@ -613,8 +618,26 @@ class SIA(Dataset):
                     "year": None,
                     "month": None,
                 }
-            group_code = chars[:-2]
-            state = chars[-2:]
+            # Three-letter prefixes for sub-type variants:
+            # ABO = AB (Atenção Básica, sub-type O)
+            # AMP = AM (APAC de Medicamentos, sub-type P)
+            # ACF = AC (Alta Complexidade, FAEC funding)
+            # ATD = AT (Atenção)
+            # SAD = SA (Saúde)
+            _3letter_prefixes = {
+                "ABO": "AB",
+                "AMP": "AM",
+                "ACF": "AC",
+                "ATD": "AT",
+                "SAD": "SA",
+            }
+            prefix3 = chars[:3] if len(chars) >= 5 else ""
+            if prefix3 in _3letter_prefixes:
+                group_code = _3letter_prefixes[prefix3]
+                state = chars[3:5]
+            else:
+                group_code = chars[:-2]
+                state = chars[-2:]
 
             group_info = None
             if group_code in self.group_definitions:

@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
+import anyio
 import httpx
 from pysus import CACHEPATH
 from pysus.api.ducklake.functional import upload_s3
@@ -57,6 +58,21 @@ _RETRYABLE = (
     BrokenPipeError,
     OSError,
 )
+
+#: Default per-file download timeout (seconds).  Covers both FTP data
+#: transfer and HTTP streaming — a stuck connection will not block the
+#: pipeline indefinitely.
+_DOWNLOAD_TIMEOUT: float = 600.0  # 10 minutes
+
+#: Default per-file conversion timeout (seconds).  CSV→parquet on a
+#: 1 GB file typically takes < 60 s; anything longer likely means a
+#: pathological row layout or a bug.
+_CONVERT_TIMEOUT: float = 600.0  # 10 minutes
+
+#: Maximum raw file size to download (bytes).  Files larger than this
+#: are skipped to prevent multi-gigabyte CSVs (e.g. Vaccination dumps)
+#: from stalling the pipeline.  Set to 0 to disable the limit.
+_MAX_FILE_SIZE: int = 500 * 1024 * 1024  # 500 MB
 
 
 class SyncEngine:
@@ -140,8 +156,7 @@ class SyncEngine:
             alive = owner > 0 and self._pid_alive(owner)
             if alive:
                 raise ConnectionError(
-                    "another sync process (PID "
-                    f"{owner}) holds the catalog lock"
+                    f"another sync process (PID {owner}) holds the catalog lock"
                 )
         lock_path.write_text(str(os.getpid()))
 
@@ -427,6 +442,17 @@ class SyncEngine:
         """Perform one raw download to *output*."""
         from anyio import to_thread
 
+        if (
+            _MAX_FILE_SIZE > 0
+            and isinstance(file.size, (int, float))
+            and file.size > _MAX_FILE_SIZE
+        ):
+            raise RuntimeError(
+                f"{file.basename}: file too large "
+                f"({file.size / 1024 / 1024:.0f} MB > "
+                f"{_MAX_FILE_SIZE / 1024 / 1024:.0f} MB limit)"
+            )
+
         client = ftp_client if ftp_client is not None else file.client
         ftp = getattr(client, "ftp", None)
         if ftp_client is not None:
@@ -447,7 +473,8 @@ class SyncEngine:
                 return total
 
             try:
-                await to_thread.run_sync(_retr)
+                with anyio.fail_after(_DOWNLOAD_TIMEOUT):
+                    await to_thread.run_sync(_retr)
                 return
             except Exception:  # noqa
                 try:
@@ -467,7 +494,8 @@ class SyncEngine:
                         f"RETR {remote_path}", lambda chunk: f.write(chunk)
                     )
 
-            await to_thread.run_sync(_direct_retr)
+            with anyio.fail_after(_DOWNLOAD_TIMEOUT):
+                await to_thread.run_sync(_direct_retr)
             return
         await file._download(output=output)
 
@@ -885,7 +913,8 @@ class SyncEngine:
         local_file = await ExtensionFactory.instantiate(raw_path)
         if not hasattr(local_file, "to_parquet"):
             raise RuntimeError(f"{file.basename}: cannot convert to parquet")
-        parquet_file = await local_file.to_parquet(callback=callback)
+        with anyio.fail_after(_CONVERT_TIMEOUT):
+            parquet_file = await local_file.to_parquet(callback=callback)
         try:
             parquet_digest = await to_thread.run_sync(
                 sha256_of, parquet_file.path
