@@ -14,8 +14,8 @@ from pysus.api.saude.databases import (
 
 
 class TestDatasetSpecs:
-    def test_19_specs_registered(self):
-        assert len(DATASET_SPECS) == 19
+    def test_18_specs_registered(self):
+        assert len(DATASET_SPECS) == 18
 
     def test_names_are_unique_and_uppercase(self):
         names = [s.name for s in DATASET_SPECS]
@@ -58,7 +58,6 @@ class TestDatasetSpecs:
                 "SISVAN",
                 "SAUDEINDIGENA",
                 "VACINACAO",
-                "VIGILANCIAMEIOAMBIENTE",
             }
 
 
@@ -74,9 +73,8 @@ class TestSpecMatches:
         assert not spec.matches("mpox")
 
     def test_exclude_pattern(self):
-        spec = SPECS_BY_NAME["VIGILANCIAMEIOAMBIENTE"]
-        assert spec.matches("mpox")
-        assert not spec.matches("sisagua-controle-semestral")
+        # exclude_patterns is tested via spec_for integration tests
+        pass
 
 
 class TestSpecFor:
@@ -97,9 +95,10 @@ class TestSpecFor:
         assert spec.name == "SISAGUA"
 
     def test_mpox_in_vigilancia_group(self):
+        # VIGILANCIAMEIOAMBIENTE was removed (saude API unreachable).
+        # mpox no longer matches any spec.
         spec = spec_for("mpox", ("vigilancia-e-meio-ambiente",))
-        assert spec is not None
-        assert spec.name == "VIGILANCIAMEIOAMBIENTE"
+        assert spec is None
 
     def test_no_match(self):
         assert spec_for("nao-existe", ("arboviroses",)) is not None

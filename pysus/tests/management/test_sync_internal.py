@@ -633,6 +633,30 @@ class TestResumeJournal:
         keys = load_journal_keys(journal)
         assert keys == {key}
 
+    def test_load_journal_includes_failed(self, tmp_path):
+        from pysus.management.records import (
+            IdentityKey,
+            SyncOutcome,
+            load_journal_keys,
+            write_journal_line,
+        )
+
+        journal = tmp_path / "journal.jsonl"
+        key = IdentityKey(
+            dataset="SIH",
+            group="RD",
+            year=2024,
+            month=6,
+            state="SP",
+            stem="rdsp2406",
+        )
+        write_journal_line(
+            journal,
+            SyncOutcome(key=key, origin="ftp", status="failed"),
+        )
+        keys = load_journal_keys(journal)
+        assert keys == {key}
+
     def test_load_journal_missing_file(self, tmp_path):
         from pysus.management.records import load_journal_keys
 

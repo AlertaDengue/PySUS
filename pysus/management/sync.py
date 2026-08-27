@@ -276,6 +276,7 @@ class SyncEngine:
         columns_conn = columns_adapter.raw_connection()
 
         connections = (central_conn, dataset_conn, columns_conn)
+        parquet_file = None
         try:
             with central_conn, dataset_conn, columns_conn:
                 central_cursor = central_conn.cursor()
@@ -387,6 +388,9 @@ class SyncEngine:
                     conn.close()
                 except Exception:  # noqa
                     pass
+            self._cleanup_local(raw_path)
+            if parquet_file is not None:
+                self._cleanup_local(parquet_file.path)
             raise exc
 
     def _dataset_adapter_by_name(self, dataset_name: str):
@@ -421,6 +425,7 @@ class SyncEngine:
                 return output
             except _RETRYABLE as exc:
                 last_error = exc
+                self._cleanup_local(output)
                 wait_time = 2**attempt + (attempt * 2)
                 error(
                     f"Download attempt {attempt + 1}/{max_retries} failed "
@@ -545,8 +550,8 @@ class SyncEngine:
         save_snapshots: bool = True,
         checkpoint_every: int | None = None,
         on_outcome: Callable[[SyncOutcome], None] | None = None,
-        workers: int = 16,
-        ftp_connections: int = 6,
+        workers: int = 4,
+        ftp_connections: int = 4,
         origins: tuple[str, ...] | None = None,
         reupload_before: datetime | None = None,
         resume: set[IdentityKey] | None = None,
@@ -730,10 +735,12 @@ class SyncEngine:
         async def raw_processor() -> None:
             while True:
                 entry = await raw_queue.get()
+                raw_path = None
                 try:
                     if entry is None:
                         return
                     comparison, record, raw, err = entry
+                    raw_path = raw
                     if err is not None:
                         await write_queue.put((comparison, record, None, err))
                         continue
@@ -745,19 +752,26 @@ class SyncEngine:
                     comparison, record, _, _ = entry
                     await write_queue.put((comparison, record, None, str(exc)))
                 finally:
+                    if raw_path:
+                        self._cleanup_local(raw_path)
                     raw_queue.task_done()
 
         async def gov_worker() -> None:
             while gov_items:
                 comparison, record = gov_items.pop()
+                raw_path = None
                 try:
                     raw = await self._download_raw_with_retry(record.file)
+                    raw_path = raw
                     payload = await self._convert_and_upload(
                         record.file, raw, callback=callback
                     )
                     await write_queue.put((comparison, record, payload, None))
                 except Exception as exc:  # noqa
                     await write_queue.put((comparison, record, None, str(exc)))
+                finally:
+                    if raw_path:
+                        self._cleanup_local(raw_path)
 
         async def catalog_writer() -> None:
             """Serial consumer: catalog rows + outcomes + checkpoints."""
