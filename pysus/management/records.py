@@ -432,10 +432,10 @@ def write_journal_line(path: Path, outcome: SyncOutcome) -> None:
 
 
 def load_journal_keys(path: Path) -> set[IdentityKey]:
-    """Return the identity keys recorded as ``uploaded`` in a journal.
+    """Return identity keys already processed in a prior run.
 
-    These are the files a paused run already finished, so a resumed run
-    can skip them without re-downloading and re-converting.
+    Both ``uploaded`` and ``failed`` entries are included so a resumed run
+    skips files that were already transferred or could not be downloaded.
     """
     keys: set[IdentityKey] = set()
     if not path.exists():
@@ -448,7 +448,7 @@ def load_journal_keys(path: Path) -> set[IdentityKey]:
             data = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if data.get("status") != "uploaded":
+        if data.get("status") not in ("uploaded", "failed"):
             continue
         try:
             keys.add(

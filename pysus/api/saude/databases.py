@@ -349,37 +349,8 @@ DATASET_SPECS: tuple[DatasetSpec, ...] = (
             "/vacinacao/sistema-de-informacao-de-insumos-estrategicos",
         ),
     ),
-    DatasetSpec(
-        name="VIGILANCIAMEIOAMBIENTE",
-        long_name="Vigilância e Meio Ambiente",
-        description=(
-            "SRAG, síndrome gripal, SIM, Sinasc e mpox — dados de "
-            "vigilância epidemiológica e ambiental."
-        ),
-        ckan_group="vigilancia-e-meio-ambiente",
-        exclude_patterns=("sisagua",),
-        demas_tags=("Vigilância e Meio Ambiente",),
-        endpoints=(
-            "/vigilancia-e-meio-ambiente/"
-            "notificacoes-de-sindrome-gripal-leve-2020",
-            "/vigilancia-e-meio-ambiente/"
-            "notificacoes-de-sindrome-gripal-leve-2021",
-            "/vigilancia-e-meio-ambiente/"
-            "notificacoes-de-sindrome-gripal-leve-2022",
-            "/vigilancia-e-meio-ambiente/"
-            "notificacoes-de-sindrome-gripal-leve-2023",
-            "/vigilancia-e-meio-ambiente/"
-            "notificacoes-de-sindrome-gripal-leve-2024",
-            "/vigilancia-e-meio-ambiente/"
-            "sistema-de-informacao-sobre-mortalidade",
-            "/vigilancia-e-meio-ambiente/"
-            "sistema-de-informacao-sobre-nascidos-vivos",
-            "/vigilancia-e-meio-ambiente/srag-2009-2012",
-            "/vigilancia-e-meio-ambiente/srag-2013-2018",
-            "/vigilancia-e-meio-ambiente/srag-2019-2026",
-            "/vigilancia-e-meio-ambiente/mpox",
-        ),
-    ),
+    # VIGILANCIAMEIOAMBIENTE removed 2026-08 — the saude.gov.br
+    # API is unreachable and 97% of entries fail.
 )
 
 #: Lookup by canonical name.
