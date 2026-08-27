@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.5](https://github.com/AlertaDengue/PySUS/compare/2.10.4...2.10.5) (2026-08-27)
+
+### Bug Fixes
+
+* remove VIGILANCIAMEIOAMBIENTE database due to unavibilty ([#332](https://github.com/AlertaDengue/PySUS/issues/332)) ([f0ab718](https://github.com/AlertaDengue/PySUS/commit/f0ab718e9c99785b309737dc85ce6b60134547d4))
+
 ## [2.10.4](https://github.com/AlertaDengue/PySUS/compare/2.10.3...2.10.4) (2026-08-26)
 
 ### Bug Fixes
