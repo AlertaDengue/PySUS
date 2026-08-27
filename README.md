@@ -136,7 +136,9 @@ with PySUS() as client:
 ```python
 from pysus import download_many
 
-paths = await download_many(files, max_concurrent=5)
+async def download_files(files):
+    paths = await download_many(files, max_concurrent=5)
+    return paths
 ```
 
 ### Streaming / DuckDB
