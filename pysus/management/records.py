@@ -335,6 +335,87 @@ class FileComparison:
         }
 
 
+#: Freshness classification for a mirrored file vs its origin.
+FRESH_MISSING = "missing"  # absent from the S3 mirror
+FRESH_OUTDATED = "outdated"  # present but the origin file is more recent
+FRESH_CURRENT = "current"  # present and up to date
+
+
+def freshness_status(comparison: FileComparison) -> tuple[str, str]:
+    """Classify a logical file against its mirrored S3 (ducklake) copy.
+
+    A file that exists on an origin (FTP/DadosGov/Saude) but has no S3
+    artifact is ``missing``. When an S3 artifact exists, the mirror is
+    ``outdated`` if any origin record is *newer* (its ``modified`` origin
+    date is later than the recorded ``source_modified``) **or** has a
+    *different* ``size`` than the recorded ``source_size``. Otherwise it
+    is ``current``.
+
+    Returns a ``(status, reason)`` tuple where *status* is one of
+    :data:`FRESH_MISSING`, :data:`FRESH_OUTDATED` or :data:`FRESH_CURRENT`.
+    """
+    s3 = comparison._pick("ducklake")
+    if s3 is None:
+        return FRESH_MISSING, "no mirror artifact in the S3 catalog"
+
+    reasons: list[str] = []
+    for record in comparison.records:
+        if record.origin == "ducklake":
+            continue
+        # 1) origin modification date ("origin date") newer than mirrored.
+        if (
+            record.modified is not None
+            and s3.source_modified is not None
+            and record.modified > s3.source_modified
+        ):
+            reasons.append(
+                f"{record.origin} modified {record.modified:%Y-%m-%d} is "
+                f"newer than the mirrored {s3.source_modified:%Y-%m-%d}"
+            )
+        # 2) origin size differs from the mirrored source size.
+        if record.size and s3.source_size and record.size != s3.source_size:
+            reasons.append(
+                f"{record.origin} size {record.size} differs from the "
+                f"mirrored {s3.source_size}"
+            )
+
+    if reasons:
+        return FRESH_OUTDATED, "; ".join(reasons)
+    return FRESH_CURRENT, "mirror is up to date"
+
+
+@dataclass
+class DatabaseCheck:
+    """Aggregated freshness check for one database."""
+
+    dataset: str
+    missing: list[str] = field(default_factory=list)
+    outdated: list[str] = field(default_factory=list)
+    current: list[str] = field(default_factory=list)
+
+    @property
+    def needs_update(self) -> bool:
+        """True when any file is missing or outdated in this database."""
+        return bool(self.missing or self.outdated)
+
+    def add(self, status: str, label: str, reason: str = "") -> None:
+        bucket = {
+            FRESH_MISSING: self.missing,
+            FRESH_OUTDATED: self.outdated,
+            FRESH_CURRENT: self.current,
+        }.get(status)
+        if bucket is not None:
+            bucket.append(label if not reason else f"{label} — {reason}")
+
+    def summary(self) -> dict[str, int]:
+        return {
+            "missing": len(self.missing),
+            "outdated": len(self.outdated),
+            "current": len(self.current),
+            "needs_update": self.needs_update,
+        }
+
+
 @dataclass
 class SnapshotDiff:
     """Difference between two snapshots of the same origin."""
@@ -432,10 +513,13 @@ def write_journal_line(path: Path, outcome: SyncOutcome) -> None:
 
 
 def load_journal_keys(path: Path) -> set[IdentityKey]:
-    """Return identity keys already processed in a prior run.
+    """Return identity keys already transferred in a prior run.
 
-    Both ``uploaded`` and ``failed`` entries are included so a resumed run
-    skips files that were already transferred or could not be downloaded.
+    Only ``uploaded`` entries are included so a resumed run skips files
+    that were transferred and never re-downloads them. ``failed`` entries
+    are deliberately excluded: transient failures (e.g. a throttled FTP
+    server or a dropped connection) must be retried on the next run, not
+    dropped permanently.
     """
     keys: set[IdentityKey] = set()
     if not path.exists():
@@ -448,7 +532,7 @@ def load_journal_keys(path: Path) -> set[IdentityKey]:
             data = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if data.get("status") not in ("uploaded", "failed"):
+        if data.get("status") != "uploaded":
             continue
         try:
             keys.add(

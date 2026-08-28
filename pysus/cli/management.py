@@ -114,18 +114,16 @@ def check(
         help="Path to a file with ACCESS_KEY/SECRET_KEY/DADOSGOV_TOKEN",
     ),
 ):
-    """Check every source against the S3 databases.
+    """Check a database against its FTP origin to see if it needs updating.
 
-    By default this is a dry run: it only reports which files would need
-    to be updated/uploaded (``needs_update``) and which are already at
-    the most updated version (``skipped``), without touching S3. Pass
-    ``--apply`` to actually download, convert, upload and catalog the
-    outdated files. Use ``--json`` to stream machine-readable results.
+    By default this is a dry run: it classifies every mirrored file as
+    ``missing`` (not on S3), ``outdated`` (the FTP file is more recent or
+    has a different size) or ``current``, and prints a per-database table
+    with a "needs update" / "up to date" verdict — without touching S3.
 
-    A run is resumable: each completed file is appended to a journal
-    (``--resume``, or derived from ``--reupload-before``), and a paused
-    run can be resumed with the same command to skip already-processed
-    files.
+    Pass ``--apply`` to actually download, convert, upload and catalog the
+    outstanding files (the full sync pipeline). Pass ``--json`` to stream
+    machine-readable results.
     """
     from pysus.api.client import _run_sync
     from pysus.management.sync import SyncEngine
@@ -137,9 +135,67 @@ def check(
         dadosgov_token=env.get("DADOSGOV_TOKEN"),
     )
 
+    datasets = [d.upper() for d in name] if name else None
+
+    def _flush() -> None:
+        import sys
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+    def _print_check_report(checks) -> None:
+        total_missing = sum(len(c.missing) for c in checks.values())
+        total_outdated = sum(len(c.outdated) for c in checks.values())
+        total_current = sum(len(c.current) for c in checks.values())
+
+        typer.echo(
+            f"{'DATABASE':<30}{'MISSING':>9}{'OUTDATED':>10}"
+            f"{'CURRENT':>9}  STATUS"
+        )
+        typer.echo("-" * 78)
+        for ds in sorted(checks):
+            c = checks[ds]
+            verdict = "needs update" if c.needs_update else "up to date"
+            typer.echo(
+                f"{ds:<30}{len(c.missing):>9}{len(c.outdated):>10}"
+                f"{len(c.current):>9}  {verdict}"
+            )
+        typer.echo("-" * 78)
+        typer.echo(
+            f"{'TOTAL':<30}{total_missing:>9}{total_outdated:>10}"
+            f"{total_current:>9}"
+        )
+        if total_missing or total_outdated:
+            typer.echo(
+                f"\n{total_missing + total_outdated} of "
+                f"{total_missing + total_outdated + total_current} file(s) "
+                "need updating — re-run with --apply to mirror them."
+            )
+
+    def _print_check_json(checks) -> None:
+        for ds in sorted(checks):
+            typer.echo(json.dumps({"dataset": ds, **checks[ds].summary()}))
+
+    async def _run_check() -> None:
+        await engine.__aenter__(lock=False)
+        try:
+            checks = await engine.check(datasets=datasets)
+        finally:
+            await engine.__aexit__(None, None, None)
+        _flush()
+        if json_out:
+            _print_check_json(checks)
+        else:
+            _print_check_report(checks)
+        _flush()
+
+    if not apply:
+        _run_sync(_run_check())
+        return
+
     journal = _journal_path(resume, reupload_before)
     resume_keys = set()
-    if apply and journal is not None and journal.exists():
+    if journal is not None and journal.exists():
         resume_keys = load_journal_keys(journal)
 
     counts: dict[str, int] = {}
@@ -172,25 +228,19 @@ def check(
         if total % 500 == 0:
             typer.echo(f"progress: {counts}", err=True)
 
-    def _flush() -> None:
-        import sys
-
-        sys.stdout.flush()
-        sys.stderr.flush()
-
-    async def _run():
+    async def _run() -> dict[str, int]:
         async with engine:
             report = await engine.run(
-                datasets=[d.upper() for d in name] if name else None,
+                datasets=datasets,
                 force=force,
                 reupload_before=_parse_date(reupload_before),
-                dry_run=not apply,
+                dry_run=False,
                 workers=workers,
                 ftp_connections=ftp_connections,
-                checkpoint_every=checkpoint_every if apply else None,
+                checkpoint_every=checkpoint_every,
                 on_outcome=on_outcome,
                 resume=resume_keys or None,
-                journal=journal if apply else None,
+                journal=journal,
             )
         summary = report.summary()
         _flush()
@@ -211,5 +261,5 @@ def check(
         return summary
 
     summary = _run_sync(_run())
-    if summary["failed"]:
+    if summary and summary["failed"]:
         raise typer.Exit(code=1)

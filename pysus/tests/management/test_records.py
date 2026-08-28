@@ -4,6 +4,10 @@ from datetime import datetime
 
 from pysus.management.records import (
     DOWNLOAD_PRIORITY,
+    FRESH_CURRENT,
+    FRESH_MISSING,
+    FRESH_OUTDATED,
+    DatabaseCheck,
     FileComparison,
     FileRecord,
     IdentityKey,
@@ -14,6 +18,7 @@ from pysus.management.records import (
     canonical_group,
     compose_s3_key,
     format_of,
+    freshness_status,
     parquet_key,
     stem_of,
 )
@@ -368,3 +373,111 @@ class TestSyncReport:
         assert s["skipped"] == 1
         assert s["failed"] == 1
         assert s["needs_token"] == 1
+
+
+class TestFreshnessStatus:
+    @staticmethod
+    def _rec(origin, modified, size, **kw):
+        data = {
+            "origin": origin,
+            "dataset": "SINAN",
+            "name": "DENGBR20.dbc",
+            "path": "x",
+            "modified": modified,
+            "size": size,
+        }
+        data.update(kw)
+        return FileRecord(**data)
+
+    @staticmethod
+    def _cmp(*records):
+        s3 = next((r for r in records if r.origin == "ducklake"), None)
+        if s3 is None:
+            s3 = records[0]
+        return FileComparison(key=s3.identity_key(), records=list(records))
+
+    def test_missing_when_no_s3_artifact(self):
+        cmp = self._cmp(
+            self._rec("ftp", datetime(2026, 1, 1), 100),
+        )
+        status, _ = freshness_status(cmp)
+        assert status == FRESH_MISSING
+
+    def test_current_when_same_date_and_size(self):
+        s3 = self._rec(
+            "ducklake",
+            datetime(2026, 1, 2),
+            10,
+            source_modified=datetime(2026, 1, 1),
+            source_size=100,
+        )
+        cmp = self._cmp(s3, self._rec("ftp", datetime(2026, 1, 1), 100))
+        status, reason = freshness_status(cmp)
+        assert status == FRESH_CURRENT
+
+    def test_outdated_when_origin_date_newer(self):
+        s3 = self._rec(
+            "ducklake",
+            datetime(2026, 1, 2),
+            10,
+            source_modified=datetime(2026, 1, 1),
+            source_size=100,
+        )
+        cmp = self._cmp(s3, self._rec("ftp", datetime(2026, 3, 1), 100))
+        status, reason = freshness_status(cmp)
+        assert status == FRESH_OUTDATED
+        assert "newer" in reason
+
+    def test_outdated_when_size_differs(self):
+        s3 = self._rec(
+            "ducklake",
+            datetime(2026, 1, 2),
+            10,
+            source_modified=datetime(2026, 1, 1),
+            source_size=100,
+        )
+        cmp = self._cmp(s3, self._rec("ftp", datetime(2026, 1, 1), 999))
+        status, reason = freshness_status(cmp)
+        assert status == FRESH_OUTDATED
+        assert "size" in reason
+
+    def test_outdated_when_source_date_missing_on_s3(self):
+        s3 = self._rec(
+            "ducklake",
+            datetime(2026, 1, 2),
+            10,
+            source_modified=None,
+            source_size=100,
+        )
+        cmp = self._cmp(s3, self._rec("ftp", datetime(2026, 1, 1), 100))
+        status, _ = freshness_status(cmp)
+        assert status == FRESH_CURRENT
+
+
+class TestDatabaseCheck:
+    def test_tracks_buckets(self):
+        chk = DatabaseCheck(dataset="SINAN")
+        chk.add(FRESH_MISSING, "a")
+        chk.add(FRESH_OUTDATED, "b", "reason")
+        chk.add(FRESH_CURRENT, "c")
+        assert chk.needs_update is True
+        assert chk.missing == ["a"]
+        assert chk.outdated == ["b — reason"]
+        assert chk.current == ["c"]
+
+    def test_uptodate_when_no_missing_or_outdated(self):
+        chk = DatabaseCheck(dataset="SINAN")
+        chk.add(FRESH_CURRENT, "a")
+        assert chk.needs_update is False
+
+    def test_summary(self):
+        chk = DatabaseCheck(dataset="SINAN")
+        chk.add(FRESH_MISSING, "a")
+        chk.add(FRESH_OUTDATED, "b")
+        chk.add(FRESH_CURRENT, "c")
+        assert chk.summary() == {
+            "missing": 1,
+            "outdated": 1,
+            "current": 1,
+            "needs_update": True,
+        }

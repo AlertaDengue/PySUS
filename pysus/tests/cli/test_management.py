@@ -13,6 +13,7 @@ def _make_engine(summary: dict):
     engine.__aenter__ = AsyncMock(return_value=engine)
     engine.__aexit__ = AsyncMock(return_value=None)
     engine.run = AsyncMock(return_value=MagicMock(summary=lambda: summary))
+    engine.check = AsyncMock(return_value={})
     return engine
 
 
@@ -33,11 +34,9 @@ class TestManagementCheck:
         with patch("pysus.management.sync.SyncEngine", return_value=engine):
             result = runner.invoke(app, ["management", "check"])
         assert result.exit_code == 0
-        assert "needs_update: 1" in result.output
-        assert "skipped: 2" in result.output
-        _, kwargs = engine.run.call_args
-        assert kwargs["datasets"] is None
-        assert kwargs["dry_run"] is True
+        assert "DATABASE" in result.output
+        assert "TOTAL" in result.output
+        engine.check.assert_awaited_once_with(datasets=None)
 
     @patch("pysus.cli.management._load_env")
     def test_check_specific_databases(self, mock_env):
@@ -57,8 +56,9 @@ class TestManagementCheck:
                 app, ["management", "check", "SINAN", "SINASC", "SIM"]
             )
         assert result.exit_code == 0
-        _, kwargs = engine.run.call_args
-        assert kwargs["datasets"] == ["SINAN", "SINASC", "SIM"]
+        engine.check.assert_awaited_once_with(
+            datasets=["SINAN", "SINASC", "SIM"]
+        )
 
     @patch("pysus.cli.management._load_env")
     def test_check_apply_disables_dry_run(self, mock_env):
@@ -83,64 +83,24 @@ class TestManagementCheck:
         assert kwargs["checkpoint_every"] == 500
 
     @patch("pysus.cli.management._load_env")
-    def test_check_json_streams_outcomes(self, mock_env):
+    def test_check_json_streams_freshness(self, mock_env):
         mock_env.return_value = {"ACCESS_KEY": "ak", "SECRET_KEY": "sk"}
-        engine = MagicMock()
-        engine.__aenter__ = AsyncMock(return_value=engine)
-        engine.__aexit__ = AsyncMock(return_value=None)
-        engine.run = AsyncMock(
-            return_value=MagicMock(
-                summary=lambda: {
-                    "total": 1,
-                    "needs_update": 1,
-                    "uploaded": 0,
-                    "skipped": 0,
-                    "failed": 0,
-                    "needs_token": 0,
-                }
-            )
-        )
+        from pysus.management.records import DatabaseCheck
 
-        from pysus.management.records import IdentityKey, SyncOutcome
+        chk = DatabaseCheck(dataset="SINAN")
+        chk.add("missing", "SINAN/DENG/-/DENGBR20")
+        engine = _make_engine({})
+        engine.check = AsyncMock(return_value={"SINAN": chk})
 
-        key = IdentityKey(
-            dataset="SINAN",
-            group="DENG",
-            year=2025,
-            month=None,
-            state=None,
-            stem="dengbr25",
-        )
-
-        async def fake_run(**kwargs):
-            kwargs["on_outcome"](
-                SyncOutcome(
-                    key=key,
-                    origin="ftp",
-                    status="needs_update",
-                    detail="SINAN/DENG/2025/-/dengbr25 (ftp)",
-                )
-            )
-            return MagicMock(
-                summary=lambda: {
-                    "total": 1,
-                    "needs_update": 1,
-                    "uploaded": 0,
-                    "skipped": 0,
-                    "failed": 0,
-                    "needs_token": 0,
-                }
-            )
-
-        engine.run = fake_run
         with patch("pysus.management.sync.SyncEngine", return_value=engine):
             result = runner.invoke(app, ["management", "check", "--json"])
         assert result.exit_code == 0
-        assert '"status": "needs_update"' in result.output
         assert '"dataset": "SINAN"' in result.output
+        assert '"missing": 1' in result.output
+        assert '"needs_update": true' in result.output
 
     @patch("pysus.cli.management._load_env")
-    def test_check_exit_code_on_failure(self, mock_env):
+    def test_check_apply_exit_code_on_failure(self, mock_env):
         mock_env.return_value = {"ACCESS_KEY": "ak", "SECRET_KEY": "sk"}
         engine = _make_engine(
             {
@@ -153,24 +113,15 @@ class TestManagementCheck:
             }
         )
         with patch("pysus.management.sync.SyncEngine", return_value=engine):
-            result = runner.invoke(app, ["management", "check", "SINAN"])
+            result = runner.invoke(
+                app, ["management", "check", "SINAN", "--apply"]
+            )
         assert result.exit_code == 1
 
     @patch("pysus.cli.management._load_env")
     def test_check_reupload_before(self, mock_env):
-        from datetime import datetime
-
         mock_env.return_value = {"ACCESS_KEY": "ak", "SECRET_KEY": "sk"}
-        engine = _make_engine(
-            {
-                "total": 1,
-                "needs_update": 1,
-                "uploaded": 0,
-                "skipped": 0,
-                "failed": 0,
-                "needs_token": 0,
-            }
-        )
+        engine = _make_engine({})
         with patch("pysus.management.sync.SyncEngine", return_value=engine):
             result = runner.invoke(
                 app,
@@ -183,9 +134,7 @@ class TestManagementCheck:
                 ],
             )
         assert result.exit_code == 0
-        _, kwargs = engine.run.call_args
-        assert kwargs["reupload_before"] == datetime(2026, 7, 6)
-        assert kwargs["dry_run"] is True
+        engine.check.assert_awaited_once_with(datasets=["SINAN"])
 
     @patch("pysus.cli.management._load_env")
     def test_check_reupload_before_with_apply(self, mock_env):
