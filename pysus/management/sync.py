@@ -19,9 +19,10 @@ whole files on close; concurrent sync runs would clobber each other.
 from __future__ import annotations
 
 import asyncio
+import shutil
 from collections.abc import Callable
 from datetime import datetime
-from logging import error, warning
+from logging import error, info, warning
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
@@ -38,12 +39,14 @@ from .compare import Comparator
 from .inventory import Inventory
 from .records import (
     DOWNLOAD_PRIORITY,
+    DatabaseCheck,
     FileComparison,
     FileRecord,
     IdentityKey,
     SyncOutcome,
     SyncReport,
     compose_s3_key,
+    freshness_status,
     write_journal_line,
 )
 
@@ -73,6 +76,64 @@ _CONVERT_TIMEOUT: float = 600.0  # 10 minutes
 #: are skipped to prevent multi-gigabyte CSVs (e.g. Vaccination dumps)
 #: from stalling the pipeline.  Set to 0 to disable the limit.
 _MAX_FILE_SIZE: int = 500 * 1024 * 1024  # 500 MB
+
+#: Minimum per-file in-flight "weight" (bytes).  Files count for at least
+#: this much towards the concurrency budget, so a flood of tiny files can
+#: never spawn an unbounded number of simultaneous conversions.
+_SMALL_FILE_BYTES: int = 64 * 1024 * 1024  # 64 MB
+
+#: Total in-flight conversion/download weight budget (bytes).  Concurrency
+#: shrinks as queued files grow: dozens of small files run in parallel,
+#: while a handful of multi-GB DATASUS archives are processed almost one
+#: at a time.  Keeps peak RAM/disk usage bounded on low-resource hosts.
+_CONCURRENCY_BUDGET: int = 2500 * 1024 * 1024  # 2.5 GB
+
+
+class _WeightGate:
+    """Bound how many pipeline slots are in use by byte weight.
+
+    ``acquire(weight)`` reserves a slot only while enough *budget* is
+    free; ``release(weight)`` returns it.  Small files (weight capped at
+    ``_SMALL_FILE_BYTES``) fit many at once, large files consume most or
+    all of the budget and therefore serialize the pipeline.
+    """
+
+    def __init__(self, budget: int = _CONCURRENCY_BUDGET) -> None:
+        self._budget = budget
+        self._used = 0
+        self._cond = asyncio.Condition()
+
+    @staticmethod
+    def weight_of(size: object, budget: int = _CONCURRENCY_BUDGET) -> int:
+        """Return the gate weight for a file of ``size`` bytes.
+
+        Weights are capped at the budget so an oversized file (e.g. a
+        multi-GB vaccine CSV well above 2.5 GB) can still acquire alone
+        instead of deadlocking in ``adjust``.
+        """
+        if isinstance(size, (int, float)) and size > 0:
+            return min(max(int(size), _SMALL_FILE_BYTES), budget)
+        return min(_SMALL_FILE_BYTES, budget)
+
+    async def acquire(self, weight: int) -> int:
+        async with self._cond:
+            while self._used + weight > self._budget:
+                await self._cond.wait()
+            self._used += weight
+            return weight
+
+    async def release(self, weight: int) -> None:
+        async with self._cond:
+            self._used -= weight
+            self._cond.notify_all()
+
+    async def adjust(self, old_weight: int, new_weight: int) -> int:
+        """Swap ``old_weight`` for ``new_weight`` in the current usage."""
+        if new_weight == old_weight:
+            return new_weight
+        await self.release(old_weight)
+        await self.acquire(new_weight)
+        return new_weight
 
 
 class SyncEngine:
@@ -120,7 +181,7 @@ class SyncEngine:
     # ------------------------------------------------------------------
     # lifecycle
     # ------------------------------------------------------------------
-    async def __aenter__(self) -> SyncEngine:
+    async def __aenter__(self, lock: bool = True) -> SyncEngine:
         if self.pysus is None:
             from pysus.api.client import PySUS
 
@@ -134,7 +195,8 @@ class SyncEngine:
                 access_key=self.access_key,
                 secret_key=self.secret_key,
             )
-        self._acquire_sync_lock()
+        if lock:
+            self._acquire_sync_lock()
         return self
 
     def _acquire_sync_lock(self) -> None:
@@ -421,8 +483,7 @@ class SyncEngine:
         last_error: Exception | None = None
         for attempt in range(max_retries):
             try:
-                await self._download_once(file, output, ftp_client)
-                return output
+                return await self._download_once(file, output, ftp_client)
             except _RETRYABLE as exc:
                 last_error = exc
                 self._cleanup_local(output)
@@ -443,8 +504,14 @@ class SyncEngine:
         file: BaseRemoteFile,
         output: Path,
         ftp_client: Any | None = None,
-    ) -> None:
-        """Perform one raw download to *output*."""
+    ) -> Path:
+        """Perform one raw download to *output*.
+
+        Returns the local path that actually received the bytes.  Some
+        origins (e.g. CKAN/Saude resources) ignore the requested filename
+        and write to their own derived name in ``output.parent``, so the
+        caller must use the returned path for conversion and cleanup.
+        """
         from anyio import to_thread
 
         if (
@@ -480,7 +547,7 @@ class SyncEngine:
             try:
                 with anyio.fail_after(_DOWNLOAD_TIMEOUT):
                     await to_thread.run_sync(_retr)
-                return
+                return output
             except Exception:  # noqa
                 try:
                     ftp.quit()
@@ -501,8 +568,8 @@ class SyncEngine:
 
             with anyio.fail_after(_DOWNLOAD_TIMEOUT):
                 await to_thread.run_sync(_direct_retr)
-            return
-        await file._download(output=output)
+            return output
+        return await file._download(output=output)
 
     @staticmethod
     def _cleanup_local(path: Path) -> None:
@@ -510,6 +577,34 @@ class SyncEngine:
             path.unlink(missing_ok=True)
         except OSError:
             pass
+
+    @staticmethod
+    def _cleanup_stale_tmp() -> None:
+        """Remove leftover files in the tmp directory from prior runs.
+
+        Parquets, DBCs, DBFs, CSVs and ``*.tmp_extract`` extraction
+        directories left behind by crashed (e.g. OOM-killed) processes are
+        deleted before a new run starts.
+        """
+        tmp = Path(CACHEPATH) / "management" / "tmp"
+        if not tmp.is_dir():
+            return
+        removed = 0
+        for p in tmp.iterdir():
+            if p.is_dir() and p.name.endswith(".tmp_extract"):
+                try:
+                    shutil.rmtree(p)
+                    removed += 1
+                except OSError:
+                    pass
+            elif p.is_file():
+                try:
+                    p.unlink()
+                    removed += 1
+                except OSError:
+                    pass
+        if removed:
+            info(f"Cleaned {removed} stale files from {tmp}")
 
     @staticmethod
     def _is_current(
@@ -550,8 +645,8 @@ class SyncEngine:
         save_snapshots: bool = True,
         checkpoint_every: int | None = None,
         on_outcome: Callable[[SyncOutcome], None] | None = None,
-        workers: int = 4,
-        ftp_connections: int = 4,
+        workers: int = 16,
+        ftp_connections: int = 8,
         origins: tuple[str, ...] | None = None,
         reupload_before: datetime | None = None,
         resume: set[IdentityKey] | None = None,
@@ -591,6 +686,9 @@ class SyncEngine:
         """
         report = SyncReport(dataset=",".join(datasets) if datasets else None)
         active_origins = origins or ("ducklake", "ftp", "dadosgov", "saude")
+
+        if not dry_run:
+            self._cleanup_stale_tmp()
 
         def emit(outcome: SyncOutcome) -> None:
             """Record an outcome: report + callback + resume journal."""
@@ -704,8 +802,22 @@ class SyncEngine:
                 continue
             parallel.append((comparison, record))
 
+        # Process smallest files first: tiny artifacts are cheap to
+        # convert and upload, so they drain fast with full parallelism,
+        # and the multi-GB DATASUS archives are left for last when the
+        # weight gate naturally serializes them.
+        parallel.sort(
+            key=lambda cf: (
+                cf[1].file.size
+                if isinstance(cf[1].file.size, (int, float))
+                else float("inf")
+            )
+        )
+
         ftp_items = [(c, r) for c, r in parallel if r.origin == "ftp"]
         gov_items = [(c, r) for c, r in parallel if r.origin != "ftp"]
+
+        gate = _WeightGate()
 
         ftp_pool: list[Any] = []
         if ftp_items:
@@ -723,23 +835,36 @@ class SyncEngine:
             client: Any, items: list[tuple[FileComparison, FileRecord]]
         ) -> None:
             for comparison, record in items:
+                weight = gate.weight_of(record.file.size)
+                try:
+                    await gate.acquire(weight)
+                except Exception:  # noqa: BLE001 — budget is advisory
+                    weight = 0
                 try:
                     raw = await self._download_raw_with_retry(
                         record.file, ftp_client=client
                     )
-                    await raw_queue.put((comparison, record, raw, None))
+                    if weight:
+                        try:
+                            weight = await gate.adjust(
+                                weight, gate.weight_of(raw.stat().st_size)
+                            )
+                        except Exception:  # noqa: BLE001 — keep old weight
+                            pass
+                    await raw_queue.put((comparison, record, raw, None, weight))
                 except Exception as exc:  # noqa
-                    await raw_queue.put((comparison, record, None, str(exc)))
-            await raw_queue.put(None)
+                    if weight:
+                        await gate.release(weight)
+                    await raw_queue.put((comparison, record, None, str(exc), 0))
 
         async def raw_processor() -> None:
             while True:
                 entry = await raw_queue.get()
+                if entry is None:
+                    return
+                comparison, record, raw, err, weight = entry
                 raw_path = None
                 try:
-                    if entry is None:
-                        return
-                    comparison, record, raw, err = entry
                     raw_path = raw
                     if err is not None:
                         await write_queue.put((comparison, record, None, err))
@@ -749,9 +874,11 @@ class SyncEngine:
                     )
                     await write_queue.put((comparison, record, payload, None))
                 except Exception as exc:  # noqa
-                    comparison, record, _, _ = entry
+                    comparison, record, _, _, _ = entry
                     await write_queue.put((comparison, record, None, str(exc)))
                 finally:
+                    if weight:
+                        await gate.release(weight)
                     if raw_path:
                         self._cleanup_local(raw_path)
                     raw_queue.task_done()
@@ -759,10 +886,22 @@ class SyncEngine:
         async def gov_worker() -> None:
             while gov_items:
                 comparison, record = gov_items.pop()
+                weight = gate.weight_of(record.file.size)
+                try:
+                    await gate.acquire(weight)
+                except Exception:  # noqa: BLE001 — budget is advisory
+                    weight = 0
                 raw_path = None
                 try:
                     raw = await self._download_raw_with_retry(record.file)
                     raw_path = raw
+                    if weight:
+                        try:
+                            weight = await gate.adjust(
+                                weight, gate.weight_of(raw.stat().st_size)
+                            )
+                        except Exception:  # noqa: BLE001 — keep old weight
+                            pass
                     payload = await self._convert_and_upload(
                         record.file, raw, callback=callback
                     )
@@ -770,6 +909,8 @@ class SyncEngine:
                 except Exception as exc:  # noqa
                     await write_queue.put((comparison, record, None, str(exc)))
                 finally:
+                    if weight:
+                        await gate.release(weight)
                     if raw_path:
                         self._cleanup_local(raw_path)
 
@@ -906,6 +1047,47 @@ class SyncEngine:
                 self.inventory.save_snapshot(origin, items)
 
         return report
+
+    async def check(
+        self,
+        datasets: list[str] | None = None,
+    ) -> dict[str, DatabaseCheck]:
+        """Check which mirrored files need updating, per database.
+
+        Lists the origin(s) and the DuckLake catalog and classifies every
+        logical file via :func:`~pysus.management.records.freshness_status`:
+
+        * ``missing`` — present on the origin but absent from the S3 catalog;
+        * ``outdated`` — mirrored, but the origin file is more recent
+          (newer ``origin date``) or has a different size;
+        * ``current`` — mirrored and up to date.
+
+        No downloads, uploads or catalog writes are performed. Returns a
+        mapping of ``{dataset: DatabaseCheck}``. A database ``needs_update``
+        when it has any missing or outdated files.
+        """
+        if isinstance(datasets, str):
+            datasets = [datasets.upper()]
+
+        records: list[FileRecord] = await self.inventory.collect(
+            "ducklake", datasets
+        )
+        records += await self.inventory.collect("ftp", datasets)
+        if self.dadosgov_token:
+            records += await self.inventory.collect(
+                "dadosgov", datasets, dadosgov_token=self.dadosgov_token
+            )
+
+        comparisons = self.comparator.compare(records)
+
+        checks: dict[str, DatabaseCheck] = {}
+        for comparison in comparisons:
+            ds = checks.setdefault(
+                comparison.key.dataset, DatabaseCheck(comparison.key.dataset)
+            )
+            status, reason = freshness_status(comparison)
+            ds.add(status, self._label(comparison), reason)
+        return checks
 
     async def _convert_and_upload(
         self,

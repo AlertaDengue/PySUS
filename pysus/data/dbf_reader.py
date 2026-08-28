@@ -256,31 +256,29 @@ def stream_dbf_fast(
     dtype = schema.build_dtype()
 
     with open(path, "rb") as fh:
-        fh.seek(schema.header_len)
-        raw = fh.read(n * rl)
+        for start in range(0, n, chunk_size):
+            end = min(start + chunk_size, n)
+            chunk_n = end - start
+            fh.seek(schema.header_len + start * rl)
+            chunk_raw = fh.read(chunk_n * rl)
 
-    for start in range(0, n, chunk_size):
-        end = min(start + chunk_size, n)
-        chunk_n = end - start
-        chunk_raw = raw[start * rl : end * rl]
+            records: np.ndarray = np.frombuffer(
+                chunk_raw, dtype=dtype, count=chunk_n
+            )
+            records = records[records["_deleted"] != b"*"]  # skip deleted rows
+            chunk_n = len(records)
 
-        records: np.ndarray = np.frombuffer(
-            chunk_raw, dtype=dtype, count=chunk_n
-        )
-        records = records[records["_deleted"] != b"*"]  # skip deleted rows
-        chunk_n = len(records)
+            data = {}
+            for fld in schema.fields:
+                col: np.ndarray = records[fld.name]
+                decoded = np.empty(chunk_n, dtype=object)
+                for i in range(chunk_n):
+                    val = col[i]
+                    b = val if isinstance(val, bytes) else val.tobytes()
+                    decoded[i] = _decode(b)
+                data[fld.name] = decoded
 
-        data = {}
-        for fld in schema.fields:
-            col: np.ndarray = records[fld.name]
-            decoded = np.empty(chunk_n, dtype=object)
-            for i in range(chunk_n):
-                val = col[i]
-                b = val if isinstance(val, bytes) else val.tobytes()
-                decoded[i] = _decode(b)
-            data[fld.name] = decoded
-
-        yield pd.DataFrame(data)
+            yield pd.DataFrame(data)
 
 
 def _find_field(schema: DBFSchema, name: str) -> DBFField:

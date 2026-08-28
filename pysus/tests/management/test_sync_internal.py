@@ -633,7 +633,8 @@ class TestResumeJournal:
         keys = load_journal_keys(journal)
         assert keys == {key}
 
-    def test_load_journal_includes_failed(self, tmp_path):
+    def test_load_journal_excludes_failed(self, tmp_path):
+        """A failed entry must be retried on the next run, not skipped."""
         from pysus.management.records import (
             IdentityKey,
             SyncOutcome,
@@ -655,7 +656,7 @@ class TestResumeJournal:
             SyncOutcome(key=key, origin="ftp", status="failed"),
         )
         keys = load_journal_keys(journal)
-        assert keys == {key}
+        assert keys == set()
 
     def test_load_journal_missing_file(self, tmp_path):
         from pysus.management.records import load_journal_keys
@@ -726,3 +727,75 @@ class TestRunResumeSkipsDoneFiles:
         assert report.summary()["uploaded"] == 0
         assert report.summary()["skipped"] == 1
         engine._convert_and_upload.assert_not_awaited()
+
+
+class TestCheck:
+    @pytest.mark.asyncio
+    async def test_check_classifies_missing_outdated_current(self):
+        from datetime import datetime
+
+        engine = SyncEngine(access_key="ak", secret_key="sk")
+        engine.dadosgov_token = None
+
+        s3_rec = _record(
+            "ducklake",
+            "DENGBR20.parquet",
+            year=2020,
+            modified=datetime(2026, 1, 2),
+            source_modified=datetime(2026, 1, 1),
+            source_size=100,
+        )
+        current = _record(
+            "ftp",
+            "DENGBR20.dbc",
+            year=2020,
+            modified=datetime(2026, 1, 1),
+            size=100,
+        )
+        # a mirrored file whose FTP origin was updated afterwards
+        s3_chik = _record(
+            "ducklake",
+            "CHIKBR22.parquet",
+            year=2022,
+            modified=datetime(2026, 1, 2),
+            source_modified=datetime(2026, 1, 1),
+            source_size=50,
+        )
+        outdated = _record(
+            "ftp",
+            "CHIKBR22.dbc",
+            year=2022,
+            modified=datetime(2026, 5, 1),
+            size=50,
+        )
+        missing = _record(
+            "ftp",
+            "DENGBR00.dbc",
+            year=2000,
+            modified=datetime(2026, 1, 1),
+            size=30,
+        )
+
+        # ducklake + ftp records returned by inventory.collect
+        records = {
+            "ducklake": [s3_rec, s3_chik],
+            "ftp": [current, outdated, missing],
+        }
+        mock_inv = MagicMock()
+        mock_inv.collect = AsyncMock(
+            side_effect=lambda origin, datasets=None, **kw: records.get(
+                origin, []
+            )
+        )
+
+        with patch.object(engine, "_require_pysus", return_value=MagicMock()):
+            with patch(
+                "pysus.management.sync.Inventory", return_value=mock_inv
+            ):
+                checks = await engine.check(datasets=["SINAN"])
+
+        sinan = checks["SINAN"]
+        assert len(sinan.missing) == 1
+        assert len(sinan.outdated) == 1
+        assert len(sinan.current) == 1
+        assert sinan.needs_update is True
