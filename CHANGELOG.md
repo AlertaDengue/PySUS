@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.6](https://github.com/AlertaDengue/PySUS/compare/2.10.5...2.10.6) (2026-08-28)
+
+### Bug Fixes
+
+* fix readthedocs build ([#335](https://github.com/AlertaDengue/PySUS/issues/335)) ([fdc8616](https://github.com/AlertaDengue/PySUS/commit/fdc86163b720f043fdb59535b2557a4844a6bba1))
+
 ## [2.10.5](https://github.com/AlertaDengue/PySUS/compare/2.10.4...2.10.5) (2026-08-27)
 
 ### Bug Fixes
