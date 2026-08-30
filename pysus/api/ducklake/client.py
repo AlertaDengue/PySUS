@@ -108,6 +108,9 @@ class DuckLake(BaseRemoteClient):
                     "close": lambda self_, update_catalog=None: (
                         self_.adapter.close(update=bool(update_catalog))
                     ),
+                    "sync": lambda self_, update=False: (
+                        self_.adapter.sync(update=bool(update))
+                    ),
                 },
             )()
         )
@@ -182,17 +185,19 @@ class DuckLake(BaseRemoteClient):
         await self._columns_adap.close(update=should_update)
 
     async def flush_catalogs(self, update: bool = True) -> None:
-        """Upload dirty catalogs (if *update*) and reopen the adapters.
+        """Upload dirty catalogs (if *update*) without re-downloading them.
 
         Long-running writers use this to checkpoint: modified local
-        databases are pushed to S3 and the adapters are reconnected.
+        databases are pushed to S3 while the local files stay attached.
+        The fresh local copy just written is authoritative — there is no
+        need to tear the adapters down and re-download the same catalog
+        over the network (which was the source of previously observed
+        hangs at checkpoint time).
         """
         for ds in self._datasets:
-            await ds.close(update_catalog=update)
-        await self._catalog_adap.close(update=update)
-        await self._columns_adap.close(update=update)
-        await self._catalog_adap.connect()
-        await self._columns_adap.connect()
+            await ds.sync(update=update)
+        await self._catalog_adap.sync(update=update)
+        await self._columns_adap.sync(update=update)
 
     async def download(
         self,

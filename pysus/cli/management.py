@@ -20,7 +20,7 @@ from pathlib import Path
 
 import typer
 from pysus import CACHEPATH
-from pysus.management.records import load_journal_keys
+from pysus.management.records import load_journal_keys, load_journal_origins
 
 app = typer.Typer(help="Manage the S3 databases (dev only, not on PyPI)")
 
@@ -195,8 +195,10 @@ def check(
 
     journal = _journal_path(resume, reupload_before)
     resume_keys = set()
+    resume_origins = None
     if journal is not None and journal.exists():
         resume_keys = load_journal_keys(journal)
+        resume_origins = load_journal_origins(journal)
 
     counts: dict[str, int] = {}
 
@@ -240,6 +242,7 @@ def check(
                 checkpoint_every=checkpoint_every,
                 on_outcome=on_outcome,
                 resume=resume_keys or None,
+                resume_origins=resume_origins or None,
                 journal=journal,
             )
         summary = report.summary()

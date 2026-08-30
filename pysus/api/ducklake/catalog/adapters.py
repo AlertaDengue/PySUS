@@ -337,8 +337,19 @@ class BaseAdapter(ABC):
 
     async def close(self, update: bool = False) -> None:
         if update and self._local_dirty:
-            await self._upload_catalog()
-            self._local_dirty = False
+            try:
+                await self._upload_catalog()
+                self._local_dirty = False
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — catalog sync is best-effort
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "catalog upload failed for %s (kept dirty): %s",
+                    self.db_remote,
+                    exc,
+                )
 
         # The engine is shared process-wide per database file and is
         # never disposed here: DuckDB tears down the in-process database
@@ -348,6 +359,33 @@ class BaseAdapter(ABC):
         # before a file is replaced.
         self._engine = None
         self._session_factory = None
+
+    async def sync(self, update: bool = False) -> None:
+        """Upload the dirty catalog file, keeping the adapter attached.
+
+        Unlike :meth:`close`, the engine and session factory are left in
+        place, so the local database can keep serving writes right after
+        the upload. This is the checkpoint path: the local file we just
+        wrote is authoritative, so re-downloading it (as ``close`` +
+        ``connect`` does) would be a needless — and hang-prone —
+        network round-trip. The engine is *not* torn down, exactly as in
+        ``close``: the shared registry releases it only via
+        :func:`_dispose_shared` right before a file is replaced.
+        """
+        if update and self._local_dirty:
+            try:
+                await self._upload_catalog()
+                self._local_dirty = False
+            except (
+                Exception
+            ) as exc:  # noqa: BLE001 — catalog sync is best-effort
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "catalog upload failed for %s (kept dirty): %s",
+                    self.db_remote,
+                    exc,
+                )
 
     def __del__(self) -> None:
         if not hasattr(self, "_engine") or not self._engine:

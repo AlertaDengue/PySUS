@@ -24,6 +24,7 @@ from collections.abc import Callable
 from datetime import datetime
 from logging import error, info, warning
 from pathlib import Path
+from time import monotonic as _monotonic
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -67,6 +68,14 @@ _RETRYABLE = (
 #: pipeline indefinitely.
 _DOWNLOAD_TIMEOUT: float = 600.0  # 10 minutes
 
+#: Abort a transfer (download or conversion) when it makes no progress
+#: for this long (seconds).  Guards against half-open connections and
+#: deadlocked parsers that never raise but never complete either.
+_STALL_TIMEOUT: float = 300.0  # 5 minutes
+
+#: How often the staleness watchdog polls for progress (seconds).
+_STALL_POLL: float = 5.0
+
 #: Default per-file conversion timeout (seconds).  CSV→parquet on a
 #: 1 GB file typically takes < 60 s; anything longer likely means a
 #: pathological row layout or a bug.
@@ -87,6 +96,13 @@ _SMALL_FILE_BYTES: int = 64 * 1024 * 1024  # 64 MB
 #: while a handful of multi-GB DATASUS archives are processed almost one
 #: at a time.  Keeps peak RAM/disk usage bounded on low-resource hosts.
 _CONCURRENCY_BUDGET: int = 2500 * 1024 * 1024  # 2.5 GB
+
+#: Deadline for a full catalog checkpoint flush (minutes).  The catalog
+#: writer awaits this inline while it is the only consumer of the bounded
+#: ``write_queue``; a hang here would fill the queue and freeze every
+#: producer, so the flush is soft-capped and retried by the next
+#: checkpoint (or the final teardown flush).
+_FLUSH_TIMEOUT: float = 600.0  # 10 minutes
 
 
 class _WeightGate:
@@ -134,6 +150,65 @@ class _WeightGate:
         await self.release(old_weight)
         await self.acquire(new_weight)
         return new_weight
+
+
+class _StallWatch:
+    """Abort a long-running transfer when it makes no forward progress.
+
+    ``poke()`` must be called whenever the transfer advances (bytes
+    written, rows parsed, …).  A background task polls the last poke and
+    raises ``TimeoutError`` once ``_STALL_TIMEOUT`` seconds pass with no
+    progress — catching dead downloads and deadlocked parsers that an
+    absolute ``fail_after`` deadline alone cannot distinguish from slow
+    but healthy transfers.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        timeout: float = _STALL_TIMEOUT,
+        poll: float = _STALL_POLL,
+    ) -> None:
+        self._name = name
+        self._timeout = timeout
+        self._poll = poll
+        self._last_poke = _monotonic()
+
+    def poke(self) -> None:
+        """Record progress; a no-op unless something moved."""
+        self._last_poke = _monotonic()
+
+    async def watch(self) -> None:
+        """Run until aborted: raise when progress stalls for too long."""
+        while True:
+            await asyncio.sleep(self._poll)
+            if _monotonic() - self._last_poke > self._timeout:
+                raise TimeoutError(
+                    f"{self._name}: no progress for {self._timeout:.0f}s"
+                )
+
+    async def run(self, coro) -> Any:
+        """Await *coro*, cancelling it if progress stalls meanwhile.
+
+        Returns the coroutine's result, or raises ``TimeoutError`` and
+        cancels *coro* when the transfer stalls past the timeout.
+        """
+        task = asyncio.ensure_future(coro)
+        watcher = asyncio.ensure_future(self.watch())
+        try:
+            done, _ = await asyncio.wait(
+                (task, watcher), return_when=asyncio.FIRST_COMPLETED
+            )
+        finally:
+            if not watcher.done():
+                watcher.cancel()
+        if task in done:
+            return task.result()
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        raise TimeoutError(
+            f"{self._name}: no progress for {self._timeout:.0f}s"
+        )
 
 
 class SyncEngine:
@@ -382,9 +457,19 @@ class SyncEngine:
                     raise RuntimeError(
                         f"{file.basename}: cannot convert to parquet"
                     )
-                parquet_file = await local_file.to_parquet(
-                    callback=callback,
-                )
+                from anyio import fail_after
+
+                watch = _StallWatch(file.basename)
+
+                def _upload_callback(processed: int, total: int) -> None:
+                    watch.poke()
+                    if callback is not None:
+                        callback(processed, total)
+
+                with fail_after(_CONVERT_TIMEOUT):
+                    parquet_file = await watch.run(
+                        local_file.to_parquet(callback=_upload_callback)
+                    )
                 parquet_digest = sha256_of(parquet_file.path)
 
                 if existing and not force:
@@ -535,18 +620,25 @@ class SyncEngine:
                 ftp = getattr(client, "ftp", None)
             assert ftp is not None
             remote_path = str(file.path)
+            watch = _StallWatch(file.basename)
 
-            def _retr():
+            def _retr() -> int:
                 total = ftp.size(remote_path) or 0
                 with open(output, "wb") as f:
-                    ftp.retrbinary(
-                        f"RETR {remote_path}", lambda chunk: f.write(chunk)
-                    )
+
+                    def _write(chunk: bytes) -> int:
+                        written = f.write(chunk)
+                        watch.poke()
+                        return written
+
+                    ftp.retrbinary(f"RETR {remote_path}", _write)
                 return total
 
             try:
                 with anyio.fail_after(_DOWNLOAD_TIMEOUT):
-                    await to_thread.run_sync(_retr)
+                    await watch.run(
+                        to_thread.run_sync(_retr, abandon_on_cancel=True)
+                    )
                 return output
             except Exception:  # noqa
                 try:
@@ -559,17 +651,31 @@ class SyncEngine:
                 raise
         if ftp is not None:
             remote_path = str(file.path)
+            watch = _StallWatch(file.basename)
 
-            def _direct_retr():
+            def _direct_retr() -> None:
                 with open(output, "wb") as f:
-                    ftp.retrbinary(
-                        f"RETR {remote_path}", lambda chunk: f.write(chunk)
-                    )
+
+                    def _write(chunk: bytes) -> int:
+                        written = f.write(chunk)
+                        watch.poke()
+                        return written
+
+                    ftp.retrbinary(f"RETR {remote_path}", _write)
 
             with anyio.fail_after(_DOWNLOAD_TIMEOUT):
-                await to_thread.run_sync(_direct_retr)
+                await watch.run(
+                    to_thread.run_sync(_direct_retr, abandon_on_cancel=True)
+                )
             return output
-        return await file._download(output=output)
+        watch = _StallWatch(file.basename)
+
+        def _download_callback(processed: int, total: int) -> None:
+            watch.poke()
+
+        return await watch.run(
+            file._download(output=output, callback=_download_callback)
+        )
 
     @staticmethod
     def _cleanup_local(path: Path) -> None:
@@ -650,6 +756,7 @@ class SyncEngine:
         origins: tuple[str, ...] | None = None,
         reupload_before: datetime | None = None,
         resume: set[IdentityKey] | None = None,
+        resume_origins: dict[IdentityKey, set[str]] | None = None,
         journal: Path | None = None,
     ) -> SyncReport:
         """Run the full pipeline and return a :class:`SyncReport`.
@@ -669,6 +776,11 @@ class SyncEngine:
         set of :class:`~pysus.management.records.IdentityKey` already
         completed in a prior run (e.g. loaded from that journal): those
         files are skipped instead of re-downloaded and re-converted.
+        ``resume_origins`` (optional) restricts that to per-origin
+        coverage: a key uploaded from FTP must not suppress the DadosGov
+        mirror of the same logical file, and vice versa. When it is
+        ``None`` the resume set is interpreted as covering every origin
+        (legacy journals written before per-origin mirroring).
 
         With ``dry_run=True`` no downloads, uploads or catalog writes
         happen: every file that would be updated is reported with the
@@ -743,22 +855,27 @@ class SyncEngine:
             await self._fix_misparsed_metadata(records["ducklake"])
 
         parallel: list[tuple[FileComparison, FileRecord]] = []
+        vacinacao: list[tuple[FileComparison, FileRecord]] = []
         for comparison in comparisons:
-            if comparison.is_on_s3 and not (
-                force
-                or self._s3_is_stale(comparison)
-                or self._cataloged_before(comparison, reupload_before)
-            ):
-                emit(
-                    SyncOutcome(
-                        key=comparison.key,
-                        origin="ducklake",
-                        status="skipped",
+            file_records = [
+                r
+                for r in comparison.records
+                if r.origin != "ducklake" and r.file is not None
+            ]
+            if not file_records:
+                if comparison.is_on_s3 and not (
+                    force
+                    or self._s3_is_stale(comparison)
+                    or self._cataloged_before(comparison, reupload_before)
+                ):
+                    emit(
+                        SyncOutcome(
+                            key=comparison.key,
+                            origin="ducklake",
+                            status="skipped",
+                        )
                     )
-                )
-                continue
-            record = self._pick_source(comparison)
-            if record is None:
+                    continue
                 if dry_run:
                     emit(
                         SyncOutcome(
@@ -777,30 +894,64 @@ class SyncEngine:
                 )
                 emit(outcome)
                 continue
-            if dry_run:
-                emit(
-                    SyncOutcome(
-                        key=comparison.key,
-                        origin=record.origin,
-                        status="needs_update",
-                        detail=f"{self._label(comparison)} ({record.origin})",
+
+            # Mirroring is per-origin: every origin that carries a file is
+            # mirrored independently (an FTP artifact coexists with the
+            # DadosGov artifact of the same logical file). A file is only
+            # skipped when *its* origin's mirror already exists and is
+            # current — never because a different origin's mirror does.
+            for record in file_records:
+                origin = record.origin
+                mirror = comparison.mirror_for_origin(origin)
+                if mirror is not None and not (
+                    force
+                    or self._s3_origin_stale(comparison, origin, mirror)
+                    or self._mirror_cataloged_before(mirror, reupload_before)
+                ):
+                    emit(
+                        SyncOutcome(
+                            key=comparison.key,
+                            origin=origin,
+                            status="skipped",
+                        )
                     )
-                )
-                continue
-            if resume and comparison.key in resume:
-                emit(
-                    SyncOutcome(
-                        key=comparison.key,
-                        origin="ducklake",
-                        status="skipped",
-                        detail=(
-                            "already processed in a prior run: "
-                            f"{self._label(comparison)}"
-                        ),
+                    continue
+                if dry_run:
+                    emit(
+                        SyncOutcome(
+                            key=comparison.key,
+                            origin=origin,
+                            status="needs_update",
+                            detail=(f"{self._label(comparison)} ({origin})"),
+                        )
                     )
-                )
-                continue
-            parallel.append((comparison, record))
+                    continue
+                if (
+                    resume
+                    and comparison.key in resume
+                    and self._resume_covers(
+                        resume_origins, comparison.key, origin
+                    )
+                ):
+                    emit(
+                        SyncOutcome(
+                            key=comparison.key,
+                            origin=origin,
+                            status="skipped",
+                            detail=(
+                                "already processed in a prior run: "
+                                f"{self._label(comparison)}"
+                            ),
+                        )
+                    )
+                    continue
+                # VACINACAO endpoints report size 0 and stream multi-GB
+                # CSVs; move them to a trailing serial phase so they never
+                # stall the concurrent drain of the small files.
+                if comparison.key.dataset == "VACINACAO":
+                    vacinacao.append((comparison, record))
+                    continue
+                parallel.append((comparison, record))
 
         # Process smallest files first: tiny artifacts are cheap to
         # convert and upload, so they drain fast with full parallelism,
@@ -830,6 +981,10 @@ class SyncEngine:
 
         raw_queue: asyncio.Queue = asyncio.Queue(maxsize=workers * 2)
         write_queue: asyncio.Queue = asyncio.Queue(maxsize=workers * 2)
+        # Files that fail during the concurrent drain are retried once at
+        # the very end of the run (bottom of the queue) instead of being
+        # marked failed mid-flight on a transient error.
+        retry_items: list[tuple[FileComparison, FileRecord]] = []
 
         async def ftp_downloader(
             client: Any, items: list[tuple[FileComparison, FileRecord]]
@@ -855,7 +1010,7 @@ class SyncEngine:
                 except Exception as exc:  # noqa
                     if weight:
                         await gate.release(weight)
-                    await raw_queue.put((comparison, record, None, str(exc), 0))
+                    retry_items.append((comparison, record))
 
         async def raw_processor() -> None:
             while True:
@@ -867,7 +1022,7 @@ class SyncEngine:
                 try:
                     raw_path = raw
                     if err is not None:
-                        await write_queue.put((comparison, record, None, err))
+                        retry_items.append((comparison, record))
                         continue
                     payload = await self._convert_and_upload(
                         record.file, raw, callback=callback
@@ -875,7 +1030,7 @@ class SyncEngine:
                     await write_queue.put((comparison, record, payload, None))
                 except Exception as exc:  # noqa
                     comparison, record, _, _, _ = entry
-                    await write_queue.put((comparison, record, None, str(exc)))
+                    retry_items.append((comparison, record))
                 finally:
                     if weight:
                         await gate.release(weight)
@@ -907,7 +1062,7 @@ class SyncEngine:
                     )
                     await write_queue.put((comparison, record, payload, None))
                 except Exception as exc:  # noqa
-                    await write_queue.put((comparison, record, None, str(exc)))
+                    retry_items.append((comparison, record))
                 finally:
                     if weight:
                         await gate.release(weight)
@@ -1031,6 +1186,61 @@ class SyncEngine:
         for _ in processor_tasks:
             await raw_queue.put(None)
         await asyncio.gather(*processor_tasks)
+        # VACINACAO endpoints stream multi-GB CSVs (size reported as 0);
+        # drain them serially, only after the main concurrent pipeline
+        # has finished, so they cannot stall the small-file drain.
+        for comparison, record in vacinacao:
+            weight = gate.weight_of(record.file.size)
+            try:
+                await gate.acquire(weight)
+            except Exception:  # noqa: BLE001 — budget is advisory
+                weight = 0
+            raw_path = None
+            try:
+                raw = await self._download_raw_with_retry(record.file)
+                raw_path = raw
+                payload = await self._convert_and_upload(
+                    record.file, raw, callback=callback
+                )
+                await write_queue.put((comparison, record, payload, None))
+            except Exception as exc:  # noqa
+                await write_queue.put((comparison, record, None, str(exc)))
+            finally:
+                if weight:
+                    await gate.release(weight)
+                if raw_path:
+                    self._cleanup_local(raw_path)
+        # Files that failed during the concurrent drain get one last
+        # serial retry, so transient errors are retried with a fresh
+        # download instead of being marked failed mid-run.
+        for i, (comparison, record) in enumerate(retry_items):
+            weight = gate.weight_of(record.file.size)
+            try:
+                await gate.acquire(weight)
+            except Exception:  # noqa: BLE001 — budget is advisory
+                weight = 0
+            raw_path = None
+            try:
+                ftp_client = (
+                    ftp_pool[i % len(ftp_pool)]
+                    if record.origin == "ftp" and ftp_pool
+                    else None
+                )
+                raw = await self._download_raw_with_retry(
+                    record.file, ftp_client=ftp_client
+                )
+                raw_path = raw
+                payload = await self._convert_and_upload(
+                    record.file, raw, callback=callback
+                )
+                await write_queue.put((comparison, record, payload, None))
+            except Exception as exc:  # noqa
+                await write_queue.put((comparison, record, None, str(exc)))
+            finally:
+                if weight:
+                    await gate.release(weight)
+                if raw_path:
+                    self._cleanup_local(raw_path)
         for _ in range(writers_total):
             await write_queue.put(None)
         await writer_task
@@ -1109,8 +1319,18 @@ class SyncEngine:
         local_file = await ExtensionFactory.instantiate(raw_path)
         if not hasattr(local_file, "to_parquet"):
             raise RuntimeError(f"{file.basename}: cannot convert to parquet")
+
+        watch = _StallWatch(file.basename)
+
+        def _convert_callback(processed: int, total: int) -> None:
+            watch.poke()
+            if callback is not None:
+                callback(processed, total)
+
         with anyio.fail_after(_CONVERT_TIMEOUT):
-            parquet_file = await local_file.to_parquet(callback=callback)
+            parquet_file = await watch.run(
+                local_file.to_parquet(callback=_convert_callback)
+            )
         try:
             parquet_digest = await to_thread.run_sync(
                 sha256_of, parquet_file.path
@@ -1270,22 +1490,26 @@ class SyncEngine:
         self,
         ducklake_records: list[FileRecord],
     ) -> None:
-        """Keep only the most updated S3 artifact per logical file.
+        """Keep only the most updated S3 artifact per (logical file, origin).
 
-        Legacy ETL runs stored the same logical file under multiple
-        origin paths (e.g. ``public/data/ftp/...`` and
-        ``public/data/dadosgov/...``). Grouping runs on the raw S3
-        records — the comparator collapses same-origin entries, which
-        would hide these duplicates. The newest artifact (by source
-        modification date) survives; the others are deleted from the
-        bucket and the catalog.
+        Mirroring is per-origin: an FTP mirror (``public/data/ftp/...``)
+        and a DadosGov mirror (``public/data/dadosgov/...``) of the same
+        logical file are independent artifacts and must both survive, so
+        grouping always includes the origin segment of the object key.
+        Duplicates are only removed *within* one origin (e.g. a legacy
+        flat object and its relocated hierarchical twin sharing a path).
+        The newest artifact (by source modification date) survives; the
+        others are deleted from the bucket and the catalog.
         """
         import boto3
         from botocore.config import Config
 
+        from .records import origin_from_s3_key
+
         groups: dict[tuple, list[FileRecord]] = {}
         for record in ducklake_records:
-            key = (record.dataset.lower(), record.year, record.stem)
+            origin = origin_from_s3_key(record.path) or ""
+            key = (origin, record.dataset.lower(), record.year, record.stem)
             groups.setdefault(key, []).append(record)
 
         s3 = boto3.client(
@@ -1298,7 +1522,7 @@ class SyncEngine:
         )
 
         ducklake = self._require_ducklake()
-        for (dataset, _, _), artifacts in groups.items():
+        for (_, dataset, _, _), artifacts in groups.items():
             if len(artifacts) < 2:
                 continue
 
@@ -1484,10 +1708,25 @@ class SyncEngine:
         )
 
     async def _checkpoint(self) -> None:
-        """Upload all dirty catalogs to S3 and reconnect the adapters."""
+        """Upload all dirty catalogs to S3 (deadline-bounded).
+
+        The catalog writer awaits this inline while it is the only
+        consumer of ``write_queue``; if it hung, the bounded queue would
+        fill up and every producer would block forever. The whole flush
+        is therefore wrapped in a deadline so the writer always resumes
+        draining the queue. Catalogs still dirty after a soft timeout
+        are retried by the next checkpoint or the final teardown flush.
+        """
         ducklake = self._require_ducklake()
-        await ducklake.flush_catalogs(update=True)
-        self._changed_catalog = False
+        try:
+            with anyio.fail_after(_FLUSH_TIMEOUT):
+                await ducklake.flush_catalogs(update=True)
+            self._changed_catalog = False
+        except Exception as exc:  # noqa: BLE001 — catalog sync is best-effort
+            warning(
+                "catalog checkpoint timed out (kept dirty, retried later): %s",
+                exc,
+            )
 
     async def _process_comparison(
         self,
@@ -1525,6 +1764,60 @@ class SyncEngine:
         if s3_record is None or s3_record.modified is None:
             return False
         return s3_record.modified < cutoff
+
+    @staticmethod
+    def _mirror_cataloged_before(
+        mirror: FileRecord | None, cutoff: datetime | None
+    ) -> bool:
+        """True when *mirror*'s catalog row predates *cutoff* (per-origin)."""
+        if cutoff is None or mirror is None or mirror.modified is None:
+            return False
+        return mirror.modified < cutoff
+
+    @staticmethod
+    def _resume_covers(
+        resume_origins: dict[IdentityKey, set[str]] | None,
+        key: IdentityKey,
+        origin: str,
+    ) -> bool:
+        """True when a resumed run already covered *origin* for *key*.
+
+        ``resume_origins`` maps keys to the set of origins uploaded in a
+        prior run; the wildcard ``"*"`` marks lines written without an
+        origin field (legacy journals cover every origin). When
+        ``resume_origins`` is None every resume key covers every origin.
+        """
+        if resume_origins is None:
+            return True
+        covered = resume_origins.get(key)
+        if covered is None:
+            return False
+        return "*" in covered or origin in covered
+
+    @staticmethod
+    def _s3_origin_stale(
+        comparison: FileComparison,
+        origin: str,
+        mirror: FileRecord | None,
+    ) -> bool:
+        """True when *origin*'s artifact on S3 certainly differs.
+
+        Per-origin variant of :meth:`_s3_is_stale`: only the mirror that
+        was copied from *origin* is compared against *origin* records, so
+        an updated FTP source forces the FTP mirror to be regenerated even
+        when a current DadosGov twin exists (trust-the-catalog policy).
+        """
+        if mirror is None:
+            return False
+        s3_size = mirror.source_size
+        if not s3_size:
+            return False
+        for record in comparison.records:
+            if record.origin != origin:
+                continue
+            if record.size and record.size != s3_size:
+                return True
+        return False
 
     @staticmethod
     def _s3_is_stale(comparison: FileComparison) -> bool:

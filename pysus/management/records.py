@@ -99,6 +99,16 @@ NATIONAL_STATE = "BR"
 _KEY_SEGMENT_ORDER = ("group", "year", "month", "state")
 
 
+def origin_from_s3_key(path: str | None) -> str | None:
+    """Return the origin segment of a ``public/data/...`` object key."""
+    if not path:
+        return None
+    parts = path.split("/")
+    if len(parts) < 3 or parts[0] != "public" or parts[1] != "data":
+        return None
+    return parts[2].lower()
+
+
 def compose_s3_key(
     origin: str,
     dataset: str,
@@ -313,6 +323,25 @@ class FileComparison:
     def is_on_s3(self) -> bool:
         return "ducklake" in self.origins
 
+    def mirror_for_origin(self, origin: str) -> FileRecord | None:
+        """Return the S3 mirror artifact copied from *origin*, if any.
+
+        Ducklake records are the S3 mirrors of origin files; their
+        ``path`` is the ``public/data/<origin>/...`` object key. Mirroring
+        is now per-origin (an FTP mirror may coexist with a DadosGov
+        mirror of the same logical file), so a comparison locates the
+        mirror belonging to a specific origin by path segment.
+        """
+        origin = origin.lower()
+        for record in self.records:
+            if record.origin != "ducklake":
+                continue
+            if not record.path:
+                continue
+            if origin_from_s3_key(record.path) == origin:
+                return record
+        return None
+
     @property
     def only_on_dadosgov(self) -> bool:
         return self.origins == {"dadosgov"}
@@ -495,6 +524,7 @@ def outcome_to_journal(
         "month": outcome.key.month,
         "state": outcome.key.state,
         "stem": outcome.key.stem,
+        "origin": outcome.origin,
         "status": outcome.status,
         "ts": ts or datetime.now().isoformat(timespec="seconds"),
     }
@@ -548,3 +578,42 @@ def load_journal_keys(path: Path) -> set[IdentityKey]:
         except (KeyError, TypeError):
             continue
     return keys
+
+
+def load_journal_origins(path: Path) -> dict[IdentityKey, set[str]]:
+    """Return the origins uploaded per key in a prior run.
+
+    Complements :func:`load_journal_keys` with the origin attribute: a key
+    uploaded from FTP must not suppress the DadosGov mirror of the same
+    logical file, and vice versa. Lines lacking an ``origin`` field (written
+    by pre-origin-aware runs) are treated as covering every origin.
+    """
+    origins: dict[IdentityKey, set[str]] = {}
+    if not path.exists():
+        return origins
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if data.get("status") != "uploaded":
+            continue
+        try:
+            key = IdentityKey(
+                dataset=data["dataset"],
+                group=data.get("group"),
+                year=data.get("year"),
+                month=data.get("month"),
+                state=data.get("state"),
+                stem=data["stem"],
+            )
+        except (KeyError, TypeError):
+            continue
+        origin = data.get("origin")
+        origins.setdefault(key, set()).add(
+            origin if isinstance(origin, str) else "*"
+        )
+    return origins

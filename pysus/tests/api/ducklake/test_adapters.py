@@ -194,3 +194,58 @@ class TestAdapterKinds:
         await adapter.close()
         engine.dispose.assert_not_called()
         assert adapter._engine is None
+
+    @pytest.mark.asyncio
+    async def test_sync_uploads_dirty_keeps_engine(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(adapters_module, "CACHEPATH", tmp_path)
+        adapter = CatalogAdapter()
+        adapters_module._SHARED_ENGINES[str(adapter.db_local.resolve())] = (
+            MagicMock()
+        )
+        adapter._engine = MagicMock()
+        adapter._session_factory = MagicMock()
+        adapter._local_dirty = True
+        creds = MagicMock()
+        creds.access_key.get_secret_value.return_value = "ak"
+        creds.secret_key.get_secret_value.return_value = "sk"
+        adapter.credentials = creds
+        adapter.db_local.write_bytes(b"x")
+        adapter.checkpoint = MagicMock()
+        with patch.object(
+            adapters_module, "upload_s3", new=AsyncMock()
+        ) as mock_upload:
+            await adapter.sync(update=True)
+        mock_upload.assert_awaited_once()
+        assert not adapter.local_dirty
+        assert adapter._engine is not None
+        assert adapter._session_factory is not None
+
+    @pytest.mark.asyncio
+    async def test_sync_noop_when_clean(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(adapters_module, "CACHEPATH", tmp_path)
+        adapter = CatalogAdapter()
+        adapter._engine = MagicMock()
+        adapter._local_dirty = False
+        with patch.object(
+            adapter, "_upload_catalog", new=AsyncMock()
+        ) as mock_upload:
+            await adapter.sync(update=True)
+        mock_upload.assert_not_awaited()
+        assert not adapter.local_dirty
+        assert adapter._engine is not None
+
+    @pytest.mark.asyncio
+    async def test_sync_keeps_dirty_on_failure(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(adapters_module, "CACHEPATH", tmp_path)
+        adapter = CatalogAdapter()
+        adapter._engine = MagicMock()
+        adapter._local_dirty = True
+        with patch.object(
+            adapter,
+            "_upload_catalog",
+            new=AsyncMock(side_effect=OSError("boom")),
+        ) as mock_upload:
+            await adapter.sync(update=True)
+        mock_upload.assert_awaited_once()
+        assert adapter.local_dirty
+        assert adapter._engine is not None

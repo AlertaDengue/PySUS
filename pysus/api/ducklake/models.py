@@ -146,6 +146,9 @@ class DuckDataset(BaseRemoteDataset):
         )
         await self.adapter.close(update=should_update)
 
+    async def sync(self, update: bool = False) -> None:
+        await self.adapter.sync(update=update)
+
     async def query(
         self,
         group: str | list[str] | None = None,
