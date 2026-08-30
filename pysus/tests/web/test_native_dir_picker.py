@@ -1,3 +1,4 @@
+import subprocess
 from unittest.mock import Mock, patch
 
 from pysus.native_dir_picker import native_dir_picker
@@ -46,3 +47,42 @@ def test_linux_values_are_passed_as_arguments(_, run):
     args = run.call_args.args[0]
     assert args[-1] == f"--title={_TITLE}"
     assert args[-2] == f"--filename={_INITIALDIR}/"
+
+
+@patch("pysus.native_dir_picker.subprocess.run")
+@patch("pysus.native_dir_picker.platform.system", return_value="Linux")
+def test_linux_falls_back_to_kdialog_when_zenity_is_unavailable(_, run):
+    run.side_effect = [
+        FileNotFoundError,
+        Mock(stdout="/tmp/selected-by-kdialog\n"),
+    ]
+
+    assert native_dir_picker(_TITLE, _INITIALDIR) == "/tmp/selected-by-kdialog"
+
+    assert run.call_count == 2
+    assert run.call_args_list[1].args[0] == [
+        "kdialog",
+        "--getexistingdirectory",
+        _INITIALDIR,
+        "--title",
+        _TITLE,
+    ]
+
+
+@patch("pysus.native_dir_picker.subprocess.run")
+@patch("pysus.native_dir_picker.platform.system", return_value="Linux")
+def test_linux_returns_empty_when_all_pickers_fail(_, run):
+    run.side_effect = [
+        FileNotFoundError,
+        subprocess.TimeoutExpired("kdialog", 30),
+    ]
+
+    assert native_dir_picker(_TITLE, _INITIALDIR) == ""
+    assert run.call_count == 2
+
+
+@patch("pysus.native_dir_picker.subprocess.run")
+@patch("pysus.native_dir_picker.platform.system", return_value="FreeBSD")
+def test_unsupported_platform_returns_empty_without_running_command(_, run):
+    assert native_dir_picker(_TITLE, _INITIALDIR) == ""
+    run.assert_not_called()
