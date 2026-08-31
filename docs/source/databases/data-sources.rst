@@ -53,6 +53,33 @@ OpenDataSUS (Saude) functions
 The legacy flat functions (``pysus.sinan``, ``pysus.arboviroses``, ...) still
 work but emit a deprecation warning pointing to the namespaced form.
 
+Working with files (FileBag)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Besides returning a ``DataFrame`` directly, namespaced fetchers can hand you a
+``FileBag`` to inspect or download files explicitly:
+
+.. code-block:: python
+
+    import pysus
+
+    # Nothing is downloaded here — just a listing of remote files
+    bag = pysus.ftp.sinan(disease="deng", year=2020, download=False)
+    print(bag)                       # Files[DENGBR20.parquet (remote)]
+    print(bag[0].path)               # public/data/ftp/sinan/DENG/2020/_/BR/DENGBR20.parquet
+
+    # Download them all (or bag.download_one(0)) -> a local FileBag
+    local = bag.download()           # Files[DENGBR20.parquet]
+
+    # Concatenate the downloaded files into a single DataFrame
+    df = local.to_dataframe()        # same as local.df
+
+Return type by keyword:
+
+* ``download=False`` → remote ``FileBag`` (listings; ``as_dataframe`` ignored)
+* ``download=True`` (default) + ``as_dataframe=False`` → local ``FileBag``
+* ``as_dataframe=True`` → concatenated ``pandas.DataFrame``
+
 Function Reference
 ^^^^^^^^^^^^^^^^^^
 

@@ -118,6 +118,25 @@ read directly without conversion:
 
    df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
+If you only want to list the CSV resources (without downloading), or work
+with the downloaded files individually, use a ``FileBag``:
+
+.. code-block:: python
+
+   import pysus
+
+   # Remote listing — nothing downloaded
+   bag = pysus.saude.arboviroses(disease="dengue", download=False)
+   print(bag)
+   # Files[fa_casoshumanos_1994-2026.csv (remote), fa_epizpnh_1994-2026.csv (remote)]
+
+   # Download and read as a DataFrame
+   df = bag.download().to_dataframe()   # == bag.download().df
+
+The ``FileBag`` API (``download``, ``download_one``, ``to_dataframe``,
+``paths``, slice access) is shared across all origins and formats; see the
+:ref:`FileBag Workflow <filebag-workflow>` tutorial for the full walkthrough.
+
 ZIP Archives
 ------------
 
