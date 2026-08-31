@@ -291,20 +291,104 @@ def _saude_csv_to_frame(path: str) -> pd.DataFrame | None:
 
     Saude resources are frequently Latin-1 (ISO-8859-1) even when advertised
     as UTF-8, so we sniff the delimiter and fall back across encodings.
+
+    Multi-format resources are stored as ``*_csv.zip`` archives; when the
+    downloaded path is a zip, the first inner ``.csv`` file is read instead.
     """
+    import io
+
+    data = _saude_bytes(path)
+    if data is None:
+        return None
     try:
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            text = fh.read(4096)
-        dialect = csv.Sniffer().sniff(text)
+        text = data.decode("utf-8", errors="replace")
+        dialect = csv.Sniffer().sniff(text[:4096])
         sep = dialect.delimiter
     except Exception:  # noqa: BLE001
         sep = ","
     for enc in ("utf-8", "latin-1", "cp1252"):
         try:
-            return pd.read_csv(path, sep=sep, low_memory=False, encoding=enc)
+            return pd.read_csv(
+                io.BytesIO(data),
+                sep=sep,
+                low_memory=False,
+                encoding=enc,
+            )
         except Exception:  # noqa: BLE001
             continue
     return None
+
+
+def _saude_bytes(path: str) -> bytes | None:
+    """Read a downloaded Saude resource into bytes, unwrapping CSV zips."""
+    import zipfile
+
+    try:
+        if str(path).lower().endswith(".zip"):
+            with zipfile.ZipFile(path) as zf:
+                csv_names = [
+                    n for n in zf.namelist() if n.lower().endswith(".csv")
+                ]
+                if not csv_names:
+                    return None
+                return zf.read(csv_names[0])
+        with open(path, "rb") as fh:  # noqa: SIM115
+            return fh.read()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _saude_spec_name(name: str) -> str:
+    """Normalise a fetcher dataset name to its ``DatasetSpec.name``.
+
+    Fetchers pass lowercase snake_case names (``"saude_indigena"``) while
+    the registry keys are uppercase without underscores (``"SAUDEINDIGENA"``).
+    """
+    return name.upper().replace("_", "")
+
+
+async def _saude_theme_entries(
+    saude, spec, fallback_group: str | None = None
+) -> list:
+    """Return the catalog entries belonging to a Saude theme.
+
+    Resolution mirrors :class:`SaudeDataset._fetch_content`: a theme is
+    described by a ``ckan_group`` (list that group) and, for slug-only
+    themes such as CNES/SISVAN/OUTROSTEMAS, by ``slug_patterns`` matched
+    against the catalog.  When ``spec`` is unknown (legacy/extra names)
+    the ``fallback_group`` CKAN slug is listed directly.
+    """
+    if spec is None:
+        if fallback_group:
+            return await saude.list_datasets(group=fallback_group)
+        return []
+    if spec.ckan_group is None:
+        entries = []
+        async for entry in saude.iter_datasets():
+            if spec.matches(entry.name):
+                entries.append(entry)
+        return entries
+    entries = await saude.list_datasets(group=spec.ckan_group)
+    if spec.slug_patterns:
+        entries = [e for e in entries if spec.matches(e.name)]
+    return entries
+
+
+def _is_saude_csv_resource(res) -> bool:
+    """True when *res* is a tabular CSV resource of a Saude package.
+
+    Matches on the ``format`` metadata first, so that multi-format
+    resources stored as ``*_csv.zip`` are captured, and falls back to the
+    URL extension for plain ``.csv`` resources.  Resources without a
+    usable URL (e.g. placeholders) and API/Documentation links are skipped.
+    """
+    fmt = getattr(res, "format", None) or ""
+    url = getattr(res, "url", None) or ""
+    if not isinstance(url, str) or not url.startswith("http"):
+        return False
+    if str(fmt).upper() == "CSV":
+        return True
+    return url.lower().endswith(".csv")
 
 
 async def _fetch_saude(
@@ -326,14 +410,16 @@ async def _fetch_saude(
     downloading anything (``as_dataframe`` is ignored).
     """
     from pysus.api.client import PySUS
+    from pysus.api.saude.databases import SPECS_BY_NAME
 
-    dataset_upper = dataset.upper()
-    ckan_group = _SAUDE_GROUP_MAP.get(dataset_upper, dataset.lower())
+    spec_name = _saude_spec_name(dataset)
+    spec = SPECS_BY_NAME.get(spec_name)
+    fallback_group = _SAUDE_GROUP_MAP.get(spec_name)
 
     async with PySUS() as pysus:
         saude = await pysus.get_saude()
 
-        entries = await saude.list_datasets(group=ckan_group)
+        entries = await _saude_theme_entries(saude, spec, fallback_group)
         if not entries:
             if as_dataframe and download:
                 return pd.DataFrame()
@@ -345,7 +431,7 @@ async def _fetch_saude(
             try:
                 pkg = await saude.fetch_dataset(entry.name)
                 for res in pkg.resources:
-                    if res.url and res.url.lower().endswith(".csv"):
+                    if _is_saude_csv_resource(res):
                         resources.append((entry.name, res.id, res.url))
             except Exception:  # noqa: BLE001
                 continue

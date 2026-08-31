@@ -158,6 +158,58 @@ class TestSaudeCsvToFrame:
         # legitimately invalid table should not raise.
         assert _saude_csv_to_frame(str(p)) is not None
 
+    def test_zipped_csv_is_unwrapped(self, tmp_path):
+        import zipfile
+
+        from pysus.api._impl.databases import _saude_csv_to_frame
+
+        p = tmp_path / "um_csv.zip"
+        with zipfile.ZipFile(p, "w") as zf:
+            zf.writestr(
+                "um/dicionario.txt",
+                "documentation",
+            )
+            zf.writestr(
+                "um/dados.csv",
+                "ID;NOME\n1;JOÃO\n2;MARIA\n".encode(),
+            )
+        df = _saude_csv_to_frame(str(p))
+        assert df is not None
+        assert list(df.columns) == ["ID", "NOME"]
+        assert df["NOME"].tolist() == ["JOÃO", "MARIA"]
+
+    def test_missing_file_returns_none(self, tmp_path):
+        from pysus.api._impl.databases import _saude_csv_to_frame
+
+        assert _saude_csv_to_frame(str(tmp_path / "nao-existe.csv")) is None
+
+    def test_empty_file_returns_none(self, tmp_path):
+        from pysus.api._impl.databases import _saude_csv_to_frame
+
+        p = tmp_path / "vazio.csv"
+        p.write_bytes(b"")
+        assert _saude_csv_to_frame(str(p)) is None
+
+    def test_zip_without_csv_returns_none(self, tmp_path):
+        import zipfile
+
+        from pysus.api._impl.databases import _saude_csv_to_frame
+
+        p = tmp_path / "sem_csv.zip"
+        with zipfile.ZipFile(p, "w") as zf:
+            zf.writestr("apenas.pdf", "not a table")
+        assert _saude_csv_to_frame(str(p)) is None
+
+    def test_sniff_failure_falls_back_to_comma(self, tmp_path):
+        # A body with no discernible delimiter defeats csv.Sniffer; the
+        # fallback delimiter (",") must still produce a usable frame.
+        from pysus.api._impl.databases import _saude_csv_to_frame
+
+        p = tmp_path / "simples.csv"
+        p.write_text("a\nb\nc\nd\n", encoding="utf-8")
+        df = _saude_csv_to_frame(str(p))
+        assert df is not None and not df.empty
+
 
 class TestDatasetSpecIsFrozen:
     def test_frozen(self):

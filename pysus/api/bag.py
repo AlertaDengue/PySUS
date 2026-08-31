@@ -144,11 +144,13 @@ def _path_str(f: object) -> str:
     if path is None:
         return _name_str(f)
     if isinstance(path, (str, bytes)):
-        return str(path)
-    fs = getattr(path, "__fspath__", None)
-    if fs is not None:
-        return fs()
-    return str(path)
+        value = str(path)
+    else:
+        fs = getattr(path, "__fspath__", None)
+        value = fs() if fs is not None else str(path)
+    # Remote keys and published paths are always POSIX; normalise the
+    # platform separator so ``paths`` is stable across OSes.
+    return value.replace("\\", "/")
 
 
 def _name_str(f: object) -> str:

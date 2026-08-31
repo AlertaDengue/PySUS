@@ -976,6 +976,510 @@ class TestFetchSaude:
 
         asyncio.run(_run())
 
+    def test_slug_only_theme_resolves_via_catalog(self):
+        """CNES/SISVAN (no CKAN group, only slug_patterns) list the catalog."""
+
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                matches = MagicMock()
+                matches.name = "cnes-estabelecimentos"
+                non = MagicMock()
+                non.name = "some-other-dataset"
+
+                async def _gen():
+                    for e in (matches, non):
+                        yield e
+
+                saude_mock.iter_datasets = _gen
+                saude_mock.download_resource = AsyncMock()
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/cnes.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="cnes",
+                    show_progress=False,
+                )
+                assert len(result) == 1
+                saude_mock.fetch_dataset.assert_awaited_once_with(
+                    "cnes-estabelecimentos"
+                )
+
+        asyncio.run(_run())
+
+    def test_zipped_csv_resource_is_captured_by_format(self):
+        """Resources stored as ``*_csv.zip`` (format=CSV) are included."""
+
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                zip_res = MagicMock()
+                zip_res.id = "zip1"
+                zip_res.url = "https://example.com/Esavi_csv.zip"
+                zip_res.format = "CSV"
+                pdf_res = MagicMock()
+                pdf_res.id = "pdf1"
+                pdf_res.url = "https://example.com/manual.pdf"
+                pdf_res.format = "PDF"
+                placeholder = MagicMock()
+                placeholder.id = "ph1"
+                placeholder.url = "."
+                placeholder.format = "CSV"
+                pkg = MagicMock()
+                pkg.resources = [zip_res, pdf_res, placeholder]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    return_value=Path("/tmp/Esavi_csv.zip"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="vacinacao",
+                    show_progress=False,
+                )
+                assert len(result) == 1
+                saude_mock.download_resource.assert_awaited_once_with(
+                    "esavi",
+                    resource_id="zip1",
+                    dest_dir=Path("/tmp/test_cache")
+                    / "downloads"
+                    / "saude"
+                    / "vacinacao",
+                )
+
+        asyncio.run(_run())
+
+    def test_download_false_lists_urls_only(self):
+        """download=False returns CSV URLs without downloading."""
+
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                csv_res = MagicMock()
+                csv_res.id = "csv1"
+                csv_res.url = "https://example.com/Esavi_csv.zip"
+                csv_res.format = "CSV"
+                pkg = MagicMock()
+                pkg.resources = [csv_res]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock()
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="vacinacao",
+                    download=False,
+                    show_progress=False,
+                )
+                assert result == ["https://example.com/Esavi_csv.zip"]
+                saude_mock.download_resource.assert_not_called()
+
+        asyncio.run(_run())
+
+    def test_all_fetch_dataset_fail_returns_empty_df(self):
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "bad"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+                saude_mock.fetch_dataset = AsyncMock(
+                    side_effect=RuntimeError("boom"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                    show_progress=False,
+                )
+                assert isinstance(result, pd.DataFrame)
+                assert result.empty
+
+        asyncio.run(_run())
+
+    def test_all_downloads_fail_returns_empty_list(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    side_effect=RuntimeError("net down"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    show_progress=False,
+                )
+                assert result == []
+                assert saude_mock.download_resource.await_count == 1
+
+        asyncio.run(_run())
+
+    def test_all_downloads_fail_as_dataframe_returns_empty_df(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    side_effect=RuntimeError("net down"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                    show_progress=False,
+                )
+                assert isinstance(result, pd.DataFrame)
+                assert result.empty
+
+        asyncio.run(_run())
+
+    def test_unreadable_downloads_yield_empty_df(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                # Downloaded file does not exist -> _saude_csv_to_frame -> None.
+                saude_mock.download_resource = AsyncMock(
+                    return_value=Path("/tmp/nao-existe.csv"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    as_dataframe=True,
+                    show_progress=False,
+                )
+                assert isinstance(result, pd.DataFrame)
+                assert result.empty
+
+        asyncio.run(_run())
+
+    def test_group_backed_spec_filters_by_slug_pattern(self):
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                match = MagicMock()
+                match.name = "sisagua-2024"
+                skip = MagicMock()
+                skip.name = "outro-tema"
+                saude_mock.list_datasets = AsyncMock(
+                    return_value=[match, skip],
+                )
+                saude_mock.download_resource = AsyncMock()
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/sisagua.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="sisagua",
+                    download=False,
+                )
+                assert result == ["https://example.com/sisagua.csv"]
+                saude_mock.fetch_dataset.assert_awaited_once_with(
+                    "sisagua-2024"
+                )
+
+        asyncio.run(_run())
+
+    def test_unknown_theme_falls_back_to_group_map(self):
+        """Legacy names (no spec) still resolve through _SAUDE_GROUP_MAP."""
+
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "vig-tema"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+                saude_mock.download_resource = AsyncMock()
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="vigilancia_meio_ambiente",
+                    download=False,
+                )
+                assert result == ["https://example.com/data.csv"]
+                saude_mock.list_datasets.assert_awaited_once_with(
+                    group="vigilancia-e-meio-ambiente"
+                )
+
+        asyncio.run(_run())
+
+    def test_show_progress_true_downloads(self):
+        async def _run():
+            with (
+                patch("pysus.api.client.PySUS") as mock_cls,
+                patch.object(pathlib.Path, "mkdir"),
+            ):
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                entry = MagicMock()
+                entry.name = "esavi"
+                saude_mock.list_datasets = AsyncMock(return_value=[entry])
+
+                resource = MagicMock()
+                resource.id = "r1"
+                resource.url = "https://example.com/data.csv"
+                pkg = MagicMock()
+                pkg.resources = [resource]
+                saude_mock.fetch_dataset = AsyncMock(return_value=pkg)
+                saude_mock.download_resource = AsyncMock(
+                    return_value=Path("/tmp/data.csv"),
+                )
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="arboviroses",
+                    show_progress=True,
+                )
+                assert len(result) == 1
+
+        asyncio.run(_run())
+
+
+class TestDownloadFiles:
+
+    def test_empty_files_returns_empty_list(self):
+        async def _run():
+            from pysus.api._impl.databases import _download_files
+
+            mock_pysus = MagicMock()
+            result = await _download_files(mock_pysus, [])
+            assert result == []
+
+        asyncio.run(_run())
+
+    def test_empty_files_returns_empty_df_when_as_dataframe(self):
+        async def _run():
+            from pysus.api._impl.databases import _download_files
+
+            mock_pysus = MagicMock()
+            result = await _download_files(mock_pysus, [], as_dataframe=True)
+            assert isinstance(result, pd.DataFrame)
+            assert result.empty
+
+        asyncio.run(_run())
+
+    def test_columns_filter_applied_to_dataframe(self):
+        async def _run():
+            from pysus.api._impl.databases import _download_files
+
+            mock_pysus = MagicMock()
+            mock_pysus.download = AsyncMock(
+                side_effect=lambda f: f,
+            )
+            f1 = MagicMock()
+            f1.path = "a.parquet"
+            df = pd.DataFrame({"x": [1], "y": [2], "z": [3]})
+            mock_pysus.read_parquet = MagicMock(return_value=df)
+
+            result = await _download_files(
+                mock_pysus,
+                [f1],
+                show_progress=False,
+                as_dataframe=True,
+                columns=["x", "y"],
+            )
+            assert list(result.columns) == ["x", "y"]
+
+        asyncio.run(_run())
+
+
+class TestFetchDucklake:
+
+    def test_download_false_without_bag_returns_paths(self):
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                f1 = MagicMock()
+                f1.path = "public/data/ftp/sinan/a.parquet"
+                mock_pysus.query = AsyncMock(return_value=[f1])
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_ducklake
+
+                result = await _fetch_ducklake(
+                    mock_pysus,
+                    dataset="sinan",
+                    origin="FTP",
+                    download=False,
+                )
+                assert result == ["public/data/ftp/sinan/a.parquet"]
+                mock_pysus.query.assert_awaited_once()
+
+        asyncio.run(_run())
+
 
 class TestFlatDeprecationWarns:
     """Flat calls warn but still call _fetch_data with identical args."""
