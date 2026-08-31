@@ -132,6 +132,7 @@ from pysus.api.validate import (
     validate_choice,
     validate_dataset,
     validate_origin,
+    validate_source,
 )
 
 __all__ = [
@@ -242,6 +243,7 @@ __all__ = [
     "validate_choice",
     "validate_dataset",
     "validate_origin",
+    "validate_source",
 ]
 
 # Backward-compat aliases used by CLI modules

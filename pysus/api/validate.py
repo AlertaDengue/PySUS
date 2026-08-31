@@ -124,3 +124,30 @@ def validate_origin(origin: str) -> str:
     """
     origins = ["FTP", "DADOSGOV", "SAUDE", "DUCKLAKE"]
     return validate_choice(origin.upper(), origins, label="origin")
+
+
+def validate_source(source: str) -> str:
+    """Validate a fetch source.
+
+    A *source* is where data is read from.  ``"catalog"`` (default) serves
+    the DuckLake catalog/S3 mirror; ``"origin"`` hits the origin server
+    directly.
+
+    Parameters
+    ----------
+    source : str
+        Source name (``"catalog"`` or ``"origin"``).
+
+    Returns
+    -------
+    str
+        Canonical source name.
+
+    Raises
+    ------
+    ValidationError
+        If source is not recognised.
+    """
+    return validate_choice(
+        source.lower(), ["catalog", "origin"], label="source"
+    )

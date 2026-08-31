@@ -80,6 +80,7 @@ def _fetch_data(
     year: int | list[int] | None = None,
     month: int | list[int] | None = None,
     origin: str | None = None,
+    source: str = "catalog",
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
@@ -100,9 +101,12 @@ def _fetch_data(
     month : int | list[int], optional
         Month or list of months to fetch.
     origin : str, optional
-        Restrict to a specific origin (``"FTP"``, ``"Saude"``,
-        ``"DadosGov"``, ``"DuckLake"``).  ``None`` uses the DuckLake
-        catalog which merges all origins.
+        Origin mirror to serve from (``"FTP"``, ``"Saude"``,
+        ``"DadosGov"``).  ``None`` uses the DuckLake catalog merging all
+        origins.
+    source : {"catalog", "origin"}
+        Where to read from.  ``"catalog"`` (default) serves the DuckLake
+        /S3 mirror; ``"origin"`` fetches directly from the origin server.
     columns : list[str], optional
         Subset of column names to keep in the final DataFrame.
     show_progress : bool, optional
@@ -117,33 +121,66 @@ def _fetch_data(
     list[str] | pd.DataFrame
         Paths to downloaded Parquet files (default) or a DataFrame.
     """
-    is_saude = origin is not None and origin.upper() == "SAUDE"
+    from pysus.api._impl.source import fetch
 
-    async def _fetch() -> list[str] | pd.DataFrame:
-        if is_saude:
-            return await _fetch_saude(
-                dataset=dataset,
-                group=group,
-                columns=columns,
-                show_progress=show_progress,
-                as_dataframe=as_dataframe,
-            )
-        return await _fetch_ducklake(
-            dataset=dataset,
-            group=group,
-            state=state,
-            year=year,
-            month=month,
-            origin=origin,
-            columns=columns,
-            show_progress=show_progress,
-            as_dataframe=as_dataframe,
-            **kwargs,
+    return fetch(
+        dataset,
+        origin=origin,
+        source=source,
+        group=group,
+        state=state,
+        year=year,
+        month=month,
+        columns=columns,
+        show_progress=show_progress,
+        as_dataframe=as_dataframe,
+        **kwargs,
+    )
+
+
+async def _download_files(
+    pysus,
+    files,
+    *,
+    show_progress: bool = True,
+    as_dataframe: bool = False,
+    columns: list[str] | None = None,
+    dataset: str | None = None,
+    **kwargs,
+) -> list[str] | pd.DataFrame:
+    """Download remote files (throttled) and optionally return a DataFrame."""
+    if not files:
+        if as_dataframe:
+            return pd.DataFrame()
+        return cast(list[str], [])
+
+    sem = asyncio.Semaphore(3)
+
+    async def _throttled_download(f):
+        async with sem:
+            return await pysus.download(f)
+
+    tasks = [_throttled_download(f) for f in files]
+
+    if show_progress:
+        downloaded_files = await tqdm.gather(
+            *tasks,
+            desc=f"Downloading {dataset or 'data'}",
+            unit="file",
         )
+    else:
+        downloaded_files = await asyncio.gather(*tasks)
 
-    from pysus.api.client import _run_sync
+    paths: list[str] = [str(f.path) for f in downloaded_files]
 
-    return cast(list[str] | pd.DataFrame, _run_sync(_fetch()))
+    if as_dataframe:
+        res = pysus.read_parquet(paths, **kwargs)
+        df = res.df() if not isinstance(res, pd.DataFrame) else res
+        if columns:
+            df = df[[c for c in columns if c in df.columns]]
+        return cast(pd.DataFrame, df)
+
+    return paths
 
 
 async def _fetch_ducklake(
@@ -158,19 +195,16 @@ async def _fetch_ducklake(
     as_dataframe: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Query, download, and process Parquet files via DuckLake."""
+    """Query, download, and process Parquet files via DuckLake.
+
+    ``origin`` filters the DuckLake catalog mirror by path prefix.  The
+    origin → client mapping lives in :mod:`pysus.api._impl.source`.
+    """
+    from pysus.api._impl.source import _client_filter
     from pysus.api.client import PySUS
-    from pysus.api.types import DADOSGOV, DUCKLAKE, FTP
 
     async with PySUS() as pysus:
-        client_filter = None
-        if origin is not None:
-            mapping = {
-                "FTP": FTP,
-                "DUCKLAKE": DUCKLAKE,
-                "DADOSGOV": DADOSGOV,
-            }
-            client_filter = mapping.get(origin.upper())
+        client_filter = _client_filter(origin)
 
         files = await pysus.query(
             client=client_filter,
@@ -181,38 +215,15 @@ async def _fetch_ducklake(
             month=month,
         )
 
-        if not files:
-            if as_dataframe:
-                return pd.DataFrame()
-            return cast(list[str], [])
-
-        sem = asyncio.Semaphore(3)
-
-        async def _throttled_download(f):
-            async with sem:
-                return await pysus.download(f)
-
-        tasks = [_throttled_download(f) for f in files]
-
-        if show_progress:
-            downloaded_files = await tqdm.gather(
-                *tasks,
-                desc=f"Downloading {dataset}",
-                unit="file",
-            )
-        else:
-            downloaded_files = await asyncio.gather(*tasks)
-
-        paths: list[str] = [str(f.path) for f in downloaded_files]
-
-        if as_dataframe:
-            res = pysus.read_parquet(paths, **kwargs)
-            df = res.df() if not isinstance(res, pd.DataFrame) else res
-            if columns:
-                df = df[[c for c in columns if c in df.columns]]
-            return cast(pd.DataFrame, df)
-
-        return paths
+        return await _download_files(
+            pysus,
+            files,
+            show_progress=show_progress,
+            as_dataframe=as_dataframe,
+            columns=columns,
+            dataset=dataset,
+            **kwargs,
+        )
 
 
 async def _fetch_saude(

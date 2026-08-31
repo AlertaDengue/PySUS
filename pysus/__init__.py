@@ -1,4 +1,57 @@
-"""PySUS Python package"""
+"""PySUS — Python interface to Brazilian public health datasets.
+
+PySUS provides seamless access to Brazil's DATASUS and open-health data
+repositories, covering disease notifications (SINAN), vital statistics
+(SINASC, SIM), hospital admissions (SIH), ambulatory care (SIA),
+immunisations (PNI), health facilities (CNES), and 18 Saude portal themes.
+
+Two styles of public API
+─────────────────────────
+
+Flat (original)::
+
+    import pysus
+    pysus.sinan(disease="deng", year=2020, as_dataframe=True)
+
+Origin-namespaced (recommended)::
+
+    pysus.ftp.sinan(disease="deng", year=2020, as_dataframe=True)
+    pysus.saude.arboviroses(as_dataframe=True)
+    pysus.dadosgov.sinan(disease="deng", year=2020, as_dataframe=True)
+
+The namespaced style makes the data source impossible to ignore, preventing
+the class of bug where a call silently returns a different dataset snapshot
+than the caller expected.
+
+Origins
+───────
+- ``pysus.ftp``      — DATASUS FTP (S3 catalog mirror; 10 databases)
+- ``pysus.dadosgov``  — dados.gov.br (CKAN portal; 6 databases)
+- ``pysus.saude``     — dadosabertos.saude.gov.br (18 theme datasets)
+
+Each namespace exposes the same interface: per-database fetchers, discovery
+(``list_files``, ``info``), and metadata (``get_origin_meta``).
+
+Quick-start
+───────────
+>>> import pysus
+>>> pysus.info()                        # show all available datasets
+>>> pysus.set_cache("/my/cache")        # change the download cache path
+>>> df = pysus.sinan(disease="deng", year=2020, as_dataframe=True)
+
+Origin namespace examples
+─────────────────────────
+>>> pysus.ftp.sih(state="RJ", year=2020, month=1, as_dataframe=True)
+>>> pysus.dadosgov.sinasc(state="SP", year=2019, as_dataframe=True)
+>>> pysus.saude.vacinacao(as_dataframe=True)
+
+Getting help
+────────────
+>>> import pysus
+>>> pysus.ftp.sinan?                    # help on a specific function
+>>> pysus.ftp.info()                    # datasets for the FTP origin
+>>> pysus.saude.get_origin_meta()       # metadata about the Saude origin
+"""
 
 import os
 import pathlib
@@ -51,6 +104,13 @@ def get_version() -> str:
 version: str = get_version()
 __version__: str = version
 
+# ── Origin namespaces ────────────────────────────────────────────
+# ``pysus.ftp``, ``pysus.dadosgov``, ``pysus.saude`` expose origin-scoped
+# fetchers.  Importing them registers the attributes on this package so
+# ``pysus.ftp.sinan(...)`` works directly (importing the submodule also
+# works for ``from pysus.ftp import sinan``).
+from pysus import dadosgov, ftp, saude  # noqa: E402,F401
+
 # Canonical __all__: everything from _impl plus the local names.
 # Keep the old name ``info()`` as a convenience alias.
 # ── Single import from the implementation layer ─────────────────
@@ -60,7 +120,14 @@ from pysus.api._impl import *  # noqa: E402,F401,F403
 from pysus.api._impl import __all__ as _impl_all  # noqa: E402,F401
 from pysus.api._impl import info_table as info  # noqa: E402,F401
 
-__all__ = [*_impl_all, "set_cache", "CACHEPATH"]  # type: ignore[has-type]
+__all__ = [
+    *_impl_all,  # type: ignore[has-type]
+    "set_cache",
+    "CACHEPATH",
+    "ftp",
+    "dadosgov",
+    "saude",
+]
 
 
 def _first_run_message() -> None:  # pragma: no cover
