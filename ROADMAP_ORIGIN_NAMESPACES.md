@@ -11,15 +11,20 @@ directly:
 ```python
 from pysus import ftp, dadosgov, saude
 
-df = ftp.sinan(disease="deng", year=2020, as_dataframe=True)      # FTP mirror from DuckLake catalog (default)
-df = ftp.sinan(..., source="ftp")                                  # direct from the DATASUS FTP server
+df = ftp.sinan(disease="deng", year=2020, as_dataframe=True)      # FTP mirror from DuckLake/S3 catalog (default)
+df = ftp.sinan(..., source="origin")                               # direct from the DATASUS FTP server
 df = dadosgov.sinan(disease="deng", year=2020)                     # DadosGov mirror from catalog (default)
-df = dadosgov.sinan(..., source="dadosgov")                        # direct from ckan.saude.gov.br
+df = dadosgov.sinan(..., source="origin")                          # direct from ckan.saude.gov.br
 df = saude.assistenciasaude(..., as_dataframe=True)                # Saude-portal theme dataset
 
 ftp.list_files(dataset="sinan", year=2020)                        # discovery scoped to FTP
 dadosgov.info()                                                   # discovery scoped to DadosGov
 ```
+
+Note: `source` is one of `"catalog"` (default, reads the S3 mirror) or
+`"origin"` (queries the origin server directly). The Saude portal has no
+catalog mirror, so `saude.*` always queries the CKAN portal regardless of
+`source`.
 
 Each namespace is self-contained: it exposes the same class of **per-database
 fetchers** AND the same **discovery functions** (`list_files`, `info`) as the
@@ -54,15 +59,16 @@ query returned the DadosGov mirror while the caller assumed FTP).
 
 | namespace | default fetch | direct fetch | discovery |
 |---|---|---|---|
-| `pysus.ftp` | FTP mirror from DuckLake catalog | `source="ftp"` | `ftp.list_files`, `ftp.info` |
-| `pysus.dadosgov` | DadosGov mirror from DuckLake catalog | `source="dadosgov"` | `dadosgov.list_files`, `dadosgov.info` |
-| `pysus.saude` | Saude CKAN/theme mirror from catalog | `source="saude"` | `saude.list_files`, `saude.info` |
+| `pysus.ftp` | FTP mirror from DuckLake catalog | `source="origin"` | `ftp.list_files`, `ftp.info` |
+| `pysus.dadosgov` | DadosGov mirror from DuckLake catalog | `source="origin"` | `dadosgov.list_files`, `dadosgov.info` |
+| `pysus.saude` | Saude CKAN/theme (no mirror) | `source="origin"` (no-op) | `saude.list_files`, `saude.info` |
 
 - **No `pysus.ducklake` namespace.** DuckLake is transport/cache, not a source.
-- `source="ducklake"` is the default in every namespace ("catalog first").
-  `source="<origin>"` downloads directly from the origin server into the local
-  cache (eligible for the existing resync/backfill engine).
-- Namespaced functions reject `origin=` (TypeError) and invalid `source=`
+- `source="catalog"` is the default in every namespace ("catalog first").
+  `source="origin"` downloads directly from the origin server into the local
+  cache (eligible for the existing resync/backfill engine). The Saude portal has
+  no catalog mirror, so `saude.*` always queries the CKAN portal.
+- Namespaced functions reject `origin=` (PySUSError) and invalid `source=`
   (ValidationError).
 - **Legacy flat functions** (`pysus.sinan`, ...): deprecated-but-functional —
   keep working, always emit a warning suggesting the namespaced call. Never
@@ -111,7 +117,6 @@ what DadosGov actually publishes.
 - [x] Build + lock the origin×dataset applicability matrix
       (`APPLICABILITY` in `source.py`, incl. `list_files`/`info` scoping).
 - [x] **Exit**: flat `pysus.sinan` unchanged; suite green (1553 → 1572 tests).
-
 ### Phase 1 — Namespace modules
 
 - [x] Factory + `pysus.ftp`, `pysus.dadosgov`, `pysus.saude` modules, each with
@@ -140,7 +145,7 @@ what DadosGov actually publishes.
 - [ ] `pysus/tests/api/test_origins.py`:
   - namespaces exist with correct `__all__` (fetchers + discovery),
     bound-wrapper identity;
-  - `pysus.ftp.sinan` routes to `client_filter=FTP`; `source="ftp"` routes to
+  - `pysus.ftp.sinan` routes to `client_filter=FTP`; `source="origin"` routes to
     live FTP path;
   - invalid `origin=` / `source=` rejected; discovery scoped per origin;
   - `from pysus.ftp import sinan`, `pysus.ftp.list_files`,
