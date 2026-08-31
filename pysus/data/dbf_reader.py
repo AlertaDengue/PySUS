@@ -100,6 +100,17 @@ def _decode(val: bytes) -> str:
     return val.decode(_ENCODING, errors="replace").replace("\x00", "").strip()
 
 
+def _decode_column(column: np.ndarray) -> list[str]:
+    """Decode a NumPy byte-string column without per-item function calls."""
+    return [
+        (value if isinstance(value, bytes) else value.tobytes())
+        .decode(_ENCODING, errors="replace")
+        .replace("\x00", "")
+        .strip()
+        for value in column
+    ]
+
+
 def read_dbf_schema(path: str | Path) -> DBFSchema:
     """Return the schema of a DBF file without reading records."""
     return _parse_header(path)
@@ -158,12 +169,7 @@ def read_dbf_fast(
     data = {}
     for fld in target:
         col: np.ndarray = records[fld.name]
-        decoded = np.empty(n, dtype=object)
-        for i in range(n):
-            val = col[i]
-            b = val if isinstance(val, bytes) else val.tobytes()
-            decoded[i] = _decode(b)
-        data[fld.name] = decoded
+        data[fld.name] = _decode_column(col)
 
     return pd.DataFrame(data)
 
@@ -271,12 +277,7 @@ def stream_dbf_fast(
             data = {}
             for fld in schema.fields:
                 col: np.ndarray = records[fld.name]
-                decoded = np.empty(chunk_n, dtype=object)
-                for i in range(chunk_n):
-                    val = col[i]
-                    b = val if isinstance(val, bytes) else val.tobytes()
-                    decoded[i] = _decode(b)
-                data[fld.name] = decoded
+                data[fld.name] = _decode_column(col)
 
             yield pd.DataFrame(data)
 
