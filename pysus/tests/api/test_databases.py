@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 import pytest
+from pysus.api.client import PySUS
+from pysus.api.errors import PySUSWarning
 
 
 class TestSinan:
@@ -973,3 +975,38 @@ class TestFetchSaude:
                 tmp_path.unlink(missing_ok=True)
 
         asyncio.run(_run())
+
+
+class TestFlatDeprecationWarns:
+    """Flat calls warn but still call _fetch_data with identical args."""
+
+    def test_flat_sinan_warns_and_passes_through(self):
+        import warnings
+
+        from pysus.api._impl.databases import sinan
+
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = MagicMock()
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                sinan(disease="dengue", year=2024)
+        assert any(x.category is PySUSWarning for x in w)
+        args = mock_fetch.call_args
+        assert args.kwargs["dataset"] == "sinan"
+        assert args.kwargs["group"] == "DENGUE"
+        assert args.kwargs["year"] == 2024
+
+    def test_flat_list_files_warns_and_returns(self):
+        import warnings
+
+        from pysus.api._impl.databases import list_files
+
+        async def _q(**kwargs):
+            return []
+
+        with patch.object(PySUS, "query", new=AsyncMock(side_effect=_q)):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                df = list_files("SINAN", year=2024)
+            assert isinstance(df, pd.DataFrame)
+        assert any(x.category is PySUSWarning for x in w)
