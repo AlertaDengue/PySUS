@@ -114,14 +114,18 @@ what DadosGov actually publishes.
 
 ### Phase 1 — Namespace modules
 
-- [ ] Factory + `pysus.ftp`, `pysus.dadosgov`, `pysus.saude` modules, each with
-      fetchers + discovery.
-- [ ] Register on package; verify both access styles and `from pysus.ftp import
-      sinan`.
-- [ ] Catalog-first default returns exactly today's `origin="FTP"`/
-      `origin="DadosGov"` results (verify DENG 2020: 975,842 vs 1,495,117 rows).
-- **Exit**: `pysus.ftp.sinan(...)` ≡ `pysus.sinan(..., origin="FTP")`;
-      `source="ftp"` returns the same DataFrame after a live pull.
+- [x] Factory + `pysus.ftp`, `pysus.dadosgov`, `pysus.saude` modules, each with
+      fetchers + discovery. (`_bind_origin`/`build_origin_module`/
+      `install_origin_module` in `source.py`; module files at `pysus/{ftp,
+      dadosgov,saude}.py`, origin-aware docstrings on module + fetchers +
+      discovery.)
+- [x] Register on package (`pysus/__init__.py`); verify both access styles and
+      `from pysus.ftp import sinan`.
+- [x] Catalog-first default returns exactly today's `origin="FTP"`/
+      `origin="DadosGov"` results (verified `pysus.ftp.sinan(DENG,2017)`
+      = 239,395 rows, matching `origin="FTP"`).
+- [x] **Exit**: `pysus.ftp.sinan(...)` ≡ `pysus.sinan(..., origin="FTP")`;
+      `source="origin"` returns the same DataFrame after a live pull.
 
 ### Phase 2 — Forced-verbose semantics
 
