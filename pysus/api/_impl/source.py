@@ -160,6 +160,7 @@ async def _fetch_catalog(
     columns: list[str] | None,
     show_progress: bool,
     as_dataframe: bool,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Serve a dataset from the catalog ``source="catalog"``.
@@ -182,6 +183,7 @@ async def _fetch_catalog(
             columns,
             show_progress,
             as_dataframe,
+            download,
             **kwargs,
         )
 
@@ -197,6 +199,7 @@ async def _fetch_catalog(
         columns=columns,
         show_progress=show_progress,
         as_dataframe=as_dataframe,
+        download=download,
         **kwargs,
     )
 
@@ -212,6 +215,7 @@ async def _fetch_origin_direct(
     columns: list[str] | None,
     show_progress: bool,
     as_dataframe: bool,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Fetch directly from the origin server, bypassing the catalog mirror."""
@@ -224,6 +228,7 @@ async def _fetch_origin_direct(
             columns=columns,
             show_progress=show_progress,
             as_dataframe=as_dataframe,
+            download=download,
         )
 
     prefix = ORIGIN_PREFIXES.get(origin, "")
@@ -248,9 +253,12 @@ async def _fetch_origin_direct(
     files = [f for f in files if str(f.path).startswith(prefix)]
 
     if not files:
-        if as_dataframe:
+        if as_dataframe and download:
             return pd.DataFrame()
         return cast(list[str], [])
+
+    if not download:
+        return cast(list[str], [str(f.path) for f in files])
 
     from pysus.api._impl.databases import _download_files
 
@@ -277,6 +285,7 @@ def fetch(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Fetch a dataset from a given origin and source.
@@ -293,13 +302,19 @@ def fetch(
         /S3 mirror; ``"origin"`` fetches directly from the origin server.
     group, state, year, month, columns, show_progress, as_dataframe
         Forwarded to the underlying fetch path.
+    download : bool, optional
+        When ``False``, resolve which files would be fetched and return
+        their remote paths without downloading them.  ``as_dataframe`` is
+        ignored when ``download=False`` (there is no local data to build a
+        DataFrame from).  Defaults to ``True``.
     **kwargs
         Forwarded to the underlying fetch path (e.g. ``read_parquet`` opts).
 
     Returns
     -------
     list[str] | pd.DataFrame
-        Paths to downloaded files or a concatenated DataFrame.
+        Paths to downloaded files or a concatenated DataFrame.  When
+        ``download=False``, a ``list[str]`` of remote file paths.
     """
     from pysus.api.client import _run_sync
     from pysus.api.errors import ValidationError
@@ -332,6 +347,7 @@ def fetch(
                     columns,
                     show_progress,
                     as_dataframe,
+                    download,
                     **kwargs,
                 )
             return await _fetch_catalog(
@@ -345,6 +361,7 @@ def fetch(
                 columns,
                 show_progress,
                 as_dataframe,
+                download,
                 **kwargs,
             )
 

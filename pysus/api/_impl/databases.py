@@ -131,6 +131,7 @@ def _fetch_data(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Query, download, and process Parquet files for a given dataset.
@@ -160,6 +161,10 @@ def _fetch_data(
         Whether to display a tqdm progress bar during download.
     as_dataframe : bool, optional
         Whether to concatenate and return a pandas DataFrame.
+    download : bool, optional
+        When ``False``, return the remote file paths that would be fetched
+        without downloading them.  ``as_dataframe`` is ignored in that case.
+        Defaults to ``True``.
     **kwargs
         Forwarded to :meth:`PySUS.read_parquet`.
 
@@ -181,6 +186,7 @@ def _fetch_data(
         columns=columns,
         show_progress=show_progress,
         as_dataframe=as_dataframe,
+        download=download,
         **kwargs,
     )
 
@@ -240,6 +246,7 @@ async def _fetch_ducklake(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Query, download, and process Parquet files via DuckLake.
@@ -261,6 +268,9 @@ async def _fetch_ducklake(
             year=year,
             month=month,
         )
+
+        if not download:
+            return cast(list[str], [str(f.path) for f in files])
 
         return await _download_files(
             pysus,
@@ -300,6 +310,7 @@ async def _fetch_saude(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
 ) -> list[str] | pd.DataFrame:
     """Download data from the Saude portal (dadosabertos.saude.gov.br).
 
@@ -307,6 +318,9 @@ async def _fetch_saude(
     *dataset* name is mapped to one or more CKAN group slugs, and every
     downloadable resource under that group is fetched and optionally
     concatenated into a DataFrame.
+
+    When ``download=False`` the CSV resource URLs are returned without
+    downloading anything (``as_dataframe`` is ignored).
     """
     from pysus.api.client import PySUS
 
@@ -318,29 +332,45 @@ async def _fetch_saude(
 
         entries = await saude.list_datasets(group=ckan_group)
         if not entries:
-            if as_dataframe:
+            if as_dataframe and download:
                 return pd.DataFrame()
             return cast(list[str], [])
+
+        # Resolve each package's CSV resources exactly once.
+        resources: list[tuple[str, str, str]] = []
+        for entry in entries:
+            try:
+                pkg = await saude.fetch_dataset(entry.name)
+                for res in pkg.resources:
+                    if res.url and res.url.lower().endswith(".csv"):
+                        resources.append((entry.name, res.id, res.url))
+            except Exception:  # noqa: BLE001
+                continue
+
+        if not resources:
+            if as_dataframe and download:
+                return pd.DataFrame()
+            return cast(list[str], [])
+
+        if not download:
+            return [url for _name, _rid, url in resources]
 
         dest = pysus.cachepath / "downloads" / "saude" / dataset.lower()
         dest.mkdir(parents=True, exist_ok=True)
 
         paths: list[str] = []
-        iterator = entries
+        iterator = resources
         if show_progress:
-            iterator = tqdm(entries, desc=f"Downloading {dataset}", unit="ds")
+            iterator = tqdm(resources, desc=f"Downloading {dataset}", unit="ds")
 
-        for entry in iterator:
+        for name, resource_id, _url in iterator:
             try:
-                pkg = await saude.fetch_dataset(entry.name)
-                for res in pkg.resources:
-                    if res.url and res.url.lower().endswith(".csv"):
-                        p = await saude.download_resource(
-                            entry.name,
-                            resource_id=res.id,
-                            dest_dir=dest,
-                        )
-                        paths.append(str(p))
+                p = await saude.download_resource(
+                    name,
+                    resource_id=resource_id,
+                    dest_dir=dest,
+                )
+                paths.append(str(p))
             except Exception:  # noqa: BLE001
                 continue
 

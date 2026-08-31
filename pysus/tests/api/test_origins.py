@@ -128,3 +128,41 @@ class TestRouting:
         ) as direct:
             pysus.ftp.sinan(disease="deng", year=2017, source="origin")
             direct.assert_awaited_once()
+
+
+class _StubFile:
+    def __init__(self, path):
+        self.path = path
+
+
+class TestDownloadParam:
+    def test_download_false_lists_remote_paths(self, pysus):
+        files = [
+            _StubFile("public/data/ftp/sinan/DENG/2017/_/BR/DENGBR17.parquet")
+        ]
+        with patch.object(PySUS, "query", new_callable=AsyncMock) as query:
+            query.return_value = files
+            result = pysus.ftp.sinan(disease="deng", year=2017, download=False)
+        assert result == [
+            "public/data/ftp/sinan/DENG/2017/_/BR/DENGBR17.parquet"
+        ]
+        query.assert_awaited_once()
+
+    def test_download_false_ignores_as_dataframe(self, pysus):
+        files = [_StubFile("public/data/ftp/sinan/a.parquet")]
+        with patch.object(PySUS, "query", new_callable=AsyncMock) as query:
+            query.return_value = files
+            result = pysus.ftp.sinan(
+                disease="deng", year=2017, download=False, as_dataframe=True
+            )
+        # no dataframe without downloaded data -> a plain path list
+        assert isinstance(result, list)
+        assert result == ["public/data/ftp/sinan/a.parquet"]
+
+    def test_download_false_does_not_download(self, pysus):
+        files = [_StubFile("public/data/ftp/sinan/a.parquet")]
+        with patch.object(PySUS, "query", new_callable=AsyncMock) as query:
+            query.return_value = files
+            with patch.object(PySUS, "download", new_callable=AsyncMock) as dl:
+                pysus.ftp.sinan(disease="deng", year=2017, download=False)
+        dl.assert_not_awaited()
