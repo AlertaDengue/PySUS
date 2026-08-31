@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import functools
+import warnings
 from typing import cast
 
 import pandas as pd
 from pysus.api import types
+from pysus.api.errors import PySUSWarning
 from tqdm.asyncio import tqdm
 
 __all__ = [
@@ -48,6 +51,50 @@ __all__ = [
     "vigilancia_meio_ambiente",
     "list_files",
 ]
+
+# ── Flat-API deprecation ─────────────────────────────────────────
+# The top-level flat functions (``pysus.sinan``, ...) still work, but are
+# deprecated in favor of the origin-namespaced API (``pysus.ftp.sinan``,
+# ``pysus.dadosgov.sinan``, ``pysus.saude.sinan``).  Namespace wrappers
+# suppress this warning via :class:`_suppress_flat_deprecation` so only a
+# *direct* flat call is flagged.
+
+_DEPRECATION_SUPPRESSED = False
+
+
+class _suppress_flat_deprecation:
+    """Context guard so namespace wrappers don't re-warn on the raw fn."""
+
+    def __enter__(self) -> _suppress_flat_deprecation:
+        global _DEPRECATION_SUPPRESSED  # noqa: PLW0603
+        self._prior = _DEPRECATION_SUPPRESSED
+        _DEPRECATION_SUPPRESSED = True
+        return self
+
+    def __exit__(self, *exc) -> None:
+        global _DEPRECATION_SUPPRESSED  # noqa: PLW0603
+        _DEPRECATION_SUPPRESSED = self._prior
+
+
+def _deprecate_flat(fn):
+    """Emit a deprecation warning for a direct flat ``pysus.<name>`` call."""
+
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        if not _DEPRECATION_SUPPRESSED:
+            warnings.warn(
+                f"pysus.{fn.__name__}() is deprecated and will be removed. "
+                "Use the origin-namespaced API instead, e.g. "
+                f"pysus.ftp.{fn.__name__}(...), "
+                f"pysus.dadosgov.{fn.__name__}(...), or "
+                f"pysus.saude.{fn.__name__}(...). Behavior is unchanged.",
+                PySUSWarning,
+                stacklevel=2,
+            )
+        return fn(*args, **kwargs)
+
+    return wrapped
+
 
 # ── Map canonical dataset names → Saude CKAN group slugs ─────────
 _SAUDE_GROUP_MAP: dict[str, str] = {
@@ -985,3 +1032,12 @@ def list_files(
             ]
 
     return pd.DataFrame(asyncio.run(_list()))
+
+
+# ── Apply the flat-API deprecation wrapper to every public fetcher ─
+# Namespaced wrappers (``_bind_origin``/``bind_list_files``) suppress the
+# warning, so only direct ``pysus.<fetcher>(...)`` calls are flagged.
+for _name in __all__:
+    _obj = globals().get(_name)
+    if callable(_obj):
+        globals()[_name] = _deprecate_flat(_obj)

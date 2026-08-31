@@ -11,6 +11,8 @@ from pysus.api._impl.source import (
     fetch,
     valid_origins,
 )
+from pysus.api.client import PySUS
+from pysus.api.errors import PySUSWarning
 
 
 class TestOriginConstants:
@@ -179,3 +181,129 @@ class TestOriginNamespaces:
 
         for name in ("sih", "sia", "ciha", "ibge"):
             assert not hasattr(pysus.dadosgov, name), name
+
+
+class TestFlatDeprecation:
+    """Direct flat calls warn; namespaced calls are silent."""
+
+    def _catalog_empty(self, *args, **kwargs) -> None:
+        from unittest.mock import AsyncMock
+
+        with patch(
+            "pysus.api._impl.source._fetch_catalog",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            pass
+
+    def _flat_warns(self, call):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            call()
+        return [x for x in w if x.category is PySUSWarning]
+
+    def _ns_silent(self, call):
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            call()
+        return [x for x in w if x.category is PySUSWarning]
+
+    def test_flat_sinan_warns(self):
+        import pysus
+
+        with patch(
+            "pysus.api._impl.source._fetch_catalog",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            warned = self._flat_warns(
+                lambda: pysus.sinan(
+                    disease="deng", year=2017, show_progress=False
+                )
+            )
+        assert len(warned) == 1
+        assert "deprecated" in str(warned[0].message)
+        assert "pysus.ftp.sinan" in str(warned[0].message)
+
+    def test_flat_saude_warns(self):
+        import pysus
+
+        with patch(
+            "pysus.api._impl.source._fetch_catalog",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            warned = self._flat_warns(
+                lambda: pysus.arboviroses(show_progress=False)
+            )
+        assert len(warned) == 1
+
+    def test_namespaced_sinan_silent(self):
+        import pysus
+
+        with patch(
+            "pysus.api._impl.source._fetch_catalog",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            warned = self._ns_silent(
+                lambda: pysus.ftp.sinan(
+                    disease="deng", year=2017, show_progress=False
+                )
+            )
+        assert warned == []
+
+    def test_namespaced_list_files_silent(self):
+        import pysus
+
+        async def _q(**kwargs):
+            return []
+
+        with patch.object(PySUS, "query", new=AsyncMock(side_effect=_q)):
+            warned = self._ns_silent(
+                lambda: pysus.ftp.list_files("SINAN", year=2017, state="BR")
+            )
+        assert warned == []
+
+    def test_flat_list_files_warns(self):
+        import pysus
+
+        async def _q(**kwargs):
+            return []
+
+        with patch.object(PySUS, "query", new=AsyncMock(side_effect=_q)):
+            warned = self._flat_warns(
+                lambda: pysus.list_files("SINAN", year=2017, state="BR")
+            )
+        assert len(warned) == 1
+
+
+class TestNamespacedValidation:
+    def test_rejects_origin_kwarg(self):
+        import pysus
+        from pysus.api.errors import PySUSError
+
+        with pytest.raises(PySUSError):
+            pysus.ftp.sinan(disease="deng", year=2017, origin="FTP")
+
+    def test_rejects_invalid_source(self):
+        import pysus
+        from pysus.api.errors import ValidationError
+
+        with pytest.raises(ValidationError):
+            pysus.ftp.sinan(disease="deng", year=2017, source="bogus")
+
+    def test_accepts_source_origin(self):
+        import pysus
+
+        with patch(
+            "pysus.api._impl.source._fetch_origin_direct",
+            new_callable=AsyncMock,
+            return_value=[],
+        ) as mock_direct:
+            pysus.ftp.sinan(disease="deng", year=2017, source="origin")
+            mock_direct.assert_awaited_once()

@@ -383,7 +383,10 @@ def _bind_origin(fn, origin: str):
         # internally, so only inject origin for the catalog-backed origins.
         if origin.upper() != SAUDE_ORIGIN:
             kwargs["origin"] = origin
-        return fn(*args, **kwargs)
+        from pysus.api._impl.databases import _suppress_flat_deprecation
+
+        with _suppress_flat_deprecation():
+            return fn(*args, **kwargs)
 
     wrapped.__name__ = fn.__name__
     _annotate_bound(wrapped, fn, origin)
@@ -431,15 +434,19 @@ def bind_list_files(origin: str):
         month=None,
         **kwargs,
     ) -> pd.DataFrame:
-        return _list_files(
-            dataset=dataset,
-            client=client,
-            group=group,
-            state=state,
-            year=year,
-            month=month,
-            **kwargs,
-        )
+        from pysus.api._impl.databases import _suppress_flat_deprecation
+
+        with _suppress_flat_deprecation():
+            result = _list_files(
+                dataset=dataset,
+                client=client,
+                group=group,
+                state=state,
+                year=year,
+                month=month,
+                **kwargs,
+            )
+        return result
 
     bound.__name__ = "list_files"
     bound.__doc__ = (

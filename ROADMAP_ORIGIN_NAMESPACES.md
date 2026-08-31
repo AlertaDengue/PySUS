@@ -134,11 +134,17 @@ what DadosGov actually publishes.
 
 ### Phase 2 — Forced-verbose semantics
 
-- [ ] Reject `origin=` and invalid `source=` in namespaced calls.
-- [ ] Legacy flat functions: deprecation warning + docstring pointing to
-      namespaces; behavior unchanged.
-- [ ] Document `get_origin_meta()` per namespace.
-- **Exit**: pre-commit chain green; warning fires once per call.
+- [x] Reject `origin=` and invalid `source=` in namespaced calls.
+      (`_bind_origin` raises `PySUSError` on a stray `origin=`; invalid
+      `source=` raises `ValidationError`.)
+- [x] Legacy flat functions: deprecation warning + docstring pointing to the
+      namespaces; behavior unchanged. (`_deprecate_flat` wraps every flat
+      fetcher/`list_files` in `databases.py`; namespaced wrappers suppress via
+      `_suppress_flat_deprecation`, so only a *direct* flat call is flagged.)
+- [x] Document `get_origin_meta()` per namespace (docstring on the bound
+      `get_origin_meta`).
+- **Exit**: pre-commit chain green (1589 tests); flat call warns once per
+      call, namespaced call is silent.
 
 ### Phase 3 — Tests & CI
 
