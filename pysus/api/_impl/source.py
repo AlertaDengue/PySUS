@@ -100,6 +100,7 @@ _APPLICABILITY: dict[str, frozenset[str]] = {
             "atencao_primaria",
             "bnafar",
             "ciencia_tecnologia",
+            "cnes",
             "diagnosticos_tratamentos",
             "economia_saude",
             "educacao_saude",
@@ -119,6 +120,13 @@ _APPLICABILITY: dict[str, frozenset[str]] = {
 
 # Public, read-only view of the applicability matrix.
 APPLICABILITY: dict[str, frozenset[str]] = dict(_APPLICABILITY)
+
+# Canonical fetcher name -> function to bind, per origin.  Used when an
+# origin exposes a name whose FTP-style implementation differs (e.g. Saude's
+# CNES is a CKAN resource set, not monthly state/year/month dumps).
+_ORIGIN_FUNC_ALIAS: dict[tuple[str, str], str] = {
+    ("SAUDE", "cnes"): "saude_cnes",
+}
 
 
 def origin_fetchers(origin: str) -> frozenset[str]:
@@ -581,7 +589,8 @@ def build_origin_module(name: str, origin: str) -> _pytypes.SimpleNamespace:
     all_names: list[str] = []
 
     for fname in sorted(allowed):
-        fn = getattr(_db, fname, None)
+        fn_name = _ORIGIN_FUNC_ALIAS.get((origin_key, fname), fname)
+        fn = getattr(_db, fn_name, None)
         if fn is None:
             continue
         ns[fname] = _bind_origin(fn, origin_key)

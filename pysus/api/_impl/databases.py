@@ -1001,6 +1001,22 @@ def vigilancia_meio_ambiente(**kwargs) -> list[str] | pd.DataFrame:
     )
 
 
+def saude_cnes(**kwargs) -> list[str] | pd.DataFrame:
+    """Fetch CNES health-facility registers from Saude (CKAN resources).
+
+    Unlike the FTP/DadosGov ``cnes`` fetcher (monthly state/year/month
+    dumps), the Saude portal serves CNES as catalog resources
+    (``/cnes/estabelecimentos``, ``/cnes/tipounidades``) fetched through
+    ``_fetch_saude``.
+
+    Examples
+    --------
+    >>> pysus.saude.cnes(download=False)
+    >>> pysus.saude.cnes(as_dataframe=True)
+    """
+    return _fetch_data(dataset="cnes", origin="Saude", **kwargs)
+
+
 def list_files(
     dataset: types.DatasetName,
     client: types.Origin | None = None,

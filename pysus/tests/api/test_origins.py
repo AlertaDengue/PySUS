@@ -130,6 +130,24 @@ class TestRouting:
             pysus.ftp.sinan(disease="deng", year=2017, source="origin")
             direct.assert_awaited_once()
 
+    def test_saude_cnes_routes_to_saude_fetch(self, pysus):
+        # Saude exposes its own cnes (CKAN resources), distinct from the
+        # FTP/DadosGov monthly-dump cnes, and it routes to _fetch_saude.
+        from unittest.mock import AsyncMock, patch
+
+        with patch(
+            "pysus.api._impl.databases._fetch_saude",
+            new_callable=AsyncMock,
+            return_value=["https://example.gov/cnes/estabelecimentos.csv"],
+        ) as fetch:
+            result = pysus.saude.cnes(download=False)
+        fetch.assert_awaited_once()
+        assert isinstance(result, FileBag)
+        assert result.kind == "remote"
+        assert "cnes" in fetch.call_args.kwargs["dataset"]
+        # FTP/DadosGov keep their own cnes.
+        assert pysus.ftp.cnes is not pysus.saude.cnes
+
 
 class _StubFile:
     def __init__(self, path):

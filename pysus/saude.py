@@ -1,7 +1,7 @@
 """Saude portal origin — ``pysus.saude``.
 
 Access to the Saude open-data portal (dadosabertos.saude.gov.br) theme
-datasets: arboviroses, vacinacao, vigilancia_meio_ambiente, and 15 more.
+datasets: arboviroses, vacinacao, vigilancia_meio_ambiente, and 16 more.
 
 Import styles
 ─────────────
@@ -12,13 +12,14 @@ Both of these work::
 
     from pysus.saude import vacinacao
 
-Fetching (read data, 18 themes)
+Fetching (read data, 19 themes)
 ───────────────────────────────
     pysus.saude.arboviroses(...)               dengue/chikungunya/zika
     pysus.saude.assistencia_saude(...)         hospital & facilities
     pysus.saude.atencao_primaria(...)          primary care (SISAB)
     pysus.saude.bnafar(...)                    pharmaceutical assistance
     pysus.saude.ciencia_tecnologia(...)        science & technology
+    pysus.saude.cnes(...)                      CNES health-facility registers
     pysus.saude.diagnosticos_tratamentos(...)  diagnostics & treatments
     pysus.saude.economia_saude(...)            health economics
     pysus.saude.educacao_saude(...)            health education
