@@ -131,6 +131,11 @@ def info_table() -> None:
 
         import pysus
         pysus.info()
+
+    Each row suggests the namespaced call for that dataset. Those fetchers
+    return a :class:`~pysus.api.bag.FileBag` by default; pass
+    ``as_dataframe=True`` for a ``pandas.DataFrame``, or ``download=False``
+    to list the files without fetching anything.
     """
     from pysus import CACHEPATH
 
@@ -162,6 +167,11 @@ def info_table() -> None:
     print(sep)
     print(
         f"\n  Total: {len(rows)} datasets | Cache: {CACHEPATH}",
+    )
+    print(
+        "  Tip: add download=False to list files without fetching, or "
+        "as_dataframe=True to get a pandas DataFrame. These fetchers return "
+        "a FileBag; see the docs.",
     )
 
 
