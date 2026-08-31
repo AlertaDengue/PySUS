@@ -56,6 +56,13 @@ class File(BaseRemoteFile):
     def basename(self) -> str:
         return self.path.name
 
+    def __repr__(self) -> str:
+        group = f" group={self.group!r}" if self.group else ""
+        return (
+            f"File(path={str(self.path)!r}, type={self.type!r}"
+            f"{group}, dataset={self.dataset!r})"
+        )
+
     @property
     def extension(self) -> str:
         return self.path.suffix
@@ -114,6 +121,9 @@ class DuckDataset(BaseRemoteDataset):
 
     def __str__(self) -> str:
         return self.record.name
+
+    def __repr__(self) -> str:
+        return f"DuckDataset(name={self.record.name!r})"
 
     @property
     def adapter(self) -> "DatasetAdapter":
