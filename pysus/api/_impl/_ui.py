@@ -8,6 +8,61 @@ These are meant to be re-exported at the ``pysus`` namespace level.
 
 from __future__ import annotations
 
+# Saude display (spec) name → public fetcher function.  Most names are the
+# simple lowercase form; multi-word themes need an explicit translation.
+_SAUDE_FETCHER: dict[str, str] = {
+    "ARBOVIROSES": "arboviroses",
+    "ASSISTENCIASAUDE": "assistencia_saude",
+    "ATENCAOPRIMARIA": "atencao_primaria",
+    "BNAFAR": "bnafar",
+    "CIENCIATECNOLOGIA": "ciencia_tecnologia",
+    "DIAGNOSTICOSTRATAMENTOS": "diagnosticos_tratamentos",
+    "ECONOMIASAUDE": "economia_saude",
+    "EDUCACAOSAUDE": "educacao_saude",
+    "MACROSAUDE": "macro_saude",
+    "OUVIDORIA": "ouvidoria",
+    "OUTROSTEMAS": "outros_temas",
+    "PDA": "pda",
+    "PREVENCAOPROMOCAO": "prevencao_promocao",
+    "SISAGUA": "sisagua",
+    "SISVAN": "sisvan",
+    "SAUDEINDIGENA": "saude_indigena",
+    "VACINACAO": "vacinacao",
+    "VIGILANCIAMEIOAMBIENTE": "vigilancia_meio_ambiente",
+}
+
+# FTP display (class) name → public fetcher (only where they differ).
+_FTP_FETCHER: dict[str, str] = {
+    "IBGEDATASUS": "ibge",
+}
+
+
+def _fetcher_hint(name: str, origin: str) -> str:
+    """Return the origin-namespaced call, or ``""`` if none is fetchable.
+
+    The hint is only emitted when a real namespaced fetcher exists for the
+    given dataset/``source``, so ``pysus.info()`` never suggests a call that
+    would 404.
+    """
+    from pysus.api._impl.source import origin_fetchers
+
+    ns = {"FTP": "ftp", "DadosGov": "dadosgov", "Saude": "saude"}.get(
+        origin,
+        origin.lower(),
+    )
+    if origin == "Saude":
+        cand = _SAUDE_FETCHER.get(name.upper(), name.lower())
+    else:
+        cand = _FTP_FETCHER.get(name.upper(), name.lower())
+
+    key = {"FTP": "FTP", "DadosGov": "DADOSGOV", "Saude": "SAUDE"}.get(
+        origin,
+        origin.upper(),
+    )
+    if cand not in origin_fetchers(key):
+        return ""
+    return f"pysus.{ns}.{cand}(...)"
+
 
 def _collect_datasets() -> list[dict[str, str]]:
     """Return a flat list of dicts describing every known dataset."""
@@ -24,6 +79,7 @@ def _collect_datasets() -> list[dict[str, str]]:
                     "origin": "FTP",
                     "auth": "no",
                     "description": _FTP_DESC.get(name, name),
+                    "call": _fetcher_hint(name, "FTP"),
                 },
             )
     except Exception:  # noqa: BLE001
@@ -42,6 +98,7 @@ def _collect_datasets() -> list[dict[str, str]]:
                         spec.name,
                         spec.long_name,
                     ),
+                    "call": _fetcher_hint(spec.name, "Saude"),
                 },
             )
     except Exception:  # noqa: BLE001
@@ -58,6 +115,7 @@ def _collect_datasets() -> list[dict[str, str]]:
                     "origin": "DadosGov",
                     "auth": "yes",
                     "description": _DADOSGOV_DESC.get(dg_name, dg_name),
+                    "call": _fetcher_hint(dg_name, "DadosGov"),
                 },
             )
     except Exception:  # noqa: BLE001
@@ -84,10 +142,11 @@ def info_table() -> None:
     name_w = max(len(r["name"]) for r in rows)
     origin_w = max(len(r["origin"]) for r in rows)
     auth_w = max(len(r["auth"]) for r in rows)
+    call_w = max(len(r["call"]) for r in rows)
 
     header = (
         f"  {'Name':<{name_w}}  {'Origin':<{origin_w}}  "
-        f"{'Auth':<{auth_w}}  Description"
+        f"{'Auth':<{auth_w}}  {'Call':<{call_w}}  Description"
     )
     sep = "  " + "-" * (len(header) - 2)
 
@@ -97,7 +156,8 @@ def info_table() -> None:
     for r in rows:
         print(
             f"  {r['name']:<{name_w}}  {r['origin']:<{origin_w}}  "
-            f"{r['auth']:<{auth_w}}  {r['description']}",
+            f"{r['auth']:<{auth_w}}  {r['call']:<{call_w}}  "
+            f"{r['description']}",
         )
     print(sep)
     print(

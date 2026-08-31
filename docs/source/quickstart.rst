@@ -8,20 +8,33 @@ Install PySUS::
 
    pip install pysus
 
-Then pick a client — the same file hierarchy
-(:class:`~pysus.api.models.BaseRemoteDataset` →
-:class:`~pysus.api.models.BaseRemoteGroup` →
-:class:`~pysus.api.models.BaseRemoteFile`) is shared by all four
-sources:
+The recommended way to fetch data is through an **origin namespace**. Each
+origin exposes the same per-database fetchers, and the data source is explicit:
+:
 
 .. code-block:: python
 
-   from pysus import sinan
+   import pysus
 
-   df = sinan(disease="deng", year=2024, as_dataframe=True)
+   # DATASUS FTP (served from the S3 catalog mirror by default)
+   df = pysus.ftp.sinan(disease="deng", year=2024, as_dataframe=True)
 
-S3 catalog (DuckLake) — the primary source
-------------------------------------------
+   # dados.gov.br (CKAN)
+   df = pysus.dadosgov.sinasc(state="SP", year=2024, as_dataframe=True)
+
+   # dadosabertos.saude.gov.br (theme datasets)
+   df = pysus.saude.arboviroses(year=2024, as_dataframe=True)
+
+``source="catalog"`` (default) serves the S3/Parquet mirror; pass
+``source="origin"`` to query the origin server directly.  The legacy flat
+functions (``pysus.sinan``, ...) still work but emit a deprecation warning
+pointing to the namespaced form.
+
+S3 catalog (DuckLake) — the shared mirror
+-----------------------------------------
+
+Every origin namespace reads from the DuckLake/S3 catalog by default.  For
+lower-level control of that catalog, use the ``PySUS`` class:
 
 .. code-block:: python
 
@@ -99,13 +112,13 @@ Health's open-data catalog:
 
 .. code-block:: python
 
-   from pysus import arboviroses, vacinacao
+   import pysus
 
    # Dengue notifications from OpenDataSUS
-   df = arboviroses(disease="dengue", year=2024)
+   df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
    # Vaccination coverage
-   df = vacinacao(state="SP", year=2024)
+   df = pysus.saude.vacinacao(state="SP", year=2024)
 
 Or use the Saude client directly:
 

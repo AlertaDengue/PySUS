@@ -82,12 +82,12 @@ Use ``search`` for keyword-based discovery across all origins:
 
    results = await pysus.search("dengue")
 
-Or use the standalone ``list_files`` function:
+Or use the standalone ``list_files`` function (scoped per origin):
 
 .. code-block:: python
 
-   from pysus import list_files
-   df = list_files("SINAN", group="DENG", year=2024)
+   import pysus
+   df = pysus.ftp.list_files("SINAN", group="DENG", year=2024)
 
 Local download history
 ----------------------

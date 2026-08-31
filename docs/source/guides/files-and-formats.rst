@@ -114,9 +114,9 @@ read directly without conversion:
 
 .. code-block:: python
 
-   from pysus import arboviroses
+   import pysus
 
-   df = arboviroses(disease="dengue", year=2024)
+   df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
 ZIP Archives
 ------------

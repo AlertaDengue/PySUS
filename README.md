@@ -11,12 +11,18 @@ It downloads, converts, and analyses datasets from four independent sources —
 (OpenDataSUS), and **DuckLake** (S3 mirror) — and exposes them through a
 single, DataFrame-first API.
 
+The data source is a first-class part of the public API: you reach each origin
+through its own namespace (`pysus.ftp.*`, `pysus.dadosgov.*`,
+`pysus.saude.*`), so the source of every dataset is explicit and impossible to
+ignore.
+
 ## Key features
 
-- **One-line downloads** — `sinan("DENG", 2024, as_dataframe=True)` returns a
-  `pandas.DataFrame` in a single call.
-- **Four data sources** — FTP, DadosGov, Saude (OpenDataSUS), DuckLake; the
-  orchestrator picks the best route automatically.
+- **One-line downloads** — `pysus.ftp.sinan("DENG", 2024, as_dataframe=True)`
+  returns a `pandas.DataFrame` in a single call.
+- **Origin-namespaced API** — `pysus.ftp`, `pysus.dadosgov`, and
+  `pysus.saude` make the data source explicit: `pysus.ftp.sinan(...)`,
+  `pysus.dadosgov.sinasc(...)`, `pysus.saude.arboviroses(...)`.
 - **Data quality** — `missing_values()`, `validate_data()`, `quality_score()`,
   and `profile_report()` give instant insight into completeness and schema
   integrity.
@@ -76,18 +82,32 @@ docker compose down
 
 ### Download a dataset (one-liner)
 
+The recommended way to fetch data is through an origin namespace. Each origin
+exposes the same per-database fetchers:
+
 ```python
-from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
+import pysus
 
-# Returns a list of local Parquet paths
-parquet_files = sinan(disease="deng", year=2024)
+# DATASUS FTP (served from the S3 catalog mirror by default)
+df = pysus.ftp.sinan(disease="deng", year=2024, as_dataframe=True)
 
-# Get a DataFrame directly
-df = sinan(disease="deng", year=2024, as_dataframe=True)
+# dados.gov.br (CKAN)
+df = pysus.dadosgov.sinasc(state="SP", year=[2020, 2021, 2022, 2023], as_dataframe=True)
 
-# Multiple years, filtered by state
-df = sinasc(state="SP", year=[2020, 2021, 2022, 2023], as_dataframe=True)
+# dadosabertos.saude.gov.br (theme datasets)
+df = pysus.saude.arboviroses(year=2024, as_dataframe=True)
 ```
+
+By default every namespace reads the S3/Parquet mirror (`source="catalog"`).
+To query the origin server directly, pass `source="origin"`:
+
+```python
+df = pysus.ftp.sinan(disease="deng", year=2024, source="origin", as_dataframe=True)
+```
+
+The legacy flat functions (`pysus.sinan`, `pysus.arboviroses`, ...) still
+work unchanged but emit a deprecation warning pointing you to the namespaced
+call.
 
 ### Browse available datasets
 
@@ -97,6 +117,16 @@ from pysus import info, search, list_files
 info()                          # table of all datasets across all origins
 search("sinan")                 # fuzzy search across FTP, Saude, DadosGov
 list_files("SINAN")             # list files within a dataset
+```
+
+Discovery is also scoped per origin:
+
+```python
+import pysus
+
+pysus.ftp.info()                                  # datasets on the FTP origin
+pysus.ftp.list_files("SINAN", year=2024, state="RJ")
+pysus.dadosgov.get_origin_meta()                  # origin metadata
 ```
 
 ### The PySUS client (full control)
@@ -274,24 +304,32 @@ Precedence: explicit argument > environment variable > TOML file > default.
 
 ## Data sources
 
-| Dataset | Description | FTP | DadosGov | Saude | DuckLake |
-|---------|-------------|:---:|:--------:|:-----:|:--------:|
-| SINAN | Disease notifications | x | x | x | x |
-| SIM | Mortality | x | x | x | x |
-| SINASC | Births | x | x | x | x |
-| SIH | Hospitalisations | x | | | x |
-| SIA | Ambulatory procedures | x | | | x |
-| CIHA | Hospital admissions | x | | | x |
-| CNES | Health facilities | x | x | x | x |
-| PNI | Immunisations | x | x | x | x |
-| IBGE | Geographic data | x | | | x |
-| COVID19 | COVID-19 confirmed cases | x | x | x | x |
-| Arboviroses | Arboviral diseases | | | x | |
-| AssistenciaSaude | Health assistance | | | x | |
-| AtencaoPrimaria | Primary care | | | x | |
-| Vacinacao | Vaccination | | | x | |
-| SisAgua | Water surveillance | | | x | |
-| Sisvan | Nutritional surveillance | | | x | |
+PySUS reads from three **origins** (FTP DataSUS, dados.gov.br, OpenDataSUS),
+plus a shared **DuckLake/S3 mirror** that serves as the default cache. The
+`DuckLake` mark below means the dataset is served from the S3 catalog mirror
+by default via that origin namespace.
+
+| Dataset | Description | `pysus.ftp` | `pysus.dadosgov` | `pysus.saude` |
+|---------|-------------|:---:|:--------:|:-----:|
+| SINAN | Disease notifications | x | x | |
+| SIM | Mortality | x | x | |
+| SINASC | Births | x | x | |
+| SIH | Hospitalisations | x | | |
+| SIA | Ambulatory procedures | x | | |
+| CIHA | Hospital admissions | x | | |
+| CNES | Health facilities | x | x | |
+| PNI | Immunisations | x | x | |
+| IBGE | Geographic data | x | | |
+| COVID19 | COVID-19 confirmed cases | x | x | |
+| Arboviroses | Arboviral diseases | | | x |
+| AssistenciaSaude | Health assistance | | | x |
+| AtencaoPrimaria | Primary care | | | x |
+| Vacinacao | Vaccination | | | x |
+| SisAgua | Water surveillance | | | x |
+| Sisvan | Nutritional surveillance | | | x |
+
+> **Note on Saude:** the Saude portal has no catalog mirror, so `pysus.saude.*`
+> always queries the CKAN portal directly regardless of `source`.
 
 ## Architecture
 

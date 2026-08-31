@@ -7,48 +7,57 @@ Data Sources
 
    getting_started_pysus
 
-PySUS provides simplified functions that return pandas DataFrames directly:
+PySUS provides simplified, origin-namespaced functions that return pandas
+DataFrames directly. Each origin is reachable through its own namespace —
+``pysus.ftp.*``, ``pysus.dadosgov.*``, ``pysus.saude.*`` — so the data source
+is explicit:
 
 .. code-block:: python
 
-    from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
+    import pysus
 
-    # Download SINAN Dengue data
-    df = sinan(disease="deng", year=2024)
+    # Download SINAN Dengue data (DATASUS FTP, via the S3 catalog mirror)
+    df = pysus.ftp.sinan(disease="deng", year=2024)
 
     # Multiple years
-    df = sinan(disease="deng", year=[2023, 2024])
+    df = pysus.ftp.sinan(disease="deng", year=[2023, 2024])
 
-    # SINASC births for São Paulo
-    df = sinasc(state="SP", year=2024)
+    # SINASC births for São Paulo (dados.gov.br)
+    df = pysus.dadosgov.sinasc(state="SP", year=2024)
 
-    # SIM mortality data
-    df = sim(state="SP", year=2024)
+    # SIM mortality data — query the origin server directly
+    df = pysus.ftp.sim(state="SP", year=2024, source="origin")
 
     # SIH hospitalizations
-    df = sih(state="SP", year=2024, month=[1, 2, 3])
+    df = pysus.ftp.sih(state="SP", year=2024, month=[1, 2, 3])
 
     # CNES health facilities
-    df = cnes(state="SP", year=2024, month=1)
+    df = pysus.ftp.cnes(state="SP", year=2024, month=1)
 
 OpenDataSUS (Saude) functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-    from pysus import arboviroses, vacinacao, assistencia_saude
+    import pysus
 
     # Dengue/Chik/Zika notifications
-    df = arboviroses(disease="dengue", year=2024)
+    df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
     # Vaccination coverage
-    df = vacinacao(state="SP", year=2024)
+    df = pysus.saude.vacinacao(state="SP", year=2024)
 
     # Hospital and health facility data
-    df = assistencia_saude(state="SP", year=2024)
+    df = pysus.saude.assistencia_saude(state="SP", year=2024)
+
+The legacy flat functions (``pysus.sinan``, ``pysus.arboviroses``, ...) still
+work but emit a deprecation warning pointing to the namespaced form.
 
 Function Reference
 ^^^^^^^^^^^^^^^^^^
+
+Namespaced fetchers per origin. Both ``pysus.ftp.*`` and
+``pysus.dadosgov.*`` read the S3 catalog mirror by default.
 
 .. list-table::
     :header-rows: 1
@@ -56,31 +65,31 @@ Function Reference
     * - Function
       - Dataset
       - Parameters
-    * - ``sinan(disease, year)``
+    * - ``ftp.sinan(...)`` / ``dadosgov.sinan(...)``
       - Disease Notifications
       - disease (e.g., "DENG", "ZIKA"), year
-    * - ``sinasc(state, year, group)``
+    * - ``ftp.sinasc(...)`` / ``dadosgov.sinasc(...)``
       - Births
-      - state, year, group (optional)
-    * - ``sim(state, year, group)``
+      - state, year
+    * - ``ftp.sim(...)`` / ``dadosgov.sim(...)``
       - Mortality
-      - state, year, group (optional)
-    * - ``sih(state, year, month, group)``
+      - state, year
+    * - ``ftp.sih(...)``
       - Hospitalizations
-      - state, year, month, group (optional)
-    * - ``sia(state, year, month, group)``
+      - state, year, month
+    * - ``ftp.sia(...)``
       - Ambulatory
-      - state, year, month, group (optional)
-    * - ``pni(state, year, group)``
+      - state, year, month
+    * - ``ftp.pni(...)`` / ``dadosgov.pni(...)``
       - Immunizations
-      - state, year, group (optional)
-    * - ``ibge(year, group)``
+      - state, year
+    * - ``ftp.ibge(...)``
       - IBGE
-      - year, group (optional)
-    * - ``cnes(state, year, month, group)``
+      - year
+    * - ``ftp.cnes(...)`` / ``dadosgov.cnes(...)``
       - Health Facilities
-      - state, year, month, group (optional)
-    * - ``ciha(state, year, month)``
+      - state, year, month
+    * - ``ftp.ciha(...)``
       - Hospital Admissions
       - state, year, month
 
@@ -93,33 +102,35 @@ OpenDataSUS (Saude) Functions
     * - Function
       - Dataset
       - Parameters
-    * - ``arboviroses(**kwargs)``
+    * - ``saude.arboviroses(**kwargs)``
       - Arboviroses (Dengue/Chik/Zika/YF)
       - disease, state, year (via kwargs)
-    * - ``vacinacao(**kwargs)``
+    * - ``saude.vacinacao(**kwargs)``
       - Vaccination Coverage
       - state, year (via kwargs)
-    * - ``assistencia_saude(**kwargs)``
+    * - ``saude.assistencia_saude(**kwargs)``
       - Hospital/Facility Data
       - state, year (via kwargs)
-    * - ``atencao_primaria(**kwargs)``
+    * - ``saude.atencao_primaria(**kwargs)``
       - Primary Care (Previne Brasil)
       - state, year (via kwargs)
-    * - ``sisvan(**kwargs)``
+    * - ``saude.sisvan(**kwargs)``
       - Nutrition Surveillance
       - state, year (via kwargs)
-    * - ``sisagua(**kwargs)``
+    * - ``saude.sisagua(**kwargs)``
       - Water Quality
       - state, year (via kwargs)
-    * - ``covid19(**kwargs)``
-      - COVID-19
-      - state, year (via kwargs)
-    * - ``bnafar(**kwargs)``
+    * - ``saude.bnafar(**kwargs)``
       - Pharmaceutical Assistance
       - state, year (via kwargs)
-    * - ``saude_indigena(**kwargs)``
+    * - ``saude.saude_indigena(**kwargs)``
       - Indigenous Health
       - state, year (via kwargs)
+
+The ``source`` parameter is accepted everywhere: ``source="catalog"`` (default)
+serves the S3/Parquet mirror; ``source="origin"`` queries the origin server
+directly.  The Saude portal has no catalog mirror, so ``saude.*`` always
+queries the CKAN portal.
 
 Using the PySUS Client
 ^^^^^^^^^^^^^^^^^^^^^^
