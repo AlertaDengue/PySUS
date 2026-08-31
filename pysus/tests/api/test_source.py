@@ -96,3 +96,86 @@ class TestFetchRouting:
 
         with pytest.raises(ValidationError):
             fetch("sinan", source="bogus", year=2020)
+
+
+class TestOriginNamespaces:
+    """Verify the public origin namespace modules."""
+
+    @pytest.fixture()
+    def import_pysus(self):
+        import pysus  # noqa: F401
+
+        return pysus
+
+    def test_namespaces_registered(self, import_pysus):
+        assert hasattr(import_pysus, "ftp")
+        assert hasattr(import_pysus, "dadosgov")
+        assert hasattr(import_pysus, "saude")
+
+    def test_from_import_style(self):
+        from pysus.dadosgov import sinasc
+        from pysus.ftp import sinan
+        from pysus.saude import arboviroses
+
+        assert sinan.__name__ == "sinan"
+        assert sinasc.__name__ == "sinasc"
+        assert arboviroses.__name__ == "arboviroses"
+
+    def test_ftp_binds_origin(self):
+        import pysus
+
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = []
+            pysus.ftp.sinan(disease="deng", year=2017, show_progress=False)
+            kwargs = mock_fetch.call_args.kwargs
+            assert kwargs["origin"] == "FTP"
+            assert kwargs["source"] == "catalog"
+
+    def test_saude_binds_origin(self):
+        import pysus
+
+        with patch("pysus.api._impl.databases._fetch_data") as mock_fetch:
+            mock_fetch.return_value = []
+            pysus.saude.arboviroses(show_progress=False)
+            kwargs = mock_fetch.call_args.kwargs
+            # Saude flat functions hardcode origin internally
+            assert kwargs["origin"] == "Saude"
+            assert kwargs["source"] == "catalog"
+
+    def test_rejects_explicit_origin(self):
+        import pysus
+        from pysus.api.errors import PySUSError
+
+        with pytest.raises(PySUSError):
+            pysus.ftp.sinan(disease="deng", year=2017, origin="DadosGov")
+
+    def test_discovery_names_present(self):
+        import pysus
+
+        for mod in (pysus.ftp, pysus.dadosgov, pysus.saude):
+            for name in ("list_files", "info", "get_origin_meta"):
+                assert hasattr(mod, name)
+
+    def test_get_origin_meta(self):
+        import pysus
+
+        meta = pysus.ftp.get_origin_meta()
+        assert meta["origin"] == "FTP"
+        assert "sinan" in meta["fetchers"]
+
+    def test_docstrings_present(self):
+        import pysus
+
+        assert pysus.ftp.__doc__
+        assert pysus.dadosgov.__doc__
+        assert pysus.saude.__doc__
+        assert "origin" in pysus.ftp.sinan.__doc__.lower()
+        assert pysus.ftp.list_files.__doc__
+        assert pysus.saude.info.__doc__
+        assert pysus.ftp.get_origin_meta.__doc__
+
+    def test_dadosgov_omits_sih_sia_ciha_ibge(self):
+        import pysus
+
+        for name in ("sih", "sia", "ciha", "ibge"):
+            assert not hasattr(pysus.dadosgov, name), name

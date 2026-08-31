@@ -386,7 +386,33 @@ def _bind_origin(fn, origin: str):
         return fn(*args, **kwargs)
 
     wrapped.__name__ = fn.__name__
+    _annotate_bound(wrapped, fn, origin)
     return wrapped
+
+
+def _annotate_bound(wrapped, fn, origin: str) -> None:
+    """Attach an origin-aware docstring to a bound namespace fetcher.
+
+    The text points the user at the origin they are querying and the
+    ``source`` parameter so ``pysus.ftp.sinan?`` / ``help()`` are
+    immediately actionable.
+    """
+    if origin.upper() == SAUDE_ORIGIN:
+        header = (
+            f"This is the ``{origin.lower()}`` origin namespace version of "
+            f"``pysus.{fn.__name__}`` — it reads the {_origin_desc(origin)}.\n"
+            "The Saude portal has no catalog mirror, so every call queries "
+            "the CKAN portal directly.\n\n"
+        )
+    else:
+        header = (
+            f"This is the ``{origin.lower()}`` origin namespace version of "
+            f"``pysus.{fn.__name__}`` — it serves the {_origin_desc(origin)}.\n"
+            "By default it reads the S3 catalog mirror (source='catalog'). "
+            "Pass source='origin' to query the origin server directly.\n\n"
+        )
+    orig_doc = getattr(fn, "__doc__", "") or ""
+    wrapped.__doc__ = header + orig_doc
 
 
 def bind_list_files(origin: str):
@@ -480,6 +506,16 @@ def build_origin_module(name: str, origin: str) -> _pytypes.SimpleNamespace:
     all_names.append("list_files")
 
     def _info() -> None:
+        """Print the datasets available from this origin.
+
+        Example::
+
+            >>> import pysus
+            >>> pysus.ftp.info()
+
+        Lists the databases this origin exposes (name + description),
+        followed by a note with the cache path.
+        """
         from pysus.api._impl._ui import _collect_datasets
 
         rows = [
@@ -510,6 +546,16 @@ def build_origin_module(name: str, origin: str) -> _pytypes.SimpleNamespace:
     all_names.append("info")
 
     def _get_origin_meta() -> dict[str, str | list[str]]:
+        """Return metadata about this origin namespace.
+
+        Returns a dict with ``origin`` (canonical name), ``description``
+        and ``fetchers`` (the databases exposed on this namespace).
+
+        Example::
+
+            >>> import pysus
+            >>> pysus.ftp.get_origin_meta()
+        """
         return get_origin_meta(origin=origin_key)
 
     ns["get_origin_meta"] = _get_origin_meta
