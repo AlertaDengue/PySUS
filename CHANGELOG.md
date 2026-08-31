@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.10.7](https://github.com/AlertaDengue/PySUS/compare/2.10.6...2.10.7) (2026-08-31)
+
+### Performance Improvements
+
+* **dbf:** reduce per-value decoding overhead ([#337](https://github.com/AlertaDengue/PySUS/issues/337)) ([b1be573](https://github.com/AlertaDengue/PySUS/commit/b1be57342abdac43fa88fe0790576924edabb2cc))
+
 ## [2.10.6](https://github.com/AlertaDengue/PySUS/compare/2.10.5...2.10.6) (2026-08-28)
 
 ### Bug Fixes
