@@ -273,6 +273,27 @@ async def _fetch_ducklake(
         )
 
 
+def _saude_csv_to_frame(path: str) -> pd.DataFrame | None:
+    """Read a Saude CSV resource into a DataFrame, or ``None`` on failure.
+
+    Saude resources are frequently Latin-1 (ISO-8859-1) even when advertised
+    as UTF-8, so we sniff the delimiter and fall back across encodings.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            text = fh.read(4096)
+        dialect = csv.Sniffer().sniff(text)
+        sep = dialect.delimiter
+    except Exception:  # noqa: BLE001
+        sep = ","
+    for enc in ("utf-8", "latin-1", "cp1252"):
+        try:
+            return pd.read_csv(path, sep=sep, low_memory=False, encoding=enc)
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
 async def _fetch_saude(
     dataset: str,
     group: str | None = None,
@@ -331,17 +352,9 @@ async def _fetch_saude(
         if as_dataframe:
             frames: list[pd.DataFrame] = []
             for p in paths:
-                try:
-                    with open(p, encoding="utf-8", errors="replace") as fh:
-                        text = fh.read(4096)
-                    dialect = csv.Sniffer().sniff(text)
-                    sep = dialect.delimiter
-                except Exception:  # noqa: BLE001
-                    sep = ","
-                try:
-                    frames.append(pd.read_csv(p, sep=sep, low_memory=False))
-                except Exception:  # noqa: BLE001
-                    continue
+                frame = _saude_csv_to_frame(p)
+                if frame is not None:
+                    frames.append(frame)
             if not frames:
                 return pd.DataFrame()
             df = pd.concat(frames, ignore_index=True)
