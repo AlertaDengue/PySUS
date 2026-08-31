@@ -247,6 +247,7 @@ async def _fetch_ducklake(
     show_progress: bool = True,
     as_dataframe: bool = False,
     download: bool = True,
+    _bag: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Query, download, and process Parquet files via DuckLake.
@@ -270,6 +271,8 @@ async def _fetch_ducklake(
         )
 
         if not download:
+            if _bag:
+                return cast(list[str], files)
             return cast(list[str], [str(f.path) for f in files])
 
         return await _download_files(

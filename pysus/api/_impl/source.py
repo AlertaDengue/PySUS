@@ -22,6 +22,7 @@ from typing import cast
 
 import pandas as pd
 from pysus.api import types
+from pysus.api.bag import FileBag
 
 __all__ = [
     "fetch",
@@ -161,6 +162,7 @@ async def _fetch_catalog(
     show_progress: bool,
     as_dataframe: bool,
     download: bool = True,
+    _bag: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Serve a dataset from the catalog ``source="catalog"``.
@@ -184,6 +186,7 @@ async def _fetch_catalog(
             show_progress,
             as_dataframe,
             download,
+            _bag,
             **kwargs,
         )
 
@@ -200,6 +203,7 @@ async def _fetch_catalog(
         show_progress=show_progress,
         as_dataframe=as_dataframe,
         download=download,
+        _bag=_bag,
         **kwargs,
     )
 
@@ -216,6 +220,7 @@ async def _fetch_origin_direct(
     show_progress: bool,
     as_dataframe: bool,
     download: bool = True,
+    _bag: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Fetch directly from the origin server, bypassing the catalog mirror."""
@@ -258,6 +263,8 @@ async def _fetch_origin_direct(
         return cast(list[str], [])
 
     if not download:
+        if _bag:
+            return cast(list[str], files)
         return cast(list[str], [str(f.path) for f in files])
 
     from pysus.api._impl.databases import _download_files
@@ -286,6 +293,7 @@ def fetch(
     show_progress: bool = True,
     as_dataframe: bool = False,
     download: bool = True,
+    _bag: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Fetch a dataset from a given origin and source.
@@ -348,6 +356,7 @@ def fetch(
                     show_progress,
                     as_dataframe,
                     download,
+                    _bag=_bag,
                     **kwargs,
                 )
             return await _fetch_catalog(
@@ -362,6 +371,7 @@ def fetch(
                 show_progress,
                 as_dataframe,
                 download,
+                _bag=_bag,
                 **kwargs,
             )
 
@@ -400,14 +410,65 @@ def _bind_origin(fn, origin: str):
         # internally, so only inject origin for the catalog-backed origins.
         if origin.upper() != SAUDE_ORIGIN:
             kwargs["origin"] = origin
+
+        # Namespaced fetchers return a high-level FileBag (or a DataFrame
+        # when as_dataframe=True).  We request the bag-aware internals so that
+        # download=False yields real BaseRemoteFile entities and downloaded
+        # bags are built from local file objects.
+        kwargs["_bag"] = True
         from pysus.api._impl.databases import _suppress_flat_deprecation
 
         with _suppress_flat_deprecation():
-            return fn(*args, **kwargs)
+            result = fn(*args, **kwargs)
+        return _coerce_bag(result)
 
     wrapped.__name__ = fn.__name__
     _annotate_bound(wrapped, fn, origin)
     return wrapped
+
+
+def _coerce_bag(result):
+    """Turn a namespaced fetch result into a FileBag or a DataFrame."""
+    import pandas as pd
+
+    if isinstance(result, pd.DataFrame):
+        return result
+
+    if result is None:
+        return FileBag([])
+
+    items = list(result) if not isinstance(result, (str, bytes)) else [result]
+
+    from pysus.api.models import BaseLocalFile
+
+    if items and isinstance(items[0], BaseLocalFile):
+        return FileBag(items)
+
+    # Non-path objects (BaseRemoteFile or URL stubs) -> remote bag.
+    if items and not isinstance(items[0], str):
+        return FileBag(items)
+
+    # Path strings (downloaded local files) -> instantiate local entities.
+    from pysus.api.bag import _RemoteURL
+    from pysus.api.client import _run_sync
+
+    if items and str(items[0]).startswith(("http://", "https://")):
+        return FileBag([_RemoteURL(url=u) for u in items])
+
+    local = _run_sync(_instantiate_many(items))
+    return FileBag(local)
+
+
+async def _instantiate_many(paths):
+    from pysus.api.extensions import ExtensionFactory
+
+    local = []
+    for p in paths:
+        try:
+            local.append(await ExtensionFactory.instantiate(p))
+        except Exception:  # noqa: B902 — skip unsupported/uninstantiable files
+            continue
+    return local
 
 
 def _annotate_bound(wrapped, fn, origin: str) -> None:

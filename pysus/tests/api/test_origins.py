@@ -15,6 +15,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from pysus.api._impl.source import APPLICABILITY, origin_fetchers
+from pysus.api.bag import FileBag
 from pysus.api.client import PySUS
 
 
@@ -143,7 +144,9 @@ class TestDownloadParam:
         with patch.object(PySUS, "query", new_callable=AsyncMock) as query:
             query.return_value = files
             result = pysus.ftp.sinan(disease="deng", year=2017, download=False)
-        assert result == [
+        assert isinstance(result, FileBag)
+        assert result.kind == "remote"
+        assert result.paths == [
             "public/data/ftp/sinan/DENG/2017/_/BR/DENGBR17.parquet"
         ]
         query.assert_awaited_once()
@@ -155,9 +158,10 @@ class TestDownloadParam:
             result = pysus.ftp.sinan(
                 disease="deng", year=2017, download=False, as_dataframe=True
             )
-        # no dataframe without downloaded data -> a plain path list
-        assert isinstance(result, list)
-        assert result == ["public/data/ftp/sinan/a.parquet"]
+        # namespaced fetchers always yield a remote FileBag on download=False
+        assert isinstance(result, FileBag)
+        assert result.kind == "remote"
+        assert result.paths == ["public/data/ftp/sinan/a.parquet"]
 
     def test_download_false_does_not_download(self, pysus):
         files = [_StubFile("public/data/ftp/sinan/a.parquet")]

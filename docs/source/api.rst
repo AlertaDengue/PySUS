@@ -50,6 +50,14 @@ Or with the async API::
             await pysus.download(f)
 
 
+FileBag
+-------
+
+.. automodule:: pysus.api.bag
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Main Client
 -----------
 

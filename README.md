@@ -109,6 +109,32 @@ The legacy flat functions (`pysus.sinan`, `pysus.arboviroses`, ...) still
 work unchanged but emit a deprecation warning pointing you to the namespaced
 call.
 
+### What a namespaced fetcher returns
+
+Namespaced fetchers return either a high-level `FileBag` or a `DataFrame`:
+
+- `download=False` → a **remote** `FileBag` listing what would be fetched
+  (nothing is downloaded; `as_dataframe` is ignored here). Call
+  `bag.download()`, `bag.download_one(i)`, or `bag[i].download()`.
+- `download=True` (default) + `as_dataframe=False` → a **local** `FileBag` of
+  downloaded files.
+- `as_dataframe=True` → a single concatenated `pandas.DataFrame`.
+
+A `FileBag` is synchronous; `repr` lists each file (remote files are marked
+`(remote)`), and `to_dataframe()`/`df` concat local tabular files:
+
+```python
+import pysus
+
+bag = pysus.saude.arboviroses(download=False)
+# Files[fa_casoshumanos_1994-2026.csv (remote), fa_epizpnh_1994-2026.csv (remote)]
+local = bag.download()      # -> FileBag of downloaded local files
+df = local.to_dataframe()   # -> concatenated pandas.DataFrame
+```
+
+The legacy flat fetchers keep their historic `list[str] | pd.DataFrame`
+return type.
+
 ### Browse available datasets
 
 ```python
