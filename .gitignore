@@ -192,4 +192,5 @@ cython_debug/
 .idea/
 pyrightconfig.json
 roadmap*.md
+ROADMAP_ORIGIN_NAMESPACES.md
 tests/epic_test.py
