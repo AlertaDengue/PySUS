@@ -8,6 +8,7 @@ from humanize import naturalsize
 from pysus import CACHEPATH
 from pysus.api.client import PySUS
 from pysus.api.models import BaseRemoteFile
+from pysus.native_dir_picker import native_dir_picker
 from pysus.web.translations import t
 
 STATES = [
@@ -699,70 +700,6 @@ def _size_column_config() -> dict[str, Any]:
     }
 
 
-def _native_dir_picker(title: str, initialdir: str) -> str:
-    """Open a native directory picker dialog and return the selected path."""
-    import platform
-    import subprocess
-
-    system = platform.system()
-
-    if system == "Linux":
-        for cmd in (
-            [
-                "zenity",
-                "--file-selection",
-                "--directory",
-                f"--filename={initialdir}/",
-                f"--title={title}",
-            ],
-            ["kdialog", "--getexistingdirectory", initialdir, "--title", title],
-        ):
-            try:
-                r = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=30
-                )
-                return r.stdout.strip()
-            except (FileNotFoundError, subprocess.TimeoutExpired):
-                continue
-
-    elif system == "Windows":
-        ps = f"""
-Add-Type -AssemblyName System.Windows.Forms
-$f = New-Object System.Windows.Forms.FolderBrowserDialog
-$f.Description = '{title}'
-$f.SelectedPath = '{initialdir}'
-$f.ShowDialog() | Out-Null
-$f.SelectedPath
-"""
-        r = subprocess.run(
-            ["powershell", "-Command", ps],
-            capture_output=True,
-            text=True,
-        )
-        return r.stdout.strip()
-
-    elif system == "Darwin":
-        prompt_line = (
-            'set f to choose folder with prompt "{}"'
-            ' default location POSIX file "{}"'
-        ).format(title, initialdir)
-        applescript = (
-            f'tell application "System Events"\n'
-            f"    activate\n"
-            f"    {prompt_line}\n"
-            f"    POSIX path of f\n"
-            f"end tell"
-        )
-        r = subprocess.run(
-            ["osascript", "-e", applescript],
-            capture_output=True,
-            text=True,
-        )
-        return r.stdout.strip()
-
-    return ""
-
-
 def _show_results(pysus: PySUS, client: str) -> None:
     query_key = f"_query_results_{client}"
     queue_key = f"_download_queue_{client}"
@@ -879,7 +816,7 @@ def _show_results(pysus: PySUS, client: str) -> None:
         )
     with col_btn:
         if st.button(t("browse", _lang()), width="stretch"):
-            folder = _native_dir_picker(
+            folder = native_dir_picker(
                 title=t("browse_dir_title", _lang()),
                 initialdir=st.session_state[dir_key],
             )
