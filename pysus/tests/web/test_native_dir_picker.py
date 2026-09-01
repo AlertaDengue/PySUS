@@ -3,13 +3,13 @@ from unittest.mock import Mock, patch
 
 from pysus.native_dir_picker import native_dir_picker
 
-_TITLE = "Select'; Write-Output injected; '"
-_INITIALDIR = 'C:\\data" & do shell script "whoami'
+_TITLE = "Selecionar exportacao da unidade 'APS Central'"
+_INITIALDIR = 'C:\\Dados APS\\Unidade "Central"'
 
 
 @patch("pysus.native_dir_picker.subprocess.run")
 @patch("pysus.native_dir_picker.platform.system", return_value="Windows")
-def test_windows_values_are_not_interpolated_into_script(_, run):
+def test_windows_values_are_passed_through_environment(_, run):
     run.return_value = Mock(stdout="C:\\selected\n")
 
     assert native_dir_picker(_TITLE, _INITIALDIR) == "C:\\selected"
@@ -24,7 +24,7 @@ def test_windows_values_are_not_interpolated_into_script(_, run):
 
 @patch("pysus.native_dir_picker.subprocess.run")
 @patch("pysus.native_dir_picker.platform.system", return_value="Darwin")
-def test_macos_values_are_not_interpolated_into_script(_, run):
+def test_macos_values_are_passed_through_environment(_, run):
     run.return_value = Mock(stdout="/tmp/selected\n")
 
     assert native_dir_picker(_TITLE, _INITIALDIR) == "/tmp/selected"
