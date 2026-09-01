@@ -1,16 +1,11 @@
 """Tests for pysus.api.ducklake.functional (HTTP/S3 download utilities)."""
 
 import json
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-from pysus.api.ducklake.functional import (
-    alias_marker,
-    download_http,
-    download_s3,
-)
+from pysus.api.ducklake.functional import alias_marker, download_http
 
 
 def _head_response(alias: str | None = None) -> MagicMock:
@@ -256,65 +251,6 @@ async def test_download_http_callback(tmp_path):
 
     assert len(progress) > 0
     assert progress[-1] == (3, 3)
-
-
-@pytest.mark.asyncio
-async def test_download_s3_success(tmp_path):
-    local = tmp_path / "test.bin"
-
-    def fake_download_file(Bucket, Key, Filename, Callback=None):
-        Path(Filename).write_text("s3data")
-
-    with patch("boto3.client") as mock_boto:
-        mock_s3 = MagicMock()
-        mock_s3.head_object.return_value = {"ContentLength": 6}
-        mock_s3.download_file.side_effect = fake_download_file
-        mock_boto.return_value = mock_s3
-        await download_s3("remote/key", local)
-
-    assert local.read_text() == "s3data"
-
-
-@pytest.mark.asyncio
-async def test_download_s3_callback(tmp_path):
-    local = tmp_path / "test.bin"
-    progress = []
-
-    def fake_download_file(Bucket, Key, Filename, Callback=None):
-        Path(Filename).write_text("s3data")
-        if Callback:
-            Callback(6)
-
-    with patch("boto3.client") as mock_boto:
-        mock_s3 = MagicMock()
-        mock_s3.head_object.return_value = {"ContentLength": 6}
-        mock_s3.download_file.side_effect = fake_download_file
-        mock_boto.return_value = mock_s3
-
-        def cb(d, t):
-            progress.append((d, t))
-
-        await download_s3("remote/key", local, callback=cb)
-
-    assert len(progress) > 0
-
-
-@pytest.mark.asyncio
-async def test_download_s3_head_error_fallback(tmp_path):
-    local = tmp_path / "test.bin"
-
-    with patch("boto3.client") as mock_boto:
-        mock_s3 = MagicMock()
-        mock_s3.head_object.side_effect = Exception("head failed")
-
-        def fake_download_file(Bucket, Key, Filename, Callback=None):
-            Path(Filename).write_text("s3data")
-
-        mock_s3.download_file.side_effect = fake_download_file
-        mock_boto.return_value = mock_s3
-        await download_s3("remote/key", local)
-
-    assert local.read_text() == "s3data"
 
 
 @pytest.mark.asyncio

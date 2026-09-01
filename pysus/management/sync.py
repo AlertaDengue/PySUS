@@ -1688,18 +1688,6 @@ class SyncEngine:
                 error(f"repair failed for {record.path}: {exc}")
 
     @staticmethod
-    def _pick_source(comparison: FileComparison) -> FileRecord | None:
-        """Return the artifact to ingest (ftp > dadosgov > saude)."""
-        record = comparison._pick("ftp")
-        if record is None or record.file is None:
-            record = comparison._pick("dadosgov")
-        if record is None or record.file is None:
-            record = comparison._pick("saude")
-        if record is None or record.file is None:
-            return None
-        return record
-
-    @staticmethod
     def _label(comparison: FileComparison) -> str:
         key = comparison.key
         return (

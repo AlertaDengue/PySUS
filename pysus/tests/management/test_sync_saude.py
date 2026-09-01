@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pysus.management.records import FileComparison, FileRecord
+from pysus.management.records import FileRecord
 from pysus.management.sync import SyncEngine
 
 
@@ -17,42 +17,6 @@ def _record(origin, name, dataset="SINAN", year=2025, **kw):
         file=kw.pop("file", MagicMock()),
         **kw,
     )
-
-
-class TestPickSourceSaude:
-    def test_pick_source_prefers_ftp_over_saude(self):
-        ftp = _record("ftp", "DENGBR25.dbc", file=MagicMock())
-        saude = _record("saude", "DENGBR25.jsonl", file=MagicMock())
-        comparison = FileComparison(
-            key=ftp.identity_key(), records=[ftp, saude]
-        )
-        assert SyncEngine._pick_source(comparison) is ftp
-
-    def test_pick_source_prefers_dadosgov_over_saude(self):
-        gov = _record("dadosgov", "DENGBR25.csv.zip", file=MagicMock())
-        saude = _record("saude", "DENGBR25.jsonl", file=MagicMock())
-        comparison = FileComparison(
-            key=gov.identity_key(), records=[gov, saude]
-        )
-        assert SyncEngine._pick_source(comparison) is gov
-
-    def test_pick_source_falls_back_to_saude(self):
-        saude = _record("saude", "DENGBR25.jsonl", file=MagicMock())
-        comparison = FileComparison(key=saude.identity_key(), records=[saude])
-        assert SyncEngine._pick_source(comparison) is saude
-
-    def test_pick_source_skips_saude_when_file_is_none(self):
-        saude = _record("saude", "DENGBR25.jsonl", file=None)
-        comparison = FileComparison(key=saude.identity_key(), records=[saude])
-        assert SyncEngine._pick_source(comparison) is None
-
-    def test_pick_source_ftp_wins_even_when_ftp_file_none_saude_has_file(self):
-        ftp = _record("ftp", "DENGBR25.dbc", file=None)
-        saude = _record("saude", "DENGBR25.jsonl", file=MagicMock())
-        comparison = FileComparison(
-            key=ftp.identity_key(), records=[ftp, saude]
-        )
-        assert SyncEngine._pick_source(comparison) is saude
 
 
 class TestOriginsFilter:

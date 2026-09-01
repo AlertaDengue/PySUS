@@ -8,7 +8,6 @@ from pysus.management.compare import (
     FORMAT_PREFERENCE,
     Comparator,
     _format_rank,
-    byte_hash,
     content_fingerprint,
 )
 from pysus.management.inventory import Inventory
@@ -144,35 +143,6 @@ class TestFormatRank:
 
     def test_unknown_format(self):
         assert _format_rank("xyzzy") == len(FORMAT_PREFERENCE)
-
-
-class TestByteHash:
-    def test_sha256_of_file(self, tmp_path):
-        f = tmp_path / "data.txt"
-        f.write_bytes(b"hello world")
-        h = byte_hash(f)
-        assert len(h) == 64  # sha256 hex digest
-
-    def test_same_content_same_hash(self, tmp_path):
-        a = tmp_path / "a.bin"
-        b = tmp_path / "b.bin"
-        content = b"some binary data"
-        a.write_bytes(content)
-        b.write_bytes(content)
-        assert byte_hash(a) == byte_hash(b)
-
-    def test_different_content_different_hash(self, tmp_path):
-        a = tmp_path / "a.bin"
-        b = tmp_path / "b.bin"
-        a.write_bytes(b"alpha")
-        b.write_bytes(b"beta")
-        assert byte_hash(a) != byte_hash(b)
-
-    def test_custom_algorithm(self, tmp_path):
-        f = tmp_path / "data.bin"
-        f.write_bytes(b"test")
-        h = byte_hash(f, algorithm="md5")
-        assert len(h) == 32
 
 
 class TestContentFingerprint:
