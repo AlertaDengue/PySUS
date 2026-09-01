@@ -1362,6 +1362,33 @@ class TestFetchSaude:
 
         asyncio.run(_run())
 
+    def test_fully_unknown_theme_returns_empty_list(self):
+        """A name absent from both SPECS and _SAUDE_GROUP_MAP yields []."""
+
+        async def _run():
+            with patch("pysus.api.client.PySUS") as mock_cls:
+                mock_pysus = MagicMock()
+                mock_cls.return_value.__aenter__ = AsyncMock(
+                    return_value=mock_pysus,
+                )
+                mock_cls.return_value.__aexit__ = AsyncMock()
+
+                saude_mock = AsyncMock()
+                saude_mock.download_resource = AsyncMock()
+
+                mock_pysus.get_saude = AsyncMock(return_value=saude_mock)
+                mock_pysus.cachepath = Path("/tmp/test_cache")
+
+                from pysus.api._impl.databases import _fetch_saude
+
+                result = await _fetch_saude(
+                    dataset="totally_unknown_theme",
+                    download=False,
+                )
+                assert result == []
+
+        asyncio.run(_run())
+
     def test_show_progress_true_downloads(self):
         async def _run():
             with (
@@ -1470,7 +1497,6 @@ class TestFetchDucklake:
                 from pysus.api._impl.databases import _fetch_ducklake
 
                 result = await _fetch_ducklake(
-                    mock_pysus,
                     dataset="sinan",
                     origin="FTP",
                     download=False,

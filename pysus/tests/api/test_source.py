@@ -307,3 +307,276 @@ class TestNamespacedValidation:
         ) as mock_direct:
             pysus.ftp.sinan(disease="deng", year=2017, source="origin")
             mock_direct.assert_awaited_once()
+
+
+class TestFetchOriginDirect:
+    """Unit coverage for ``_fetch_origin_direct`` (FTP/DadosGov path)."""
+
+    def _make_pysus(self, files):
+        from unittest.mock import AsyncMock, MagicMock
+
+        pysus = MagicMock()
+        pysus.query = AsyncMock(return_value=files)
+        return pysus
+
+    def _run(self, coro):
+        import asyncio
+
+        return asyncio.run(coro)
+
+    def _file(self, path):
+        from unittest.mock import MagicMock
+
+        f = MagicMock()
+        f.path = path
+        return f
+
+    def test_unsupported_origin_raises(self):
+        from pysus.api._impl.source import _fetch_origin_direct
+        from pysus.api.errors import ValidationError
+
+        pysus = self._make_pysus([])
+        with pytest.raises(ValidationError):
+            self._run(
+                _fetch_origin_direct(
+                    pysus,
+                    "sinan",
+                    None,
+                    None,
+                    2020,
+                    None,
+                    "BOGUS",
+                    None,
+                    False,
+                    False,
+                )
+            )
+
+    def test_empty_files_returns_empty_list(self):
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        pysus = self._make_pysus([])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                None,
+                2020,
+                None,
+                "FTP",
+                None,
+                False,
+                False,
+                download=False,
+            )
+        )
+        assert result == []
+
+    def test_empty_files_returns_empty_df_when_as_dataframe(self):
+        import pandas as pd
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        pysus = self._make_pysus([])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                None,
+                2020,
+                None,
+                "FTP",
+                None,
+                True,
+                True,
+                download=True,
+            )
+        )
+        assert isinstance(result, pd.DataFrame)
+        assert result.empty
+
+    def test_download_false_bag_returns_files(self):
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        f = self._file("public/data/ftp/sinan/a.parquet")
+        pysus = self._make_pysus([f])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                None,
+                2020,
+                None,
+                "FTP",
+                None,
+                False,
+                False,
+                download=False,
+                _bag=True,
+            )
+        )
+        assert result == [f]
+
+    def test_download_false_returns_paths(self):
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        f = self._file("public/data/ftp/sinan/a.parquet")
+        pysus = self._make_pysus([f])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                None,
+                2020,
+                None,
+                "FTP",
+                None,
+                False,
+                False,
+                download=False,
+            )
+        )
+        assert result == ["public/data/ftp/sinan/a.parquet"]
+
+    def test_prefix_filter_keeps_matching(self):
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        matching = self._file("public/data/ftp/sinan/a.parquet")
+        other = self._file("elsewhere/b.parquet")
+        pysus = self._make_pysus([matching, other])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                None,
+                2020,
+                None,
+                "FTP",
+                None,
+                False,
+                False,
+                download=False,
+            )
+        )
+        assert result == ["public/data/ftp/sinan/a.parquet"]
+
+    def test_download_true_delegates_to_download_files(self):
+        import pandas as pd
+        from pysus.api._impl import databases as db
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        f = self._file("public/data/ftp/sinan/a.parquet")
+        pysus = self._make_pysus([f])
+        with patch.object(
+            db,
+            "_download_files",
+            new=AsyncMock(
+                return_value=pd.DataFrame({"a": [1]}),
+            ),
+        ) as mock_dl:
+            result = self._run(
+                _fetch_origin_direct(
+                    pysus,
+                    "sinan",
+                    None,
+                    None,
+                    2020,
+                    None,
+                    "FTP",
+                    None,
+                    False,
+                    False,
+                )
+            )
+        mock_dl.assert_awaited_once()
+        assert list(result["a"]) == [1]
+
+    def test_saude_origin_delegates(self):
+        from pysus.api._impl import databases as db
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        pysus = self._make_pysus([])
+        with patch.object(
+            db,
+            "_fetch_saude",
+            new=AsyncMock(return_value=["x"]),
+        ) as mock_saude:
+            result = self._run(
+                _fetch_origin_direct(
+                    pysus,
+                    "arboviroses",
+                    None,
+                    None,
+                    None,
+                    None,
+                    "SAUDE",
+                    None,
+                    False,
+                    False,
+                    download=False,
+                )
+            )
+        mock_saude.assert_awaited_once()
+        assert result == ["x"]
+
+
+class TestCoerceBag:
+    def test_none_becomes_empty_filebag(self):
+        from pysus.api._impl.source import _coerce_bag
+        from pysus.api.bag import FileBag
+
+        result = _coerce_bag(None)
+        assert isinstance(result, FileBag)
+        assert len(result) == 0
+
+    def test_base_local_file_list_becomes_filebag(self, tmp_path):
+        import pandas as pd
+        from pysus.api._impl.source import _coerce_bag
+        from pysus.api.bag import FileBag
+        from pysus.api.client import _run_sync
+        from pysus.api.extensions import ExtensionFactory
+
+        p = tmp_path / "a.parquet"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame({"a": [1]}).to_parquet(p)
+        local = _run_sync(ExtensionFactory.instantiate(p))
+        result = _coerce_bag([local])
+        assert isinstance(result, FileBag)
+        assert result.kind == "local"
+
+    def test_remote_url_strings_become_remote_url_bag(self):
+        from pysus.api._impl.source import _coerce_bag
+        from pysus.api.bag import FileBag
+
+        result = _coerce_bag(["https://example.com/data.csv"])
+        assert isinstance(result, FileBag)
+        assert result.kind == "remote"
+
+
+class TestInstantiateMany:
+    def test_skips_uninstantiable_paths(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from pysus.api._impl.source import _instantiate_many
+        from pysus.api.client import _run_sync
+
+        good = MagicMock(name="good")
+        with patch(
+            "pysus.api.extensions.ExtensionFactory.instantiate",
+            new=AsyncMock(side_effect=[OSError("boom"), good]),
+        ):
+            result = _run_sync(_instantiate_many(["bad", "good"]))
+        assert result == [good]
+
+
+class TestInfoOutput:
+    def test_info_prints_table(self, capsys):
+        import pysus
+
+        pysus.ftp.info()
+        out = capsys.readouterr().out
+        assert "SINAN" in out or "sinan" in out

@@ -10,7 +10,7 @@ Covers:
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -116,7 +116,7 @@ class TestDownload:
         )
         result = bag.download()
         assert result.kind == "local"
-        assert result.paths == [str(local)]
+        assert result.paths == [str(local).replace("\\", "/")]
         assert len(result) == 1
 
     def test_download_one(self, tmp_path):
@@ -137,7 +137,7 @@ class TestDownload:
             ]
         )
         subset = bag.download(indexes=[1])
-        assert subset.paths == [str(locals_[1])]
+        assert subset.paths == [str(locals_[1]).replace("\\", "/")]
 
     def test_local_bag_download_is_noop(self, tmp_path):
         bag = FileBag([_local(_make_parquet(tmp_path / "a.parquet"))])
@@ -202,3 +202,87 @@ class TestNamespacedReturn:
             )
         assert isinstance(result, pd.DataFrame)
         assert list(result["a"]) == [1, 2]
+
+
+class TestBagHelpers:
+    def test_path_str_falls_back_to_name(self):
+        from pysus.api.bag import _path_str
+
+        class _F:
+            path = None
+            name = "only-name.csv"
+
+        assert _path_str(_F()) == "only-name.csv"
+
+    def test_name_str_falls_back_to_repr(self):
+        from pysus.api.bag import _name_str
+
+        f = object()
+        assert _name_str(f) == repr(f)
+
+    def test_load_frames_skips_non_local_files(self):
+        from pysus.api.bag import _load_frames
+
+        frames = _run_sync(_load_frames((MagicMock(),)))
+        assert frames == []
+
+    def test_path_str_normalizes_windows_separators(self):
+        from pysus.api.bag import _path_str
+
+        class _F:
+            path = "public\\data\\ftp\\sinan\\a.parquet"
+
+        assert _path_str(_F()) == "public/data/ftp/sinan/a.parquet"
+
+    def test_path_str_preserves_posix_separators(self):
+        from pysus.api.bag import _path_str
+
+        class _F:
+            path = "public/data/ftp/sinan/a.parquet"
+
+        assert _path_str(_F()) == "public/data/ftp/sinan/a.parquet"
+
+    def test_remote_url_basename(self):
+        from pysus.api.bag import _RemoteURL
+
+        assert _RemoteURL("http://example.com/a.csv").basename == "a.csv"
+        assert (
+            _RemoteURL("http://example.com/").basename == "http://example.com/"
+        )
+        assert _RemoteURL("a.csv").basename == "a.csv"
+
+    def test_remote_url_download(self):
+        from pysus.api.bag import _RemoteURL
+
+        class _FakeResp:
+            content = b"parquet-bytes"
+
+            def raise_for_status(self):
+                pass
+
+        class _FakeClient:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return False
+
+            async def get(self, url):
+                return _FakeResp()
+
+        fake_local = MagicMock()
+        with (
+            patch("httpx.AsyncClient", return_value=_FakeClient()),
+            patch(
+                "pysus.api.extensions.ExtensionFactory.instantiate",
+                return_value=fake_local,
+            ) as inst,
+        ):
+            result = _run_sync(
+                _RemoteURL("http://example.com/a.csv").download()
+            )
+        assert result is fake_local
+        assert inst.called
