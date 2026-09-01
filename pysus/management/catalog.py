@@ -281,6 +281,18 @@ class CatalogWriter:
         existing = self.get_file(cursor, path)
         if existing:
             file_id, _ = existing
+            # DuckDB rewrites an UPDATE on an FK-referenced parent as a
+            # DELETE+INSERT, which violates file_columns.file_id -> files.id.
+            # Drop stale links first; link_columns re-creates them after.
+            cursor.execute(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'pysus' AND table_name = 'file_columns'"
+            )
+            if cursor.fetchone():
+                cursor.execute(
+                    "DELETE FROM pysus.file_columns WHERE file_id = ?",
+                    (file_id,),
+                )
             sets = [
                 "size = ?",
                 "rows = ?",
