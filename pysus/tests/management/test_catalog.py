@@ -6,7 +6,10 @@ from unittest.mock import MagicMock
 import duckdb
 import pyarrow as pa
 import pytest
+from pysus.api.ducklake.catalog.orm.columns import ColumnsBase
+from pysus.api.ducklake.catalog.orm.dataset import DatasetBase
 from pysus.management.catalog import CatalogWriter
+from sqlalchemy.schema import CreateIndex, CreateTable
 
 _SCHEMA = """
 CREATE SCHEMA pysus;
@@ -815,3 +818,93 @@ class TestEnsureColumn:
         assert not writer._has_column(cursor, "files", "custom_tag")
         writer._ensure_column(cursor, "files", "custom_tag", "VARCHAR")
         assert writer._has_column(cursor, "files", "custom_tag")
+
+
+# -- upsert_file with FK constraints --------------------------------------
+
+
+def _catalog_ddl(metadata, create_schema=False):
+    parts = ["CREATE SCHEMA pysus"] if create_schema else []
+    for table in metadata.sorted_tables:
+        parts.append(str(CreateTable(table)))
+        for index in table.indexes:
+            parts.append(str(CreateIndex(index)))
+    return "; ".join(parts)
+
+
+class TestUpsertFileForeignKeys:
+    """Re-upserting a file already referenced by ``file_columns`` must not
+    trip the ``file_id -> files.id`` FK. Updating an indexed column (``year``,
+    ``month``, ``state``, ``sha256``) makes DuckDB rewrite the UPDATE as a
+    DELETE+INSERT, and the deployed catalogs reference each file row from
+    ``file_columns`` (see pysus.api.ducklake.catalog.orm.dataset)."""
+
+    def _catalog(self):
+        con = duckdb.connect(":memory:")
+        con.execute(
+            _catalog_ddl(DatasetBase.metadata, create_schema=True)
+            + "; "
+            + _catalog_ddl(ColumnsBase.metadata)
+        )
+        return con.cursor(), con.cursor()
+
+    def _file_kwargs(self, size=10, **overrides):
+        kwargs = {
+            "dataset_id": 1,
+            "group_id": None,
+            "path": "public/data/saude/saudeindigena/x.parquet",
+            "size": size,
+            "rows": 5,
+            "modified": datetime(2026, 1, 1),
+            "origin_modified": datetime(2026, 1, 1),
+            "origin_size": 10,
+            "origin_path": "saude/x",
+            "year": 2025,
+            "month": None,
+            "state": None,
+            "sha256": "aa",
+            "file_type": "PARQUET",
+        }
+        kwargs.update(overrides)
+        return kwargs
+
+    def test_reupsert_linked_file_with_indexed_updates(self):
+        writer = CatalogWriter(ducklake=MagicMock())
+        cursor, cols_cursor = self._catalog()
+
+        file_id, created = writer.upsert_file(cursor, **self._file_kwargs())
+        assert created is True
+
+        schema = pa.schema([("id", pa.int64())])
+        writer.link_columns(cursor, cols_cursor, file_id, schema, dataset_id=1)
+        cursor.execute(
+            "SELECT COUNT(*) FROM pysus.file_columns WHERE file_id = ?",
+            (file_id,),
+        )
+        assert cursor.fetchone()[0] == 1
+
+        # Mutate indexed columns (year/state/sha256) AND preserve the id.
+        file_id2, created2 = writer.upsert_file(
+            cursor,
+            **self._file_kwargs(
+                size=20,
+                year=2026,
+                state="SP",
+                sha256="bb",
+                origin_path="saude/y",
+            ),
+        )
+        assert created2 is False
+        assert file_id2 == file_id
+
+        writer.link_columns(cursor, cols_cursor, file_id, schema, dataset_id=1)
+        cursor.execute(
+            "SELECT size, year, state, sha256 FROM pysus.files WHERE id = ?",
+            (file_id,),
+        )
+        assert cursor.fetchone() == (20, 2026, "SP", "bb")
+        cursor.execute(
+            "SELECT COUNT(*) FROM pysus.file_columns WHERE file_id = ?",
+            (file_id,),
+        )
+        assert cursor.fetchone()[0] == 1
