@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.1](https://github.com/AlertaDengue/PySUS/compare/2.11.0...2.11.1) (2026-09-01)
+
+### Bug Fixes
+
+* **catalog:** clear file_columns before rewriting an existing file row ([#341](https://github.com/AlertaDengue/PySUS/issues/341)) ([2cef688](https://github.com/AlertaDengue/PySUS/commit/2cef688d2029055918762067302442634983a734))
+
 ## [2.11.0](https://github.com/AlertaDengue/PySUS/compare/2.10.7...2.11.0) (2026-09-01)
 
 ### Features
