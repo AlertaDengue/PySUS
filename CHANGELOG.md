@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.2](https://github.com/AlertaDengue/PySUS/compare/2.11.1...2.11.2) (2026-09-01)
+
+### Bug Fixes
+
+* **web:** preserve native directory picker values ([#336](https://github.com/AlertaDengue/PySUS/issues/336)) ([34878a8](https://github.com/AlertaDengue/PySUS/commit/34878a8f664ea3c87cc6ef2f1f68363d2a1ecdf8))
+
 ## [2.11.1](https://github.com/AlertaDengue/PySUS/compare/2.11.0...2.11.1) (2026-09-01)
 
 ### Bug Fixes
