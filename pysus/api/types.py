@@ -24,6 +24,12 @@ def _validate_origin(v: str) -> str:
     return v
 
 
+def _validate_source(v: str) -> str:
+    valid = ("catalog", "origin")
+    assert v in valid, f"Invalid source: {v!r}"
+    return v
+
+
 def _validate_column_type(v: str) -> str:
     valid = (
         "VARCHAR",
@@ -130,6 +136,9 @@ DADOSGOV: Annotated[str, AfterValidator(_validate_origin)] = "DadosGov"
 DUCKLAKE: Annotated[str, AfterValidator(_validate_origin)] = "DuckLake"
 SAUDE: Annotated[str, AfterValidator(_validate_origin)] = "Saude"
 
+CATALOG: Annotated[str, AfterValidator(_validate_source)] = "catalog"
+ORIGIN: Annotated[str, AfterValidator(_validate_source)] = "origin"
+
 S3_ENDPOINT: Annotated[str, AfterValidator(_validate_s3_endpoint)] = (
     "nbg1.your-objectstorage.com"
 )
@@ -208,6 +217,7 @@ VIGILANCIAMEIOAMBIENTE: Annotated[
 ] = "VIGILANCIAMEIOAMBIENTE"
 
 Origin: TypeAlias = Annotated[str, AfterValidator(_validate_origin)]
+Source: TypeAlias = Annotated[str, AfterValidator(_validate_source)]
 ColumnType: TypeAlias = Annotated[str, AfterValidator(_validate_column_type)]
 FileType: TypeAlias = Annotated[str, AfterValidator(_validate_file_type)]
 DatasetName: TypeAlias = Annotated[str, AfterValidator(_validate_dataset_name)]

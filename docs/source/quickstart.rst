@@ -8,20 +8,60 @@ Install PySUS::
 
    pip install pysus
 
-Then pick a client — the same file hierarchy
-(:class:`~pysus.api.models.BaseRemoteDataset` →
-:class:`~pysus.api.models.BaseRemoteGroup` →
-:class:`~pysus.api.models.BaseRemoteFile`) is shared by all four
-sources:
+The recommended way to fetch data is through an **origin namespace**. Each
+origin exposes the same per-database fetchers, and the data source is explicit:
+:
 
 .. code-block:: python
 
-   from pysus import sinan
+   import pysus
 
-   df = sinan(disease="deng", year=2024, as_dataframe=True)
+   # DATASUS FTP (served from the S3 catalog mirror by default)
+   df = pysus.ftp.sinan(disease="deng", year=2024, as_dataframe=True)
 
-S3 catalog (DuckLake) — the primary source
-------------------------------------------
+   # dados.gov.br (CKAN)
+   df = pysus.dadosgov.sinasc(state="SP", year=2024, as_dataframe=True)
+
+   # dadosabertos.saude.gov.br (theme datasets)
+   df = pysus.saude.arboviroses(year=2024, as_dataframe=True)
+
+``source="catalog"`` (default) serves the S3/Parquet mirror; pass
+``source="origin"`` to query the origin server directly.  The legacy flat
+functions (``pysus.sinan``, ...) still work but emit a deprecation warning
+pointing to the namespaced form.
+
+What you get back
+^^^^^^^^^^^^^^^^^
+
+Namespaced fetchers return either a ``FileBag`` or a ``DataFrame``:
+
+* ``download=False`` → a **remote** ``FileBag`` listing the files that would be
+  fetched, without downloading anything (``as_dataframe`` is ignored here); call
+  ``bag.download()``, ``bag.download_one(i)`` or ``bag[i].download()`` to fetch.
+* ``download=True`` (default) + ``as_dataframe=False`` → a **local** ``FileBag``
+  of downloaded files.
+* ``as_dataframe=True`` → a single concatenated ``pandas.DataFrame``.
+
+A ``FileBag`` is a high-level, synchronous container.  Its ``repr`` lists each
+file (remote files are marked ``(remote)``); ``len``/``iter``/``[]``/``paths``
+let you inspect it, and ``to_dataframe()``/``df`` concatenates local tabular
+files:
+
+.. code-block:: python
+
+   bag = pysus.saude.arboviroses(download=False)
+   # Files[fa_casoshumanos_1994-2026.csv (remote), fa_epizpnh_1994-2026.csv (remote)]
+   local = bag.download()          # -> FileBag of downloaded local files
+   df = local.to_dataframe()       # -> concatenated pandas.DataFrame
+
+The legacy flat fetchers (``pysus.sinan``, ...) keep their historic
+``list[str] | pd.DataFrame`` return type.
+
+S3 catalog (DuckLake) — the shared mirror
+-----------------------------------------
+
+Every origin namespace reads from the DuckLake/S3 catalog by default.  For
+lower-level control of that catalog, use the ``PySUS`` class:
 
 .. code-block:: python
 
@@ -99,13 +139,13 @@ Health's open-data catalog:
 
 .. code-block:: python
 
-   from pysus import arboviroses, vacinacao
+   import pysus
 
    # Dengue notifications from OpenDataSUS
-   df = arboviroses(disease="dengue", year=2024)
+   df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
    # Vaccination coverage
-   df = vacinacao(state="SP", year=2024)
+   df = pysus.saude.vacinacao(state="SP", year=2024)
 
 Or use the Saude client directly:
 

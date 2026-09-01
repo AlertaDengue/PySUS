@@ -3,7 +3,7 @@ from pathlib import Path
 
 import boto3
 import httpx
-from anyio import sleep, to_thread
+from anyio import fail_after, sleep, to_thread
 from botocore import UNSIGNED
 from botocore.config import Config
 from pysus.api import types
@@ -194,7 +194,12 @@ async def upload_s3(
         if access_key and secret_key:
             args["aws_access_key_id"] = access_key
             args["aws_secret_access_key"] = secret_key
-            args["config"] = Config(signature_version="s3v4")
+            args["config"] = Config(
+                signature_version="s3v4",
+                connect_timeout=20,
+                read_timeout=120,
+                retries={"max_attempts": 3, "mode": "standard"},
+            )
         else:
             args["config"] = Config(signature_version=UNSIGNED)
         return args
@@ -220,7 +225,8 @@ async def upload_s3(
         try:
             client_args = _get_client_args()
             total_size = local_path.stat().st_size
-            await to_thread.run_sync(_upload, client_args, total_size)
+            with fail_after(600):
+                await to_thread.run_sync(_upload, client_args, total_size)
             return
         except Exception as e:  # noqa
             if attempt < max_retries - 1:

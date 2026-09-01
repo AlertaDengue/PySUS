@@ -3,7 +3,8 @@ API Reference
 
 The ``pysus.api`` package provides a layered architecture for discovering,
 downloading, and reading data from Brazilian public health databases
-(DATASUS). It supports four remote data sources.
+(DATASUS). It supports four remote data sources: FTP DataSUS, dados.gov.br,
+OpenDataSUS (dadosabertos.saude.gov.br), and the DuckLake/S3 catalog mirror.
 
 Architecture Overview
 ---------------------
@@ -31,12 +32,13 @@ concrete implementations::
 Quick Start
 -----------
 
-The simplest way to use PySUS is via the high-level convenience
-functions::
+The simplest way to use PySUS is through an origin namespace, which makes the
+data source explicit::
 
-    from pysus import sinan
+    import pysus
 
-    df = sinan(disease="dengue", year=2023)
+    df = pysus.ftp.sinan(disease="dengue", year=2023)
+    df = pysus.saude.arboviroses(disease="dengue", year=2023)
 
 Or with the async API::
 
@@ -47,6 +49,14 @@ Or with the async API::
         for f in files:
             await pysus.download(f)
 
+
+FileBag
+-------
+
+.. automodule:: pysus.api.bag
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Main Client
 -----------

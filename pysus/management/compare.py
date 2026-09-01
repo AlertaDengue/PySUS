@@ -97,15 +97,28 @@ class Comparator:
         DadosGov publishes the same data as csv/json/xml triplets: when
         several records from the same origin share size-agnostic identity,
         prefer the format highest in ``FORMAT_PREFERENCE`` (csv first).
+
+        Ducklake (S3 mirror) records are keyed by ``(origin, mirror origin)``
+        instead: the bucket may hold independent mirrors per origin path
+        (``public/data/ftp/...`` and ``public/data/dadosgov/...``), and both
+        must survive so per-origin mirror decisions can see them.
         """
-        preferred: dict[str, FileRecord] = {}
+        preferred: dict[tuple[str, str], FileRecord] = {}
         for record in records:
-            fmt = (record.format or "").lower()
-            current = preferred.get(record.origin)
-            if current is None or _format_rank(fmt) < _format_rank(
-                current.format or ""
-            ):
-                preferred[record.origin] = record
+            if record.origin == "ducklake":
+                from .records import origin_from_s3_key
+
+                dedup_key = (
+                    record.origin,
+                    origin_from_s3_key(record.path) or "",
+                )
+            else:
+                dedup_key = (record.origin, "")
+            current = preferred.get(dedup_key)
+            if current is None or _format_rank(
+                record.format or ""
+            ) < _format_rank(current.format or ""):
+                preferred[dedup_key] = record
         return list(preferred.values())
 
     def pick(

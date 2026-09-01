@@ -47,9 +47,10 @@ FTP, DadosGov, OpenDataSUS), tracks downloads and converts to Parquet:
        files = await pysus.query(dataset="sinan", year=2024)
        local = await pysus.download_to_parquet(files[0])
 
-High-level convenience functions (``sinan(...)``, ``sim(...)``, …)
-still exist in 2.x and return Parquet paths or DataFrames
-(``as_dataframe=True``).
+Origin-namespaced fetchers (``pysus.ftp.sinan``, ...) exist in addition to
+the legacy high-level convenience functions (``sinan(...)``, ``sim(...)``,
+…). The namespaced form makes the data source explicit and is the
+recommended way to fetch data. See below for the flat → namespaced migration.
 
 OpenDataSUS (Saude) client
 --------------------------
@@ -59,10 +60,10 @@ portal (``dadosabertos.saude.gov.br``) — no token required:
 
 .. code-block:: python
 
-   from pysus import arboviroses, vacinacao
+   import pysus
 
-   df = arboviroses(disease="dengue", year=2024)
-   df = vacinacao(state="SP", year=2024)
+   df = pysus.saude.arboviroses(disease="dengue", year=2024)
+   df = pysus.saude.vacinacao(state="SP", year=2024)
 
 Or use the low-level client:
 
@@ -74,6 +75,28 @@ Or use the low-level client:
        page = await client.list_datasets(group="arboviroses")
        for entry in page:
            print(entry.name, entry.title)
+
+Migrating from the flat fetchers to the origin namespaces
+---------------------------------------------------------
+
+The legacy flat fetchers (``pysus.sinan``, ``pysus.arboviroses``, …) still
+work unchanged, but each call now emits a ``PySUSWarning`` pointing you to
+the origin-namespaced equivalent. Migrate by prefixing the fetcher with its
+origin namespace:
+
+.. code-block:: python
+
+   # Deprecated (flat)                                  # Recommended (namespaced)
+   from pysus import sinan                              pysus.ftp.sinan(disease="deng", year=2024)
+   df = sinan(disease="deng", year=2024)                pysus.ftp.sim(state="SP", year=2024)
+   df = sim(state="SP", year=2024)                      pysus.dadosgov.sinasc(state="SP", year=2024)
+   df = sinasc(state="SP", year=2024)                   from pysus.ftp import sinan   # also works
+   df = arboviroses(disease="dengue", year=2024)        pysus.saude.arboviroses(disease="dengue", year=2024)
+
+The ``source`` parameter controls where data is read: ``source="catalog"``
+(default) serves the S3/Parquet mirror (same results as today's default);
+``source="origin"`` queries the origin server directly. The Saude portal has
+no catalog mirror, so ``pysus.saude.*`` always queries the CKAN portal.
 
 Unified metadata layer
 ----------------------

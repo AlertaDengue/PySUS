@@ -6,6 +6,7 @@ from pysus.api.validate import (
     validate_choice,
     validate_dataset,
     validate_origin,
+    validate_source,
 )
 
 
@@ -54,3 +55,15 @@ class TestValidateOrigin:
     def test_typo(self):
         with pytest.raises(ValidationError, match="Did you mean"):
             validate_origin("ftp2")
+
+
+class TestValidateSource:
+    def test_catalog(self):
+        assert validate_source("Catalog") == "catalog"
+
+    def test_origin_source(self):
+        assert validate_source("ORIGIN") == "origin"
+
+    def test_invalid(self):
+        with pytest.raises(ValidationError, match="Invalid source"):
+            validate_source("cache")

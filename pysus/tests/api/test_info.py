@@ -76,3 +76,33 @@ class TestInfo:
         pysus.info()
         output = capsys.readouterr().out
         assert str(pysus.CACHEPATH) in output
+
+    def test_info_shows_origin_call_hints(self, capsys):
+        import pysus
+
+        pysus.info()
+        output = capsys.readouterr().out
+        assert "pysus.ftp.sinan(...)" in output
+        assert "pysus.dadosgov.cnes(...)" in output
+        assert "pysus.saude.arboviroses(...)" in output
+
+    def test_info_map_exception_names_to_fetchers(self, capsys):
+        import pysus
+
+        pysus.info()
+        output = capsys.readouterr().out
+        assert "pysus.ftp.ibge(...)" in output
+
+    def test_info_shows_saude_cnes_hint(self, capsys):
+        import pysus
+
+        pysus.info()
+        output = capsys.readouterr().out
+        assert "pysus.saude.cnes(...)" in output
+
+    def test_info_omits_hint_when_no_fetcher(self):
+        from pysus.api._impl._ui import _fetcher_hint
+
+        # A dataset with no namespaced fetcher yields an empty hint.
+        assert _fetcher_hint("NOT_A_DATASET", "FTP") == ""
+        assert _fetcher_hint("NOT_A_DATASET", "Saude") == ""

@@ -79,6 +79,21 @@ class TestDuckLake:
         await client.close(update_catalog=True)
         ds.close.assert_awaited_once_with(update_catalog=True)
 
+    @pytest.mark.asyncio
+    async def test_flush_catalogs_syncs_without_reconnect(self):
+        client = DuckLake()
+        client._catalog_adap = AsyncMock()
+        client._columns_adap = AsyncMock()
+        ds = AsyncMock()
+        client._datasets.append(ds)
+        await client.flush_catalogs(update=True)
+        ds.sync.assert_awaited_once_with(update=True)
+        client._catalog_adap.sync.assert_awaited_once_with(update=True)
+        client._columns_adap.sync.assert_awaited_once_with(update=True)
+        ds.close.assert_not_awaited()
+        client._catalog_adap.connect.assert_not_awaited()
+        client._columns_adap.connect.assert_not_awaited()
+
 
 class TestDuckLakeDatasets:
     @pytest.mark.asyncio

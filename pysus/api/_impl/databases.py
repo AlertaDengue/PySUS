@@ -11,10 +11,13 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import functools
+import warnings
 from typing import cast
 
 import pandas as pd
 from pysus.api import types
+from pysus.api.errors import PySUSWarning
 from tqdm.asyncio import tqdm
 
 __all__ = [
@@ -49,6 +52,50 @@ __all__ = [
     "list_files",
 ]
 
+# ── Flat-API deprecation ─────────────────────────────────────────
+# The top-level flat functions (``pysus.sinan``, ...) still work, but are
+# deprecated in favor of the origin-namespaced API (``pysus.ftp.sinan``,
+# ``pysus.dadosgov.sinan``, ``pysus.saude.sinan``).  Namespace wrappers
+# suppress this warning via :class:`_suppress_flat_deprecation` so only a
+# *direct* flat call is flagged.
+
+_DEPRECATION_SUPPRESSED = False
+
+
+class _suppress_flat_deprecation:
+    """Context guard so namespace wrappers don't re-warn on the raw fn."""
+
+    def __enter__(self) -> _suppress_flat_deprecation:
+        global _DEPRECATION_SUPPRESSED  # noqa: PLW0603
+        self._prior = _DEPRECATION_SUPPRESSED
+        _DEPRECATION_SUPPRESSED = True
+        return self
+
+    def __exit__(self, *exc) -> None:
+        global _DEPRECATION_SUPPRESSED  # noqa: PLW0603
+        _DEPRECATION_SUPPRESSED = self._prior
+
+
+def _deprecate_flat(fn):
+    """Emit a deprecation warning for a direct flat ``pysus.<name>`` call."""
+
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        if not _DEPRECATION_SUPPRESSED:
+            warnings.warn(
+                f"pysus.{fn.__name__}() is deprecated and will be removed. "
+                "Use the origin-namespaced API instead, e.g. "
+                f"pysus.ftp.{fn.__name__}(...), "
+                f"pysus.dadosgov.{fn.__name__}(...), or "
+                f"pysus.saude.{fn.__name__}(...). Behavior is unchanged.",
+                PySUSWarning,
+                stacklevel=2,
+            )
+        return fn(*args, **kwargs)
+
+    return wrapped
+
+
 # ── Map canonical dataset names → Saude CKAN group slugs ─────────
 _SAUDE_GROUP_MAP: dict[str, str] = {
     "ARBOVIROSES": "arboviroses",
@@ -80,9 +127,11 @@ def _fetch_data(
     year: int | list[int] | None = None,
     month: int | list[int] | None = None,
     origin: str | None = None,
+    source: str = "catalog",
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
     """Query, download, and process Parquet files for a given dataset.
@@ -100,15 +149,22 @@ def _fetch_data(
     month : int | list[int], optional
         Month or list of months to fetch.
     origin : str, optional
-        Restrict to a specific origin (``"FTP"``, ``"Saude"``,
-        ``"DadosGov"``, ``"DuckLake"``).  ``None`` uses the DuckLake
-        catalog which merges all origins.
+        Origin mirror to serve from (``"FTP"``, ``"Saude"``,
+        ``"DadosGov"``).  ``None`` uses the DuckLake catalog merging all
+        origins.
+    source : {"catalog", "origin"}
+        Where to read from.  ``"catalog"`` (default) serves the DuckLake
+        /S3 mirror; ``"origin"`` fetches directly from the origin server.
     columns : list[str], optional
         Subset of column names to keep in the final DataFrame.
     show_progress : bool, optional
         Whether to display a tqdm progress bar during download.
     as_dataframe : bool, optional
         Whether to concatenate and return a pandas DataFrame.
+    download : bool, optional
+        When ``False``, return the remote file paths that would be fetched
+        without downloading them.  ``as_dataframe`` is ignored in that case.
+        Defaults to ``True``.
     **kwargs
         Forwarded to :meth:`PySUS.read_parquet`.
 
@@ -117,33 +173,67 @@ def _fetch_data(
     list[str] | pd.DataFrame
         Paths to downloaded Parquet files (default) or a DataFrame.
     """
-    is_saude = origin is not None and origin.upper() == "SAUDE"
+    from pysus.api._impl.source import fetch
 
-    async def _fetch() -> list[str] | pd.DataFrame:
-        if is_saude:
-            return await _fetch_saude(
-                dataset=dataset,
-                group=group,
-                columns=columns,
-                show_progress=show_progress,
-                as_dataframe=as_dataframe,
-            )
-        return await _fetch_ducklake(
-            dataset=dataset,
-            group=group,
-            state=state,
-            year=year,
-            month=month,
-            origin=origin,
-            columns=columns,
-            show_progress=show_progress,
-            as_dataframe=as_dataframe,
-            **kwargs,
+    return fetch(
+        dataset,
+        origin=origin,
+        source=source,
+        group=group,
+        state=state,
+        year=year,
+        month=month,
+        columns=columns,
+        show_progress=show_progress,
+        as_dataframe=as_dataframe,
+        download=download,
+        **kwargs,
+    )
+
+
+async def _download_files(
+    pysus,
+    files,
+    *,
+    show_progress: bool = True,
+    as_dataframe: bool = False,
+    columns: list[str] | None = None,
+    dataset: str | None = None,
+    **kwargs,
+) -> list[str] | pd.DataFrame:
+    """Download remote files (throttled) and optionally return a DataFrame."""
+    if not files:
+        if as_dataframe:
+            return pd.DataFrame()
+        return cast(list[str], [])
+
+    sem = asyncio.Semaphore(3)
+
+    async def _throttled_download(f):
+        async with sem:
+            return await pysus.download(f)
+
+    tasks = [_throttled_download(f) for f in files]
+
+    if show_progress:
+        downloaded_files = await tqdm.gather(
+            *tasks,
+            desc=f"Downloading {dataset or 'data'}",
+            unit="file",
         )
+    else:
+        downloaded_files = await asyncio.gather(*tasks)
 
-    from pysus.api.client import _run_sync
+    paths: list[str] = [str(f.path) for f in downloaded_files]
 
-    return cast(list[str] | pd.DataFrame, _run_sync(_fetch()))
+    if as_dataframe:
+        res = pysus.read_parquet(paths, **kwargs)
+        df = res.df() if not isinstance(res, pd.DataFrame) else res
+        if columns:
+            df = df[[c for c in columns if c in df.columns]]
+        return cast(pd.DataFrame, df)
+
+    return paths
 
 
 async def _fetch_ducklake(
@@ -156,21 +246,20 @@ async def _fetch_ducklake(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
+    _bag: bool = False,
     **kwargs,
 ) -> list[str] | pd.DataFrame:
-    """Query, download, and process Parquet files via DuckLake."""
+    """Query, download, and process Parquet files via DuckLake.
+
+    ``origin`` filters the DuckLake catalog mirror by path prefix.  The
+    origin → client mapping lives in :mod:`pysus.api._impl.source`.
+    """
+    from pysus.api._impl.source import _client_filter
     from pysus.api.client import PySUS
-    from pysus.api.types import DADOSGOV, DUCKLAKE, FTP
 
     async with PySUS() as pysus:
-        client_filter = None
-        if origin is not None:
-            mapping = {
-                "FTP": FTP,
-                "DUCKLAKE": DUCKLAKE,
-                "DADOSGOV": DADOSGOV,
-            }
-            client_filter = mapping.get(origin.upper())
+        client_filter = _client_filter(origin)
 
         files = await pysus.query(
             client=client_filter,
@@ -181,38 +270,125 @@ async def _fetch_ducklake(
             month=month,
         )
 
-        if not files:
-            if as_dataframe:
-                return pd.DataFrame()
-            return cast(list[str], [])
+        if not download:
+            if _bag:
+                return cast(list[str], files)
+            return cast(list[str], [str(f.path) for f in files])
 
-        sem = asyncio.Semaphore(3)
+        return await _download_files(
+            pysus,
+            files,
+            show_progress=show_progress,
+            as_dataframe=as_dataframe,
+            columns=columns,
+            dataset=dataset,
+            **kwargs,
+        )
 
-        async def _throttled_download(f):
-            async with sem:
-                return await pysus.download(f)
 
-        tasks = [_throttled_download(f) for f in files]
+def _saude_csv_to_frame(path: str) -> pd.DataFrame | None:
+    """Read a Saude CSV resource into a DataFrame, or ``None`` on failure.
 
-        if show_progress:
-            downloaded_files = await tqdm.gather(
-                *tasks,
-                desc=f"Downloading {dataset}",
-                unit="file",
+    Saude resources are frequently Latin-1 (ISO-8859-1) even when advertised
+    as UTF-8, so we sniff the delimiter and fall back across encodings.
+
+    Multi-format resources are stored as ``*_csv.zip`` archives; when the
+    downloaded path is a zip, the first inner ``.csv`` file is read instead.
+    """
+    import io
+
+    data = _saude_bytes(path)
+    if data is None:
+        return None
+    try:
+        text = data.decode("utf-8", errors="replace")
+        dialect = csv.Sniffer().sniff(text[:4096])
+        sep = dialect.delimiter
+    except Exception:  # noqa: BLE001
+        sep = ","
+    for enc in ("utf-8", "latin-1", "cp1252"):
+        try:
+            return pd.read_csv(
+                io.BytesIO(data),
+                sep=sep,
+                low_memory=False,
+                encoding=enc,
             )
-        else:
-            downloaded_files = await asyncio.gather(*tasks)
+        except Exception:  # noqa: BLE001
+            continue
+    return None
 
-        paths: list[str] = [str(f.path) for f in downloaded_files]
 
-        if as_dataframe:
-            res = pysus.read_parquet(paths, **kwargs)
-            df = res.df() if not isinstance(res, pd.DataFrame) else res
-            if columns:
-                df = df[[c for c in columns if c in df.columns]]
-            return cast(pd.DataFrame, df)
+def _saude_bytes(path: str) -> bytes | None:
+    """Read a downloaded Saude resource into bytes, unwrapping CSV zips."""
+    import zipfile
 
-        return paths
+    try:
+        if str(path).lower().endswith(".zip"):
+            with zipfile.ZipFile(path) as zf:
+                csv_names = [
+                    n for n in zf.namelist() if n.lower().endswith(".csv")
+                ]
+                if not csv_names:
+                    return None
+                return zf.read(csv_names[0])
+        with open(path, "rb") as fh:  # noqa: SIM115
+            return fh.read()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _saude_spec_name(name: str) -> str:
+    """Normalise a fetcher dataset name to its ``DatasetSpec.name``.
+
+    Fetchers pass lowercase snake_case names (``"saude_indigena"``) while
+    the registry keys are uppercase without underscores (``"SAUDEINDIGENA"``).
+    """
+    return name.upper().replace("_", "")
+
+
+async def _saude_theme_entries(
+    saude, spec, fallback_group: str | None = None
+) -> list:
+    """Return the catalog entries belonging to a Saude theme.
+
+    Resolution mirrors :class:`SaudeDataset._fetch_content`: a theme is
+    described by a ``ckan_group`` (list that group) and, for slug-only
+    themes such as CNES/SISVAN/OUTROSTEMAS, by ``slug_patterns`` matched
+    against the catalog.  When ``spec`` is unknown (legacy/extra names)
+    the ``fallback_group`` CKAN slug is listed directly.
+    """
+    if spec is None:
+        if fallback_group:
+            return await saude.list_datasets(group=fallback_group)
+        return []
+    if spec.ckan_group is None:
+        entries = []
+        async for entry in saude.iter_datasets():
+            if spec.matches(entry.name):
+                entries.append(entry)
+        return entries
+    entries = await saude.list_datasets(group=spec.ckan_group)
+    if spec.slug_patterns:
+        entries = [e for e in entries if spec.matches(e.name)]
+    return entries
+
+
+def _is_saude_csv_resource(res) -> bool:
+    """True when *res* is a tabular CSV resource of a Saude package.
+
+    Matches on the ``format`` metadata first, so that multi-format
+    resources stored as ``*_csv.zip`` are captured, and falls back to the
+    URL extension for plain ``.csv`` resources.  Resources without a
+    usable URL (e.g. placeholders) and API/Documentation links are skipped.
+    """
+    fmt = getattr(res, "format", None) or ""
+    url = getattr(res, "url", None) or ""
+    if not isinstance(url, str) or not url.startswith("http"):
+        return False
+    if str(fmt).upper() == "CSV":
+        return True
+    return url.lower().endswith(".csv")
 
 
 async def _fetch_saude(
@@ -221,6 +397,7 @@ async def _fetch_saude(
     columns: list[str] | None = None,
     show_progress: bool = True,
     as_dataframe: bool = False,
+    download: bool = True,
 ) -> list[str] | pd.DataFrame:
     """Download data from the Saude portal (dadosabertos.saude.gov.br).
 
@@ -228,40 +405,61 @@ async def _fetch_saude(
     *dataset* name is mapped to one or more CKAN group slugs, and every
     downloadable resource under that group is fetched and optionally
     concatenated into a DataFrame.
+
+    When ``download=False`` the CSV resource URLs are returned without
+    downloading anything (``as_dataframe`` is ignored).
     """
     from pysus.api.client import PySUS
+    from pysus.api.saude.databases import SPECS_BY_NAME
 
-    dataset_upper = dataset.upper()
-    ckan_group = _SAUDE_GROUP_MAP.get(dataset_upper, dataset.lower())
+    spec_name = _saude_spec_name(dataset)
+    spec = SPECS_BY_NAME.get(spec_name)
+    fallback_group = _SAUDE_GROUP_MAP.get(spec_name)
 
     async with PySUS() as pysus:
         saude = await pysus.get_saude()
 
-        entries = await saude.list_datasets(group=ckan_group)
+        entries = await _saude_theme_entries(saude, spec, fallback_group)
         if not entries:
-            if as_dataframe:
+            if as_dataframe and download:
                 return pd.DataFrame()
             return cast(list[str], [])
+
+        # Resolve each package's CSV resources exactly once.
+        resources: list[tuple[str, str, str]] = []
+        for entry in entries:
+            try:
+                pkg = await saude.fetch_dataset(entry.name)
+                for res in pkg.resources:
+                    if _is_saude_csv_resource(res):
+                        resources.append((entry.name, res.id, res.url))
+            except Exception:  # noqa: BLE001
+                continue
+
+        if not resources:
+            if as_dataframe and download:
+                return pd.DataFrame()
+            return cast(list[str], [])
+
+        if not download:
+            return [url for _name, _rid, url in resources]
 
         dest = pysus.cachepath / "downloads" / "saude" / dataset.lower()
         dest.mkdir(parents=True, exist_ok=True)
 
         paths: list[str] = []
-        iterator = entries
+        iterator = resources
         if show_progress:
-            iterator = tqdm(entries, desc=f"Downloading {dataset}", unit="ds")
+            iterator = tqdm(resources, desc=f"Downloading {dataset}", unit="ds")
 
-        for entry in iterator:
+        for name, resource_id, _url in iterator:
             try:
-                pkg = await saude.fetch_dataset(entry.name)
-                for res in pkg.resources:
-                    if res.url and res.url.lower().endswith(".csv"):
-                        p = await saude.download_resource(
-                            entry.name,
-                            resource_id=res.id,
-                            dest_dir=dest,
-                        )
-                        paths.append(str(p))
+                p = await saude.download_resource(
+                    name,
+                    resource_id=resource_id,
+                    dest_dir=dest,
+                )
+                paths.append(str(p))
             except Exception:  # noqa: BLE001
                 continue
 
@@ -273,17 +471,9 @@ async def _fetch_saude(
         if as_dataframe:
             frames: list[pd.DataFrame] = []
             for p in paths:
-                try:
-                    with open(p, encoding="utf-8", errors="replace") as fh:
-                        text = fh.read(4096)
-                    dialect = csv.Sniffer().sniff(text)
-                    sep = dialect.delimiter
-                except Exception:  # noqa: BLE001
-                    sep = ","
-                try:
-                    frames.append(pd.read_csv(p, sep=sep, low_memory=False))
-                except Exception:  # noqa: BLE001
-                    continue
+                frame = _saude_csv_to_frame(p)
+                if frame is not None:
+                    frames.append(frame)
             if not frames:
                 return pd.DataFrame()
             df = pd.concat(frames, ignore_index=True)
@@ -897,6 +1087,22 @@ def vigilancia_meio_ambiente(**kwargs) -> list[str] | pd.DataFrame:
     )
 
 
+def saude_cnes(**kwargs) -> list[str] | pd.DataFrame:
+    """Fetch CNES health-facility registers from Saude (CKAN resources).
+
+    Unlike the FTP/DadosGov ``cnes`` fetcher (monthly state/year/month
+    dumps), the Saude portal serves CNES as catalog resources
+    (``/cnes/estabelecimentos``, ``/cnes/tipounidades``) fetched through
+    ``_fetch_saude``.
+
+    Examples
+    --------
+    >>> pysus.saude.cnes(download=False)
+    >>> pysus.saude.cnes(as_dataframe=True)
+    """
+    return _fetch_data(dataset="cnes", origin="Saude", **kwargs)
+
+
 def list_files(
     dataset: types.DatasetName,
     client: types.Origin | None = None,
@@ -974,3 +1180,12 @@ def list_files(
             ]
 
     return pd.DataFrame(asyncio.run(_list()))
+
+
+# ── Apply the flat-API deprecation wrapper to every public fetcher ─
+# Namespaced wrappers (``_bind_origin``/``bind_list_files``) suppress the
+# warning, so only direct ``pysus.<fetcher>(...)`` calls are flagged.
+for _name in __all__:
+    _obj = globals().get(_name)
+    if callable(_obj):
+        globals()[_name] = _deprecate_flat(_obj)

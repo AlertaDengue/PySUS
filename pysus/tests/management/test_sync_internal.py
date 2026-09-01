@@ -1,5 +1,7 @@
 """Tests for pysus.management.sync connection and helper paths."""
 
+import asyncio
+import pathlib
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
@@ -112,7 +114,7 @@ class TestDownloadOnce:
 
         with patch(
             "anyio.to_thread.run_sync",
-            new=AsyncMock(side_effect=lambda fn, *a, **kw: fn(*a, **kw)),
+            new=AsyncMock(side_effect=lambda fn, *a, **kw: fn(*a)),
         ):
             await engine._download_once(file, out, ftp_client=client)
 
@@ -142,10 +144,58 @@ class TestDownloadOnce:
         file = MagicMock()
         file.client = MagicMock()
         file.client.ftp = None
-        file._download = AsyncMock()
         out = tmp_path / "x.dbc"
+        file._download = AsyncMock(return_value=out)
         await engine._download_once(file, out)
-        file._download.assert_awaited_once_with(output=out)
+        file._download.assert_awaited_once()
+        kwargs = file._download.await_args.kwargs
+        assert kwargs["output"] == out
+        assert callable(kwargs["callback"])  # live progress → stall watch
+
+
+class TestStallWatch:
+    @pytest.mark.asyncio
+    async def test_completes_when_progress_keeps_poking(self):
+        from pysus.management.sync import _StallWatch
+
+        watch = _StallWatch("X", timeout=0.2, poll=0.02)
+
+        async def slow_but_alive():
+            for _ in range(10):
+                watch.poke()
+                await asyncio.sleep(0.02)
+            return "done"
+
+        assert await watch.run(slow_but_alive()) == "done"
+
+    @pytest.mark.asyncio
+    async def test_aborts_when_progress_stalls(self):
+        from pysus.management.sync import _StallWatch
+
+        watch = _StallWatch("X", timeout=0.2, poll=0.02)
+        cancelled = []
+
+        async def stuck():
+            try:
+                await asyncio.sleep(60)
+            except asyncio.CancelledError:
+                cancelled.append(1)
+                raise
+
+        with pytest.raises(TimeoutError):
+            await watch.run(stuck())
+        assert cancelled == [1]
+
+    @pytest.mark.asyncio
+    async def test_fast_finish_with_no_ticks(self):
+        from pysus.management.sync import _StallWatch
+
+        watch = _StallWatch("X", timeout=60, poll=0.02)
+
+        async def instant():
+            return "ok"
+
+        assert await watch.run(instant()) == "ok"
 
 
 class TestDownloadRawWithRetry:
@@ -362,8 +412,7 @@ class TestDedupeS3Artifacts:
             origin="ducklake",
             dataset="SINAN",
             name="DENGBR25.parquet",
-            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
-            "DENGBR25.parquet",
+            path="public/data/ftp/sinan/DENG/2025/_/BR/DENGBR25.parquet",
             year=2025,
             source_modified=datetime(2026, 5, 16),
             size=200,
@@ -393,7 +442,7 @@ class TestDedupeS3Artifacts:
         with patch.object(boto3, "client", return_value=mock_s3):
             await engine._dedupe_s3_artifacts([older, newer])
 
-        # newer (dadosgov path) survives; older object deleted
+        # newer artifact survives; older object deleted (same origin)
         deleted_keys = [
             c.kwargs["Key"] for c in mock_s3.delete_object.call_args_list
         ]
@@ -403,6 +452,42 @@ class TestDedupeS3Artifacts:
             "DELETE FROM pysus.files" in str(c.args[0]) for c in cursor_calls
         )
         assert adapter.mark_dirty.called
+
+    @pytest.mark.asyncio
+    async def test_keeps_cross_origin_mirrors(self, engine):
+        """Per-origin mirroring: FTP and DadosGov artifacts of the same
+        logical file are independent and must both survive dedupe."""
+        from datetime import datetime
+
+        ftp = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/ftp/sinan/DENG/2025/_/BR/DENGBR25.parquet",
+            year=2025,
+            source_modified=datetime(2026, 1, 1),
+            size=100,
+        )
+        gov = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
+            "DENGBR25.parquet",
+            year=2025,
+            source_modified=datetime(2026, 5, 16),
+            size=200,
+        )
+
+        import boto3
+
+        mock_s3 = MagicMock()
+        with patch.object(boto3, "client", return_value=mock_s3):
+            with patch.object(engine, "_require_ducklake") as req:
+                req.return_value = MagicMock()
+                await engine._dedupe_s3_artifacts([ftp, gov])
+
+        assert not mock_s3.delete_object.called
 
 
 class TestRunFtpOnlyTerminates:
@@ -727,6 +812,198 @@ class TestRunResumeSkipsDoneFiles:
         assert report.summary()["uploaded"] == 0
         assert report.summary()["skipped"] == 1
         engine._convert_and_upload.assert_not_awaited()
+
+
+class TestPerOriginMirroring:
+    """Mirroring is per-origin: an FTP mirror coexists with the DadosGov
+    twin of the same logical file, and each is decided independently."""
+
+    def test_mirror_for_origin_finds_origin_specific_mirror(self):
+        from pysus.management.records import FileRecord
+
+        ftp = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/ftp/sinan/DENG/2025/_/BR/DENGBR25.parquet",
+            year=2025,
+            group="DENG",
+            source_size=100,
+        )
+        gov = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
+            "DENGBR25.parquet",
+            year=2025,
+            group="DENG",
+            source_size=99,
+        )
+        comparison = FileComparison(key=ftp.identity_key(), records=[ftp, gov])
+        assert comparison.mirror_for_origin("ftp") is ftp
+        assert comparison.mirror_for_origin("dadosgov") is gov
+        assert comparison.mirror_for_origin("saude") is None
+
+    def test_mirror_for_origin_none_when_other_origin_only(self):
+        from pysus.management.records import FileRecord
+
+        gov = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
+            "DENGBR25.parquet",
+            year=2025,
+            group="DENG",
+        )
+        comparison = FileComparison(key=gov.identity_key(), records=[gov])
+        assert comparison.mirror_for_origin("ftp") is None
+
+    def test_s3_origin_stale_only_compares_that_origin(self, engine):
+        from pysus.management.records import FileRecord
+
+        ftp = _record("ftp", "DENGBR25.dbc", year=2025, group="DENG", size=100)
+        gov = _record(
+            "dadosgov", "DENGBR25.csv.zip", year=2025, group="DENG", size=999
+        )
+        mirror = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/ftp/sinan/DENG/2025/_/BR/DENGBR25.parquet",
+            year=2025,
+            group="DENG",
+            source_size=100,
+        )
+        comparison = FileComparison(
+            key=ftp.identity_key(), records=[ftp, gov, mirror]
+        )
+        assert not SyncEngine._s3_origin_stale(comparison, "ftp", mirror)
+        assert SyncEngine._s3_origin_stale(comparison, "dadosgov", mirror)
+
+    @pytest.mark.asyncio
+    async def test_ftp_file_uploaded_even_when_dadosgov_twin_mirrored(
+        self, engine
+    ):
+        """Regression: an FTP file whose DadosGov twin is already on S3 in
+        the DadosGov path must still be mirrored under its FTP origin path
+        (previously the whole comparison was skipped via origin-blind
+        ``is_on_s3``)."""
+        from datetime import datetime
+
+        from pysus.management.records import FileRecord
+
+        ftp_rec = _record("ftp", "DENGBR25.dbc", year=2025, group="DENG")
+        duck = FileRecord(
+            origin="ducklake",
+            dataset="SINAN",
+            name="DENGBR25.parquet",
+            path="public/data/dadosgov/sinan/DENG/2025/_/BR/"
+            "DENGBR25.parquet",
+            year=2025,
+            group="DENG",
+            source_size=100,
+            modified=datetime(2026, 1, 2),
+            file=MagicMock(),
+        )
+        records = {
+            "ducklake": [duck],
+            "ftp": [ftp_rec],
+            "dadosgov": [],
+            "saude": [],
+        }
+
+        mock_inv = MagicMock()
+        mock_inv.collect = AsyncMock(
+            side_effect=lambda origin, **kw: records.get(origin, [])
+        )
+
+        ducklake = MagicMock()
+        ducklake.catalog_adapter.ensure_connected = AsyncMock()
+        ducklake.catalog_adapter.connect = AsyncMock()
+        ducklake.columns_adapter.ensure_connected = AsyncMock()
+        ducklake.columns_adapter.connect = AsyncMock()
+        engine._ducklake = ducklake
+        engine.access_key = "ak"
+        engine.secret_key = "sk"
+        engine._convert_and_upload = AsyncMock(return_value=MagicMock())
+        engine._download_raw_with_retry = AsyncMock(return_value=pathlib.Path())
+        engine._catalog_write_entry = MagicMock()
+
+        with patch.object(engine, "_require_pysus", return_value=MagicMock()):
+            with patch(
+                "pysus.management.sync.Inventory", return_value=mock_inv
+            ):
+                with patch(
+                    "pysus.api.ftp.client.FTP",
+                    return_value=MagicMock(connect=AsyncMock()),
+                ):
+                    with patch.object(
+                        SyncEngine,
+                        "writer",
+                        new_callable=PropertyMock,
+                    ) as mock_writer_prop:
+                        mock_writer_prop.return_value = MagicMock()
+                        report = await engine.run(datasets=["SINAN"])
+
+        assert report.summary()["uploaded"] == 1
+        assert report.summary()["skipped"] == 0
+
+    def test_resume_origins_loads_origin_and_wildcard(self, tmp_path):
+        from pysus.management.records import (
+            IdentityKey,
+            SyncOutcome,
+            load_journal_origins,
+            write_journal_line,
+        )
+
+        key = IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2025,
+            month=None,
+            state=None,
+            stem="dengbr25",
+        )
+        journal = tmp_path / "j.jsonl"
+        write_journal_line(
+            journal, SyncOutcome(key=key, origin="ftp", status="uploaded")
+        )
+        legacy = tmp_path / "l.jsonl"
+        legacy.write_text(
+            '{"dataset": "SINAN", "group": "DENG", "year": 2024, '
+            '"stem": "dengbr24", "status": "uploaded"}\n',
+            encoding="utf-8",
+        )
+        assert load_journal_origins(journal) == {key: {"ftp"}}
+        legacy_key = IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2024,
+            month=None,
+            state=None,
+            stem="dengbr24",
+        )
+        assert load_journal_origins(legacy) == {legacy_key: {"*"}}
+
+    def test_resume_covers_wildcard_and_named_origin(self):
+        from pysus.management.records import IdentityKey
+
+        key = IdentityKey(
+            dataset="SINAN",
+            group="DENG",
+            year=2025,
+            month=None,
+            state=None,
+            stem="dengbr25",
+        )
+        origins = {key: {"dadosgov"}}
+        assert SyncEngine._resume_covers(origins, key, "dadosgov")
+        assert not SyncEngine._resume_covers(origins, key, "ftp")
+        wild = {key: {"*"}}
+        assert SyncEngine._resume_covers(wild, key, "ftp")
+        assert SyncEngine._resume_covers(None, key, "ftp")
 
 
 class TestCheck:

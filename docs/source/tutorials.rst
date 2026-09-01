@@ -7,49 +7,100 @@ Step-by-step usage examples.
 Simplified Database Functions
 -----------------------------
 
+Use an origin namespace to fetch data — the data source is explicit:
+
 .. code-block:: python
 
-   from pysus import sinan, sinasc, sim, sih, sia, pni, ibge, cnes, ciha
+   import pysus
 
-   # Download SINAN Dengue data
-   df = sinan(disease="deng", year=2000)
+   # Download SINAN Dengue data (DATASUS FTP, via the S3 catalog mirror)
+   df = pysus.ftp.sinan(disease="deng", year=2000)
 
    # Multiple years
-   df = sinan(disease="deng", year=[2023, 2024])
+   df = pysus.ftp.sinan(disease="deng", year=[2023, 2024])
 
-   # SINASC births for São Paulo
-   df = sinasc(state="SP", year=[2020, 2021, 2022, 2023])
+   # SINASC births for São Paulo (dados.gov.br)
+   df = pysus.dadosgov.sinasc(state="SP", year=[2020, 2021, 2022, 2023])
 
    # SIM mortality data
-   df = sim(state="SP", year=2024)
+   df = pysus.ftp.sim(state="SP", year=2024)
 
    # SIH hospitalizations with month filter
-   df = sih(state="SP", year=2024, month=[1, 2, 3])
+   df = pysus.ftp.sih(state="SP", year=2024, month=[1, 2, 3])
 
    # CNES health facilities
-   df = cnes(state="SP", year=2024, month=1)
+   df = pysus.ftp.cnes(state="SP", year=2024, month=1)
+
+The ``as_dataframe=True`` fetchers above return a single concatenated
+``pandas.DataFrame``. See the :ref:`FileBag Workflow <filebag-workflow>`
+section below for how to inspect files before downloading or work with the
+downloaded files individually.
+
+.. _filebag-workflow:
+
+FileBag Workflow
+----------------
+
+A namespaced fetcher returns either a high-level ``FileBag`` or a
+``DataFrame``:
+
+* ``download=False`` → a **remote** ``FileBag`` listing the files that would
+  be fetched, without downloading anything (``as_dataframe`` is ignored
+  here).
+* ``download=True`` (default) + ``as_dataframe=False`` → a **local**
+  ``FileBag`` of downloaded files.
+* ``as_dataframe=True`` → a single concatenated ``pandas.DataFrame``.
+
+A ``FileBag`` is synchronous — the underlying async client is started and
+awaited internally:
+
+.. code-block:: python
+
+   import pysus
+
+   # 1. List what would be downloaded (nothing is fetched yet)
+   bag = pysus.ftp.sinan(disease="deng", year=2020, download=False)
+   print(bag)
+   # Files[DENGBR20.parquet (remote)]
+
+   # 2. Inspect individual files (path, type, dataset, ...)
+   f = bag[0]
+   print(f.path)                 # public/data/ftp/sinan/DENG/2020/_/BR/DENGBR20.parquet
+
+   # 3. Download all (or a subset) -> a local FileBag
+   local = bag.download()        # Files[DENGBR20.parquet]
+   # local = bag.download(indexes=[0])   or   bag.download_one(0)
+
+   # 4. Concatenate the downloaded tabular files into one DataFrame
+   df = local.to_dataframe()     # same as local.df
+   print(df.shape)               # (975842, 121)
+
+``len``/``iter``/``[]`` (including slices) and ``paths`` let you introspect a
+bag, and ``kind`` tells you whether it holds ``"remote"`` or ``"local"``
+files. Remote bags from URL-only origins (e.g. ``pysus.saude.*``) also
+support this workflow.
 
 OpenDataSUS (Saude) Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   from pysus import arboviroses, vacinacao, assistencia_saude
+   import pysus
 
    # Dengue/Chik/Zika notifications from OpenDataSUS
-   df = arboviroses(disease="dengue", year=2024)
+   df = pysus.saude.arboviroses(disease="dengue", year=2024)
 
    # Vaccination coverage
-   df = vacinacao(state="SP", year=2024)
+   df = pysus.saude.vacinacao(state="SP", year=2024)
 
    # Hospital and health facility data
-   df = assistencia_saude(state="SP", year=2024)
+   df = pysus.saude.assistencia_saude(state="SP", year=2024)
 
    # Primary care (Previne Brasil)
-   df = atencao_primaria(state="SP", year=2024)
+   df = pysus.saude.atencao_primaria(state="SP", year=2024)
 
    # Nutrition surveillance
-   df = sisvan(state="SP", year=2024)
+   df = pysus.saude.sisvan(state="SP", year=2024)
 
 Discovery
 ---------
@@ -66,6 +117,16 @@ Discovery
 
    # List files in a dataset
    df = list_files("SINAN", group="DENG", year=2024)
+
+Discovery is also scoped per origin:
+
+.. code-block:: python
+
+   import pysus
+
+   pysus.ftp.info()                                   # FTP origin datasets
+   pysus.ftp.list_files("SINAN", year=2024, state="RJ")
+   pysus.dadosgov.get_origin_meta()                   # origin metadata
 
 Using the PySUS Client
 ----------------------
