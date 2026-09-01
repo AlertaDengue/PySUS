@@ -82,6 +82,14 @@ def test_linux_returns_empty_when_all_pickers_fail(_, run):
 
 
 @patch("pysus.native_dir_picker.subprocess.run")
+@patch("pysus.native_dir_picker.platform.system", return_value="Windows")
+def test_cancelled_picker_returns_empty(_, run):
+    run.return_value = Mock(stdout="")
+
+    assert native_dir_picker(_TITLE, _INITIALDIR) == ""
+
+
+@patch("pysus.native_dir_picker.subprocess.run")
 @patch("pysus.native_dir_picker.platform.system", return_value="FreeBSD")
 def test_unsupported_platform_returns_empty_without_running_command(_, run):
     assert native_dir_picker(_TITLE, _INITIALDIR) == ""
