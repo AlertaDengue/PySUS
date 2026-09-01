@@ -203,14 +203,3 @@ def content_fingerprint(
     for row in sampled:
         digest.update(repr(row).encode())
     return digest.hexdigest()
-
-
-def byte_hash(
-    path, algorithm: str = "sha256", chunk_size: int = 1024 * 1024
-) -> str:
-    """Compute the byte-level hash of a local file (exact identity only)."""
-    hash_obj = hashlib.new(algorithm)
-    with open(path, "rb") as f:
-        while chunk := f.read(chunk_size):
-            hash_obj.update(chunk)
-    return hash_obj.hexdigest()

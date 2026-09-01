@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from pysus.management.normalize import (
-    _SCAN_PREFIXES,
     BucketNormalizer,
     CatalogPathFix,
     CatalogRowDelete,
@@ -272,69 +271,6 @@ class TestApplyObjects:
     def test_dry_run(self, normalizer):
         normalizer.apply_objects([], ["k1"], dry_run=True)
         normalizer.client.delete_object.assert_not_called()
-
-
-class TestSurveyCatalog:
-    def test_survey_broken_and_raw(self, normalizer, tmp_path):
-        import duckdb as _duckdb
-
-        con = _duckdb.connect(str(tmp_path / "catalog_ciha.duckdb"))
-        con.execute(_SCHEMA)
-        con.execute(
-            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
-            "rows, modified, origin_modified, origin_size, origin_path, "
-            "sha256, year, month, state) VALUES (1, 8, NULL, "
-            "'public/data/ftp/ciha/CIHAAC2201.dbc', 100, 5, "
-            "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 50, "
-            "'/ftp/CIHAAC2201.dbc', NULL, 2022, 1, 'AC')"
-        )
-        con.close()
-
-        normalizer._object_exists = lambda key: key.endswith(".dbc")
-        fixes, deletes = normalizer.survey_catalog(
-            tmp_path / "catalog_ciha.duckdb"
-        )
-        assert fixes == []
-        assert deletes == []
-        assert normalizer.raw_objects == ["public/data/ftp/ciha/CIHAAC2201.dbc"]
-
-
-class TestSurveyObjects:
-    def test_non_parquet_raw(self, normalizer):
-        normalizer._list_objects = MagicMock(
-            return_value=[("public/data/ftp/ciha/X.dbc", 100)]
-        )
-        renames, deletes = normalizer.survey_objects()
-        assert renames == []
-        assert normalizer.raw_objects.count(
-            "public/data/ftp/ciha/X.dbc"
-        ) == len(_SCAN_PREFIXES)
-
-    def test_format_token_parquet(self, normalizer):
-        def _listing(prefix):
-            if prefix == "public/data/dadosgov/":
-                return [("public/data/dadosgov/sinan/X.csv.parquet", 100)]
-            return []
-
-        normalizer._list_objects = MagicMock(side_effect=_listing)
-        renames, deletes = normalizer.survey_objects()
-        assert len(renames) == 1
-        assert renames[0].new == "public/data/dadosgov/sinan/X.parquet"
-
-    def test_collision_keeps_csv(self, normalizer):
-        def _listing(prefix):
-            if prefix == "public/data/dadosgov/":
-                return [
-                    ("public/data/dadosgov/sim/M_2022.csv.parquet", 200),
-                    ("public/data/dadosgov/sim/M_2022.json.parquet", 100),
-                ]
-            return []
-
-        normalizer._list_objects = MagicMock(side_effect=_listing)
-        renames, deletes = normalizer.survey_objects()
-        assert len(renames) == 1
-        assert renames[0].old.endswith("csv.parquet")
-        assert deletes == ["public/data/dadosgov/sim/M_2022.json.parquet"]
 
 
 class TestApplyCatalog:

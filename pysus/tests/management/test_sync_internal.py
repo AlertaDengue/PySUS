@@ -26,23 +26,7 @@ def _record(origin, name, dataset="SINAN", year=2025, **kw):
     )
 
 
-class TestPickSourceAndLabel:
-    def test_pick_source_prefers_ftp(self):
-        ftp = _record("ftp", "DENGBR25.dbc", file=MagicMock())
-        gov = _record("dadosgov", "DENGBR25.csv.zip", file=MagicMock())
-        comparison = FileComparison(key=ftp.identity_key(), records=[ftp, gov])
-        assert SyncEngine._pick_source(comparison) is ftp
-
-    def test_pick_source_falls_back_to_dadosgov(self):
-        gov = _record("dadosgov", "DENGBR25.csv.zip", file=MagicMock())
-        comparison = FileComparison(key=gov.identity_key(), records=[gov])
-        assert SyncEngine._pick_source(comparison) is gov
-
-    def test_pick_source_none_without_files(self):
-        gov = _record("dadosgov", "DENGBR25.csv.zip", file=None)
-        comparison = FileComparison(key=gov.identity_key(), records=[gov])
-        assert SyncEngine._pick_source(comparison) is None
-
+class TestLabel:
     def test_label(self):
         ftp = _record(
             "ftp",

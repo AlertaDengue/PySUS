@@ -20,28 +20,11 @@ from pathlib import Path
 import boto3
 from botocore.config import Config
 
-from .records import compose_s3_key, parquet_key
+from .records import compose_s3_key
 
 _BUCKET = "pysus"
 _ENDPOINT = "nbg1.your-objectstorage.com"
 _REGION = "nbg1"
-
-_SCAN_PREFIXES = (
-    "public/data/dadosgov/",
-    "public/data/ftp/ciha/",
-    "data/ftp/",
-)
-
-_FORMAT_RANK = {"csv": 0, "json": 1, "xml": 2, "xlsx": 3}
-
-
-def _format_of(name: str) -> str | None:
-    """Return the format token of a name, if present (csv/json/xml)."""
-    lower = name.lower()
-    for fmt in _FORMAT_RANK:
-        if f".{fmt}." in lower or lower.endswith(f"_{fmt}"):
-            return fmt
-    return None
 
 
 @dataclass
@@ -151,128 +134,6 @@ class BucketNormalizer:
             for obj in page.get("Contents", []):
                 objects.append((obj["Key"], obj["Size"]))
         return objects
-
-    def _object_exists(self, key: str) -> bool:
-        try:
-            self.client.head_object(Bucket=_BUCKET, Key=key)
-            return True
-        except Exception:  # noqa
-            return False
-
-    def survey_objects(self) -> tuple[list[ObjectRename], list[str]]:
-        """Find non-canonical *parquet* object keys and resolve collisions.
-
-        Only objects whose key ends in ``.parquet`` are candidates — raw
-        source objects (``.dbc``, ``.dbf``, ``.zip``...) are never renamed
-        (that would mislabel content; converting them is ETL work, not a
-        rename).
-
-        When csv/json/xml parquet variants normalize to the same key, the
-        format highest in ``_FORMAT_RANK`` (csv first) is kept and the
-        others are scheduled for deletion.
-        """
-        renames: list[ObjectRename] = []
-        deletes: list[str] = []
-        by_canonical: dict[str, list[tuple[str, int]]] = defaultdict(list)
-
-        for prefix in _SCAN_PREFIXES:
-            for key, size in self._list_objects(prefix):
-                if not key.endswith(".parquet"):
-                    self.raw_objects.append(key)
-                    continue
-                base = key.rsplit("/", 1)[-1]
-                canonical = key.rsplit("/", 1)[0] + "/" + parquet_key(base)
-                by_canonical[canonical].append((key, size))
-
-        for canonical, items in by_canonical.items():
-            if len(items) == 1:
-                key, size = items[0]
-                if key != canonical:
-                    renames.append(
-                        ObjectRename(old=key, new=canonical, size=size)
-                    )
-                continue
-
-            ranked = sorted(
-                items,
-                key=lambda kv: (
-                    _FORMAT_RANK.get(_format_of(kv[0]) or "", 99),
-                    kv[1],
-                ),
-            )
-            winner_key, winner_size = ranked[0]
-            if winner_key != canonical:
-                renames.append(
-                    ObjectRename(
-                        old=winner_key, new=canonical, size=winner_size
-                    )
-                )
-            for loser_key, _ in ranked[1:]:
-                deletes.append(loser_key)
-
-        return renames, deletes
-
-    def survey_catalog(
-        self, catalog_dir: Path
-    ) -> tuple[list[CatalogPathFix], list[CatalogRowDelete]]:
-        """Build catalog path fixes and duplicate-row deletions.
-
-        * Rows whose path ends ``.dbc`` and whose object exists on S3 are
-          raw artifacts: kept as-is (converting is ETL work).
-        * Rows whose path ends ``.dbc`` and whose object is missing while a
-          sibling ``.parquet`` row exists are duplicate stale rows: deleted.
-        * Other non-canonical rows are fixed when the canonical object
-          exists (e.g. ``*.csv.parquet`` -> ``*.parquet`` after the object
-          rename).
-        """
-        import duckdb
-
-        fixes: list[CatalogPathFix] = []
-        row_deletes: list[CatalogRowDelete] = []
-        catalog = catalog_dir.name.removesuffix(".duckdb").removeprefix(
-            "catalog_"
-        )
-        con = duckdb.connect(str(catalog_dir), read_only=True)
-        try:
-            rows = con.execute("SELECT path FROM pysus.files").fetchall()
-        finally:
-            con.close()
-
-        parquet_paths = {p for (p,) in rows if p.endswith(".parquet")}
-
-        for (path,) in rows:
-            base = path.rsplit("/", 1)[-1]
-            canonical = path.rsplit("/", 1)[0] + "/" + parquet_key(base)
-            if canonical == path:
-                continue
-
-            if path.endswith(".dbc"):
-                if self._object_exists(path):
-                    self.raw_objects.append(path)
-                    continue
-                sibling = path.rsplit("/", 1)[0] + "/" + parquet_key(base)
-                if sibling in parquet_paths:
-                    row_deletes.append(
-                        CatalogRowDelete(
-                            catalog=catalog,
-                            path=path,
-                            reason=f"stale duplicate of {sibling}",
-                        )
-                    )
-                else:
-                    self.broken_rows.append((catalog, path))
-                continue
-
-            if self._object_exists(canonical):
-                fixes.append(
-                    CatalogPathFix(
-                        catalog=catalog, old_path=path, new_path=canonical
-                    )
-                )
-            else:
-                self.broken_rows.append((catalog, path))
-
-        return fixes, row_deletes
 
     # ------------------------------------------------------------------
     # apply
@@ -552,7 +413,7 @@ class BucketNormalizer:
                     )
                 continue
 
-            winner, winner_src = existing[0]
+            winner, _ = existing[0]
             plan.object_renames.append(ObjectRename(old=winner, new=new_key))
             plan.catalog_fixes.append(
                 CatalogPathFix(
