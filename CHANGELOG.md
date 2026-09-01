@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.0](https://github.com/AlertaDengue/PySUS/compare/2.10.7...2.11.0) (2026-09-01)
+
+### Features
+
+* split the sources in modules so it become very verbose the source of the database ([#339](https://github.com/AlertaDengue/PySUS/issues/339)) ([38f4152](https://github.com/AlertaDengue/PySUS/commit/38f4152f0f4c8cd1e77c7c8b8a194c8e11f2c215))
+
 ## [2.10.7](https://github.com/AlertaDengue/PySUS/compare/2.10.6...2.10.7) (2026-08-31)
 
 ### Performance Improvements
