@@ -213,7 +213,17 @@ def available_groups(database: str) -> list[str]:
 
     db_dir = _SCHEMAS_DIR / database
     if db_dir.exists():
-        groups.extend(p.stem for p in db_dir.glob("*.yaml"))
+        for yaml_file in db_dir.glob("*.yaml"):
+            groups.append(yaml_file.stem)
+
+            with open(yaml_file, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+
+            for key in data:
+                if isinstance(key, str):
+                    group = key.split("_", 1)[0]
+                    if group not in groups:
+                        groups.append(group)
 
     saude_dir = Path(__file__).parent.parent / "saude" / "schemas"
     if saude_dir.exists():

@@ -117,3 +117,10 @@ class TestAvailableGroups:
         """Test that SINAN has groups."""
         groups = available_groups("sinan")
         assert len(groups) > 0
+
+    def test_detects_groups_from_yaml_keys(self):
+        """Test that groups are detected from YAML root keys."""
+        groups = available_groups("sia")
+
+        assert "pa" in groups
+        assert "bi" in groups
