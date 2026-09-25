@@ -224,11 +224,13 @@ def available_groups(database: str) -> list[str]:
                     group = key.split("_", 1)[0]
                     if group not in groups:
                         groups.append(group)
+                                                                  
+    if database == "sinan":
+        saude_dir = Path(__file__).parent.parent / "saude" / "schemas"
+        if saude_dir.exists():
+            for yaml_file in saude_dir.glob("*.yaml"):
+                if yaml_file.stem not in groups:
+                    groups.append(yaml_file.stem)
 
-    saude_dir = Path(__file__).parent.parent / "saude" / "schemas"
-    if saude_dir.exists():
-        for yaml_file in saude_dir.glob("*.yaml"):
-            if yaml_file.stem not in groups:
-                groups.append(yaml_file.stem)
 
     return sorted(groups)

@@ -124,3 +124,12 @@ class TestAvailableGroups:
 
         assert "pa" in groups
         assert "bi" in groups
+
+    def test_non_sinan_excludes_saude_groups(self):
+        """Test that saude schema groups are only included for SINAN."""
+        groups = available_groups("sia")
+
+        assert "bi" in groups
+        assert "pa" in groups
+        assert "arboviroses" not in groups
+        assert "vigilanciameioambiente" not in groups
