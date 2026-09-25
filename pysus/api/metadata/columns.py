@@ -84,17 +84,35 @@ def _load_yaml_metadata(
     """Load column definitions from YAML schema files."""
     result: dict[str, dict[str, Any]] = {}
 
-    # Check for database-specific schema directory
+        # Check for database-specific schema directory
     db_dir = _SCHEMAS_DIR / database
     if db_dir.exists():
         for yaml_file in db_dir.glob("*.yaml"):
-            if group and yaml_file.stem != group:
-                continue
             with open(yaml_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-            for _ep_name, columns in data.items():
+
+            if group:
+                group_key = group.lower()
+
+                selected_items = [
+                    (key, columns)
+                    for key, columns in data.items()
+                    if key.lower() == group_key
+                    or key.lower().startswith(f"{group_key}_")
+                ]
+
+                if not selected_items and yaml_file.stem.lower() == group_key:
+                    selected_items = list(data.items())
+
+                if not selected_items:
+                    continue
+            else:
+                selected_items = list(data.items())
+
+            for _ep_name, columns in selected_items:
                 if not isinstance(columns, list):
                     continue
+
                 for col_def in columns:
                     col_name = col_def.get("name", "").upper()
                     if col_name:

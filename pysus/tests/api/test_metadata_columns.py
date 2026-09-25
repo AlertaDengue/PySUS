@@ -37,6 +37,14 @@ class TestLoadColumnMetadata:
         assert isinstance(meta, dict)
         assert len(meta) > 0
 
+    def test_load_sia_bi_metadata(self):
+        """Test loading SIA BI metadata."""
+        meta = load_column_metadata("sia", group="bi")
+        assert isinstance(meta, dict)
+        assert len(meta) > 0
+        assert "CNES" in meta
+        assert "PROC_REA" in meta
+
     def test_load_sim_metadata(self):
         """Test loading SIM metadata."""
         meta = load_column_metadata("sim", group="do")
