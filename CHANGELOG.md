@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.3](https://github.com/AlertaDengue/PySUS/compare/2.11.2...2.11.3) (2026-09-28)
+
+### Bug Fixes
+
+* improve metadata group discovery and loading ([#348](https://github.com/AlertaDengue/PySUS/issues/348)) ([0048008](https://github.com/AlertaDengue/PySUS/commit/0048008fe9c837400d160075850a93d2b0b65a18))
+
 ## [2.11.2](https://github.com/AlertaDengue/PySUS/compare/2.11.1...2.11.2) (2026-09-01)
 
 ### Bug Fixes
