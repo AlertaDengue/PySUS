@@ -37,6 +37,14 @@ class TestLoadColumnMetadata:
         assert isinstance(meta, dict)
         assert len(meta) > 0
 
+    def test_load_sia_bi_metadata(self):
+        """Test loading SIA BI metadata."""
+        meta = load_column_metadata("sia", group="bi")
+        assert isinstance(meta, dict)
+        assert len(meta) > 0
+        assert "CNES" in meta
+        assert "PROC_REA" in meta
+
     def test_load_sim_metadata(self):
         """Test loading SIM metadata."""
         meta = load_column_metadata("sim", group="do")
@@ -109,3 +117,19 @@ class TestAvailableGroups:
         """Test that SINAN has groups."""
         groups = available_groups("sinan")
         assert len(groups) > 0
+
+    def test_detects_groups_from_yaml_keys(self):
+        """Test that groups are detected from YAML root keys."""
+        groups = available_groups("sia")
+
+        assert "pa" in groups
+        assert "bi" in groups
+
+    def test_non_sinan_excludes_saude_groups(self):
+        """Test that saude schema groups are only included for SINAN."""
+        groups = available_groups("sia")
+
+        assert "bi" in groups
+        assert "pa" in groups
+        assert "arboviroses" not in groups
+        assert "vigilanciameioambiente" not in groups
