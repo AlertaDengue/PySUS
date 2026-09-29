@@ -1179,3 +1179,142 @@ class TestPySUSGetMethods:
             assert client._ducklake is not None
 
         await client.__aexit__(None, None, None)
+
+
+class TestUpdateStateOnExistingRecord:
+    """`_update_state` is called twice per download.
+
+    ``download()`` first records the file as DOWNLOADING with no
+    metadata, then records it COMPLETED with the year, month, state and
+    group parsed from the remote file. The second call finds the row
+    created by the first, so it has to update those columns -- and it
+    used to leave them NULL.
+    """
+
+    @pytest.mark.asyncio
+    async def test_second_call_persists_metadata(self, test_db_path, tmp_path):
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.DOWNLOADING,
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            month=1,
+            state="SP",
+            group="DC",
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.status == DownloadStatus.COMPLETED
+            assert record.year == 2024
+            assert record.month == 1
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_only_one_row_is_created(self, test_db_path, tmp_path):
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        for status in (DownloadStatus.DOWNLOADING, DownloadStatus.COMPLETED):
+            await client._update_state(
+                local_path=local,
+                remote_path="/r/DNAC2024.dbc",
+                client_name="ftp",
+                status=status,
+                year=2024,
+            )
+
+        with client.Session() as session:
+            rows = (
+                session.query(LocalFileState).filter_by(path=str(local)).all()
+            )
+            assert len(rows) == 1
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_failed_call_keeps_completed_metadata(
+        self, test_db_path, tmp_path
+    ):
+        """The failure path passes no metadata and must not erase it."""
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            month=1,
+            state="SP",
+            group="DC",
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.FAILED,
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.status == DownloadStatus.FAILED
+            assert record.year == 2024
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_refreshes_stale_metadata(self, test_db_path, tmp_path):
+        """A republished file gets new metadata, not the original one."""
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/old/DNAC.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2020,
+            state="RJ",
+            group="OLD",
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/new/DNAC.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            state="SP",
+            group="DC",
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.remote_path == "/r/new/DNAC.dbc"
+            assert record.year == 2024
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)

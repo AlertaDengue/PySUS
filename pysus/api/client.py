@@ -396,6 +396,24 @@ class PySUS:
                     group=group,
                 )
                 session.add(record)
+            else:
+                # download() creates the record as DOWNLOADING with no
+                # metadata and then completes it with the year, month,
+                # state and group parsed from the remote file. Without
+                # this the second call only moved `status`, so the
+                # metadata columns stayed NULL for every file ever
+                # downloaded. Only overwrite what was supplied, so the
+                # FAILED call cannot erase what COMPLETED recorded.
+                record.remote_path = str(remote_path)
+                record.client_name = client_name
+                if year is not None:
+                    record.year = year
+                if month is not None:
+                    record.month = month
+                if state is not None:
+                    record.state = state
+                if group is not None:
+                    record.group = group
 
             record.status = status
             record.last_synced = datetime.now(timezone.utc).replace(tzinfo=None)
