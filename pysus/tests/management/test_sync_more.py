@@ -1126,6 +1126,77 @@ class TestRunPipelineBranches:
         assert journal.exists()
 
     @pytest.mark.asyncio
+    async def test_run_vacinacao_only_syncs_every_file(self, engine, tmp_path):
+        """A VACINACAO-only run must still reach the catalog writer.
+
+        VACINACAO items are deferred to a trailing serial phase that
+        pushes onto ``write_queue``. When the run has no FTP and no
+        gov items, the "no producers" branch queued the writer's shutdown
+        sentinel *before* that phase ran, so the writer exited early and
+        the deferred entries had no consumer.
+        """
+        vacs = [
+            _record(
+                "dadosgov",
+                f"VAC{i}BR25.csv.zip",
+                dataset="VACINACAO",
+                size=0,
+                file=_remote_file(basename=f"VAC{i}BR25.csv.zip"),
+            )
+            for i in range(6)
+        ]
+        records = {
+            "ducklake": [],
+            "ftp": [],
+            "dadosgov": vacs,
+            "saude": [],
+        }
+        engine.dadosgov_token = "tok"
+        engine._ducklake = self._ducklake_run()
+
+        raw = tmp_path / "raw.bin"
+        raw.write_bytes(b"x")
+
+        async def _download(file, ftp_client=None):
+            return raw
+
+        async def _convert(file, raw, callback=None):
+            return self._payload()
+
+        engine._download_raw_with_retry = AsyncMock(side_effect=_download)
+        engine._convert_and_upload = AsyncMock(side_effect=_convert)
+
+        writer = self._writer_run()
+        outcomes = []
+
+        with patch.object(engine, "_require_pysus", return_value=MagicMock()):
+            with patch(
+                "pysus.management.sync.Inventory",
+                return_value=self._inventory(records),
+            ):
+                with patch.object(engine, "_checkpoint", new=AsyncMock()):
+                    with patch.object(
+                        SyncEngine,
+                        "writer",
+                        new_callable=PropertyMock,
+                    ) as mock_writer_prop:
+                        mock_writer_prop.return_value = writer
+                        report = await asyncio.wait_for(
+                            engine.run(
+                                datasets=["VACINACAO"],
+                                on_outcome=outcomes.append,
+                            ),
+                            timeout=30,
+                        )
+
+        assert report.summary()["uploaded"] == len(vacs)
+        assert report.summary()["failed"] == 0
+        uploaded = [o for o in outcomes if o.status == "uploaded"]
+        assert len(uploaded) == len(vacs)
+        # The catalog row is only written when the writer is alive.
+        assert writer.upsert_file.call_count == len(vacs)
+
+    @pytest.mark.asyncio
     async def test_run_retries_failed_ftp_and_catalog_errors(
         self, engine, tmp_path
     ):

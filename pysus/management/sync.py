@@ -1176,11 +1176,15 @@ class SyncEngine:
         else:
             for _ in range(workers):
                 await raw_queue.put(None)
-        if not ftp_tasks and not gov_workers_tasks:
-            for _ in range(workers):
-                await write_queue.put(None)
 
-        writers_total = max(1, len(gov_workers_tasks))
+        # The writer is the single consumer of ``write_queue`` and the only
+        # one that shuts itself down: it exits once it has seen
+        # ``writers_total`` sentinels. Nothing may queue a sentinel before
+        # every producer is done — the VACINACAO serial phase and the retry
+        # pass below both push onto this queue after the concurrent drain.
+        # The single sentinel is therefore queued at the very end, right
+        # before awaiting the writer.
+        writers_total = 1
         writer_task = asyncio.create_task(catalog_writer())
         await asyncio.gather(*ftp_tasks, *gov_workers_tasks)
         for _ in processor_tasks:
