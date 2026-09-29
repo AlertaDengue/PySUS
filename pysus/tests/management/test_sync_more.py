@@ -9,6 +9,7 @@ catalog/checkpoint failure branches.
 import asyncio
 import os
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
@@ -63,6 +64,126 @@ def _adapter(close_raises=False):
     a.raw_connection = MagicMock(return_value=conn)
     a.mark_dirty = MagicMock()
     return a
+
+
+class TestDownloadRawWithRetry:
+    """A failed attempt must not leave bytes behind for the next one.
+
+    CKAN/Saude origins ignore the requested filename and write to a name
+    they derive from the resource inside ``output.parent``. Cleaning up
+    only ``output`` therefore deleted a path that never existed and left
+    the real partial file in place.
+    """
+
+    @pytest.mark.asyncio
+    async def test_failed_attempt_does_not_leak_partial_file(
+        self, engine, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr("pysus.management.sync.CACHEPATH", tmp_path)
+
+        attempts: list[Path] = []
+
+        async def _download_once(file, output, ftp_client=None):
+            # Emulate an origin that picks its own filename and fails
+            # after writing a partial file.
+            actual = output.parent / "derived-name.csv"
+            actual.write_bytes(b"partial")
+            attempts.append(actual)
+            raise OSError("boom")
+
+        engine._download_once = AsyncMock(side_effect=_download_once)
+
+        with pytest.raises(RuntimeError, match="after 2 attempts"):
+            await engine._download_raw_with_retry(
+                _remote_file(client_name="saude"), max_retries=2
+            )
+
+        # Each attempt got a fresh directory, and none of them survived.
+        assert len(attempts) == 2
+        assert attempts[0] != attempts[1]
+        for p in attempts:
+            assert not p.exists()
+        tmp_dir = tmp_path / "management" / "tmp"
+        assert not list(tmp_dir.iterdir())
+
+    @pytest.mark.asyncio
+    async def test_successful_retry_returns_fresh_path(
+        self, engine, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr("pysus.management.sync.CACHEPATH", tmp_path)
+        monkeypatch.setattr("pysus.management.sync.asyncio.sleep", AsyncMock())
+        seen: list[Path] = []
+
+        async def _download_once(file, output, ftp_client=None):
+            seen.append(output)
+            if len(seen) == 1:
+                (output.parent / "derived-name.csv").write_bytes(b"partial")
+                raise OSError("boom")
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(b"complete")
+            return output
+
+        engine._download_once = AsyncMock(side_effect=_download_once)
+
+        result = await engine._download_raw_with_retry(
+            _remote_file(client_name="saude"), max_retries=2
+        )
+
+        assert result.read_bytes() == b"complete"
+        assert seen[0] != seen[1]
+
+    @pytest.mark.asyncio
+    async def test_ftp_attempt_dir_survives_so_the_retry_resumes(
+        self, engine, tmp_path, monkeypatch
+    ):
+        """FTP writes to ``output`` itself, so the dir is the resume point.
+
+        Wiping it between attempts would restart every RETR from byte 0 and
+        defeat the REST resume the pooled FTP path depends on.
+        """
+        monkeypatch.setattr("pysus.management.sync.CACHEPATH", tmp_path)
+        monkeypatch.setattr("pysus.management.sync.asyncio.sleep", AsyncMock())
+        seen: list[Path] = []
+
+        async def _download_once(file, output, ftp_client=None):
+            seen.append(output)
+            output.write_bytes(b"partial")
+            raise ConnectionResetError("drop")
+
+        engine._download_once = AsyncMock(side_effect=_download_once)
+
+        with pytest.raises(RuntimeError, match="after 2 attempts"):
+            await engine._download_raw_with_retry(
+                _remote_file(client_name="ftp"), max_retries=2
+            )
+
+        assert len(seen) == 2
+        assert seen[0] == seen[1]
+        assert seen[0].exists()
+
+    def test_is_attempt_dir_recognises_only_hex_dirs(self):
+        assert SyncEngine._is_attempt_dir("0a1b2c3d") is True
+        assert SyncEngine._is_attempt_dir("12345678") is True
+        assert SyncEngine._is_attempt_dir("X.tmp_extract") is False
+        assert SyncEngine._is_attempt_dir("short") is False
+        assert SyncEngine._is_attempt_dir("zzzzzzzz") is False
+
+    @pytest.mark.asyncio
+    async def test_stale_attempt_dirs_are_swept(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("pysus.management.sync.CACHEPATH", tmp_path)
+        tmp = tmp_path / "management" / "tmp"
+        stale = tmp / "deadbeef"
+        stale.mkdir(parents=True)
+        (stale / "leftover.csv").write_bytes(b"x")
+        extract = tmp / "keepme.tmp_extract"
+        extract.mkdir(parents=True)
+        (extract / "part.bin").write_bytes(b"y")
+
+        SyncEngine._cleanup_stale_tmp()
+
+        assert not stale.exists()
+        assert not extract.exists()
+        assert not list(tmp.iterdir())
 
 
 class TestWeightGate:

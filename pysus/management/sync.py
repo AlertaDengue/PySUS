@@ -604,7 +604,17 @@ class SyncEngine:
         """
         raw_dir = Path(CACHEPATH) / "management" / "tmp"
         raw_dir.mkdir(parents=True, exist_ok=True)
-        output = raw_dir / f"{uuid4().hex[:8]}-{file.basename}"
+        # Each attempt gets its own directory. CKAN/Saude origins ignore
+        # the requested filename and derive their own from the resource
+        # name inside ``output.parent``, so with a shared directory a
+        # failed attempt could not be cleaned up reliably: the retry
+        # deleted ``output`` (which never existed) and left the real
+        # partial file behind for the next attempt to pick up. A
+        # per-attempt directory also stops two packages that publish a
+        # resource with the same name from writing the same file.
+        attempt_dir = raw_dir / uuid4().hex[:8]
+        attempt_dir.mkdir(parents=True, exist_ok=True)
+        output = attempt_dir / file.basename
 
         last_error: Exception | None = None
         for attempt in range(max_retries):
@@ -612,11 +622,21 @@ class SyncEngine:
                 return await self._download_once(file, output, ftp_client)
             except _RETRYABLE as exc:
                 last_error = exc
-                # Keep FTP partials so the retry can resume with REST; other
-                # origins are re-downloaded from scratch.
+                # Keep FTP partials so the retry can resume with REST: the
+                # attempt directory is the resume point, so it stays as-is.
                 origin = getattr(getattr(file, "client", None), "name", None)
                 if origin is None or origin.upper() != "FTP":
-                    self._cleanup_local(output)
+                    # Other origins are re-downloaded from scratch, and
+                    # CKAN/Saude name the file they write themselves, so
+                    # only dropping the whole attempt directory cleans up
+                    # reliably.
+                    self._cleanup_attempt(attempt_dir)
+                    # The last attempt leaves nothing behind, so do not create
+                    # a scratch directory that will never be used or removed.
+                    if attempt < max_retries - 1:
+                        attempt_dir = raw_dir / uuid4().hex[:8]
+                        attempt_dir.mkdir(parents=True, exist_ok=True)
+                        output = attempt_dir / file.basename
                 wait_time = 2**attempt + (attempt * 2)
                 error(
                     f"Download attempt {attempt + 1}/{max_retries} failed "
@@ -759,6 +779,30 @@ class SyncEngine:
             pass
 
     @staticmethod
+    def _is_attempt_dir(name: str) -> bool:
+        """Whether *name* is a per-attempt download scratch directory.
+
+        They are 8 hex characters, which no file or ``.tmp_extract``
+        directory in this tmp area uses, so leftovers from a killed run
+        can be swept up between runs.
+        """
+        return len(name) == 8 and all(c in "0123456789abcdef" for c in name)
+
+    @staticmethod
+    def _cleanup_attempt(attempt_dir: Path) -> None:
+        """Remove a download attempt's scratch directory.
+
+        CKAN/Saude origins name the file they write themselves, so the
+        caller cannot know which path received the bytes; removing the
+        whole per-attempt directory is the only reliable way to ensure no
+        partial file survives into the next attempt.
+        """
+        try:
+            shutil.rmtree(attempt_dir, ignore_errors=True)
+        except OSError:
+            pass
+
+    @staticmethod
     def _cleanup_stale_tmp() -> None:
         """Remove leftover files in the tmp directory from prior runs.
 
@@ -771,7 +815,10 @@ class SyncEngine:
             return
         removed = 0
         for p in tmp.iterdir():
-            if p.is_dir() and p.name.endswith(".tmp_extract"):
+            if p.is_dir() and (
+                p.name.endswith(".tmp_extract")
+                or SyncEngine._is_attempt_dir(p.name)
+            ):
                 try:
                     shutil.rmtree(p)
                     removed += 1

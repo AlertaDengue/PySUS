@@ -10,10 +10,12 @@ skipped automatically.
 
 from __future__ import annotations
 
+import os
 import re
 from collections.abc import Callable
 from pathlib import Path
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from .errors import ResourceNotFound
 from .resources import CKANPackage, Resource
@@ -112,16 +114,35 @@ async def download_resource(
     if dest_path.exists() and not overwrite:
         return dest_path
 
-    async with client.stream("GET", resource.url) as response:
-        response.raise_for_status()
-        total = int(response.headers.get("Content-Length", 0))
-        downloaded = 0
-        with dest_path.open("wb") as fh:
-            async for chunk in response.aiter_bytes(chunk_size=_DOWNLOAD_CHUNK):
-                fh.write(chunk)
-                downloaded += len(chunk)
-                if progress:
-                    progress(downloaded, total)
+    # Stream into a sibling temp file and rename on success. Writing
+    # straight to dest_path would leave a truncated file behind when the
+    # connection drops mid-transfer, and the `dest_path.exists()` reuse
+    # above would then hand that partial file to the next attempt. Two
+    # packages publishing a resource with the same name also resolve to the
+    # same dest_path, so the rename makes the final write atomic instead of
+    # interleaving concurrent writers.
+    tmp_path = dest_path.with_name(f".{dest_path.name}.{uuid4().hex[:8]}.part")
+    try:
+        async with client.stream("GET", resource.url) as response:
+            response.raise_for_status()
+            total = int(response.headers.get("Content-Length", 0))
+            downloaded = 0
+            with tmp_path.open("wb") as fh:
+                async for chunk in response.aiter_bytes(
+                    chunk_size=_DOWNLOAD_CHUNK
+                ):
+                    fh.write(chunk)
+                    downloaded += len(chunk)
+                    if progress:
+                        progress(downloaded, total)
+        os.replace(tmp_path, dest_path)
+    except BaseException:
+        # Never leave a partial file that the reuse check could pick up.
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     return dest_path
 
 
