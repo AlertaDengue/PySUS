@@ -1344,8 +1344,14 @@ class ExtensionFactory:
             return Directory(path=path, type="DIR")
 
         FileClass = await cls.get_file_class(path)
-        file_type = getattr(FileClass, "type", "FILE")
-
+        # Pydantic v2 keeps field values off the class, so
+        # getattr(FileClass, "type", "FILE") finds nothing and every
+        # file was tagged "FILE". The default lives in model_fields; a
+        # plain class attribute still works for non-Pydantic handlers.
+        field = getattr(FileClass, "model_fields", {}).get("type")
+        file_type = getattr(field, "default", None)
+        if not isinstance(file_type, str):
+            file_type = getattr(FileClass, "type", None)
         if not isinstance(file_type, str):
             file_type = "FILE"
 
