@@ -524,6 +524,60 @@ class TestUploadFile:
             await engine.upload_file(f)
 
     @pytest.mark.asyncio
+    async def test_error_before_download_propagates_original(
+        self, engine, tmp_path
+    ):
+        """A failure before ``raw_path`` is bound must not be masked.
+
+        The ``except BaseException`` handler cleans up ``raw_path``. When
+        the failure happens earlier in the block (here, the ALTER TABLE
+        issued by ``_ensure_management_columns``), the name is unbound and
+        the handler itself raised ``UnboundLocalError``, replacing the real
+        cause with a misleading message.
+        """
+        engine._ducklake = self._ducklake()
+
+        writer = self._writer()
+        writer._ensure_management_columns.side_effect = RuntimeError(
+            "alter table blew up"
+        )
+
+        with patch.object(
+            SyncEngine, "writer", new_callable=PropertyMock
+        ) as prop:
+            prop.return_value = writer
+            with pytest.raises(RuntimeError, match="alter table blew up"):
+                await engine.upload_file(_remote_file())
+
+    @pytest.mark.asyncio
+    async def test_error_after_download_cleans_up_raw_file(
+        self, engine, tmp_path
+    ):
+        """A failure after the download must still remove the temp file."""
+        raw_path = tmp_path / "X.dbc"
+        raw_path.write_bytes(b"partial")
+
+        engine._ducklake = self._ducklake()
+        engine._download_raw_with_retry = AsyncMock(return_value=raw_path)
+
+        writer = self._writer()
+        writer.get_file_full.return_value = None
+        with (
+            patch.object(
+                SyncEngine, "writer", new_callable=PropertyMock
+            ) as prop,
+            patch(
+                "pysus.management.sync.sha256_of",
+                side_effect=OSError("read failed"),
+            ),
+        ):
+            prop.return_value = writer
+            with pytest.raises(OSError, match="read failed"):
+                await engine.upload_file(_remote_file())
+
+        assert not raw_path.exists()
+
+    @pytest.mark.asyncio
     async def test_skips_when_current(self, engine, tmp_path):
         engine._ducklake = self._ducklake()
         f = _remote_file(modify=datetime(2026, 1, 1))

@@ -413,6 +413,10 @@ class SyncEngine:
         columns_conn = columns_adapter.raw_connection()
 
         connections = (central_conn, dataset_conn, columns_conn)
+        # Both are read by the `except` handler below, which runs for
+        # failures raised anywhere in the block — including the ones that
+        # happen before either name is bound.
+        raw_path: Path | None = None
         parquet_file = None
         try:
             with central_conn, dataset_conn, columns_conn:
@@ -535,7 +539,8 @@ class SyncEngine:
                     conn.close()
                 except Exception:  # noqa
                     pass
-            self._cleanup_local(raw_path)
+            if raw_path is not None:
+                self._cleanup_local(raw_path)
             if parquet_file is not None:
                 self._cleanup_local(parquet_file.path)
             raise exc
