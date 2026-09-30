@@ -278,28 +278,36 @@ class TestGetLocalHierarchy:
         assert "FTP" in hierarchy
         ftp_dict = hierarchy["FTP"]
 
-        assert "DC" in ftp_dict
-        ds_dc = ftp_dict["DC"]
-        assert "DC" in ds_dc
-        assert len(ds_dc["DC"]) == 1
-        assert ds_dc["DC"][0]["name"] == "DNAC2024.dbc"
-        assert ds_dc["DC"][0]["status"] == DownloadStatus.COMPLETED
-
-        assert "ftp" in ftp_dict
-        ds_ftp = ftp_dict["ftp"]
-        assert "" in ds_ftp
-        assert len(ds_ftp[""]) == 1
-        assert ds_ftp[""][0]["name"] == "DNAC2024.dbc"
-
+        # file1 is downloads/ftp/sinasc/DC/DNAC2024.dbc and has a group,
+        # so the dataset is one level in: sinasc, not DC.
         assert "sinasc" in ftp_dict
-        ds_sinasc = ftp_dict["sinasc"]
-        assert "DC" in ds_sinasc
-        assert ds_sinasc["DC"][0]["name"] == "DC"
+        assert "DC" not in ftp_dict
+        assert "ftp" not in ftp_dict
+        assert "short" not in ftp_dict
 
-        dc_dict = ftp_dict.get("short")
-        assert dc_dict is not None
-        assert "X" in dc_dict
-        assert dc_dict["X"][0]["status"] == DownloadStatus.PENDING
+        ds_sinasc = ftp_dict["sinasc"]
+        assert sorted(ds_sinasc) == ["", "DC"]
+
+        # file1 lands under sinasc/DC; dir_path is a directory, so
+        # is_file() is False and the parts[-2] fallback also puts it
+        # under sinasc (its own parent), naming the level itself.
+        assert len(ds_sinasc["DC"]) == 2
+        names = sorted(f["name"] for f in ds_sinasc["DC"])
+        assert names == ["DC", "DNAC2024.dbc"]
+        for entry in ds_sinasc["DC"]:
+            assert entry["status"] == DownloadStatus.COMPLETED
+
+        # file2 is downloads/ftp/sinasc/DNAC2024.dbc with no group, so
+        # the dataset is its own parent: sinasc, not ftp.
+        assert len(ds_sinasc[""]) == 1
+        assert ds_sinasc[""][0]["name"] == "DNAC2024.dbc"
+
+        # file3 is short/path.dbc with a group, so parts[-3] is the
+        # tmp directory, not "short".
+        shallow = ftp_dict[tmp_path.name]
+        assert "X" in shallow
+        assert shallow["X"][0]["status"] == DownloadStatus.PENDING
+        assert shallow["X"][0]["name"] == "path.dbc"
 
         await client.__aexit__(None, None, None)
 
@@ -1318,3 +1326,103 @@ class TestUpdateStateOnExistingRecord:
             assert record.group == "DC"
 
         await client.__aexit__(None, None, None)
+
+
+class TestGetLocalHierarchyDatasetLevel:
+    """`_get_dest_path` nests grouped files one level deeper.
+
+        downloads/<client>/<dataset>/<group>/<name>   (has a group)
+        downloads/<client>/<dataset>/<name>          (no group)
+
+    so the dataset is `parts[-3]` in the first case and `parts[-2]` in
+    the second. The two were swapped.
+    """
+
+    async def _add(self, local, client_name="ftp", **kwargs):
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_text("x")
+        await self.client._update_state(
+            local_path=local,
+            remote_path=f"/remote/{local.name}",
+            client_name=client_name,
+            status=DownloadStatus.COMPLETED,
+            **kwargs,
+        )
+
+    @pytest.mark.asyncio
+    async def test_grouped_file_is_keyed_by_dataset(
+        self, test_db_path, tmp_path
+    ):
+        self.client = PySUS(db_path=test_db_path)
+        local = tmp_path / "downloads" / "ftp" / "sinan" / "DC" / "DNAC2024.dbc"
+        await self._add(local, group="DC", year=2024)
+
+        hierarchy = self.client.get_local_hierarchy()
+
+        assert list(hierarchy) == ["FTP"]
+        assert list(hierarchy["FTP"]) == ["sinan"]
+        assert list(hierarchy["FTP"]["sinan"]) == ["DC"]
+        assert [f["name"] for f in hierarchy["FTP"]["sinan"]["DC"]] == [
+            "DNAC2024.dbc"
+        ]
+
+        await self.client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_ungrouped_file_is_keyed_by_dataset(
+        self, test_db_path, tmp_path
+    ):
+        self.client = PySUS(db_path=test_db_path)
+        local = tmp_path / "downloads" / "ftp" / "sim" / "SIM2024.csv"
+        await self._add(local)
+
+        hierarchy = self.client.get_local_hierarchy()
+
+        assert list(hierarchy) == ["FTP"]
+        assert list(hierarchy["FTP"]) == ["sim"]
+        assert list(hierarchy["FTP"]["sim"]) == [""]
+        assert [f["name"] for f in hierarchy["FTP"]["sim"][""]] == [
+            "SIM2024.csv"
+        ]
+
+        await self.client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_both_shapes_share_the_dataset(self, test_db_path, tmp_path):
+        self.client = PySUS(db_path=test_db_path)
+        await self._add(
+            tmp_path / "downloads" / "ftp" / "sinan" / "DC" / "DNAC2024.dbc",
+            group="DC",
+        )
+        await self._add(
+            tmp_path / "downloads" / "ftp" / "sinan" / "SIH2024.dbf",
+        )
+
+        hierarchy = self.client.get_local_hierarchy()
+
+        assert list(hierarchy["FTP"]) == ["sinan"]
+        assert sorted(hierarchy["FTP"]["sinan"]) == ["", "DC"]
+
+        await self.client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_client_name_is_not_used_as_dataset(
+        self, test_db_path, tmp_path
+    ):
+        self.client = PySUS(db_path=test_db_path)
+        await self._add(
+            tmp_path / "downloads" / "ftp" / "sinan" / "DC" / "DNAC2024.dbc",
+            group="DC",
+        )
+        await self._add(
+            tmp_path / "downloads" / "dadosgov" / "pni" / "PNI.csv",
+            client_name="dadosgov",
+        )
+
+        hierarchy = self.client.get_local_hierarchy()
+
+        assert set(hierarchy) == {"FTP", "DADOSGOV"}
+        assert list(hierarchy["FTP"]) == ["sinan"]
+        assert list(hierarchy["DADOSGOV"]) == ["pni"]
+
+        await self.client.__aexit__(None, None, None)
