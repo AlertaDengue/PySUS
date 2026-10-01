@@ -218,6 +218,64 @@ class _FakeFTPClient:
         self._ftp = self._next
 
 
+def test_retr_with_resume_uses_rest_offset(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 1000)
+
+    class _FTP:
+        def __init__(self):
+            self.rests = []
+
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, cmd, callback, rest=None):
+            self.rests.append(rest)
+            callback(b"y" * (5000 - rest))
+
+    ftp = _FTP()
+    total = _retr_with_resume(ftp, "/f", out, _StallWatch("f", timeout=60))
+    assert total == 5000
+    assert ftp.rests == [1000]
+    assert out.stat().st_size == 5000
+
+
+def test_retr_with_resume_skips_when_already_complete(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 5000)
+
+    class _FTP:
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, *args, **kwargs):
+            raise AssertionError("must not transfer a complete file")
+
+    assert _retr_with_resume(_FTP(), "/f", out, _StallWatch("f")) == 5000
+
+
+def test_retr_with_resume_drops_partial_when_rest_refused(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 1000)
+
+    class _FTP:
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, cmd, callback, rest=None):
+            raise OSError("550 REST not understood")
+
+    with pytest.raises(OSError):
+        _retr_with_resume(_FTP(), "/f", out, _StallWatch("f", timeout=60))
+    assert not out.exists()
+
+
 class TestLiveFTP:
     @pytest.mark.asyncio
     async def test_connects_when_no_session(self):
