@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.5](https://github.com/AlertaDengue/PySUS/compare/2.11.4...2.11.5) (2026-10-01)
+
+### Bug Fixes
+
+* **ftp:** reconnect stale pooled sessions before downloading ([#364](https://github.com/AlertaDengue/PySUS/issues/364)) ([ba2ddf9](https://github.com/AlertaDengue/PySUS/commit/ba2ddf9c84afc1ef953eaf2c6df869f537360e80))
+
 ## [2.11.4](https://github.com/AlertaDengue/PySUS/compare/2.11.3...2.11.4) (2026-10-01)
 
 ### Bug Fixes
