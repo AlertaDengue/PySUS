@@ -615,7 +615,7 @@ class SyncEngine:
                 # Keep FTP partials so the retry can resume with REST; other
                 # origins are re-downloaded from scratch.
                 origin = getattr(getattr(file, "client", None), "name", None)
-                if origin != "ftp":
+                if origin is None or origin.upper() != "FTP":
                     self._cleanup_local(output)
                 wait_time = 2**attempt + (attempt * 2)
                 error(

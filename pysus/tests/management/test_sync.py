@@ -276,6 +276,53 @@ def test_retr_with_resume_drops_partial_when_rest_refused(tmp_path):
     assert not out.exists()
 
 
+@pytest.mark.asyncio
+async def test_download_retry_keeps_ftp_partial(tmp_path, monkeypatch):
+    from pysus.management import sync as sync_mod
+
+    monkeypatch.setattr(sync_mod, "CACHEPATH", tmp_path)
+    engine = SyncEngine()
+    file = MagicMock()
+    file.basename = "x.dbc"
+    file.client.name = "FTP"
+    seen = []
+
+    async def fake_once(file, output, ftp_client=None):
+        seen.append(output.exists())
+        if len(seen) == 1:
+            output.write_bytes(b"1234")
+            raise ConnectionResetError("boom")
+        return output
+
+    monkeypatch.setattr(engine, "_download_once", fake_once)
+    result = await engine._download_raw_with_retry(file, max_retries=2)
+    assert seen == [False, True]
+    assert result.exists()
+
+
+@pytest.mark.asyncio
+async def test_download_retry_clears_non_ftp_partial(tmp_path, monkeypatch):
+    from pysus.management import sync as sync_mod
+
+    monkeypatch.setattr(sync_mod, "CACHEPATH", tmp_path)
+    engine = SyncEngine()
+    file = MagicMock()
+    file.basename = "x.csv.zip"
+    file.client.name = "DADOSGOV"
+    seen = []
+
+    async def fake_once(file, output, ftp_client=None):
+        seen.append(output.exists())
+        if len(seen) == 1:
+            output.write_bytes(b"1234")
+            raise ConnectionResetError("boom")
+        return output
+
+    monkeypatch.setattr(engine, "_download_once", fake_once)
+    await engine._download_raw_with_retry(file, max_retries=2)
+    assert seen == [False, False]
+
+
 class TestLiveFTP:
     @pytest.mark.asyncio
     async def test_connects_when_no_session(self):
