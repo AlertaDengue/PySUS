@@ -584,6 +584,40 @@ class SyncEngine:
             f"attempts: {last_error}"
         ) from last_error
 
+    @staticmethod
+    async def _live_ftp(client: Any) -> Any:
+        """Return a live ``ftplib.FTP`` for *client*, reconnecting if stale.
+
+        FTP servers (DATASUS in particular) drop idle control connections
+        without the client noticing; the next ``RETR`` then blocks until the
+        socket read times out. A cheap ``NOOP`` detects that, and a fresh
+        session is established before the transfer starts.
+        """
+        from anyio import to_thread
+
+        def _ping() -> Any:
+            ftp = getattr(client, "ftp", None)
+            if ftp is None:
+                return None
+            try:
+                ftp.voidcmd("NOOP")
+                return ftp
+            except Exception:  # noqa: BLE001 — any failure means stale
+                try:
+                    ftp.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                return None
+
+        ftp = await to_thread.run_sync(_ping)
+        if ftp is None:
+            setattr(client, "_ftp", None)  # noqa: B010 — reset stale session
+            await client.connect()
+            ftp = getattr(client, "ftp", None)
+        if ftp is None:
+            raise RuntimeError("could not establish an FTP connection")
+        return ftp
+
     async def _download_once(
         self,
         file: BaseRemoteFile,
@@ -611,14 +645,13 @@ class SyncEngine:
             )
 
         client = ftp_client if ftp_client is not None else file.client
-        ftp = getattr(client, "ftp", None)
+        ftp: Any = getattr(client, "ftp", None)
         if ftp_client is not None:
-            # never fall back to the shared client: reconnect the pooled
-            # session instead
-            if ftp is None:
-                await client.connect()
-                ftp = getattr(client, "ftp", None)
-            assert ftp is not None
+            # DATASUS closes idle control connections. Reusing a dead pooled
+            # session makes ``RETR`` hang until the socket times out, so ping
+            # with NOOP first and reconnect a fresh session when it is stale
+            # (never fall back to the shared client).
+            ftp = await self._live_ftp(client)
             remote_path = str(file.path)
             watch = _StallWatch(file.basename)
 
@@ -642,7 +675,9 @@ class SyncEngine:
                 return output
             except Exception:  # noqa
                 try:
-                    ftp.quit()
+                    # ``close`` is non-blocking; ``quit`` can hang on a dead
+                    # link and delay the retry.
+                    ftp.close()
                 except Exception:  # noqa
                     pass
                 setattr(  # noqa: B010 — reset pooled FTP session
@@ -650,6 +685,7 @@ class SyncEngine:
                 )
                 raise
         if ftp is not None:
+            ftp = await self._live_ftp(client)
             remote_path = str(file.path)
             watch = _StallWatch(file.basename)
 
@@ -663,10 +699,20 @@ class SyncEngine:
 
                     ftp.retrbinary(f"RETR {remote_path}", _write)
 
-            with anyio.fail_after(_DOWNLOAD_TIMEOUT):
-                await watch.run(
-                    to_thread.run_sync(_direct_retr, abandon_on_cancel=True)
+            try:
+                with anyio.fail_after(_DOWNLOAD_TIMEOUT):
+                    await watch.run(
+                        to_thread.run_sync(_direct_retr, abandon_on_cancel=True)
+                    )
+            except Exception:  # noqa
+                try:
+                    ftp.close()
+                except Exception:  # noqa
+                    pass
+                setattr(  # noqa: B010 — reset stale FTP session
+                    client, "_ftp", None
                 )
+                raise
             return output
         watch = _StallWatch(file.basename)
 
