@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [2.11.4](https://github.com/AlertaDengue/PySUS/compare/2.11.3...2.11.4) (2026-10-01)
+
+### Bug Fixes
+
+* **client:** persist file metadata on the second _update_state call ([#358](https://github.com/AlertaDengue/PySUS/issues/358)) ([39bbf8b](https://github.com/AlertaDengue/PySUS/commit/39bbf8bf25573caed1fd5d3e677225221011b94d))
+* **client:** pick the right path level for the dataset in get_local_hierarchy ([#359](https://github.com/AlertaDengue/PySUS/issues/359)) ([3a8d33c](https://github.com/AlertaDengue/PySUS/commit/3a8d33ca1a117733c70a890685f1d9f517f296c5))
+
 ## [2.11.3](https://github.com/AlertaDengue/PySUS/compare/2.11.2...2.11.3) (2026-09-28)
 
 ### Bug Fixes
