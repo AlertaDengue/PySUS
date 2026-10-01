@@ -278,28 +278,36 @@ class TestGetLocalHierarchy:
         assert "FTP" in hierarchy
         ftp_dict = hierarchy["FTP"]
 
-        assert "DC" in ftp_dict
-        ds_dc = ftp_dict["DC"]
-        assert "DC" in ds_dc
-        assert len(ds_dc["DC"]) == 1
-        assert ds_dc["DC"][0]["name"] == "DNAC2024.dbc"
-        assert ds_dc["DC"][0]["status"] == DownloadStatus.COMPLETED
-
-        assert "ftp" in ftp_dict
-        ds_ftp = ftp_dict["ftp"]
-        assert "" in ds_ftp
-        assert len(ds_ftp[""]) == 1
-        assert ds_ftp[""][0]["name"] == "DNAC2024.dbc"
-
+        # file1 is downloads/ftp/sinasc/DC/DNAC2024.dbc and has a group,
+        # so the dataset is one level in: sinasc, not DC.
         assert "sinasc" in ftp_dict
-        ds_sinasc = ftp_dict["sinasc"]
-        assert "DC" in ds_sinasc
-        assert ds_sinasc["DC"][0]["name"] == "DC"
+        assert "DC" not in ftp_dict
+        assert "ftp" not in ftp_dict
+        assert "short" not in ftp_dict
 
-        dc_dict = ftp_dict.get("short")
-        assert dc_dict is not None
-        assert "X" in dc_dict
-        assert dc_dict["X"][0]["status"] == DownloadStatus.PENDING
+        ds_sinasc = ftp_dict["sinasc"]
+        assert sorted(ds_sinasc) == ["", "DC"]
+
+        # file1 lands under sinasc/DC; dir_path is a directory, so
+        # is_file() is False and the parts[-2] fallback also puts it
+        # under sinasc (its own parent), naming the level itself.
+        assert len(ds_sinasc["DC"]) == 2
+        names = sorted(f["name"] for f in ds_sinasc["DC"])
+        assert names == ["DC", "DNAC2024.dbc"]
+        for entry in ds_sinasc["DC"]:
+            assert entry["status"] == DownloadStatus.COMPLETED
+
+        # file2 is downloads/ftp/sinasc/DNAC2024.dbc with no group, so
+        # the dataset is its own parent: sinasc, not ftp.
+        assert len(ds_sinasc[""]) == 1
+        assert ds_sinasc[""][0]["name"] == "DNAC2024.dbc"
+
+        # file3 is short/path.dbc with a group, so parts[-3] is the
+        # tmp directory, not "short".
+        shallow = ftp_dict[tmp_path.name]
+        assert "X" in shallow
+        assert shallow["X"][0]["status"] == DownloadStatus.PENDING
+        assert shallow["X"][0]["name"] == "path.dbc"
 
         await client.__aexit__(None, None, None)
 
@@ -1181,7 +1189,146 @@ class TestPySUSGetMethods:
         await client.__aexit__(None, None, None)
 
 
-class TestGetLocalHierarchy:
+class TestUpdateStateOnExistingRecord:
+    """`_update_state` is called twice per download.
+
+    ``download()`` first records the file as DOWNLOADING with no
+    metadata, then records it COMPLETED with the year, month, state and
+    group parsed from the remote file. The second call finds the row
+    created by the first, so it has to update those columns -- and it
+    used to leave them NULL.
+    """
+
+    @pytest.mark.asyncio
+    async def test_second_call_persists_metadata(self, test_db_path, tmp_path):
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.DOWNLOADING,
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            month=1,
+            state="SP",
+            group="DC",
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.status == DownloadStatus.COMPLETED
+            assert record.year == 2024
+            assert record.month == 1
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_only_one_row_is_created(self, test_db_path, tmp_path):
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        for status in (DownloadStatus.DOWNLOADING, DownloadStatus.COMPLETED):
+            await client._update_state(
+                local_path=local,
+                remote_path="/r/DNAC2024.dbc",
+                client_name="ftp",
+                status=status,
+                year=2024,
+            )
+
+        with client.Session() as session:
+            rows = (
+                session.query(LocalFileState).filter_by(path=str(local)).all()
+            )
+            assert len(rows) == 1
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_failed_call_keeps_completed_metadata(
+        self, test_db_path, tmp_path
+    ):
+        """The failure path passes no metadata and must not erase it."""
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC2024.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            month=1,
+            state="SP",
+            group="DC",
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/DNAC2024.dbc",
+            client_name="ftp",
+            status=DownloadStatus.FAILED,
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.status == DownloadStatus.FAILED
+            assert record.year == 2024
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)
+
+    @pytest.mark.asyncio
+    async def test_refreshes_stale_metadata(self, test_db_path, tmp_path):
+        """A republished file gets new metadata, not the original one."""
+        client = PySUS(db_path=test_db_path)
+        local = pathlib.Path(tmp_path / "DNAC.dbc")
+
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/old/DNAC.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2020,
+            state="RJ",
+            group="OLD",
+        )
+        await client._update_state(
+            local_path=local,
+            remote_path="/r/new/DNAC.dbc",
+            client_name="ftp",
+            status=DownloadStatus.COMPLETED,
+            year=2024,
+            state="SP",
+            group="DC",
+        )
+
+        with client.Session() as session:
+            record = (
+                session.query(LocalFileState).filter_by(path=str(local)).first()
+            )
+            assert record.remote_path == "/r/new/DNAC.dbc"
+            assert record.year == 2024
+            assert record.state == "SP"
+            assert record.group == "DC"
+
+        await client.__aexit__(None, None, None)
+
+
+class TestGetLocalHierarchyDatasetLevel:
     """`_get_dest_path` nests grouped files one level deeper.
 
         downloads/<client>/<dataset>/<group>/<name>   (has a group)
