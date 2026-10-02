@@ -104,10 +104,10 @@ class TestDadosGovDownloadWorks:
     def files(self):
         return [
             _fake_file(
-                "https://dados.gov.br/dados/cidadaos/SINAN/2024/" "DENGBR24.csv"
+                "https://dados.gov.br/dados/cidadaos/SINAN/2024/DENGBR24.csv"
             ),
             _fake_file(
-                "https://dados.gov.br/dados/cidadaos/SINAN/2024/" "CHIKBR24.csv"
+                "https://dados.gov.br/dados/cidadaos/SINAN/2024/CHIKBR24.csv"
             ),
         ]
 
