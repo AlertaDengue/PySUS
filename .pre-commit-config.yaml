@@ -34,7 +34,7 @@ repos:
             'flake8-blind-except==0.2.1',
             'flake8-bugbear==24.2.6',
             'flake8-comprehensions==3.14.0',
-            'flake8-implicit-str-concat==0.6.0',
+            'flake8-implicit-str-concat==0.7.0',
             'pydocstyle==6.3.0',
         ]
 
