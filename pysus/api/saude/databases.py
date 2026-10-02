@@ -190,8 +190,10 @@ DATASET_SPECS: tuple[DatasetSpec, ...] = (
         demas_tags=("Economia da Saúde",),
         endpoints=(
             "/economia-da-saude/bps",
-            "/economia-da-saude/sistema-de-apuracao-e-gestao-de-custos-"
-            "do-sus-apurasus",
+            (
+                "/economia-da-saude/sistema-de-apuracao-e-gestao-de-custos-"
+                "do-sus-apurasus"
+            ),
         ),
     ),
     DatasetSpec(
