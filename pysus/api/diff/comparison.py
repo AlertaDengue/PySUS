@@ -11,8 +11,58 @@ Usage::
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import pandas as pd
+
+
+def _values_differ(new_val: Any, old_val: Any) -> bool:
+    """Return True when two cell values differ.
+
+    ``!=`` is not a reliable equality test for DataFrame cells: ``NaN != NaN``
+    is True, so an unchanged NULL would be reported as modified, and the
+    comparison of ``pd.NA`` yields ``pd.NA``, whose truth value raises
+    ``TypeError``. Both are reachable with the nullable dtypes DuckLake
+    writes.
+    """
+    if new_val is old_val:
+        return False
+
+    # Missingness first: `nan != nan` is True and `pd.NA != pd.NA` is
+    # `pd.NA`, so neither can be trusted to tell us the cells differ.
+    new_missing = _is_missing(new_val)
+    old_missing = _is_missing(old_val)
+    if new_missing or old_missing:
+        # Two missing cells are equivalent; missing vs present is a change.
+        return new_missing != old_missing
+
+    try:
+        outcome = new_val != old_val
+    except Exception:  # noqa: BLE001 - exotic objects with broken __ne__
+        return True
+
+    if outcome is pd.NA or outcome is pd.NaT:
+        return True
+
+    if isinstance(outcome, bool):
+        return outcome
+
+    # Non-bool outcome (e.g. numpy.bool_) - coerce without raising.
+    return bool(outcome)
+
+
+def _is_missing(value: Any) -> bool:
+    """Return True for None/NaN/NaT/pd.NA without raising on arrays."""
+    if value is None:
+        return True
+    try:
+        result = pd.isna(value)
+    except (TypeError, ValueError):
+        return False
+    if isinstance(result, bool):
+        return result
+    # numpy.bool_ and friends.
+    return bool(result) if getattr(result, "ndim", 0) == 0 else False
 
 
 @dataclass
@@ -191,7 +241,7 @@ def _diff_by_key(
         for col in common_cols:
             new_val = row.get(f"{col}_new")
             old_val = row.get(f"{col}_old")
-            if new_val != old_val:
+            if _values_differ(new_val, old_val):
                 result.rows_modified += 1
                 break
         else:
@@ -207,11 +257,8 @@ def _diff_by_position(
 ) -> DiffResult:
     """Diff by position (row-by-row)."""
     min_len = min(len(df_old), len(df_new))
-    result.rows_added = abs(len(df_new) - len(df_old))
-    if len(df_new) > len(df_old):
-        result.rows_added = len(df_new) - len(df_old)
-    else:
-        result.rows_removed = len(df_old) - len(df_new)
+    result.rows_added = max(0, len(df_new) - len(df_old))
+    result.rows_removed = max(0, len(df_old) - len(df_new))
 
     for i in range(min_len):
         if df_old.iloc[i].equals(df_new.iloc[i]):
