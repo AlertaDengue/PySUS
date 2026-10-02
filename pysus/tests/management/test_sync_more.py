@@ -238,8 +238,9 @@ class TestDownloadOnceGates:
     @pytest.mark.asyncio
     async def test_direct_ftp_retr(self, engine, tmp_path):
         ftp = MagicMock()
+        ftp.size.return_value = 5
 
-        def _retrbinary(cmd, cb):
+        def _retrbinary(cmd, cb, rest=None):
             cb(b"hello")
 
         ftp.retrbinary = _retrbinary

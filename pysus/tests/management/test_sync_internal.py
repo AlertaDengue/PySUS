@@ -90,7 +90,7 @@ class TestDownloadOnce:
         client = MagicMock()
         client.ftp = ftp
 
-        def _retrbinary(cmd, cb):
+        def _retrbinary(cmd, cb, rest=None):
             cb(b"hello")
 
         ftp.retrbinary = _retrbinary
