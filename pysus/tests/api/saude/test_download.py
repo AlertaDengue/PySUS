@@ -335,6 +335,146 @@ class TestDownloadResourceEdgeCases:
         assert path.exists()
 
 
+class _FlakyTransport(httpx.AsyncBaseTransport):
+    """Yields ``good_bytes`` and then fails, once, like a dropped socket.
+
+    The failure happens *after* real bytes have been handed to the caller,
+    which is what leaves a truncated file behind when the destination is
+    written in place.
+    """
+
+    def __init__(self, head: bytes, tail: bytes, fail_once: bool = True):
+        self.head = head
+        self.tail = tail
+        self.fail_once = fail_once
+        self.calls = 0
+
+    async def handle_async_request(self, request: httpx.Request):
+        self.calls += 1
+        should_fail = self.fail_once and self.calls == 1
+        return httpx.Response(
+            200,
+            content=_flaky_stream(
+                self.head, self.tail, fail=should_fail, request=request
+            ),
+            headers={"Content-Length": str(len(self.head) + len(self.tail))},
+        )
+
+
+async def _flaky_stream(
+    head: bytes, tail: bytes, fail: bool, request: httpx.Request
+):
+    yield head
+    if fail:
+        raise httpx.ReadError("connection reset", request=request)
+    yield tail
+
+
+class TestDownloadResourcePartialTransfer:
+    """A dropped connection must not leave a file the retry can reuse.
+
+    ``download_resource`` short-circuits on ``dest_path.exists()``. If a
+    failed transfer left a truncated file there, the next attempt would
+    return it as a complete download and the caller would convert and
+    upload the partial bytes.
+    """
+
+    @pytest.mark.asyncio
+    async def test_failure_mid_stream_leaves_no_file(
+        self, saude_dataset_page_props, tmp_path
+    ):
+        from pysus.api.saude.resources import CKANPackage
+
+        package = CKANPackage.model_validate(saude_dataset_page_props)
+        csv_resource = next(r for r in package.resources if r.format == "CSV")
+
+        head, tail = b"col_a,col_b\n1,2\n", b"3,4\n"
+        transport = _FlakyTransport(head, tail)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            with pytest.raises(httpx.ReadError):
+                await download_resource(
+                    client,
+                    package,
+                    resource_id=csv_resource.id,
+                    dest_dir=tmp_path,
+                )
+
+        # Nothing at the derived name, and no leftover .part scratch file.
+        assert list(tmp_path.iterdir()) == []
+
+    @pytest.mark.asyncio
+    async def test_retry_after_failure_downloads_full_content(
+        self, saude_dataset_page_props, tmp_path
+    ):
+        from pysus.api.saude.resources import CKANPackage
+
+        package = CKANPackage.model_validate(saude_dataset_page_props)
+        csv_resource = next(r for r in package.resources if r.format == "CSV")
+        head, tail = b"col_a,col_b\n1,2\n", b"3,4\n"
+        transport = _FlakyTransport(head, tail)
+
+        async with httpx.AsyncClient(transport=transport) as client:
+            with pytest.raises(httpx.ReadError):
+                await download_resource(
+                    client,
+                    package,
+                    resource_id=csv_resource.id,
+                    dest_dir=tmp_path,
+                )
+            # Second attempt must not short-circuit on a partial file.
+            path = await download_resource(
+                client,
+                package,
+                resource_id=csv_resource.id,
+                dest_dir=tmp_path,
+            )
+
+        assert path.read_bytes() == head + tail
+
+    @pytest.mark.asyncio
+    async def test_http_error_leaves_no_file(
+        self, saude_dataset_page_props, tmp_path
+    ):
+        from pysus.api.saude.resources import CKANPackage
+
+        package = CKANPackage.model_validate(saude_dataset_page_props)
+        csv_resource = next(r for r in package.resources if r.format == "CSV")
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(404)
+
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(handler)
+        ) as client:
+            with pytest.raises(httpx.HTTPStatusError):
+                await download_resource(
+                    client,
+                    package,
+                    resource_id=csv_resource.id,
+                    dest_dir=tmp_path,
+                )
+
+        assert list(tmp_path.iterdir()) == []
+
+    @pytest.mark.asyncio
+    async def test_complete_download_leaves_no_scratch_file(
+        self, saude_dataset_page_props, tmp_path, mocked_saude
+    ):
+        from pysus.api.saude.resources import CKANPackage
+
+        package = CKANPackage.model_validate(saude_dataset_page_props)
+        csv_resource = next(r for r in package.resources if r.format == "CSV")
+        async with httpx.AsyncClient(transport=mocked_saude) as client:
+            await download_resource(
+                client,
+                package,
+                resource_id=csv_resource.id,
+                dest_dir=tmp_path,
+            )
+        assert not list(tmp_path.glob(".*.part"))
+
+
 class TestDownloadDatasetEdgeCases:
     @pytest.mark.asyncio
     async def test_no_dest_dir(
