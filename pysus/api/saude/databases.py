@@ -309,16 +309,22 @@ DATASET_SPECS: tuple[DatasetSpec, ...] = (
             "/saude-indigena/sasisus-esgotamento-sanitario",
             "/saude-indigena/sasi-sus-gerenciamento-de-residuos-solidos",
             "/saude-indigena/acompanhamento-obra-infraestrutura-saude",
-            "/saude-indigena/"
-            "planilha-de-fornecimento-e-monitoramento-da-qualidade-da-"
-            "agua-acesso-a-agua",
-            "/saude-indigena/"
-            "planilha-registros-habilitacao-recebimento-incentivo",
-            "/saude-indigena/"
-            "indicadores-enfrentamento-monitoramento-covid19-indigenas",
-            "/saude-indigena/"
-            "sistema-de-atencao-a-saude-indigena-modulo-de-vigilancia-"
-            "alimentar-e-nutricional",
+            (
+                "/saude-indigena/planilha-de-fornecimento-e-monitoramento-da-"
+                "qualidade-da-agua-acesso-a-agua"
+            ),
+            (
+                "/saude-indigena/planilha-registros-habilitacao-recebimento-"
+                "incentivo"
+            ),
+            (
+                "/saude-indigena/indicadores-enfrentamento-monitoramento-"
+                "covid19-indigenas"
+            ),
+            (
+                "/saude-indigena/sistema-de-atencao-a-saude-indigena-modulo-de-"
+                "vigilancia-alimentar-e-nutricional"
+            ),
             "/saude-indigena/siasi-acompanhamento-gestacional",
             "/saude-indigena/siasi-modulo-morbidades",
             "/saude-indigena/sesai-atendimentos",
