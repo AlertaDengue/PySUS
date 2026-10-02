@@ -1,6 +1,15 @@
 Release Notes
 ---
 
+## [2.11.6](https://github.com/AlertaDengue/PySUS/compare/2.11.5...2.11.6) (2026-10-02)
+
+### Bug Fixes
+
+* **cli:** use the resolved token and the real API in `pysus dadosgov download` ([#355](https://github.com/AlertaDengue/PySUS/issues/355)) ([80a744c](https://github.com/AlertaDengue/PySUS/commit/80a744c6f28810301b90361bd7abfd10aeb46265))
+* **dadosgov:** read the total size from Content-Range on ranged GETs ([#352](https://github.com/AlertaDengue/PySUS/issues/352)) ([0f8eff3](https://github.com/AlertaDengue/PySUS/commit/0f8eff3989c0566e0135cab9013089b4c53c21d7))
+* **diff:** correct row counts and NULL comparison in DataFrame diffs ([#349](https://github.com/AlertaDengue/PySUS/issues/349)) ([0e999eb](https://github.com/AlertaDengue/PySUS/commit/0e999eb77649c35a4e7a7720f06260efefb02abd))
+* **extensions:** tag each file with its real format ([#357](https://github.com/AlertaDengue/PySUS/issues/357)) ([f868bc1](https://github.com/AlertaDengue/PySUS/commit/f868bc19a93d7c3a2216581074e204ea646222ee))
+
 ## [2.11.5](https://github.com/AlertaDengue/PySUS/compare/2.11.4...2.11.5) (2026-10-01)
 
 ### Bug Fixes
