@@ -304,6 +304,26 @@ class DadosGov(BaseRemoteClient):
         return output
 
 
+def _remote_size(headers: Any) -> int:
+    """Extract the total resource size from a HEAD or ranged-GET response.
+
+    A ``Range: bytes=0-0`` request is answered with ``206 Partial Content``,
+    where ``Content-Length`` describes only the returned slice (1 byte) and
+    the full size is reported by ``Content-Range: bytes 0-0/<total>``.
+    Reading ``Content-Length`` unconditionally therefore yields ``1`` for
+    every resource on servers that do not allow HEAD.
+    """
+    content_range = headers.get("Content-Range")
+    if content_range and "/" in content_range:
+        # bytes 0-0/12345  (or */12345 for an unsatisfied range)
+        total = content_range.rsplit("/", 1)[-1].strip()
+        if total.isdigit():
+            return int(total)
+
+    size = headers.get("Content-Length")
+    return int(size) if size else 0
+
+
 class Recurso(BaseModel):
     """A single resource (file) within a dataset on dados.gov.br."""
 
@@ -319,8 +339,10 @@ class Recurso(BaseModel):
     async def get_size(self) -> int:
         """Retrieve the file size from the remote server.
 
-        Makes a HEAD request (falling back to GET with a Range header)
-        to determine the Content-Length of the resource.
+        Makes a HEAD request, falling back to GET with a ``Range: bytes=0-0``
+        header when the server rejects HEAD. The fallback answers with a 206
+        whose ``Content-Length`` is the length of the single requested byte
+        (i.e. ``1``); the real total lives in ``Content-Range``.
 
         Returns
         -------
@@ -336,8 +358,7 @@ class Recurso(BaseModel):
                     headers={"Range": "bytes=0-0"},
                 )
 
-            size = response.headers.get("Content-Length")
-            return int(size) if size else 0
+            return _remote_size(response.headers)
 
 
 class ConjuntoDados(BaseModel):
