@@ -8,6 +8,7 @@ from humanize import naturalsize
 from pysus import CACHEPATH
 from pysus.api.client import PySUS
 from pysus.api.models import BaseRemoteFile
+from pysus.download_queue import download_action_availability
 from pysus.native_dir_picker import native_dir_picker
 from pysus.web.translations import t
 
@@ -746,11 +747,16 @@ def _show_results(pysus: PySUS, client: str) -> None:
     )
 
     selected_indices = event.selection.get("rows", [])  # type: ignore
+    actions = download_action_availability(
+        len(selected_indices), 0, len(download_queue)
+    )
 
     col1, col2 = st.columns([3, 1])
     with col2:
-        if selected_indices and st.button(
-            t("add_to_queue", _lang()), width="stretch"
+        if st.button(
+            t("add_to_queue", _lang()),
+            width="stretch",
+            disabled=not actions.add,
         ):
             new_indices = [
                 i for i in selected_indices if i not in queued_indices
@@ -764,79 +770,98 @@ def _show_results(pysus: PySUS, client: str) -> None:
     st.divider()
     st.subheader(t("queue_title", _lang(), count=str(len(download_queue))))
 
-    if not download_queue:
-        st.caption(t("queue_empty", _lang()))
-        return
-
-    qcache_key = f"_queue_rows_{client}"
-    qcache_fp = (id(files), tuple(queued_indices))
-    if st.session_state.get("_q_cache_fp") != qcache_fp:
-        st.session_state["_q_cache_fp"] = qcache_fp
-        st.session_state[qcache_key] = [
-            {
-                "": idx,
-                "File": f.basename,
-                "Size (bytes)": int(f.size),
-                "Size": naturalsize(int(f.size)),
-            }
-            for idx, f in enumerate(download_queue)
-        ]
-    queue_df = pd.DataFrame(st.session_state[qcache_key]).set_index("")
-
-    selection = st.dataframe(
-        queue_df,
-        width="stretch",
-        height=min(35 * len(download_queue) + 38, 250),
-        on_select="rerun",
-        selection_mode="multi-row",
-        column_config=_size_column_config(),
-    )
-
-    remove_indices = selection.selection.get("rows", [])  # type: ignore
-
-    dataset_name = st.session_state.get(f"_query_dataset_{client}", "").lower()
-    default_dir = str(
-        CACHEPATH / "downloads" / client / (dataset_name or "data")
-    )
-
+    remove_indices: list[int] = []
     dir_key = f"_dl_dir_{client}"
-    if dir_key not in st.session_state:
-        st.session_state[dir_key] = default_dir
+    if download_queue:
+        qcache_key = f"_queue_rows_{client}"
+        qcache_fp = (id(files), tuple(queued_indices))
+        if st.session_state.get("_q_cache_fp") != qcache_fp:
+            st.session_state["_q_cache_fp"] = qcache_fp
+            st.session_state[qcache_key] = [
+                {
+                    "": idx,
+                    "File": f.basename,
+                    "Size (bytes)": int(f.size),
+                    "Size": naturalsize(int(f.size)),
+                }
+                for idx, f in enumerate(download_queue)
+            ]
+        queue_df = pd.DataFrame(st.session_state[qcache_key]).set_index("")
 
-    pending = st.session_state.pop("_dl_pending_" + client, None)
-    if pending:
-        st.session_state[dir_key] = pending
-
-    col_dir, col_btn = st.columns([4, 1])
-    with col_dir:
-        st.text_input(
-            t("save_to", _lang()),
-            key=dir_key,
-            label_visibility="collapsed",
+        selection = st.dataframe(
+            queue_df,
+            width="stretch",
+            height=min(35 * len(download_queue) + 38, 250),
+            on_select="rerun",
+            selection_mode="multi-row",
+            column_config=_size_column_config(),
         )
-    with col_btn:
-        if st.button(t("browse", _lang()), width="stretch"):
-            folder = native_dir_picker(
-                title=t("browse_dir_title", _lang()),
-                initialdir=st.session_state[dir_key],
+
+        remove_indices = selection.selection.get("rows", [])  # type: ignore
+
+        dataset_name = st.session_state.get(
+            f"_query_dataset_{client}", ""
+        ).lower()
+        default_dir = str(
+            CACHEPATH / "downloads" / client / (dataset_name or "data")
+        )
+
+        if dir_key not in st.session_state:
+            st.session_state[dir_key] = default_dir
+
+        pending = st.session_state.pop("_dl_pending_" + client, None)
+        if pending:
+            st.session_state[dir_key] = pending
+
+        col_dir, col_btn = st.columns([4, 1])
+        with col_dir:
+            st.text_input(
+                t("save_to", _lang()),
+                key=dir_key,
+                label_visibility="collapsed",
             )
-            if folder:
-                st.session_state["_dl_pending_" + client] = folder
-                st.rerun()
+        with col_btn:
+            if st.button(t("browse", _lang()), width="stretch"):
+                folder = native_dir_picker(
+                    title=t("browse_dir_title", _lang()),
+                    initialdir=st.session_state[dir_key],
+                )
+                if folder:
+                    st.session_state["_dl_pending_" + client] = folder
+                    st.rerun()
+    else:
+        st.caption(t("queue_empty", _lang()))
+
+    actions = download_action_availability(
+        len(selected_indices), len(remove_indices), len(download_queue)
+    )
     col1, col2, col3 = st.columns(3)
     with col1:
-        if remove_indices and st.button(t("remove", _lang()), width="stretch"):
+        if st.button(
+            t("remove", _lang()),
+            width="stretch",
+            disabled=not actions.remove,
+        ):
             remove_targets = {queued_indices[i] for i in remove_indices}
             st.session_state[queue_key] = [
                 i for i in queued_indices if i not in remove_targets
             ]
             st.rerun()
     with col2:
-        if st.button(t("clear", _lang()), width="stretch"):
+        if st.button(
+            t("clear", _lang()),
+            width="stretch",
+            disabled=not actions.clear,
+        ):
             st.session_state[queue_key] = []
             st.rerun()
     with col3:
-        if st.button(t("download", _lang()), width="stretch", type="primary"):
+        if st.button(
+            t("download", _lang()),
+            width="stretch",
+            type="primary",
+            disabled=not actions.download,
+        ):
             _download_selected(
                 pysus, client, download_queue, st.session_state[dir_key]
             )
