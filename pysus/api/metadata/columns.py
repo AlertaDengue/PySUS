@@ -84,7 +84,7 @@ def _load_yaml_metadata(
     """Load column definitions from YAML schema files."""
     result: dict[str, dict[str, Any]] = {}
 
-        # Check for database-specific schema directory
+    # Check for database-specific schema directory
     db_dir = _SCHEMAS_DIR / database
     if db_dir.exists():
         for yaml_file in db_dir.glob("*.yaml"):
@@ -224,13 +224,11 @@ def available_groups(database: str) -> list[str]:
                     group = key.split("_", 1)[0]
                     if group not in groups:
                         groups.append(group)
-                                                                  
+
     if database == "sinan":
         saude_dir = Path(__file__).parent.parent / "saude" / "schemas"
         if saude_dir.exists():
             for yaml_file in saude_dir.glob("*.yaml"):
                 if yaml_file.stem not in groups:
                     groups.append(yaml_file.stem)
-
-
     return sorted(groups)
