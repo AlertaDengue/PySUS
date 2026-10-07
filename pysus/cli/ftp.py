@@ -10,6 +10,8 @@ pysus ftp download <slug> Download files with optional filters
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
 app = typer.Typer(help="DATASUS FTP datasets")
@@ -20,6 +22,68 @@ def _get_ftp():
     from pysus.api.ftp.client import FTP
 
     return FTP()
+
+
+async def _resolve_dataset(ftp, slug_upper: str, slug: str):
+    """Return the live dataset object matching *slug*."""
+    target = None
+    for ds in await ftp.datasets():
+        if type(ds).__name__.upper() == slug_upper:
+            target = ds
+            break
+
+    if target is None:
+        typer.echo(f"Could not initialise dataset '{slug}'.")
+        raise typer.Exit(code=1)
+    return target
+
+
+async def _select_files(
+    target,
+    group: str | None,
+    state: str | None,
+    year: int | None,
+) -> list:
+    """Return the dataset's files narrowed by the CLI filters.
+
+    Datasets expose groups and files through ``content`` and recurse into
+    them via ``search()``; there is no ``get_files()``.
+    """
+    remote_files = await target.search()
+    if group:
+        remote_files = [
+            f for f in remote_files if group.upper() in str(f.path).upper()
+        ]
+    if state:
+        remote_files = [
+            f for f in remote_files if state.upper() in str(f.path).upper()
+        ]
+    if year:
+        remote_files = [f for f in remote_files if str(year) in str(f.path)]
+    return remote_files
+
+
+def _run_with_ftp(
+    slug_upper: str,
+    dataset_name: str,
+    group: str | None,
+    state: str | None,
+    year: int | None,
+) -> list:
+    """Connect, list the filtered files and disconnect."""
+
+    async def _do_list() -> list:
+        ftp = _get_ftp()
+        try:
+            await ftp.connect()
+            target = await _resolve_dataset(ftp, slug_upper, dataset_name)
+            return await _select_files(target, group, state, year)
+        finally:
+            await ftp.close()
+
+    from pysus.api.client import _run_sync
+
+    return _run_sync(_do_list())
 
 
 @app.command("list")
@@ -159,42 +223,19 @@ def files(
         typer.echo(f"Dataset '{slug}' not found.")
         raise typer.Exit(code=1)
 
-    ftp = _get_ftp()
-    try:
-        datasets = ftp.datasets()
-        target = None
-        for ds in datasets:
-            if type(ds).__name__.upper() == slug_upper:
-                target = ds
-                break
+    remote_files = _run_with_ftp(
+        slug_upper, ds_cls.__name__, group, state, year
+    )
 
-        if target is None:
-            typer.echo(f"Could not initialise dataset '{slug}'.")
-            raise typer.Exit(code=1)
+    if not remote_files:
+        typer.echo("No files match the given filters.")
+        raise typer.Exit(code=0)
 
-        remote_files = target.get_files()
-        if group:
-            remote_files = [
-                f for f in remote_files if group.upper() in f.path.upper()
-            ]
-        if state:
-            remote_files = [
-                f for f in remote_files if state.upper() in f.path.upper()
-            ]
-        if year:
-            remote_files = [f for f in remote_files if str(year) in f.path]
-
-        if not remote_files:
-            typer.echo("No files match the given filters.")
-            raise typer.Exit(code=0)
-
-        typer.echo(f"  Files for {ds_cls.__name__}: {len(remote_files)}\n")
-        for f in remote_files[:50]:
-            typer.echo(f"  {f.path}")
-        if len(remote_files) > 50:
-            typer.echo(f"  ... and {len(remote_files) - 50} more")
-    finally:
-        ftp.close()
+    typer.echo(f"  Files for {ds_cls.__name__}: {len(remote_files)}\n")
+    for f in remote_files[:50]:
+        typer.echo(f"  {f.path}")
+    if len(remote_files) > 50:
+        typer.echo(f"  ... and {len(remote_files) - 50} more")
 
 
 @app.command()
@@ -229,40 +270,28 @@ def download(
     out_dir = pathlib.Path(output) if output else CACHEPATH / "downloads"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ftp = _get_ftp()
-    try:
-        datasets = ftp.datasets()
-        target = None
-        for ds in datasets:
-            if type(ds).__name__.upper() == slug_upper:
-                target = ds
-                break
+    async def _do_download() -> None:
+        ftp = _get_ftp()
+        try:
+            await ftp.connect()
+            target = await _resolve_dataset(ftp, slug_upper, slug)
+            remote_files = await _select_files(target, group, state, year)
 
-        if target is None:
-            typer.echo(f"Could not initialise dataset '{slug}'.")
-            raise typer.Exit(code=1)
+            if not remote_files:
+                typer.echo("No files match the given filters.")
+                raise typer.Exit(code=0)
 
-        remote_files = target.get_files()
-        if group:
-            remote_files = [
-                f for f in remote_files if group.upper() in f.path.upper()
-            ]
-        if state:
-            remote_files = [
-                f for f in remote_files if state.upper() in f.path.upper()
-            ]
-        if year:
-            remote_files = [f for f in remote_files if str(year) in f.path]
+            typer.echo(
+                f"Downloading {len(remote_files)} file(s) to {out_dir}..."
+            )
+            for f in remote_files:
+                typer.echo(f"  {f.path}")
+                await ftp.download(f, out_dir / Path(f.path).name)
 
-        if not remote_files:
-            typer.echo("No files match the given filters.")
-            raise typer.Exit(code=0)
+            typer.echo(f"\nDone. Files saved to {out_dir}")
+        finally:
+            await ftp.close()
 
-        typer.echo(f"Downloading {len(remote_files)} file(s) to {out_dir}...")
-        for f in remote_files:
-            typer.echo(f"  {f.path}")
-            ftp.download(f, out_dir)
+    from pysus.api.client import _run_sync
 
-        typer.echo(f"\nDone. Files saved to {out_dir}")
-    finally:
-        ftp.close()
+    _run_sync(_do_download())
