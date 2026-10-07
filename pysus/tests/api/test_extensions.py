@@ -1825,3 +1825,96 @@ class TestInstantiateType:
         obj = await ExtensionFactory.instantiate(tmp_dir)
         assert isinstance(obj, Directory)
         assert obj.type == "DIR"
+
+
+# BaseLocalFile.to_parquet must not write over the file it is reading
+# ---------------------------------------------------------------------------
+
+
+class TestToParquetInPlace:
+    """`to_parquet(output_path=self.path)` used to truncate the source.
+
+    ParquetWriter opens its destination with "wb" while the rows are
+    still being streamed out of that same path, so the input was
+    destroyed mid-read.
+    """
+
+    @pytest.mark.asyncio
+    async def test_csv_in_place_raises_and_keeps_source(self, tmp_dir):
+        path = tmp_dir / "data.csv"
+        payload = "A,B\n" + "".join(f"{i},x\n" for i in range(2000))
+        path.write_text(payload)
+        obj = await ExtensionFactory.instantiate(path)
+        assert isinstance(obj, CSV)
+
+        with pytest.raises(ConversionError, match="onto itself"):
+            await obj.to_parquet(output_path=path)
+
+        assert path.read_text() == payload
+        assert not list(tmp_dir.glob("*.parquet"))
+
+    @pytest.mark.asyncio
+    async def test_csv_in_place_via_default_path_is_fine(self, tmp_dir):
+        """A .csv default target is a different file, so it still works."""
+        path = tmp_dir / "data.csv"
+        path.write_text("A,B\n" + "".join(f"{i},x\n" for i in range(200)))
+        obj = await ExtensionFactory.instantiate(path)
+
+        out = await obj.to_parquet()
+        assert isinstance(out, Parquet)
+        assert out.path == tmp_dir / "data.parquet"
+        assert path.exists()
+
+    @pytest.mark.asyncio
+    async def test_in_place_via_relative_path_also_raises(self, tmp_dir):
+        """The collision check must survive path normalisation."""
+        path = tmp_dir / "data.csv"
+        path.write_text("A,B\n" + "".join(f"{i},x\n" for i in range(200)))
+        obj = await ExtensionFactory.instantiate(path)
+
+        convoluted = tmp_dir / "sub" / ".." / "data.csv"
+        (tmp_dir / "sub").mkdir()
+        with pytest.raises(ConversionError, match="onto itself"):
+            await obj.to_parquet(output_path=convoluted)
+        assert path.exists()
+
+    @pytest.mark.asyncio
+    async def test_parquet_in_place_is_a_noop(self, tmp_dir):
+        """Parquet -> Parquet needs no conversion and must be a no-op."""
+        path = tmp_dir / "data.parquet"
+        pd.DataFrame({"a": list(range(100))}).to_parquet(path)
+        before = path.read_bytes()
+        obj = await ExtensionFactory.instantiate(path)
+        assert isinstance(obj, Parquet)
+
+        out = await obj.to_parquet()
+
+        assert out is obj
+        assert path.read_bytes() == before
+        assert out.rows == 100
+
+    @pytest.mark.asyncio
+    async def test_parquet_default_output_is_the_source(self, tmp_dir):
+        """`with_suffix('.parquet')` on a .parquet path is the source."""
+        path = tmp_dir / "data.parquet"
+        pd.DataFrame({"a": [1, 2, 3]}).to_parquet(path)
+        before = path.read_bytes()
+        obj = await ExtensionFactory.instantiate(path)
+
+        out = await obj.to_parquet()
+
+        assert out.path == path
+        assert path.read_bytes() == before
+
+    @pytest.mark.asyncio
+    async def test_json_in_place_raises_and_keeps_source(self, tmp_dir):
+        path = tmp_dir / "data.json"
+        payload = json.dumps([{"a": i, "b": f"v{i}"} for i in range(2000)])
+        path.write_text(payload)
+        obj = await ExtensionFactory.instantiate(path)
+        assert isinstance(obj, JSON)
+
+        with pytest.raises(ConversionError, match="onto itself"):
+            await obj.to_parquet(output_path=path)
+
+        assert path.read_text() == payload
