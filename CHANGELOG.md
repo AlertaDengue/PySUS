@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.11.7](https://github.com/AlertaDengue/PySUS/compare/2.11.6...2.11.7) (2026-10-07)
+
+### Bug Fixes
+
+* **models:** never convert a file onto the file being read ([#356](https://github.com/AlertaDengue/PySUS/issues/356)) ([29c8f98](https://github.com/AlertaDengue/PySUS/commit/29c8f98f8a2dd96f7ba235c510de19475d078f76))
+
 ## [2.11.6](https://github.com/AlertaDengue/PySUS/compare/2.11.5...2.11.6) (2026-10-02)
 
 ### Bug Fixes
