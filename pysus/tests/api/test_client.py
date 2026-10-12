@@ -513,6 +513,7 @@ class TestPySUSQuery:
 
     @pytest.mark.asyncio
     async def test_query_with_client_filter(self, test_db_path):
+        from pathlib import PureWindowsPath
         from unittest.mock import AsyncMock, MagicMock
 
         from pysus.api.ducklake.client import DuckLake
@@ -529,7 +530,12 @@ class TestPySUSQuery:
         mock_file2 = MagicMock()
         mock_file2.path = "public/data/dadosgov/otherfile"
 
-        ds.query = AsyncMock(return_value=[mock_file1, mock_file2])
+        # DuckLake may return WindowsPath instances on Windows. The client
+        # filter must compare normalized POSIX paths so FTP files are retained.
+        mock_file3 = MagicMock()
+        mock_file3.path = PureWindowsPath("public/data/ftp/windows-file")
+
+        ds.query = AsyncMock(return_value=[mock_file1, mock_file2, mock_file3])
         mock_ducklake.datasets = AsyncMock(return_value=[ds])
 
         client._ducklake = mock_ducklake
@@ -537,7 +543,7 @@ class TestPySUSQuery:
 
         result = await client.query(dataset="sinan", client=FTP)
 
-        assert result == [mock_file1]
+        assert result == [mock_file1, mock_file3]
 
         await client.__aexit__(None, None, None)
 
