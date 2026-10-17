@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock
 
+import pytest
 from pysus.management.sync import SyncEngine
 
 
@@ -163,12 +164,227 @@ class TestSyncEngine:
             name="DENGBR25.parquet",
             path="s3/x",
             size=5000,
-            source_size=0,
+            source_size=100,
             group="DENG",
             year=2025,
         )
         comparison = FileComparison(key=ftp.identity_key(), records=[ftp, s3])
         assert not SyncEngine._s3_is_stale(comparison)
+
+
+class _FakeFTP:
+    """Minimal ``ftplib.FTP`` stand-in for liveness/reconnect tests."""
+
+    def __init__(self, fail_noop=False, fail_retr=None):
+        self.fail_noop = fail_noop
+        self.fail_retr = fail_retr
+        self.noop_calls = 0
+        self.closed = False
+        self.retr_rest = None
+
+    def voidcmd(self, cmd):
+        self.noop_calls += 1
+        if self.fail_noop:
+            raise OSError("stale")
+        return "200 OK"
+
+    def size(self, path):
+        return 10
+
+    def close(self):
+        self.closed = True
+
+    def retrbinary(self, cmd, callback, rest=None):
+        self.retr_rest = rest
+        if self.fail_retr is not None:
+            raise self.fail_retr
+        callback(b"bytes")
+
+
+class _FakeFTPClient:
+    """Fake FTP client exposing ``.ftp`` and an async ``connect``."""
+
+    def __init__(self, ftp, next_ftp=None):
+        self._ftp = ftp
+        self._next = next_ftp
+        self.connect_calls = 0
+
+    @property
+    def ftp(self):
+        return self._ftp
+
+    async def connect(self):
+        self.connect_calls += 1
+        self._ftp = self._next
+
+
+def test_retr_with_resume_uses_rest_offset(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 1000)
+
+    class _FTP:
+        def __init__(self):
+            self.rests = []
+
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, cmd, callback, rest=None):
+            self.rests.append(rest)
+            callback(b"y" * (5000 - rest))
+
+    ftp = _FTP()
+    total = _retr_with_resume(ftp, "/f", out, _StallWatch("f", timeout=60))
+    assert total == 5000
+    assert ftp.rests == [1000]
+    assert out.stat().st_size == 5000
+
+
+def test_retr_with_resume_skips_when_already_complete(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 5000)
+
+    class _FTP:
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, *args, **kwargs):
+            raise AssertionError("must not transfer a complete file")
+
+    assert _retr_with_resume(_FTP(), "/f", out, _StallWatch("f")) == 5000
+
+
+def test_retr_with_resume_drops_partial_when_rest_refused(tmp_path):
+    from pysus.management.sync import _retr_with_resume, _StallWatch
+
+    out = tmp_path / "f.bin"
+    out.write_bytes(b"x" * 1000)
+
+    class _FTP:
+        def size(self, path):
+            return 5000
+
+        def retrbinary(self, cmd, callback, rest=None):
+            raise OSError("550 REST not understood")
+
+    with pytest.raises(OSError):
+        _retr_with_resume(_FTP(), "/f", out, _StallWatch("f", timeout=60))
+    assert not out.exists()
+
+
+@pytest.mark.asyncio
+async def test_download_retry_keeps_ftp_partial(tmp_path, monkeypatch):
+    from pysus.management import sync as sync_mod
+
+    monkeypatch.setattr(sync_mod, "CACHEPATH", tmp_path)
+    engine = SyncEngine()
+    file = MagicMock()
+    file.basename = "x.dbc"
+    file.client.name = "FTP"
+    seen = []
+
+    async def fake_once(file, output, ftp_client=None):
+        seen.append(output.exists())
+        if len(seen) == 1:
+            output.write_bytes(b"1234")
+            raise ConnectionResetError("boom")
+        return output
+
+    monkeypatch.setattr(engine, "_download_once", fake_once)
+    result = await engine._download_raw_with_retry(file, max_retries=2)
+    assert seen == [False, True]
+    assert result.exists()
+
+
+@pytest.mark.asyncio
+async def test_download_retry_clears_non_ftp_partial(tmp_path, monkeypatch):
+    from pysus.management import sync as sync_mod
+
+    monkeypatch.setattr(sync_mod, "CACHEPATH", tmp_path)
+    engine = SyncEngine()
+    file = MagicMock()
+    file.basename = "x.csv.zip"
+    file.client.name = "DADOSGOV"
+    seen = []
+
+    async def fake_once(file, output, ftp_client=None):
+        seen.append(output.exists())
+        if len(seen) == 1:
+            output.write_bytes(b"1234")
+            raise ConnectionResetError("boom")
+        return output
+
+    monkeypatch.setattr(engine, "_download_once", fake_once)
+    await engine._download_raw_with_retry(file, max_retries=2)
+    assert seen == [False, False]
+
+
+class TestLiveFTP:
+    @pytest.mark.asyncio
+    async def test_connects_when_no_session(self):
+        new = _FakeFTP()
+        client = _FakeFTPClient(None, next_ftp=new)
+        assert await SyncEngine._live_ftp(client) is new
+        assert client.connect_calls == 1
+
+    @pytest.mark.asyncio
+    async def test_keeps_healthy_session(self):
+        ftp = _FakeFTP()
+        client = _FakeFTPClient(ftp)
+        assert await SyncEngine._live_ftp(client) is ftp
+        assert client.connect_calls == 0
+        assert ftp.noop_calls == 1
+
+    @pytest.mark.asyncio
+    async def test_reconnects_stale_session(self):
+        stale = _FakeFTP(fail_noop=True)
+        new = _FakeFTP()
+        client = _FakeFTPClient(stale, next_ftp=new)
+        assert await SyncEngine._live_ftp(client) is new
+        assert client.connect_calls == 1
+        assert stale.closed is True
+
+    @pytest.mark.asyncio
+    async def test_raises_when_connect_yields_no_session(self):
+        client = _FakeFTPClient(None, next_ftp=None)
+        with pytest.raises(RuntimeError):
+            await SyncEngine._live_ftp(client)
+
+    @pytest.mark.asyncio
+    async def test_download_once_resets_client_on_failure(self, tmp_path):
+        stale = _FakeFTP(fail_retr=OSError("boom"))
+        client = _FakeFTPClient(stale)
+        file = MagicMock()
+        file.client = client
+        file.path = "/d/BISP.dbc"
+        file.basename = "BISP.dbc"
+        file.size = 10
+        engine = SyncEngine()
+        with pytest.raises(OSError):
+            await engine._download_once(file, tmp_path / "out.dbc")
+        assert client.ftp is None
+        assert stale.closed is True
+
+    @pytest.mark.asyncio
+    async def test_download_once_resets_pooled_client_on_failure(
+        self, tmp_path
+    ):
+        pooled = _FakeFTP(fail_retr=OSError("boom"))
+        client = _FakeFTPClient(pooled)
+        file = MagicMock()
+        file.client = client
+        file.path = "/d/BISP.dbc"
+        file.basename = "BISP.dbc"
+        file.size = 10
+        engine = SyncEngine()
+        with pytest.raises(OSError):
+            await engine._download_once(file, tmp_path / "out.dbc", client)
+        assert client.ftp is None
+        assert pooled.closed is True
 
     def test_s3_not_stale_when_source_size_zero(self):
         from pysus.management.records import FileComparison, FileRecord

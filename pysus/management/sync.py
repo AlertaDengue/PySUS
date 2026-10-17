@@ -211,6 +211,47 @@ class _StallWatch:
         )
 
 
+def _retr_with_resume(
+    ftp: Any,
+    remote_path: str,
+    output: Path,
+    watch: Any,
+) -> int:
+    """Download *remote_path* into *output*, resuming a partial file.
+
+    DATASUS throttles and drops large transfers mid-stream. ``REST`` (the
+    ``rest`` argument of ``retrbinary``) lets a retry continue from the
+    bytes already written instead of re-downloading the whole file. If the
+    server refuses ``REST`` the partial is discarded so the next attempt
+    restarts cleanly.
+    """
+    total = ftp.size(remote_path) or 0
+    offset = output.stat().st_size if output.exists() else 0
+    if total and offset >= total:
+        return total
+    received = 0
+
+    def _write(chunk: bytes) -> int:
+        nonlocal received
+        written = f.write(chunk)
+        received += len(chunk)
+        watch.poke()
+        return written
+
+    try:
+        with open(output, "ab" if offset else "wb") as f:
+            ftp.retrbinary(f"RETR {remote_path}", _write, rest=offset or None)
+    except Exception:  # noqa: BLE001
+        if offset and received == 0:
+            # REST was refused; drop the partial so the retry restarts.
+            try:
+                output.unlink(missing_ok=True)
+            except OSError:
+                pass
+        raise
+    return total
+
+
 class SyncEngine:
     """Orchestrates inventory → compare → download → parquet → catalog."""
 
@@ -571,7 +612,11 @@ class SyncEngine:
                 return await self._download_once(file, output, ftp_client)
             except _RETRYABLE as exc:
                 last_error = exc
-                self._cleanup_local(output)
+                # Keep FTP partials so the retry can resume with REST; other
+                # origins are re-downloaded from scratch.
+                origin = getattr(getattr(file, "client", None), "name", None)
+                if origin is None or origin.upper() != "FTP":
+                    self._cleanup_local(output)
                 wait_time = 2**attempt + (attempt * 2)
                 error(
                     f"Download attempt {attempt + 1}/{max_retries} failed "
@@ -583,6 +628,40 @@ class SyncEngine:
             f"Failed to download {file.basename} after {max_retries} "
             f"attempts: {last_error}"
         ) from last_error
+
+    @staticmethod
+    async def _live_ftp(client: Any) -> Any:
+        """Return a live ``ftplib.FTP`` for *client*, reconnecting if stale.
+
+        FTP servers (DATASUS in particular) drop idle control connections
+        without the client noticing; the next ``RETR`` then blocks until the
+        socket read times out. A cheap ``NOOP`` detects that, and a fresh
+        session is established before the transfer starts.
+        """
+        from anyio import to_thread
+
+        def _ping() -> Any:
+            ftp = getattr(client, "ftp", None)
+            if ftp is None:
+                return None
+            try:
+                ftp.voidcmd("NOOP")
+                return ftp
+            except Exception:  # noqa: BLE001 — any failure means stale
+                try:
+                    ftp.close()
+                except Exception:  # noqa: BLE001
+                    pass
+                return None
+
+        ftp = await to_thread.run_sync(_ping)
+        if ftp is None:
+            setattr(client, "_ftp", None)  # noqa: B010 — reset stale session
+            await client.connect()
+            ftp = getattr(client, "ftp", None)
+        if ftp is None:
+            raise RuntimeError("could not establish an FTP connection")
+        return ftp
 
     async def _download_once(
         self,
@@ -611,38 +690,30 @@ class SyncEngine:
             )
 
         client = ftp_client if ftp_client is not None else file.client
-        ftp = getattr(client, "ftp", None)
+        ftp: Any = getattr(client, "ftp", None)
         if ftp_client is not None:
-            # never fall back to the shared client: reconnect the pooled
-            # session instead
-            if ftp is None:
-                await client.connect()
-                ftp = getattr(client, "ftp", None)
-            assert ftp is not None
+            # DATASUS closes idle control connections. Reusing a dead pooled
+            # session makes ``RETR`` hang until the socket times out, so ping
+            # with NOOP first and reconnect a fresh session when it is stale
+            # (never fall back to the shared client).
+            ftp = await self._live_ftp(client)
             remote_path = str(file.path)
             watch = _StallWatch(file.basename)
 
             def _retr() -> int:
-                total = ftp.size(remote_path) or 0
-                with open(output, "wb") as f:
-
-                    def _write(chunk: bytes) -> int:
-                        written = f.write(chunk)
-                        watch.poke()
-                        return written
-
-                    ftp.retrbinary(f"RETR {remote_path}", _write)
-                return total
+                return _retr_with_resume(ftp, remote_path, output, watch)
 
             try:
                 with anyio.fail_after(_DOWNLOAD_TIMEOUT):
                     await watch.run(
-                        to_thread.run_sync(_retr, abandon_on_cancel=True)
+                        to_thread.run_sync(_retr, abandon_on_cancel=False)
                     )
                 return output
             except Exception:  # noqa
                 try:
-                    ftp.quit()
+                    # ``close`` is non-blocking; ``quit`` can hang on a dead
+                    # link and delay the retry.
+                    ftp.close()
                 except Exception:  # noqa
                     pass
                 setattr(  # noqa: B010 — reset pooled FTP session
@@ -650,23 +721,26 @@ class SyncEngine:
                 )
                 raise
         if ftp is not None:
+            ftp = await self._live_ftp(client)
             remote_path = str(file.path)
             watch = _StallWatch(file.basename)
 
             def _direct_retr() -> None:
-                with open(output, "wb") as f:
+                _retr_with_resume(ftp, remote_path, output, watch)
 
-                    def _write(chunk: bytes) -> int:
-                        written = f.write(chunk)
-                        watch.poke()
-                        return written
-
-                    ftp.retrbinary(f"RETR {remote_path}", _write)
-
-            with anyio.fail_after(_DOWNLOAD_TIMEOUT):
-                await watch.run(
-                    to_thread.run_sync(_direct_retr, abandon_on_cancel=True)
+            fetch = to_thread.run_sync(_direct_retr, abandon_on_cancel=False)
+            try:
+                with anyio.fail_after(_DOWNLOAD_TIMEOUT):
+                    await watch.run(fetch)
+            except Exception:  # noqa
+                try:
+                    ftp.close()
+                except Exception:  # noqa
+                    pass
+                setattr(  # noqa: B010 — reset stale FTP session
+                    client, "_ftp", None
                 )
+                raise
             return output
         watch = _StallWatch(file.basename)
 

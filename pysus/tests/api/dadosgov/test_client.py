@@ -208,6 +208,95 @@ class TestRecurso:
 
         assert size == 0
 
+    @pytest.mark.asyncio
+    async def test_get_size_range_fallback_uses_content_range(self):
+        """A 206 reports the slice length, not the total, in Content-Length.
+
+        ``Range: bytes=0-0`` makes the server answer with a single byte, so
+        ``Content-Length`` is 1. The real size is only in ``Content-Range``.
+        """
+        r = Recurso(
+            id="r7",
+            title="Test",
+            url="https://example.com/big.csv",
+            api_size=0,
+        )
+        head_response = MagicMock()
+        head_response.status_code = 405
+
+        get_response = MagicMock()
+        get_response.status_code = 206
+        get_response.headers = {
+            "Content-Length": "1",
+            "Content-Range": "bytes 0-0/987654321",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.head.return_value = head_response
+        mock_client.get.return_value = get_response
+        mock_client.__aenter__.return_value = mock_client
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            size = await r.get_size()
+
+        assert size == 987654321
+
+    @pytest.mark.asyncio
+    async def test_get_size_head_with_content_range_uses_total(self):
+        r = Recurso(
+            id="r8",
+            title="Test",
+            url="https://example.com/big.csv",
+            api_size=0,
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.headers = {
+            "Content-Length": "5000",
+            "Content-Range": "bytes 0-4999/12345",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.head.return_value = mock_response
+        mock_client.__aenter__.return_value = mock_client
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            size = await r.get_size()
+
+        assert size == 12345
+
+    @pytest.mark.asyncio
+    async def test_get_size_malformed_content_range_falls_back(self):
+        r = Recurso(
+            id="r9",
+            title="Test",
+            url="https://example.com/file.csv",
+            api_size=0,
+        )
+        head_response = MagicMock()
+        head_response.status_code = 405
+
+        get_response = MagicMock()
+        get_response.headers = {
+            "Content-Length": "1",
+            "Content-Range": "bytes 0-0/*",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.head.return_value = head_response
+        mock_client.get.return_value = get_response
+        mock_client.__aenter__.return_value = mock_client
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            size = await r.get_size()
+
+        assert size == 1
+
+    def test_remote_size_without_any_header(self):
+        from pysus.api.dadosgov.client import _remote_size
+
+        assert _remote_size({}) == 0
+
 
 class TestConjuntoDados:
     def test_fields_from_aliases(self):

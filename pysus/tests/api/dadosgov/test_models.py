@@ -353,6 +353,64 @@ class TestFileFetchMetadata:
         assert f.record.api_size == 0
 
     @pytest.mark.asyncio
+    async def test_fetch_metadata_range_fallback_uses_content_range(self):
+        """A ranged GET answers 206 with a 1-byte Content-Length.
+
+        Recording that as the file size makes the catalog store ``1`` for
+        every remote file.
+        """
+        recurso = make_recurso(tamanho=0)
+        ds = MockDataset(client=DadosGov())
+        f = File(record=recurso, dataset=ds, path="http://example.com/big.csv")
+
+        head_response = MagicMock()
+        head_response.status_code = 405
+
+        get_response = MagicMock()
+        get_response.status_code = 206
+        get_response.headers = {
+            "Content-Length": "1",
+            "Content-Range": "bytes 0-0/42424242",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.head.return_value = head_response
+        mock_client.get.return_value = get_response
+        mock_client.__aenter__.return_value = mock_client
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            await f.fetch_metadata()
+
+        assert f.record.api_size == 42424242
+
+    @pytest.mark.asyncio
+    async def test_fetch_size_range_fallback_uses_content_range(self):
+        recurso = make_recurso(tamanho=0)
+        ds = MockDataset(client=DadosGov())
+        f = File(record=recurso, dataset=ds, path="http://example.com/big.csv")
+
+        head_response = MagicMock()
+        head_response.status_code = 405
+
+        get_response = MagicMock()
+        get_response.status_code = 206
+        get_response.headers = {
+            "Content-Length": "1",
+            "Content-Range": "bytes 0-0/7777777",
+        }
+
+        mock_client = AsyncMock()
+        mock_client.head.return_value = head_response
+        mock_client.get.return_value = get_response
+        mock_client.__aenter__.return_value = mock_client
+
+        with patch("httpx.AsyncClient", return_value=mock_client):
+            size = await f.fetch_size()
+
+        assert size == 7777777
+        assert f.record.api_size == 7777777
+
+    @pytest.mark.asyncio
     async def test_parse_typeerror_is_caught(self):
         recurso = make_recurso(tamanho=0)
         ds = MockDataset(client=DadosGov())

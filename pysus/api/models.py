@@ -238,6 +238,20 @@ class BaseTabularFile(BaseLocalFile, ABC):
             output_path = self.path.with_suffix(".parquet")
 
         output_path = Path(output_path).expanduser().resolve()
+
+        if output_path == self.path:
+            # ParquetWriter opens its destination with "wb", truncating
+            # it, and this method streams the rows out of self.path. A
+            # source that is already Parquet needs no conversion, but
+            # any other format would be destroyed mid-read.
+            if isinstance(self, Parquet):
+                return self  # type: ignore[return-value]
+            raise ConversionError(
+                f"Refusing to convert {self.path} onto itself.\n"
+                f"Hint: pass a different output_path, e.g. "
+                f"'{self.path.with_suffix('.parquet')}'."
+            )
+
         writer = None
         total_rows = self.rows
         current_rows = 0

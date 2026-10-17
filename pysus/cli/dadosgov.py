@@ -155,7 +155,7 @@ def download(
     from pysus import CACHEPATH
     from pysus.api.dadosgov.databases import AVAILABLE_DATABASES
 
-    _get_token(token)
+    token = _get_token(token)
 
     slug_upper = slug.upper()
     ds_cls = None
@@ -188,17 +188,23 @@ def download(
                 typer.echo(f"Could not initialise dataset '{slug}'.")
                 raise typer.Exit(code=1)
 
-            remote_files = target.get_files()
+            remote_files = await target.search()
             if group:
                 remote_files = [
-                    f for f in remote_files if group.upper() in f.path.upper()
+                    f
+                    for f in remote_files
+                    if group.upper() in str(f.path).upper()
                 ]
             if state:
                 remote_files = [
-                    f for f in remote_files if state.upper() in f.path.upper()
+                    f
+                    for f in remote_files
+                    if state.upper() in str(f.path).upper()
                 ]
             if year:
-                remote_files = [f for f in remote_files if str(year) in f.path]
+                remote_files = [
+                    f for f in remote_files if str(year) in str(f.path)
+                ]
 
             if not remote_files:
                 typer.echo("No files match the given filters.")
@@ -209,7 +215,9 @@ def download(
             )
             for f in remote_files:
                 typer.echo(f"  {f.path}")
-                await dg.download(f, out_dir)
+                await dg.download(
+                    f, out_dir / pathlib.PurePosixPath(f.path).name
+                )
 
             typer.echo(f"\nDone. Files saved to {out_dir}")
         finally:

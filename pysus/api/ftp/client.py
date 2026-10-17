@@ -185,7 +185,7 @@ class FTP(BaseRemoteClient):
         async def _fetch():
             try:
                 self.ftp.voidcmd("NOOP")
-            except BrokenPipeError:
+            except Exception:  # noqa: BLE001 — any failure means stale session
                 await self.connect()
 
             total_size = self.ftp.size(str(file.path)) or 0

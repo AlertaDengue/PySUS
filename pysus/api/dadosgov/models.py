@@ -15,7 +15,7 @@ from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
 from pysus.api.types import State
 
-from .client import ConjuntoDados, DadosGov, Recurso
+from .client import ConjuntoDados, DadosGov, Recurso, _remote_size
 from .metadata import (
     DadosGovDatasetExtractor,
     DadosGovFileExtractor,
@@ -195,9 +195,9 @@ class File(BaseRemoteFile):
                         str(self.path), headers={"Range": "bytes=0-0"}
                     )
 
-                size_str = response.headers.get("Content-Length")
-                if size_str:
-                    self.record.api_size = int(size_str)
+                remote_size = _remote_size(response.headers)
+                if remote_size > 0:
+                    self.record.api_size = remote_size
 
                 last_mod_str = response.headers.get("Last-Modified")
                 if last_mod_str:
@@ -221,8 +221,9 @@ class File(BaseRemoteFile):
     async def fetch_size(self) -> int:
         """Fetch the remote file size and update the local record.
 
-        Makes a HEAD request (falling back to GET with a Range header)
-        to determine the Content-Length.
+        Makes a HEAD request, falling back to GET with a ``Range: bytes=0-0``
+        header when the server rejects HEAD. In the ranged response the
+        total size comes from ``Content-Range``, not ``Content-Length``.
 
         Returns
         -------
@@ -241,7 +242,7 @@ class File(BaseRemoteFile):
                         str(self.path), headers={"Range": "bytes=0-0"}
                     )
 
-                remote_size = int(response.headers.get("Content-Length", 0))
+                remote_size = _remote_size(response.headers)
 
                 if remote_size > 0:
                     self.record.api_size = remote_size

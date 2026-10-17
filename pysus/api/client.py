@@ -396,6 +396,24 @@ class PySUS:
                     group=group,
                 )
                 session.add(record)
+            else:
+                # download() creates the record as DOWNLOADING with no
+                # metadata and then completes it with the year, month,
+                # state and group parsed from the remote file. Without
+                # this the second call only moved `status`, so the
+                # metadata columns stayed NULL for every file ever
+                # downloaded. Only overwrite what was supplied, so the
+                # FAILED call cannot erase what COMPLETED recorded.
+                record.remote_path = str(remote_path)
+                record.client_name = client_name
+                if year is not None:
+                    record.year = year
+                if month is not None:
+                    record.month = month
+                if state is not None:
+                    record.state = state
+                if group is not None:
+                    record.group = group
 
             record.status = status
             record.last_synced = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -627,8 +645,15 @@ class PySUS:
             dataset = parts[-2] if len(parts) > 2 else "Other"
             has_group = getattr(r, "group", None) is not None
 
+            # _get_dest_path nests as
+            # downloads/<client>/<dataset>/<group>/<name> when the file
+            # has a group and downloads/<client>/<dataset>/<name>
+            # otherwise, so the dataset sits one level further in for a
+            # grouped file. The two cases were swapped, which put grouped
+            # files under their group name and ungrouped files under the
+            # client name.
             if path_obj.is_file() and len(parts) > 3:
-                dataset = parts[-2] if has_group else parts[-3]
+                dataset = parts[-3] if has_group else parts[-2]
 
             client_dict = hierarchy.setdefault(client, {})
             ds_dict = client_dict.setdefault(dataset, {})

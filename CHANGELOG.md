@@ -1,6 +1,40 @@
 Release Notes
 ---
 
+## [2.11.7](https://github.com/AlertaDengue/PySUS/compare/2.11.6...2.11.7) (2026-10-07)
+
+### Bug Fixes
+
+* **models:** never convert a file onto the file being read ([#356](https://github.com/AlertaDengue/PySUS/issues/356)) ([29c8f98](https://github.com/AlertaDengue/PySUS/commit/29c8f98f8a2dd96f7ba235c510de19475d078f76))
+
+## [2.11.6](https://github.com/AlertaDengue/PySUS/compare/2.11.5...2.11.6) (2026-10-02)
+
+### Bug Fixes
+
+* **cli:** use the resolved token and the real API in `pysus dadosgov download` ([#355](https://github.com/AlertaDengue/PySUS/issues/355)) ([80a744c](https://github.com/AlertaDengue/PySUS/commit/80a744c6f28810301b90361bd7abfd10aeb46265))
+* **dadosgov:** read the total size from Content-Range on ranged GETs ([#352](https://github.com/AlertaDengue/PySUS/issues/352)) ([0f8eff3](https://github.com/AlertaDengue/PySUS/commit/0f8eff3989c0566e0135cab9013089b4c53c21d7))
+* **diff:** correct row counts and NULL comparison in DataFrame diffs ([#349](https://github.com/AlertaDengue/PySUS/issues/349)) ([0e999eb](https://github.com/AlertaDengue/PySUS/commit/0e999eb77649c35a4e7a7720f06260efefb02abd))
+* **extensions:** tag each file with its real format ([#357](https://github.com/AlertaDengue/PySUS/issues/357)) ([f868bc1](https://github.com/AlertaDengue/PySUS/commit/f868bc19a93d7c3a2216581074e204ea646222ee))
+
+## [2.11.5](https://github.com/AlertaDengue/PySUS/compare/2.11.4...2.11.5) (2026-10-01)
+
+### Bug Fixes
+
+* **ftp:** reconnect stale pooled sessions before downloading ([#364](https://github.com/AlertaDengue/PySUS/issues/364)) ([ba2ddf9](https://github.com/AlertaDengue/PySUS/commit/ba2ddf9c84afc1ef953eaf2c6df869f537360e80))
+
+## [2.11.4](https://github.com/AlertaDengue/PySUS/compare/2.11.3...2.11.4) (2026-10-01)
+
+### Bug Fixes
+
+* **client:** persist file metadata on the second _update_state call ([#358](https://github.com/AlertaDengue/PySUS/issues/358)) ([39bbf8b](https://github.com/AlertaDengue/PySUS/commit/39bbf8bf25573caed1fd5d3e677225221011b94d))
+* **client:** pick the right path level for the dataset in get_local_hierarchy ([#359](https://github.com/AlertaDengue/PySUS/issues/359)) ([3a8d33c](https://github.com/AlertaDengue/PySUS/commit/3a8d33ca1a117733c70a890685f1d9f517f296c5))
+
+## [2.11.3](https://github.com/AlertaDengue/PySUS/compare/2.11.2...2.11.3) (2026-09-28)
+
+### Bug Fixes
+
+* improve metadata group discovery and loading ([#348](https://github.com/AlertaDengue/PySUS/issues/348)) ([0048008](https://github.com/AlertaDengue/PySUS/commit/0048008fe9c837400d160075850a93d2b0b65a18))
+
 ## [2.11.2](https://github.com/AlertaDengue/PySUS/compare/2.11.1...2.11.2) (2026-09-01)
 
 ### Bug Fixes
