@@ -464,6 +464,35 @@ class TestFetchOriginDirect:
         )
         assert result == ["public/data/ftp/sinan/a.parquet"]
 
+    def test_prefix_filter_windows_path(self):
+        """Regression for #372: backslash paths must still match prefix."""
+        from pathlib import PureWindowsPath
+
+        from pysus.api._impl.source import _fetch_origin_direct
+
+        matching = self._file(
+            PureWindowsPath("public/data/ftp/sinan/DNSE2010.parquet")
+        )
+        other = self._file(PureWindowsPath("elsewhere/b.parquet"))
+        pysus = self._make_pysus([matching, other])
+        result = self._run(
+            _fetch_origin_direct(
+                pysus,
+                "sinan",
+                None,
+                "SE",
+                2010,
+                None,
+                "FTP",
+                None,
+                False,
+                False,
+                download=False,
+                _bag=True,
+            )
+        )
+        assert result == [matching]
+
     def test_download_true_delegates_to_download_files(self):
         import pandas as pd
         from pysus.api._impl import databases as db

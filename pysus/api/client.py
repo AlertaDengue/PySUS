@@ -761,7 +761,11 @@ class PySUS:
 
         if client:
             prefix = f"public/data/{client.lower()}/"
-            files = [f for f in files if str(f.path).startswith(prefix)]
+            files = [
+                f
+                for f in files
+                if str(f.path).replace("\\", "/").startswith(prefix)
+            ]
 
         if not as_dataframe:
             return files

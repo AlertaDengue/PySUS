@@ -263,7 +263,9 @@ async def _fetch_origin_direct(
         year=year,
         month=month,
     )
-    files = [f for f in files if str(f.path).startswith(prefix)]
+    files = [
+        f for f in files if str(f.path).replace("\\", "/").startswith(prefix)
+    ]
 
     if not files:
         if as_dataframe and download:
