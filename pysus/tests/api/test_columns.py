@@ -83,6 +83,31 @@ class TestSearchColumns:
         assert "confirmado" in con_classi.characteristics
         assert con_classi.endpoint == "peste"
 
+    def test_search_cnes_establishment_metadata(self):
+        columns = search_columns("cnes", endpoint="st")
+        assert {column.name for column in columns} == {
+            "cnes",
+            "codufmun",
+            "cod_cep",
+            "pf_pj",
+            "vinc_sus",
+            "tp_unid",
+            "competen",
+            "nat_jur",
+        }
+        assert all(column.dataset == "cnes" for column in columns)
+        assert all(column.endpoint == "st" for column in columns)
+        assert next(c for c in columns if c.name == "vinc_sus").categories == (
+            "1-Sim 0-Não"
+        )
+
+    def test_search_cnes_by_description(self):
+        columns = search_columns("cnes", "postal code", endpoint="st")
+        assert [column.name for column in columns] == ["cod_cep"]
+
+    def test_cnes_uncovered_group_has_no_curated_columns(self):
+        assert search_columns("cnes", endpoint="lt") == []
+
     def test_search_query_matches_categories(self):
         results = search_columns("sinan", "bubônica")
         assert any(c.name == "con_classi" for c in results)
