@@ -58,10 +58,10 @@ class TestLoadColumnMetadata:
         assert len(meta) > 0
 
     def test_load_cnes_st_with_synthetic_row(self):
-        """ST metadata describes the columns of a synthetic ST row."""
+        """ST metadata describes a synthetic row shaped like STAC2609."""
         synthetic_row = {
             "CNES": "0000001",
-            "CODUFMUN": "1200013",
+            "CODUFMUN": "120001",
             "COD_CEP": "01234567",
             "PF_PJ": "3",
             "VINC_SUS": "1",
@@ -76,12 +76,12 @@ class TestLoadColumnMetadata:
         assert meta["CNES"]["format"] == "7 characters"
         assert meta["COMPETEN"]["format"] == "YYYYMM"
         assert meta["PF_PJ"]["categories"] == "1-Física 3-Jurídica"
-        assert f"{synthetic_row['PF_PJ']}-Jurídica" in meta["PF_PJ"][
-            "categories"
-        ]
-        assert f"{synthetic_row['VINC_SUS']}-Sim" in meta["VINC_SUS"][
-            "categories"
-        ]
+        assert (
+            f"{synthetic_row['PF_PJ']}-Jurídica" in meta["PF_PJ"]["categories"]
+        )
+        assert (
+            f"{synthetic_row['VINC_SUS']}-Sim" in meta["VINC_SUS"]["categories"]
+        )
 
     def test_cnes_other_groups_remain_uncovered(self):
         assert load_column_metadata("cnes", group="lt") == {}

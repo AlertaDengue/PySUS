@@ -21,8 +21,10 @@ Currently available:
 - **SIM** — Declaração de Óbito (death certificate)
 - **SINAN** — 30 disease notification schemas (dengue, peste, chikungunya, malaria, tuberculosis, etc.)
 - **CNES** — a curated subset of establishment (ST) fields from the
-  DATASUS CNES 2017-06 technical layout. Other CNES groups and fields
-  are not yet covered.
+  DATASUS CNES 2017-06 technical layout, checked against one official ST
+  file from September 2026. The CODUFMUN width differs between those two
+  sources, so the metadata does not prescribe a fixed width for it. Other
+  CNES groups and fields are not yet covered.
 
 SINAN Diseases
 ^^^^^^^^^^^^^^

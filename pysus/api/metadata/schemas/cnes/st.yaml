@@ -4,6 +4,8 @@
 # https://dados.fortaleza.ce.gov.br/dataset/9455b341-b06e-408e-8e10-54b32b3d74ec/resource/20db7cdd-c709-4d08-92e0-3a5397aae035/download/layout_cnes.pdf
 # The layout describes the 2017 dissemination format; it does not claim
 # completeness or validate every later CNES release.
+# CODUFMUN is CHAR(7) in that layout but CHAR(6) in the official STAC2609
+# header (September 2026), so this curated schema does not fix its width.
 
 st:
   - name: CNES
