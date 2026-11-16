@@ -8,6 +8,8 @@ Suitable for large DATASUS files (SIA-PA, PNI, etc.) where dbfread's
 row-by-row materialisation is the bottleneck.
 """
 
+import codecs
+import importlib
 import struct
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -43,6 +45,7 @@ class DBFSchema:
     record_len: int
     fields: list[DBFField] = field(default_factory=list)
     version: int = 0
+    ldid: int = 0  # language driver ID (header byte 29)
 
     @property
     def field_names(self) -> list[str]:
@@ -79,6 +82,7 @@ def _parse_header(path: str | Path) -> DBFSchema:
                 f"Invalid DBF record length {record_len} in {path}."
             )
 
+        ldid = header[29]
         field_bytes = fh.read(header_len - 32)
         if len(field_bytes) != header_len - 32:
             raise DBFFormatError(
@@ -127,21 +131,169 @@ def _parse_header(path: str | Path) -> DBFSchema:
         record_len=record_len,
         fields=fields,
         version=version,
+        ldid=ldid,
     )
 
 
-_ENCODING = "latin-1"
+DEFAULT_FALLBACK_ENCODING = "latin-1"
+
+# Language driver IDs (dBase header byte 29) of single-byte code pages.
+# Multi-byte (CJK) drivers are left out on purpose: DATASUS never uses them,
+# and the lossless decoding below only works for single-byte code pages.
+# LDID 0x00 (no code page declared) and any LDID missing here use the
+# fallback encoding.
+LDID_CODEPAGES: dict[int, str] = {
+    0x01: "cp437",
+    0x02: "cp850",
+    0x03: "cp1252",
+    0x04: "mac_roman",
+    0x08: "cp865",
+    0x09: "cp437",
+    0x0A: "cp850",
+    0x0B: "cp437",
+    0x0D: "cp437",
+    0x0E: "cp850",
+    0x0F: "cp437",
+    0x10: "cp850",
+    0x11: "cp437",
+    0x12: "cp850",
+    0x14: "cp850",
+    0x15: "cp437",
+    0x16: "cp850",
+    0x17: "cp865",
+    0x18: "cp437",
+    0x19: "cp437",
+    0x1A: "cp850",
+    0x1B: "cp437",
+    0x1D: "cp850",
+    0x1F: "cp852",
+    0x22: "cp852",
+    0x23: "cp852",
+    0x24: "cp860",
+    0x25: "cp850",
+    0x26: "cp866",
+    0x37: "cp850",
+    0x40: "cp852",
+    0x50: "cp874",
+    0x57: "cp1252",
+    0x58: "cp1252",
+    0x59: "cp1252",
+    0x64: "cp852",
+    0x65: "cp866",
+    0x66: "cp865",
+    0x67: "cp861",
+    0x6A: "cp737",
+    0x6B: "cp857",
+    0x7C: "cp874",
+    0x7D: "cp1255",
+    0x7E: "cp1256",
+    0x96: "mac_cyrillic",
+    0x97: "mac_latin2",
+    0x98: "mac_greek",
+    0xC8: "cp1250",
+    0xC9: "cp1251",
+    0xCA: "cp1254",
+    0xCB: "cp1253",
+}
+
+_LATIN1_NAMES = {"latin_1", "iso8859_1"}
+_TABLE_CACHE: dict[str, str | None] = {}
 
 
-def _decode(val: bytes) -> str:
-    return val.decode(_ENCODING, errors="replace").replace("\x00", "").strip()
+def resolve_encoding(
+    ldid: int,
+    encoding: str | None = None,
+    fallback: str = DEFAULT_FALLBACK_ENCODING,
+) -> str:
+    """Return the encoding to decode a DBF file with.
+
+    An explicit *encoding* always wins. Otherwise the code page declared by
+    the language driver ID (*ldid*, header byte 29) is used; LDID ``0x00``
+    (none declared) and unknown LDIDs use *fallback*.
+    """
+    if encoding is not None:
+        return encoding
+    return LDID_CODEPAGES.get(ldid, fallback)
 
 
-def _decode_column(column: np.ndarray) -> list[str]:
+def _codec_name(encoding: str) -> str:
+    return codecs.lookup(encoding).name.replace("-", "_")
+
+
+def _lossless_table(encoding: str) -> str | None:
+    """Return a 256-char decoding table for a single-byte *encoding*.
+
+    Bytes the code page leaves undefined map to the code point with the same
+    number (``0x81`` -> U+0081 in cp1252), like the WHATWG ``windows-1252``
+    decoder (or to U+F000 + byte when the code page already uses that
+    character elsewhere), so no byte is lost and every value can be
+    recovered byte for byte. Returns ``None`` for latin-1 (already
+    lossless) and for encodings without a single-byte table (multi-byte
+    ones).
+    """
+    name = _codec_name(encoding)
+    if name in _TABLE_CACHE:
+        return _TABLE_CACHE[name]
+
+    table = None
+    if name not in _LATIN1_NAMES:
+        try:
+            module = importlib.import_module(f"encodings.{name}")
+        except ImportError:
+            module = None
+        base = getattr(module, "decoding_table", None)
+        if isinstance(base, str) and len(base) == 256:
+            defined = set(base) - {"\ufffe"}
+            table = "".join(
+                (
+                    ch
+                    if ch != "\ufffe"
+                    # Same code point as the byte; if the code page already
+                    # uses that character (e.g. 0xD5 vs "Õ" in cp857), use the
+                    # private use area so decoding stays reversible.
+                    else chr(i) if chr(i) not in defined else chr(0xF000 + i)
+                )
+                for i, ch in enumerate(base)
+            )
+    _TABLE_CACHE[name] = table
+    return table
+
+
+def _make_decoder(encoding: str):
+    """Return a ``bytes -> str`` function for *encoding*."""
+    table = _lossless_table(encoding)
+    if table is not None:
+
+        def decode(raw: bytes) -> str:
+            # A 256-char str is a valid charmap table (typeshed omits it).
+            return codecs.charmap_decode(
+                raw, "strict", table  # type: ignore[arg-type]
+            )[0]
+
+    elif _codec_name(encoding) in _LATIN1_NAMES:
+
+        def decode(raw: bytes) -> str:
+            return raw.decode("latin-1")
+
+    else:  # multi-byte encoding passed explicitly by the caller
+
+        def decode(raw: bytes) -> str:
+            return raw.decode(encoding, errors="replace")
+
+    return decode
+
+
+def _decode(val: bytes, encoding: str = DEFAULT_FALLBACK_ENCODING) -> str:
+    return _make_decoder(encoding)(val).replace("\x00", "").strip()
+
+
+def _decode_column(
+    column: np.ndarray, encoding: str = DEFAULT_FALLBACK_ENCODING
+) -> list[str]:
     """Decode a NumPy byte-string column without per-item function calls."""
+    decode = _make_decoder(encoding)
     return [
-        (value if isinstance(value, bytes) else value.tobytes())
-        .decode(_ENCODING, errors="replace")
+        decode(value if isinstance(value, bytes) else value.tobytes())
         .replace("\x00", "")
         .strip()
         for value in column
@@ -245,7 +397,8 @@ def validate_dbf(
 def read_dbf_fast(
     path: str | Path,
     columns: list[str] | None = None,
-    encoding: str = "latin-1",
+    encoding: str | None = None,
+    fallback_encoding: str = DEFAULT_FALLBACK_ENCODING,
 ) -> pd.DataFrame:
     """Read an entire DBF file into a DataFrame using vectorised byte access.
 
@@ -255,20 +408,23 @@ def read_dbf_fast(
         Path to the DBF file.
     columns : list[str], optional
         Subset of columns to read.  If *None* all columns are returned.
-    encoding : str
-        Text encoding for character fields (default ``latin-1``, the encoding
-        DATASUS uses).
+    encoding : str, optional
+        Text encoding for character fields. With ``None`` (default) the code
+        page declared in the header (LDID, byte 29) is used. Single-byte code
+        pages are decoded losslessly: a byte the code page leaves undefined
+        becomes the code point with the same number.
+    fallback_encoding : str
+        Encoding used when the header declares no code page (LDID ``0x00``)
+        or an unknown one (default ``latin-1``).
 
     Returns
     -------
     pd.DataFrame
     """
-    global _ENCODING
-    _ENCODING = encoding
-
     path = Path(path)
     schema = _parse_header(path)
     validate_dbf(path, schema)
+    encoding = resolve_encoding(schema.ldid, encoding, fallback_encoding)
     n = schema.num_records
     if n == 0:
         return pd.DataFrame(columns=schema.field_names)
@@ -296,7 +452,7 @@ def read_dbf_fast(
     data = {}
     for fld in target:
         col: np.ndarray = records[fld.name]
-        data[fld.name] = _decode_column(col)
+        data[fld.name] = _decode_column(col, encoding)
 
     return pd.DataFrame(data)
 
@@ -306,8 +462,9 @@ def read_dbf_filtered(
     column: str,
     values: list[str],
     columns: list[str] | None = None,
-    encoding: str = "latin-1",
+    encoding: str | None = None,
     prefix_match: bool = True,
+    fallback_encoding: str = DEFAULT_FALLBACK_ENCODING,
 ) -> pd.DataFrame:
     """Read only DBF records where *column* matches one of *values*.
 
@@ -324,20 +481,21 @@ def read_dbf_filtered(
         match any longer value that starts with it.
     columns : list[str], optional
         Columns to return.  If *None*, all columns are returned.
-    encoding : str
+    encoding : str, optional
+        See :func:`read_dbf_fast`.
     prefix_match : bool
         If ``True``, a value of length < field length acts as a prefix.
+    fallback_encoding : str
+        See :func:`read_dbf_fast`.
 
     Returns
     -------
     pd.DataFrame
     """
-    global _ENCODING
-    _ENCODING = encoding
-
     path = Path(path)
     schema = _parse_header(path)
     validate_dbf(path, schema)
+    encoding = resolve_encoding(schema.ldid, encoding, fallback_encoding)
     n = schema.num_records
     if n == 0:
         cols = columns or schema.field_names
@@ -359,13 +517,14 @@ def read_dbf_filtered(
         cols = columns or schema.field_names
         return pd.DataFrame(columns=cols)
 
-    return _materialize_rows(path, schema, matches, columns)
+    return _materialize_rows(path, schema, matches, columns, encoding)
 
 
 def stream_dbf_fast(
     path: str | Path,
     chunk_size: int = 100_000,
-    encoding: str = "latin-1",
+    encoding: str | None = None,
+    fallback_encoding: str = DEFAULT_FALLBACK_ENCODING,
 ) -> Iterator[pd.DataFrame]:
     """Stream records from a DBF file in chunks using vectorised byte access.
 
@@ -374,18 +533,19 @@ def stream_dbf_fast(
     path : str or Path
     chunk_size : int
         Number of rows per chunk.
-    encoding : str
+    encoding : str, optional
+        See :func:`read_dbf_fast`.
+    fallback_encoding : str
+        See :func:`read_dbf_fast`.
 
     Yields
     ------
     pd.DataFrame
     """
-    global _ENCODING
-    _ENCODING = encoding
-
     path = Path(path)
     schema = _parse_header(path)
     validate_dbf(path, schema)
+    encoding = resolve_encoding(schema.ldid, encoding, fallback_encoding)
     n = schema.num_records
     rl = schema.record_len
     dtype = schema.build_dtype()
@@ -406,7 +566,7 @@ def stream_dbf_fast(
             data = {}
             for fld in schema.fields:
                 col: np.ndarray = records[fld.name]
-                data[fld.name] = _decode_column(col)
+                data[fld.name] = _decode_column(col, encoding)
 
             yield pd.DataFrame(data)
 
@@ -465,6 +625,7 @@ def _materialize_rows(
     schema: DBFSchema,
     row_indices: list[int],
     columns: list[str] | None,
+    encoding: str = DEFAULT_FALLBACK_ENCODING,
 ) -> pd.DataFrame:
     """Read only the specified rows from the DBF and return a DataFrame."""
     cols_lower = None if columns is None else {c.lower() for c in columns}
@@ -475,6 +636,7 @@ def _materialize_rows(
     ]
 
     data: dict[str, list[str]] = {f.name: [] for f in target_fields}
+    decode = _make_decoder(encoding)
 
     with open(path, "rb") as fh:
         for row_idx in row_indices:
@@ -485,6 +647,6 @@ def _materialize_rows(
                 continue
             for fld in target_fields:
                 raw = record[fld.offset : fld.offset + fld.length]
-                data[fld.name].append(_decode(raw))
+                data[fld.name].append(decode(raw).replace("\x00", "").strip())
 
     return pd.DataFrame(data)
