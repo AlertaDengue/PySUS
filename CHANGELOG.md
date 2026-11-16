@@ -1,6 +1,18 @@
 Release Notes
 ---
 
+## [2.12.0](https://github.com/AlertaDengue/PySUS/compare/2.11.7...2.12.0) (2026-11-16)
+
+### Features
+
+* **metadata:** document curated CNES ST fields ([#383](https://github.com/AlertaDengue/PySUS/issues/383)) ([316b5fc](https://github.com/AlertaDengue/PySUS/commit/316b5fca7c7d1270c47affc06075da73a6bdae30))
+* **web:** keep download actions discoverable ([#338](https://github.com/AlertaDengue/PySUS/issues/338)) ([3a639a0](https://github.com/AlertaDengue/PySUS/commit/3a639a0a6b3ca927ed89e0e2de4b19b852208f77))
+
+### Bug Fixes
+
+* **ci:** validate commit messages for semantic-release ([#379](https://github.com/AlertaDengue/PySUS/issues/379)) ([020da74](https://github.com/AlertaDengue/PySUS/commit/020da74672de48a95880b48701f7c1a6f6c7917a))
+* **cli:** make `pysus ftp files` and `download` work ([#354](https://github.com/AlertaDengue/PySUS/issues/354)) ([f19b6f2](https://github.com/AlertaDengue/PySUS/commit/f19b6f29a1502a2770fed0f00b7da4981621b121))
+
 ## [2.11.7](https://github.com/AlertaDengue/PySUS/compare/2.11.6...2.11.7) (2026-10-07)
 
 ### Bug Fixes
