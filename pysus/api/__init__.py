@@ -10,6 +10,7 @@ from .errors import (  # noqa
     CatalogError,
     ConnectionError,
     ConversionError,
+    DBFFormatError,
     DownloadError,
     FormatError,
     ParseError,

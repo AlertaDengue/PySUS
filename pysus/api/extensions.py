@@ -4,8 +4,10 @@ import asyncio
 import csv
 import gzip
 import json
+import os
 import shutil
 import tarfile
+import tempfile
 import zipfile
 from collections.abc import AsyncGenerator, Callable, Iterator
 from datetime import datetime
@@ -20,13 +22,14 @@ from dbfread import DBF as DBFReader
 from pydantic import Field, PrivateAttr
 from pyreaddbc import dbc2dbf
 from pysus import CACHEPATH
-from pysus.api.errors import ConversionError, FormatError
+from pysus.api.errors import ConversionError, DBFFormatError, FormatError, warn
 from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 from pysus.data.dbf_reader import (
     read_dbf_fast,
     read_dbf_schema,
     stream_dbf_fast,
+    validate_dbf,
 )
 
 from .types import FileType
@@ -372,6 +375,26 @@ class Parquet(BaseTabularFile):
         return df.convert_dtypes()
 
 
+def _warn_dbf_fallback(path: Path, exc: Exception) -> None:
+    """Warn that the fast DBF reader failed for a non-structural reason."""
+    detail = f"{type(exc).__name__}: {exc}"
+    warn(f"Falling back to dbfread for {path}: {detail}", stacklevel=3)
+
+
+def _unlink_quietly(path: Path) -> None:
+    """Remove *path* if possible; ignore transient Windows locking errors."""
+    try:
+        path.unlink(missing_ok=True)
+    except PermissionError:
+        pass
+
+
+def _validate_dbf_file(path: Path) -> None:
+    """Validate the DBF header and record area synchronously."""
+    schema = read_dbf_schema(path)
+    validate_dbf(path, schema)
+
+
 class DBF(BaseTabularFile):
     """Represents a dBASE (DBF) file."""
 
@@ -443,6 +466,7 @@ class DBF(BaseTabularFile):
 
     def _load_dbfread(self) -> pd.DataFrame:
         """Read the entire DBF file into a DataFrame using dbfread."""
+        _validate_dbf_file(self.path)
         dbf = DBFReader(self.path, encoding="cp1252", raw=True)
         df = pd.DataFrame(iter(dbf))
         return df.map(self.decode_column)
@@ -461,8 +485,10 @@ class DBF(BaseTabularFile):
         if fast:
             try:
                 return await to_thread.run_sync(read_dbf_fast, self.path)
-            except Exception:  # noqa: B902 — fallback to dbfread
-                pass
+            except DBFFormatError:
+                raise
+            except Exception as exc:  # noqa: B902 — fallback to dbfread
+                _warn_dbf_fallback(self.path, exc)
 
         return await to_thread.run_sync(self._load_dbfread)
 
@@ -483,14 +509,22 @@ class DBF(BaseTabularFile):
             If ``False`` use dbfread.
         """
 
+        await to_thread.run_sync(_validate_dbf_file, self.path)
+
         if fast:
+            yielded = False
             try:
                 for chunk in stream_dbf_fast(self.path, chunk_size):
+                    yielded = True
                     yield chunk
                     await asyncio.sleep(0)
                 return
-            except Exception:  # noqa: B902 — fallback to dbfread
-                pass
+            except DBFFormatError:
+                raise
+            except Exception as exc:  # noqa: B902 — fallback to dbfread
+                if yielded:
+                    raise
+                _warn_dbf_fallback(self.path, exc)
 
         def _get_db():
             """Open the DBF reader synchronously in a thread."""
@@ -541,13 +575,29 @@ class DBF(BaseTabularFile):
                 raise ConversionError(f"Could not parse {out} to Parquet")
             return file
 
-        if fast:
-            try:
-                await self._to_parquet_fast(out, chunk_size, callback)
-            except Exception:  # noqa: B902 — fallback to dbfread
-                await self._to_parquet_dbfread(out, chunk_size, callback)
-        else:
-            await self._to_parquet_dbfread(out, chunk_size, callback)
+        fd, tmp_name = tempfile.mkstemp(
+            dir=out.parent, prefix=f".{out.name}.", suffix=".tmp"
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
+
+        try:
+            if fast:
+                try:
+                    await self._to_parquet_fast(tmp, chunk_size, callback)
+                except DBFFormatError:
+                    raise
+                except Exception as exc:  # noqa: B902 — fallback to dbfread
+                    _warn_dbf_fallback(self.path, exc)
+                    _unlink_quietly(tmp)
+                    await self._to_parquet_dbfread(tmp, chunk_size, callback)
+            else:
+                await self._to_parquet_dbfread(tmp, chunk_size, callback)
+
+            os.replace(tmp, out)
+        except BaseException:  # noqa: B902 — cleanup on cancellation too
+            _unlink_quietly(tmp)
+            raise
 
         file = await ExtensionFactory.instantiate(out)
         if not isinstance(file, Parquet):
@@ -561,6 +611,7 @@ class DBF(BaseTabularFile):
         callback: Callable[[int, int], None] | None,
     ):
         schema = read_dbf_schema(self.path)
+        validate_dbf(self.path, schema)
         total_rows = schema.num_records
         writer = None
         processed = 0
@@ -593,6 +644,7 @@ class DBF(BaseTabularFile):
         chunk_size: int,
         callback: Callable[[int, int], None] | None,
     ):
+        _validate_dbf_file(self.path)
         dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
         total_rows = len(dbf_reader)
         writer = None

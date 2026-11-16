@@ -79,6 +79,13 @@ The decompression uses Python's ``blast`` module. For large files
    DBC files with NUL bytes or corrupted headers will raise
    ``ConversionError``. Re-downloading the file usually resolves this.
 
+.. note::
+
+   Structurally invalid or truncated DBF/DBC files raise
+   ``DBFFormatError`` instead of returning partial rows. This includes
+   incomplete downloads and files whose record area does not match the
+   header. Re-downloading the file usually resolves this.
+
 DBF Encoding
 ------------
 
