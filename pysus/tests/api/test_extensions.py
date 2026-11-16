@@ -10,7 +10,12 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-from pysus.api.errors import ConversionError, FormatError
+from pysus.api.errors import (
+    ConversionError,
+    DBFFormatError,
+    FormatError,
+    PySUSWarning,
+)
 from pysus.api.extensions import (
     CSV,
     DBC,
@@ -99,6 +104,7 @@ def _create_dbf(path, fields, records):
             buf.extend(s.encode("ascii"))
 
     path.write_bytes(bytes(buf))
+    return path
 
 
 # ---------------------------------------------------------------------------
@@ -253,10 +259,10 @@ async def test_dbc_import_behavior(tmp_dir):
     obj = await ExtensionFactory.instantiate(path)
     assert isinstance(obj, DBC)
 
-    with pytest.raises(struct.error):
+    with pytest.raises(DBFFormatError):
         try:
             await obj.to_parquet(tmp_dir / "out.parquet")
-        except struct.error:
+        except DBFFormatError:
             gc.collect()
             raise
 
@@ -718,7 +724,7 @@ async def test_dbc_load_raises(tmp_dir):
     path = tmp_dir / "test.dbc"
     path.write_bytes(b"dummy")
     obj = DBC(path=path)
-    with pytest.raises(struct.error):
+    with pytest.raises(DBFFormatError):
         await obj.load()
 
 
@@ -729,7 +735,7 @@ async def test_dbc_stream_raises(tmp_dir):
     obj = DBC(path=path)
 
     try:
-        with pytest.raises(struct.error):
+        with pytest.raises(DBFFormatError):
             async for _ in obj.stream():
                 pass
     finally:
@@ -1918,3 +1924,267 @@ class TestToParquetInPlace:
             await obj.to_parquet(output_path=path)
 
         assert path.read_text() == payload
+
+
+# ---------------------------------------------------------------------------
+# #381: structural validation must fail closed
+# ---------------------------------------------------------------------------
+
+
+def _truncate_dbf(path: Path) -> None:
+    data = path.read_bytes()
+    path.write_bytes(data[:-5])
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_truncated_raises(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "truncated.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(50)],
+    )
+    _truncate_dbf(path)
+
+    with pytest.raises(DBFFormatError):
+        await DBF(path=path).load()
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_no_fast_truncated_raises(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "truncated_no_fast.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(50)],
+    )
+    _truncate_dbf(path)
+
+    with pytest.raises(DBFFormatError):
+        await DBF(path=path).load(fast=False)
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_truncated_raises_before_chunks(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "truncated_stream.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(50)],
+    )
+    _truncate_dbf(path)
+
+    gen = DBF(path=path).stream(chunk_size=10)
+    with pytest.raises(DBFFormatError):
+        await anext(gen)
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_truncated_leaves_no_output(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "truncated_convert.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(50)],
+    )
+    _truncate_dbf(path)
+    out = tmp_dir / "truncated.parquet"
+
+    with pytest.raises(DBFFormatError):
+        await DBF(path=path).to_parquet(output_path=out)
+
+    assert not out.exists()
+    assert not list(tmp_dir.glob("*.tmp"))
+
+
+@pytest.mark.asyncio
+async def test_dbc_to_parquet_truncated_cleans_temp_dbf(tmp_dir):
+    dbc_path = tmp_dir / "truncated.dbc"
+    dbc_path.write_bytes(b"dummy")
+    out = tmp_dir / "truncated.parquet"
+
+    def fake_dbc2dbf(inp, outp):
+        _create_dbf(
+            Path(outp),
+            [("NAME", "C", 10, 0)],
+            [(f"row{i}",) for i in range(50)],
+        )
+        data = Path(outp).read_bytes()
+        Path(outp).write_bytes(data[:-5])
+
+    with patch("pysus.api.extensions.dbc2dbf", side_effect=fake_dbc2dbf):
+        with pytest.raises(DBFFormatError):
+            await DBC(path=dbc_path).to_parquet(output_path=out)
+
+    assert not out.exists()
+    assert not dbc_path.with_suffix(".dbf").exists()
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_does_not_fallback_after_yield(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "midstream.dbf",
+        [("NAME", "C", 10, 0)],
+        [("row0",), ("row1",)],
+    )
+    chunks = []
+
+    def fake_stream(path, chunk_size):
+        yield pd.DataFrame({"NAME": ["first"]})
+        raise RuntimeError("mid-stream failure")
+
+    with patch("pysus.api.extensions.stream_dbf_fast", side_effect=fake_stream):
+        with pytest.raises(RuntimeError, match="mid-stream"):
+            async for chunk in DBF(path=path).stream(chunk_size=1):
+                chunks.append(chunk)
+
+    assert len(chunks) == 1
+
+
+@pytest.mark.asyncio
+async def test_dbf_load_warns_on_non_structural_fallback(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "warn_fallback.dbf",
+        [("NAME", "C", 10, 0)],
+        [("row0",)],
+    )
+
+    with patch(
+        "pysus.api.extensions.read_dbf_fast",
+        side_effect=RuntimeError("unsupported feature"),
+    ):
+        with pytest.warns(PySUSWarning, match="Falling back to dbfread"):
+            df = await DBF(path=path).load()
+
+    assert len(df) == 1
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_midwrite_failure_cleans_temp(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "midwrite.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(10)],
+    )
+    out = tmp_dir / "midwrite.parquet"
+    real_writer = pq.ParquetWriter
+
+    class FailingWriter:
+        calls = 0
+
+        def __init__(self, *args, **kwargs):
+            self._writer = real_writer(*args, **kwargs)
+
+        def write_table(self, table):
+            type(self).calls += 1
+            if type(self).calls == 2:
+                raise RuntimeError("simulated mid-write failure")
+            self._writer.write_table(table)
+
+        def close(self):
+            self._writer.close()
+
+    with patch("pysus.api.extensions.pq.ParquetWriter", FailingWriter):
+        with pytest.raises(RuntimeError, match="mid-write"):
+            await DBF(path=path).to_parquet(
+                output_path=out, chunk_size=2, fast=False
+            )
+
+    assert not out.exists()
+    assert not list(tmp_dir.glob("*.tmp"))
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_success_leaves_no_temp(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "success.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(10)],
+    )
+    out = tmp_dir / "success.parquet"
+
+    result = await DBF(path=path).to_parquet(output_path=out, chunk_size=3)
+
+    assert result.rows == 10
+    assert out.exists()
+    assert not list(tmp_dir.glob("*.tmp"))
+
+
+@pytest.mark.asyncio
+async def test_dbf_to_parquet_fast_midwrite_failure_cleans_temp(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "midwrite_fast.dbf",
+        [("NAME", "C", 10, 0)],
+        [(f"row{i}",) for i in range(10)],
+    )
+    out = tmp_dir / "midwrite_fast.parquet"
+    real_writer = pq.ParquetWriter
+
+    class FailingWriter:
+        calls = 0
+
+        def __init__(self, *args, **kwargs):
+            self._writer = real_writer(*args, **kwargs)
+
+        def write_table(self, table):
+            type(self).calls += 1
+            if type(self).calls == 2:
+                raise RuntimeError("simulated fast mid-write failure")
+            self._writer.write_table(table)
+
+        def close(self):
+            self._writer.close()
+
+    with (
+        patch("pysus.api.extensions.pq.ParquetWriter", FailingWriter),
+        patch.object(
+            DBF,
+            "_to_parquet_dbfread",
+            side_effect=RuntimeError("fallback also failed"),
+        ),
+    ):
+        with pytest.raises(RuntimeError, match="fallback also failed"):
+            await DBF(path=path).to_parquet(output_path=out, chunk_size=2)
+
+    assert not out.exists()
+    assert not list(tmp_dir.glob("*.tmp"))
+
+
+def test_unlink_quietly_ignores_permission_error(tmp_path):
+    from pysus.api.extensions import _unlink_quietly
+
+    path = tmp_path / "doomed"
+    path.write_text("x")
+    with patch.object(Path, "unlink", side_effect=PermissionError):
+        _unlink_quietly(path)
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_reraises_reader_format_error(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "stream_format.dbf",
+        [("NAME", "C", 10, 0)],
+        [("row0",)],
+    )
+
+    def boom(path, chunk_size):
+        raise DBFFormatError("simulated structural error")
+
+    with patch("pysus.api.extensions.stream_dbf_fast", side_effect=boom):
+        gen = DBF(path=path).stream()
+        with pytest.raises(DBFFormatError, match="simulated"):
+            await anext(gen)
+
+
+@pytest.mark.asyncio
+async def test_dbf_stream_warns_on_pre_yield_fallback(tmp_dir):
+    path = _create_dbf(
+        tmp_dir / "stream_fallback.dbf",
+        [("NAME", "C", 10, 0)],
+        [("row0",), ("row1",)],
+    )
+
+    def boom(path, chunk_size):
+        raise RuntimeError("unsupported feature")
+
+    with patch("pysus.api.extensions.stream_dbf_fast", side_effect=boom):
+        with pytest.warns(PySUSWarning, match="Falling back to dbfread"):
+            chunks = await collect_async(DBF(path=path).stream(chunk_size=2))
+
+    assert sum(len(chunk) for chunk in chunks) == 2

@@ -15,6 +15,17 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pysus.api.errors import DBFFormatError
+
+_SUPPORTED_VERSIONS = frozenset(
+    {0x02, 0x03, 0x30, 0x31, 0x43, 0x63, 0x83, 0x8B, 0x8C, 0xF5}
+)
+# Versions whose header uses the classic 32-byte field descriptors and whose
+# record length is exactly the deletion flag plus the character field widths.
+_STRUCT_FIELD_SUM_VERSIONS = frozenset(
+    {0x02, 0x03, 0x43, 0x63, 0x83, 0x8B, 0x8C, 0xF5}
+)
+_DELETE_FLAGS = frozenset({b" ", b"*"})
 
 
 @dataclass
@@ -31,6 +42,7 @@ class DBFSchema:
     header_len: int
     record_len: int
     fields: list[DBFField] = field(default_factory=list)
+    version: int = 0
 
     @property
     def field_names(self) -> list[str]:
@@ -45,26 +57,35 @@ class DBFSchema:
 
 def _parse_header(path: str | Path) -> DBFSchema:
     """Parse a DBF header and return a ``DBFSchema``."""
+    path = Path(path)
+    file_size = path.stat().st_size
     with open(path, "rb") as fh:
         header = fh.read(32)
-        if len(header) < 32 or header[0] not in (
-            0x02,
-            0x03,
-            0x30,
-            0x31,
-            0x43,
-            0x63,
-            0x83,
-            0x8B,
-            0x8C,
-            0xF5,
-        ):
-            raise ValueError(f"Not a valid dBASE file: {path}")
+        if len(header) < 32 or header[0] not in _SUPPORTED_VERSIONS:
+            raise DBFFormatError(f"Not a valid dBASE file: {path}")
 
+        version = header[0]
         num_records = struct.unpack("<I", header[4:8])[0]
         header_len = struct.unpack("<H", header[8:10])[0]
         record_len = struct.unpack("<H", header[10:12])[0]
+
+        if header_len < 33 or header_len > file_size:
+            raise DBFFormatError(
+                f"Invalid DBF header length {header_len} in {path} "
+                f"(file size {file_size})."
+            )
+        if record_len < 1:
+            raise DBFFormatError(
+                f"Invalid DBF record length {record_len} in {path}."
+            )
+
         field_bytes = fh.read(header_len - 32)
+        if len(field_bytes) != header_len - 32:
+            raise DBFFormatError(
+                f"Truncated DBF header in {path}: expected "
+                f"{header_len - 32} field-descriptor bytes, got "
+                f"{len(field_bytes)}."
+            )
 
     fields = []
     offset = 1
@@ -85,11 +106,27 @@ def _parse_header(path: str | Path) -> DBFSchema:
         offset += length
         pos += 32
 
+    if version in _STRUCT_FIELD_SUM_VERSIONS:
+        # DATASUS files occasionally carry one extra byte after the 0x0D
+        # terminator (seen in old SIA/SIH/PNI files), so accept either the
+        # standard terminator or terminator + one padding byte.
+        terminator_pos = 32 * len(fields)
+        extra = len(field_bytes) - terminator_pos
+        if (
+            terminator_pos >= len(field_bytes)
+            or field_bytes[terminator_pos] != 0x0D
+            or extra not in (1, 2)
+        ):
+            raise DBFFormatError(
+                f"Malformed DBF field descriptor area in {path}."
+            )
+
     return DBFSchema(
         num_records=num_records,
         header_len=header_len,
         record_len=record_len,
         fields=fields,
+        version=version,
     )
 
 
@@ -114,6 +151,95 @@ def _decode_column(column: np.ndarray) -> list[str]:
 def read_dbf_schema(path: str | Path) -> DBFSchema:
     """Return the schema of a DBF file without reading records."""
     return _parse_header(path)
+
+
+def _validate_record_area(path: Path, schema: DBFSchema) -> None:
+    """Check that the file contains exactly the record area it declares."""
+    size = path.stat().st_size
+    expected = schema.header_len + schema.num_records * schema.record_len
+    data_size = size
+
+    if data_size > expected:
+        with open(path, "rb") as fh:
+            fh.seek(-1, 2)
+            if fh.read(1) == b"\x1a":
+                data_size -= 1
+
+    if data_size < expected:
+        raise DBFFormatError(
+            f"Truncated DBF file {path}: expected at least {expected} bytes "
+            f"for {schema.num_records} records, got {size}."
+        )
+
+    record_area = data_size - schema.header_len
+    if record_area % schema.record_len != 0:
+        raise DBFFormatError(
+            f"Truncated or misaligned DBF record area in {path}: "
+            f"{record_area} bytes is not a multiple of the "
+            f"{schema.record_len}-byte record length."
+        )
+
+
+def _validate_delete_flags(
+    path: Path, schema: DBFSchema, *, strict: bool = False
+) -> None:
+    """Check record deletion flags, sampling unless *strict* is requested."""
+    n = schema.num_records
+    if n == 0:
+        return
+
+    if strict:
+        indices = list(range(n))
+    else:
+        indices_set = {0, n - 1}
+        step = max(1, n // 32)
+        indices_set.update(range(0, n, step))
+        indices = sorted(indices_set)
+
+    with open(path, "rb") as fh:
+        for row_idx in indices:
+            fh.seek(schema.header_len + row_idx * schema.record_len)
+            flag = fh.read(1)
+            if flag not in _DELETE_FLAGS:
+                raise DBFFormatError(
+                    f"Invalid DBF deletion flag {flag!r} at record "
+                    f"{row_idx} in {path}."
+                )
+
+
+def validate_dbf(
+    path: str | Path,
+    schema: DBFSchema | None = None,
+    *,
+    strict: bool = False,
+) -> None:
+    """Raise :class:`DBFFormatError` if *path* is structurally invalid.
+
+    Parameters
+    ----------
+    path : str or Path
+        DBF file to validate.
+    schema : DBFSchema, optional
+        Already-parsed schema.  If omitted, the header is parsed here.
+    strict : bool
+        If ``True``, check every record's deletion flag.  By default only
+        the first, last, and a sample of records are checked.
+    """
+    path = Path(path)
+    if schema is None:
+        schema = _parse_header(path)
+
+    if schema.version in _STRUCT_FIELD_SUM_VERSIONS:
+        expected_record_len = 1 + sum(f.length for f in schema.fields)
+        if expected_record_len != schema.record_len:
+            raise DBFFormatError(
+                f"Invalid DBF record length in {path}: field lengths sum to "
+                f"{expected_record_len - 1} plus the deletion flag, but the "
+                f"header declares {schema.record_len}."
+            )
+
+    _validate_record_area(path, schema)
+    _validate_delete_flags(path, schema, strict=strict)
 
 
 def read_dbf_fast(
@@ -142,6 +268,7 @@ def read_dbf_fast(
 
     path = Path(path)
     schema = _parse_header(path)
+    validate_dbf(path, schema)
     n = schema.num_records
     if n == 0:
         return pd.DataFrame(columns=schema.field_names)
@@ -210,6 +337,7 @@ def read_dbf_filtered(
 
     path = Path(path)
     schema = _parse_header(path)
+    validate_dbf(path, schema)
     n = schema.num_records
     if n == 0:
         cols = columns or schema.field_names
@@ -257,6 +385,7 @@ def stream_dbf_fast(
 
     path = Path(path)
     schema = _parse_header(path)
+    validate_dbf(path, schema)
     n = schema.num_records
     rl = schema.record_len
     dtype = schema.build_dtype()

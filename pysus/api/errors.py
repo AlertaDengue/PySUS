@@ -85,6 +85,12 @@ class ParseError(PySUSError):
     hint = "The file may be corrupted. Try re-downloading."
 
 
+class DBFFormatError(ParseError, ValueError):
+    """Structural DBF error (truncated file, bad header, misaligned rows)."""
+
+    hint = "The DBF/DBC file is truncated or malformed. Try re-downloading it."
+
+
 class ConversionError(PySUSError):
     """Error converting between file formats (e.g. DBF -> Parquet)."""
 
