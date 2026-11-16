@@ -1,0 +1,47 @@
+# CNES establishment (ST) columns, a deliberately small curated subset.
+# Source: Ministério da Saúde / DATASUS, Informe Técnico CNES 2017-06,
+# section 2.1, "Layout dos arquivos de Estabelecimentos (ST*.dbf)".
+# https://dados.fortaleza.ce.gov.br/dataset/9455b341-b06e-408e-8e10-54b32b3d74ec/resource/20db7cdd-c709-4d08-92e0-3a5397aae035/download/layout_cnes.pdf
+# The layout describes the 2017 dissemination format; it does not claim
+# completeness or validate every later CNES release.
+# CODUFMUN is CHAR(7) in that layout but CHAR(6) in the official STAC2609
+# header (September 2026), so this curated schema does not fix its width.
+
+st:
+  - name: CNES
+    type: string
+    description_pt: "Número nacional do estabelecimento de saúde"
+    description_en: "National health establishment number"
+    format: "7 characters"
+  - name: CODUFMUN
+    type: string
+    description_pt: "Código do município do estabelecimento: UF + município (sem dígito)"
+    description_en: "Establishment municipality code: state + municipality (without check digit)"
+  - name: COD_CEP
+    type: string
+    description_pt: "Código do CEP do estabelecimento"
+    description_en: "Establishment postal code"
+    format: "8 characters"
+  - name: PF_PJ
+    type: string
+    description_pt: "Indicador de pessoa física ou jurídica"
+    description_en: "Natural or legal person indicator"
+    categories: "1-Física 3-Jurídica"
+  - name: VINC_SUS
+    type: string
+    description_pt: "Vínculo com o SUS"
+    description_en: "Affiliation with the public health system (SUS)"
+    categories: "1-Sim 0-Não"
+  - name: TP_UNID
+    type: string
+    description_pt: "Tipo de unidade (estabelecimento)"
+    description_en: "Type of health establishment"
+  - name: COMPETEN
+    type: string
+    description_pt: "Ano e mês de competência da informação"
+    description_en: "Year and month of the information's reference period"
+    format: "YYYYMM"
+  - name: NAT_JUR
+    type: string
+    description_pt: "Natureza jurídica"
+    description_en: "Legal nature"

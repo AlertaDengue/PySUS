@@ -57,6 +57,35 @@ class TestLoadColumnMetadata:
         assert isinstance(meta, dict)
         assert len(meta) > 0
 
+    def test_load_cnes_st_with_synthetic_row(self):
+        """ST metadata describes a synthetic row shaped like STAC2609."""
+        synthetic_row = {
+            "CNES": "0000001",
+            "CODUFMUN": "120001",
+            "COD_CEP": "01234567",
+            "PF_PJ": "3",
+            "VINC_SUS": "1",
+            "TP_UNID": "02",
+            "COMPETEN": "202610",
+            "NAT_JUR": "1234",
+        }
+        meta = load_column_metadata("cnes", group="st")
+
+        assert set(meta) == set(synthetic_row)
+        assert all(meta[name]["type"] == "string" for name in synthetic_row)
+        assert meta["CNES"]["format"] == "7 characters"
+        assert meta["COMPETEN"]["format"] == "YYYYMM"
+        assert meta["PF_PJ"]["categories"] == "1-Física 3-Jurídica"
+        assert (
+            f"{synthetic_row['PF_PJ']}-Jurídica" in meta["PF_PJ"]["categories"]
+        )
+        assert (
+            f"{synthetic_row['VINC_SUS']}-Sim" in meta["VINC_SUS"]["categories"]
+        )
+
+    def test_cnes_other_groups_remain_uncovered(self):
+        assert load_column_metadata("cnes", group="lt") == {}
+
     def test_column_structure(self):
         """Test that column definitions have expected structure."""
         meta = load_column_metadata("sinan", group="arboviroses")
@@ -104,6 +133,9 @@ class TestAvailableDatabases:
         dbs = available_databases()
         assert "sinan" in dbs
 
+    def test_contains_cnes(self):
+        assert "cnes" in available_databases()
+
 
 class TestAvailableGroups:
     """Tests for available_groups function."""
@@ -133,3 +165,6 @@ class TestAvailableGroups:
         assert "pa" in groups
         assert "arboviroses" not in groups
         assert "vigilanciameioambiente" not in groups
+
+    def test_cnes_has_st_group(self):
+        assert available_groups("cnes") == ["st"]

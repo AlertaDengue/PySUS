@@ -21,7 +21,7 @@ from typing import Any
 import yaml  # type: ignore[import-untyped]
 from pysus.api.mappings import PT_TO_EN
 
-_SINAN_SCHEMAS_DIR = Path(__file__).parent / "metadata" / "schemas" / "sinan"
+_METADATA_SCHEMAS_DIR = Path(__file__).parent / "metadata" / "schemas"
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,9 +171,12 @@ def _search_yaml_schemas(
             for col_def in cols:
                 results.append(_column_info(col_def, ds_name, ep_name))
 
-    # SINAN disease forms (metadata/schemas/sinan/*.yaml)
-    if dataset in (None, "sinan"):
-        for yaml_file in sorted(_SINAN_SCHEMAS_DIR.glob("*.yaml")):
+    # FTP database schemas curated under metadata/schemas.
+    for db_name in ("sinan", "cnes"):
+        if dataset not in (None, db_name):
+            continue
+        db_dir = _METADATA_SCHEMAS_DIR / db_name
+        for yaml_file in sorted(db_dir.glob("*.yaml")):
             if endpoint_filter and yaml_file.stem != endpoint_filter:
                 continue
             with open(yaml_file, encoding="utf-8") as f:
@@ -185,7 +188,7 @@ def _search_yaml_schemas(
                     if not isinstance(col_def, dict) or "name" not in col_def:
                         continue
                     results.append(
-                        _column_info(col_def, "sinan", yaml_file.stem)
+                        _column_info(col_def, db_name, yaml_file.stem)
                     )
 
     return results
