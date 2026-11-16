@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.12.1](https://github.com/AlertaDengue/PySUS/compare/2.12.0...2.12.1) (2026-11-16)
+
+### Bug Fixes
+
+* **api:** fail closed on truncated or malformed DBF/DBC files ([#385](https://github.com/AlertaDengue/PySUS/issues/385)) ([c4f0cc0](https://github.com/AlertaDengue/PySUS/commit/c4f0cc04ca954335fca43bfa2597f921eb67f62e))
+
 ## [2.12.0](https://github.com/AlertaDengue/PySUS/compare/2.11.7...2.12.0) (2026-11-16)
 
 ### Features
