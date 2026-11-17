@@ -268,6 +268,94 @@ class TestBackfillGroupIdsScript:
         assert "total group_id repairs: 0" in out
         assert "DRY RUN" in out
 
+    def test_main_skips_404_and_missing_catalog(self, tmp_path, capsys):
+        from pysus.management.scripts import backfill_group_ids
+
+        normalizer = MagicMock()
+        with patch(
+            "pysus.management.scripts.backfill_group_ids.load_env",
+            return_value={"ACCESS_KEY": "ak", "SECRET_KEY": "sk"},
+        ):
+            with patch(
+                "pysus.management.scripts.backfill_group_ids."
+                "BucketNormalizer",
+                return_value=normalizer,
+            ):
+                with patch(
+                    "pysus.management.scripts.backfill_group_ids.CATALOGS",
+                    ("catalog_sih",),
+                ):
+                    with patch(
+                        "pysus.management.scripts.backfill_group_ids."
+                        "httpx.Client"
+                    ) as mock_http:
+                        response = MagicMock()
+                        response.status_code = 404
+                        http_client = mock_http.return_value.__enter__
+                        http_client.return_value.get.return_value = response
+                        with patch(
+                            "sys.argv",
+                            [
+                                "backfill_group_ids",
+                                "--workdir",
+                                str(tmp_path),
+                            ],
+                        ):
+                            assert backfill_group_ids.main() == 0
+        out = capsys.readouterr().out
+        assert "not found, skipping" in out
+        assert "nothing to upload" in out
+
+    def test_main_uploads_changed_catalogs(self, tmp_path, capsys):
+        from unittest.mock import AsyncMock
+
+        from pysus.management.scripts import backfill_group_ids
+
+        normalizer = MagicMock()
+        normalizer.survey_group_ids.return_value = [MagicMock()]
+        with patch(
+            "pysus.management.scripts.backfill_group_ids.load_env",
+            return_value={"ACCESS_KEY": "ak", "SECRET_KEY": "sk"},
+        ):
+            with patch(
+                "pysus.management.scripts.backfill_group_ids."
+                "BucketNormalizer",
+                return_value=normalizer,
+            ):
+                with patch(
+                    "pysus.management.scripts.backfill_group_ids.CATALOGS",
+                    ("catalog_sih",),
+                ):
+                    with patch(
+                        "pysus.management.scripts.backfill_group_ids."
+                        "httpx.Client"
+                    ) as mock_http:
+                        response = MagicMock()
+                        response.content = b"catalog"
+                        response.status_code = 200
+                        response.raise_for_status = MagicMock()
+                        http_client = mock_http.return_value.__enter__
+                        http_client.return_value.get.return_value = response
+                        upload = AsyncMock()
+                        with patch(
+                            "pysus.api.ducklake.functional.upload_s3",
+                            new=upload,
+                        ):
+                            with patch(
+                                "sys.argv",
+                                [
+                                    "backfill_group_ids",
+                                    "--workdir",
+                                    str(tmp_path),
+                                ],
+                            ):
+                                assert backfill_group_ids.main() == 0
+        normalizer.apply_catalog.assert_called_once()
+        upload.assert_awaited_once()
+        out = capsys.readouterr().out
+        assert "uploaded catalog_sih" in out
+        assert "done" in out
+
 
 class TestRelayoutBucketScript:
     def test_load_env(self, tmp_path):
