@@ -1,6 +1,12 @@
 Release Notes
 ---
 
+## [2.12.2](https://github.com/AlertaDengue/PySUS/compare/2.12.1...2.12.2) (2026-11-17)
+
+### Bug Fixes
+
+* **catalog:** include NULL group_id files in group queries ([#380](https://github.com/AlertaDengue/PySUS/issues/380)) ([#386](https://github.com/AlertaDengue/PySUS/issues/386)) ([7b515b8](https://github.com/AlertaDengue/PySUS/commit/7b515b8ebf345e273733e97f0d8db19e1aeb231f))
+
 ## [2.12.1](https://github.com/AlertaDengue/PySUS/compare/2.12.0...2.12.1) (2026-11-16)
 
 ### Bug Fixes
