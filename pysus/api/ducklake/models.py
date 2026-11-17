@@ -14,7 +14,7 @@ from anyio import to_thread
 from pydantic import Field, PrivateAttr
 from pysus import CACHEPATH
 from pysus.api.models import BaseRemoteDataset, BaseRemoteFile, BaseRemoteGroup
-from sqlalchemy import or_, orm, select
+from sqlalchemy import and_, func, or_, orm, select
 
 from .catalog.adapters import DatasetAdapter
 from .catalog.orm.dataset import File as CatalogFile
@@ -185,10 +185,28 @@ class DuckDataset(BaseRemoteDataset):
                 )
 
                 if groups:
+                    # Files whose ``group_id`` is still NULL (legacy catalog
+                    # rows) must not disappear from a group query.  The S3
+                    # key keeps the group as its 5th path segment
+                    # (``public/data/<origin>/<dataset>/<group>/...``), so it
+                    # can stand in for the missing FK until the catalog is
+                    # backfilled.
+                    path_group = func.split_part(CatalogFile.path, "/", 5)
                     stmt = (
-                        stmt.join(CatalogFile.group)
+                        stmt.outerjoin(CatalogFile.group)
                         .options(orm.contains_eager(CatalogFile.group))
-                        .filter(or_(*[Group.name.ilike(g) for g in groups]))
+                        .filter(
+                            or_(
+                                *[Group.name.ilike(g) for g in groups],
+                                *[
+                                    and_(
+                                        CatalogFile.group_id.is_(None),
+                                        path_group.ilike(g),
+                                    )
+                                    for g in groups
+                                ],
+                            )
+                        )
                     )
                 else:
                     stmt = stmt.options(orm.joinedload(CatalogFile.group))

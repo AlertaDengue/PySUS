@@ -1,12 +1,13 @@
 """Tests for pysus.management.normalize."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pysus.management.normalize import (
     BucketNormalizer,
     CatalogPathFix,
     CatalogRowDelete,
+    GroupIdFix,
     ObjectRename,
     formatter_for,
 )
@@ -271,6 +272,234 @@ class TestApplyObjects:
     def test_dry_run(self, normalizer):
         normalizer.apply_objects([], ["k1"], dry_run=True)
         normalizer.client.delete_object.assert_not_called()
+
+
+class TestSurveyGroupIds:
+    def test_formatter_path_fallback_and_unparsable(self, normalizer, tmp_path):
+        import duckdb as _duckdb
+
+        path = tmp_path / "catalog_sih.duckdb"
+        con = _duckdb.connect(str(path))
+        con.execute(_SCHEMA)
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (1, 1, NULL, 'public/data/ftp/sih/RD/2024/01/ES/"
+            "RDES2401.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, "
+            "'/dissemin/RDES2401.dbc')"
+        )
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (2, 2, NULL, 'public/data/ftp/nope/XYZ/2020/_/BR/"
+            "X.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, NULL)"
+        )
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (3, 1, NULL, 'public/data/ftp/sih/_/_/_/BR/"
+            "RDAC2017.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, "
+            "'/dissemin/RDAC2017.zip')"
+        )
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (4, 2, NULL, 'public/data/ftp/nope/_/2020/_/BR/"
+            "X.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, NULL)"
+        )
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (5, 2, NULL, 'garbage.parquet', 0, 0, "
+            "CURRENT_TIMESTAMP, NULL, 0, NULL)"
+        )
+        con.close()
+
+        fixes = {fix.path: fix for fix in normalizer.survey_group_ids(path)}
+
+        assert len(fixes) == 3
+        rd = fixes["public/data/ftp/sih/RD/2024/01/ES/RDES2401.parquet"]
+        assert rd.group_name == "RD"
+        assert rd.long_name == "AIH Reduzida"
+        assert (
+            fixes["public/data/ftp/nope/XYZ/2020/_/BR/X.parquet"].group_name
+            == "XYZ"
+        )
+        assert (
+            fixes["public/data/ftp/sih/_/_/_/BR/RDAC2017.parquet"].group_name
+            == "RD"
+        )
+        assert "public/data/ftp/nope/_/2020/_/BR/X.parquet" not in fixes
+        assert "garbage.parquet" not in fixes
+
+
+class TestFormatterGroup:
+    def test_formatter_exception_returns_none(self, normalizer):
+        def boom(_name):
+            raise ValueError("bad filename")
+
+        with patch(
+            "pysus.management.normalize.formatter_for",
+            return_value=boom,
+        ):
+            assert normalizer._formatter_group("ftp", "sih", "X.dbc") == (
+                None,
+                None,
+                None,
+            )
+
+    def test_plain_string_group(self, normalizer):
+        with patch(
+            "pysus.management.normalize.formatter_for",
+            return_value=lambda _name: {"group": "G"},
+        ):
+            assert normalizer._formatter_group("ftp", "sih", "X.dbc") == (
+                "G",
+                None,
+                None,
+            )
+
+    def test_unmatched_prefix_returns_none(self, normalizer):
+        def no_group(_name):
+            return {"group": None}
+
+        with patch(
+            "pysus.management.normalize.formatter_for",
+            return_value=no_group,
+        ):
+            assert normalizer._formatter_group("ftp", "sih", "X.dbc") == (
+                None,
+                None,
+                None,
+            )
+
+
+class TestApplyGroupIds:
+    def test_apply_creates_group_and_heals_file(self, normalizer, tmp_path):
+        import duckdb as _duckdb
+
+        path = tmp_path / "catalog_sih.duckdb"
+        con = _duckdb.connect(str(path))
+        con.execute(_SCHEMA)
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (1, 1, NULL, 'public/data/ftp/sih/RD/2024/01/ES/"
+            "RDES2401.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, "
+            "'/dissemin/RDES2401.dbc')"
+        )
+        con.close()
+
+        fixes = [
+            GroupIdFix(
+                catalog="sih",
+                path="public/data/ftp/sih/RD/2024/01/ES/RDES2401.parquet",
+                group_name="RD",
+                long_name="AIH Reduzida",
+            )
+        ]
+        normalizer.apply_catalog(path, [], [], dry_run=False, group_fixes=fixes)
+
+        con = _duckdb.connect(str(path), read_only=True)
+        row = con.execute(
+            "SELECT f.group_id, g.name, g.long_name FROM pysus.files f "
+            "JOIN pysus.dataset_groups g ON f.group_id = g.id"
+        ).fetchone()
+        group_count = con.execute(
+            "SELECT count(*) FROM pysus.dataset_groups"
+        ).fetchone()[0]
+        con.close()
+
+        assert row == (1, "RD", "AIH Reduzida")
+        assert group_count == 1
+
+        normalizer.apply_catalog(path, [], [], dry_run=False, group_fixes=fixes)
+        con = _duckdb.connect(str(path), read_only=True)
+        assert (
+            con.execute("SELECT count(*) FROM pysus.dataset_groups").fetchone()[
+                0
+            ]
+            == 1
+        )
+        con.close()
+
+    def test_apply_reuses_existing_group(self, normalizer, tmp_path):
+        import duckdb as _duckdb
+
+        path = tmp_path / "catalog_sih.duckdb"
+        con = _duckdb.connect(str(path))
+        con.execute(_SCHEMA)
+        con.execute(
+            "INSERT INTO pysus.dataset_groups "
+            "(id, dataset_id, name, long_name, description) "
+            "VALUES (4, 1, 'RD', 'AIH Reduzida', NULL)"
+        )
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (1, 1, NULL, 'public/data/ftp/sih/RD/2024/01/ES/"
+            "RDES2401.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, NULL)"
+        )
+        con.close()
+
+        normalizer.apply_catalog(
+            path,
+            [],
+            [],
+            dry_run=False,
+            group_fixes=[
+                GroupIdFix(
+                    catalog="sih",
+                    path="public/data/ftp/sih/RD/2024/01/ES/"
+                    "RDES2401.parquet",
+                    group_name="RD",
+                )
+            ],
+        )
+
+        con = _duckdb.connect(str(path), read_only=True)
+        assert con.execute("SELECT group_id FROM pysus.files").fetchone() == (
+            4,
+        )
+        assert con.execute(
+            "SELECT count(*) FROM pysus.dataset_groups"
+        ).fetchone() == (1,)
+        con.close()
+
+    def test_dry_run_does_not_write(self, normalizer, tmp_path):
+        import duckdb as _duckdb
+
+        path = tmp_path / "catalog_sih.duckdb"
+        con = _duckdb.connect(str(path))
+        con.execute(_SCHEMA)
+        con.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (1, 1, NULL, 'public/data/ftp/sih/RD/2024/01/ES/"
+            "RDES2401.parquet', 0, 0, CURRENT_TIMESTAMP, NULL, 0, NULL)"
+        )
+        con.close()
+
+        normalizer.apply_catalog(
+            path,
+            [],
+            [],
+            dry_run=True,
+            group_fixes=[
+                GroupIdFix(
+                    catalog="sih",
+                    path="public/data/ftp/sih/RD/2024/01/ES/"
+                    "RDES2401.parquet",
+                    group_name="RD",
+                )
+            ],
+        )
+
+        con = _duckdb.connect(str(path), read_only=True)
+        assert con.execute("SELECT group_id FROM pysus.files").fetchone() == (
+            None,
+        )
+        con.close()
 
 
 class TestApplyCatalog:

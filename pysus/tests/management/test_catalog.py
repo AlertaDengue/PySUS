@@ -199,6 +199,59 @@ class TestUpsertFile:
         assert result[3] == "aa" * 32
         assert result[4] == "bb" * 32
 
+    def test_update_heals_null_group_id(self, writer_and_cursor):
+        writer, cursor, _ = writer_and_cursor
+        _insert(cursor, "public/data/x.parquet")
+        writer.upsert_file(
+            cursor,
+            dataset_id=8,
+            group_id=7,
+            path="public/data/x.parquet",
+            size=10,
+            rows=3,
+            modified=datetime(2026, 1, 1),
+            origin_modified=None,
+            origin_size=11,
+            origin_path="ftp/x",
+            year=2026,
+            month=None,
+            state=None,
+        )
+        cursor.execute(
+            "SELECT group_id FROM pysus.files WHERE path = ?",
+            ("public/data/x.parquet",),
+        )
+        assert cursor.fetchone() == (7,)
+
+    def test_update_does_not_clear_group_id(self, writer_and_cursor):
+        writer, cursor, _ = writer_and_cursor
+        cursor.execute(
+            "INSERT INTO pysus.files (id, dataset_id, group_id, path, size, "
+            "rows, modified, origin_modified, origin_size, origin_path) "
+            "VALUES (1, 8, 9, 'public/data/x.parquet', 0, 0, "
+            "CURRENT_TIMESTAMP, NULL, 0, 'ftp/x')"
+        )
+        writer.upsert_file(
+            cursor,
+            dataset_id=8,
+            group_id=None,
+            path="public/data/x.parquet",
+            size=10,
+            rows=3,
+            modified=datetime(2026, 1, 1),
+            origin_modified=None,
+            origin_size=11,
+            origin_path="ftp/x",
+            year=2026,
+            month=None,
+            state=None,
+        )
+        cursor.execute(
+            "SELECT group_id FROM pysus.files WHERE path = ?",
+            ("public/data/x.parquet",),
+        )
+        assert cursor.fetchone() == (9,)
+
 
 class TestEnsureManagementColumns:
     def test_adds_source_sha256_column(self):

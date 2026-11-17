@@ -139,6 +139,7 @@ def main() -> int:
             plan.catalog_fixes,
             plan.catalog_row_deletes,
             dry_run=False,
+            group_fixes=plan.group_fixes,
         )
 
     print("uploading catalogs...", flush=True)

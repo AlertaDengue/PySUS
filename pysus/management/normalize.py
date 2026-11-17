@@ -49,11 +49,21 @@ class CatalogRowDelete:
 
 
 @dataclass
+class GroupIdFix:
+    catalog: str
+    path: str
+    group_name: str
+    long_name: str | None = None
+    description: str | None = None
+
+
+@dataclass
 class NormalizePlan:
     object_renames: list[ObjectRename] = field(default_factory=list)
     object_deletes: list[str] = field(default_factory=list)
     catalog_fixes: list[CatalogPathFix] = field(default_factory=list)
     catalog_row_deletes: list[CatalogRowDelete] = field(default_factory=list)
+    group_fixes: list[GroupIdFix] = field(default_factory=list)
     broken_rows: list[tuple[str, str]] = field(default_factory=list)
     raw_objects: list[str] = field(default_factory=list)
 
@@ -63,6 +73,7 @@ class NormalizePlan:
             "object_deletes": len(self.object_deletes),
             "catalog_fixes": len(self.catalog_fixes),
             "catalog_row_deletes": len(self.catalog_row_deletes),
+            "group_fixes": len(self.group_fixes),
             "broken_rows": len(self.broken_rows),
             "raw_objects": len(self.raw_objects),
         }
@@ -260,17 +271,24 @@ class BucketNormalizer:
         fixes: list[CatalogPathFix],
         row_deletes: list[CatalogRowDelete] | None = None,
         dry_run: bool = True,
+        group_fixes: list[GroupIdFix] | None = None,
     ) -> None:
         """Update/delete ``pysus.files`` rows in-place in a local duckdb."""
         row_deletes = row_deletes or []
-        if not fixes and not row_deletes:
+        group_fixes = group_fixes or []
+        if not fixes and not row_deletes and not group_fixes:
             return
         import duckdb
 
-        for fix in fixes:
+        for group_fix in group_fixes:
             print(
-                f"{'DRY ' if dry_run else ''}catalog[{fix.catalog}] "
-                f"{fix.old_path} -> {fix.new_path}"
+                f"{'DRY ' if dry_run else ''}catalog[{group_fix.catalog}] "
+                f"group {group_fix.path} -> {group_fix.group_name}"
+            )
+        for path_fix in fixes:
+            print(
+                f"{'DRY ' if dry_run else ''}catalog[{path_fix.catalog}] "
+                f"{path_fix.old_path} -> {path_fix.new_path}"
             )
         for delete in row_deletes:
             print(
@@ -282,10 +300,50 @@ class BucketNormalizer:
 
         con = duckdb.connect(str(catalog_dir))
         try:
-            for fix in fixes:
+            for group_fix in group_fixes:
+                row = con.execute(
+                    "SELECT dataset_id FROM pysus.files "
+                    "WHERE path = ? AND group_id IS NULL",
+                    (group_fix.path,),
+                ).fetchone()
+                if row is None:
+                    continue
+                dataset_id = row[0]
+                group = con.execute(
+                    "SELECT id FROM pysus.dataset_groups "
+                    "WHERE dataset_id = ? AND name = ?",
+                    (dataset_id, group_fix.group_name),
+                ).fetchone()
+                if group is None:
+                    max_row = con.execute(
+                        "SELECT MAX(id) FROM pysus.dataset_groups"
+                    ).fetchone()
+                    group_id = (
+                        (max_row[0] if max_row is not None else 0) or 0
+                    ) + 1
+                    con.execute(
+                        "INSERT INTO pysus.dataset_groups "
+                        "(id, dataset_id, name, long_name, description) "
+                        "VALUES (?, ?, ?, ?, ?)",
+                        (
+                            group_id,
+                            dataset_id,
+                            group_fix.group_name,
+                            group_fix.long_name or group_fix.group_name,
+                            group_fix.description,
+                        ),
+                    )
+                else:
+                    group_id = group[0]
+                con.execute(
+                    "UPDATE pysus.files SET group_id = ? "
+                    "WHERE path = ? AND group_id IS NULL",
+                    (group_id, group_fix.path),
+                )
+            for path_fix in fixes:
                 con.execute(
                     "UPDATE pysus.files SET path = ? WHERE path = ?",
-                    (fix.new_path, fix.old_path),
+                    (path_fix.new_path, path_fix.old_path),
                 )
             for delete in row_deletes:
                 con.execute(
@@ -349,6 +407,93 @@ class BucketNormalizer:
         if enriched["state"] is None and parsed.get("state"):
             enriched["state"] = str(parsed["state"])
         return enriched
+
+    @staticmethod
+    def _formatter_group(
+        origin: str,
+        dataset: str,
+        name: str,
+    ) -> tuple[str | None, str | None, str | None]:
+        """Return ``(name, long_name, description)`` from the formatter."""
+        formatter = formatter_for(origin, dataset)
+        if formatter is None:
+            return None, None, None
+        try:
+            parsed = formatter(name)
+        except Exception:  # noqa
+            return None, None, None
+
+        group = parsed.get("group")
+        if isinstance(group, dict):
+            group_name = group.get("name")
+            return (
+                str(group_name) if group_name else None,
+                group.get("long_name"),
+                group.get("description"),
+            )
+        if group:
+            return str(group), None, None
+
+        # Some legacy filenames lack the month/year tokens the formatter
+        # requires (e.g. SIH ``RDAC2017``).  Fall back to the dataset's
+        # curated group definitions, matching the longest prefix.
+        definitions = getattr(
+            getattr(formatter, "__self__", None),
+            "group_definitions",
+            {},
+        )
+        upper = Path(name).stem.upper()
+        for code in sorted(definitions, key=len, reverse=True):
+            if upper.startswith(code):
+                return code, definitions[code], None
+        return None, None, None
+
+    def survey_group_ids(self, catalog_dir: Path) -> list[GroupIdFix]:
+        """Plan ``group_id`` repairs for rows where it is still NULL.
+
+        The formatter is preferred (it also carries the group's long name);
+        the canonical path segment is used as a fallback for datasets whose
+        formatter cannot recover the group.
+        """
+        import duckdb
+
+        catalog = catalog_dir.name.removesuffix(".duckdb").removeprefix(
+            "catalog_"
+        )
+        con = duckdb.connect(str(catalog_dir), read_only=True)
+        try:
+            rows = con.execute(
+                "SELECT f.path, f.origin_path, split_part(f.path, '/', 5) "
+                "FROM pysus.files f WHERE f.group_id IS NULL"
+            ).fetchall()
+        finally:
+            con.close()
+
+        fixes: list[GroupIdFix] = []
+        for path, origin_path, path_group in rows:
+            origin, dataset = self._split_key(path)
+            if origin is None or dataset is None:
+                continue
+            source_name = (
+                Path(origin_path).name if origin_path else Path(path).name
+            )
+            group_name, long_name, description = self._formatter_group(
+                origin, dataset, source_name
+            )
+            if not group_name and path_group and path_group != "_":
+                group_name = str(path_group)
+            if not group_name:
+                continue
+            fixes.append(
+                GroupIdFix(
+                    catalog=catalog,
+                    path=path,
+                    group_name=str(group_name).upper(),
+                    long_name=long_name,
+                    description=description,
+                )
+            )
+        return fixes
 
     def survey_relayout(
         self,
@@ -440,6 +585,7 @@ class BucketNormalizer:
                     )
                 )
 
+        plan.group_fixes = self.survey_group_ids(catalog_dir)
         return plan
 
     @staticmethod
