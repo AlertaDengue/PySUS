@@ -419,6 +419,74 @@ class TestDuckDataset:
             await mock_dataset.query()
 
     @pytest.mark.asyncio
+    async def test_query_group_includes_null_group_id_from_path(
+        self, mock_dataset, tmp_path
+    ):
+        from pysus.api.ducklake.catalog.orm.dataset import DatasetBase
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session
+        from sqlalchemy.pool import StaticPool
+
+        engine = create_engine(
+            f"duckdb:///{tmp_path / 'catalog.duckdb'}",
+            poolclass=StaticPool,
+        )
+        with engine.connect() as conn:
+            conn.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS pysus")
+            conn.commit()
+        DatasetBase.metadata.create_all(engine)
+
+        def record(file_id: int, path: str, group_id: int | None):
+            return CatalogFile(
+                id=file_id,
+                dataset_id=1,
+                group_id=group_id,
+                path=path,
+                size=10,
+                rows=1,
+                modified=datetime(2024, 1, 1),
+                origin_size=10,
+                origin_path=f"/ftp/{Path(path).name}",
+                year=2024,
+                month=1,
+                state="ES",
+            )
+
+        with Session(engine) as session:
+            session.add(
+                Group(
+                    id=3,
+                    name="RD",
+                    dataset_id=1,
+                    long_name="AIH Reduzida",
+                )
+            )
+            session.add(
+                record(1, "public/data/ftp/sih/RD/2024/01/ES/A.parquet", 3)
+            )
+            session.add(
+                record(2, "public/data/ftp/sih/RD/2024/01/ES/B.parquet", None)
+            )
+            session.add(
+                record(3, "public/data/ftp/sih/SP/2024/01/ES/C.parquet", None)
+            )
+            session.commit()
+
+        mock_dataset.border.get_session = lambda: Session(engine)
+
+        with patch(
+            "pysus.api.ducklake.models.to_thread.run_sync",
+            side_effect=lambda fn, *a, **kw: fn(),
+        ):
+            result = await mock_dataset.query(group="RD")
+
+        assert {f.basename for f in result} == {"A.parquet", "B.parquet"}
+        grouped = next(f for f in result if f.basename == "A.parquet")
+        assert grouped.record.group.name == "RD"
+        ungrouped = next(f for f in result if f.basename == "B.parquet")
+        assert ungrouped.record.group_id is None
+
+    @pytest.mark.asyncio
     async def test_fetch_content_with_groups_and_files(
         self, mock_dataset, mock_client
     ):

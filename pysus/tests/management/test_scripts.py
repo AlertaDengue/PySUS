@@ -225,6 +225,50 @@ class TestCompareClientsScript:
         assert '"origin_counts"' in capsys.readouterr().out
 
 
+class TestBackfillGroupIdsScript:
+    def test_main_dry_run(self, tmp_path, capsys):
+        from pysus.management.scripts import backfill_group_ids
+
+        normalizer = MagicMock()
+        normalizer.survey_group_ids.return_value = []
+        with patch(
+            "pysus.management.scripts.backfill_group_ids.load_env",
+            return_value={"ACCESS_KEY": "ak", "SECRET_KEY": "sk"},
+        ):
+            with patch(
+                "pysus.management.scripts.backfill_group_ids."
+                "BucketNormalizer",
+                return_value=normalizer,
+            ):
+                with patch(
+                    "pysus.management.scripts.backfill_group_ids.CATALOGS",
+                    ("catalog_sih",),
+                ):
+                    with patch(
+                        "pysus.management.scripts.backfill_group_ids."
+                        "httpx.Client"
+                    ) as mock_http:
+                        response = MagicMock()
+                        response.content = b""
+                        response.status_code = 200
+                        response.raise_for_status = MagicMock()
+                        http_client = mock_http.return_value.__enter__
+                        http_client.return_value.get.return_value = response
+                        with patch(
+                            "sys.argv",
+                            [
+                                "backfill_group_ids",
+                                "--dry-run",
+                                "--workdir",
+                                str(tmp_path),
+                            ],
+                        ):
+                            assert backfill_group_ids.main() == 0
+        out = capsys.readouterr().out
+        assert "total group_id repairs: 0" in out
+        assert "DRY RUN" in out
+
+
 class TestRelayoutBucketScript:
     def test_load_env(self, tmp_path):
         from pysus.management.scripts.relayout_bucket import load_env

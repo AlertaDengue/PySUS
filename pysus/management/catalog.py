@@ -318,6 +318,13 @@ class CatalogWriter:
             if origin is not None:
                 sets.append("origin = ?")
                 update_values.append(origin)
+            if group_id is not None:
+                # Historical rows may have been inserted before the group
+                # parser ran (``group_id IS NULL``).  A later sync that
+                # resolves the group must heal the row; never clear an
+                # existing group when the caller has none.
+                sets.append("group_id = ?")
+                update_values.append(group_id)
             if format is not None:
                 sets.append("format = ?")
                 update_values.append(format)
