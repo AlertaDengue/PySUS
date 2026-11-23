@@ -1,6 +1,16 @@
 Release Notes
 ---
 
+## [2.12.3](https://github.com/AlertaDengue/PySUS/compare/2.12.2...2.12.3) (2026-11-23)
+
+### Bug Fixes
+
+* **dbf:** detect the text encoding from the DBF header ([#389](https://github.com/AlertaDengue/PySUS/issues/389)) ([1486990](https://github.com/AlertaDengue/PySUS/commit/1486990780fa13b0885168c00f9789c21649d5a8)), closes [#382](https://github.com/AlertaDengue/PySUS/issues/382)
+
+### Performance Improvements
+
+* **dbf:** decode DBF columns in bulk to remove encoding overhead ([#390](https://github.com/AlertaDengue/PySUS/issues/390)) ([17380ce](https://github.com/AlertaDengue/PySUS/commit/17380cec7ad239e18b08fdd124c298aa329d34ee))
+
 ## [2.12.2](https://github.com/AlertaDengue/PySUS/compare/2.12.1...2.12.2) (2026-11-17)
 
 ### Bug Fixes
