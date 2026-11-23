@@ -26,8 +26,11 @@ from pysus.api.errors import ConversionError, DBFFormatError, FormatError, warn
 from pysus.api.metadata.models import Column
 from pysus.api.models import BaseCompressedFile, BaseLocalFile, BaseTabularFile
 from pysus.data.dbf_reader import (
+    DEFAULT_FALLBACK_ENCODING,
+    _decode,
     read_dbf_fast,
     read_dbf_schema,
+    resolve_encoding,
     stream_dbf_fast,
     validate_dbf,
 )
@@ -401,6 +404,24 @@ class DBF(BaseTabularFile):
     type: FileType = Field("DBF")
     _columns_cache: list["Column"] | None = PrivateAttr(default=None)
     _rows_cache: int | None = PrivateAttr(default=None)
+    _encoding_cache: str | None = PrivateAttr(default=None)
+
+    @property
+    def encoding(self) -> str:
+        """Return the text encoding declared by the DBF header (LDID).
+
+        Same rule as the fast reader: the code page of the language driver
+        ID (header byte 29), or latin-1 when none is declared, the LDID is
+        unknown or the header cannot be read.
+        """
+        if self._encoding_cache is None:
+            try:
+                ldid = read_dbf_schema(self.path).ldid
+            except Exception:  # noqa: BLE001
+                self._encoding_cache = DEFAULT_FALLBACK_ENCODING
+            else:
+                self._encoding_cache = resolve_encoding(ldid)
+        return self._encoding_cache
 
     @property
     def columns(self) -> list["Column"]:
@@ -440,13 +461,16 @@ class DBF(BaseTabularFile):
             self._rows_cache = len(DBFReader(self.path, load=False))
         return self._rows_cache
 
-    def decode_column(self, value):
+    def decode_column(self, value, encoding: str | None = None):
         """Decode a raw DBF value, handling byte strings and null bytes.
 
         Parameters
         ----------
         value : bytes or str or Any
             The value to decode.
+        encoding : str, optional
+            Code page of the bytes. Defaults to :attr:`encoding`, the one
+            declared by the file header.
 
         Returns
         -------
@@ -455,11 +479,7 @@ class DBF(BaseTabularFile):
             neither bytes nor str.
         """
         if isinstance(value, bytes):
-            return (
-                value.decode(encoding="cp1252", errors="replace")
-                .replace("\x00", "")
-                .strip()
-            )
+            return _decode(value, encoding or self.encoding)
         if isinstance(value, str):
             return value.replace("\x00", "").strip()
         return value
@@ -467,7 +487,7 @@ class DBF(BaseTabularFile):
     def _load_dbfread(self) -> pd.DataFrame:
         """Read the entire DBF file into a DataFrame using dbfread."""
         _validate_dbf_file(self.path)
-        dbf = DBFReader(self.path, encoding="cp1252", raw=True)
+        dbf = DBFReader(self.path, encoding=self.encoding, raw=True)
         df = pd.DataFrame(iter(dbf))
         return df.map(self.decode_column)
 
@@ -528,7 +548,7 @@ class DBF(BaseTabularFile):
 
         def _get_db():
             """Open the DBF reader synchronously in a thread."""
-            return DBFReader(self.path, encoding="cp1252", raw=True)
+            return DBFReader(self.path, encoding=self.encoding, raw=True)
 
         dbf_file = await to_thread.run_sync(_get_db)
         records = []
@@ -645,7 +665,7 @@ class DBF(BaseTabularFile):
         callback: Callable[[int, int], None] | None,
     ):
         _validate_dbf_file(self.path)
-        dbf_reader = DBFReader(self.path, encoding="cp1252", raw=True)
+        dbf_reader = DBFReader(self.path, encoding=self.encoding, raw=True)
         total_rows = len(dbf_reader)
         writer = None
         records = []

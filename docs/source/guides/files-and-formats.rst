@@ -89,12 +89,25 @@ The decompression uses Python's ``blast`` module. For large files
 DBF Encoding
 ------------
 
-DBF files use either ``latin-1`` or ``cp1252`` encoding. PySUS uses
-``latin-1`` by default (since v2.6.3). If you encounter mojibake,
-check the file's origin:
+The DBF readers detect the encoding from the file header: byte 29 holds
+the language driver ID (LDID), which declares the code page. SIH files,
+for example, declare ``cp850``, and SIA files declare ``cp1252``. When the
+header declares no code page (LDID ``0x00``, as in CNES, SINAN and SINASC)
+or an unknown one (``0x35`` in SIM files), PySUS falls back to
+``latin-1``. The ``dbfread`` path (``fast=False``, or the fallback when
+the fast reader fails) uses the same encoding, available as
+``DBF.encoding``.
 
-- **DATASUS FTP** → ``latin-1`` (correct default)
-- **Legacy Windows exports** → ``cp1252`` (rare)
+Decoding is lossless: a byte the code page leaves undefined (such as
+``0x81`` in ``cp1252``) becomes the code point with the same number
+(U+0081) instead of being replaced, so every value can be recovered byte
+for byte.
+
+To force an encoding, pass ``encoding=`` to
+:func:`~pysus.data.dbf_reader.read_dbf_fast`,
+:func:`~pysus.data.dbf_reader.read_dbf_filtered` or
+:func:`~pysus.data.dbf_reader.stream_dbf_fast`; to change the fallback,
+pass ``fallback_encoding=``.
 
 Parquet Conversion
 ------------------
