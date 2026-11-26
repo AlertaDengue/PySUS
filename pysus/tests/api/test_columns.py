@@ -105,8 +105,36 @@ class TestSearchColumns:
         columns = search_columns("cnes", "postal code", endpoint="st")
         assert [column.name for column in columns] == ["cod_cep"]
 
+    def test_search_cnes_beds_metadata(self):
+        columns = search_columns("cnes", endpoint="lt")
+        assert {column.name for column in columns} == {
+            "cnes",
+            "codufmun",
+            "tp_leito",
+            "codleito",
+            "qt_exist",
+            "qt_contr",
+            "qt_sus",
+            "qt_nsus",
+            "competen",
+            "nat_jur",
+        }
+        assert all(column.dataset == "cnes" for column in columns)
+        assert all(column.endpoint == "lt" for column in columns)
+        assert "2-Clínico" in (
+            next(c for c in columns if c.name == "tp_leito").categories
+        )
+
+    def test_search_cnes_lt_by_description(self):
+        columns = search_columns("cnes", "contracted beds", endpoint="lt")
+        assert [column.name for column in columns] == ["qt_contr"]
+
+    def test_search_cnes_lt_by_bed_specialty(self):
+        columns = search_columns("cnes", "uti neonatal", endpoint="lt")
+        assert [column.name for column in columns] == ["codleito"]
+
     def test_cnes_uncovered_group_has_no_curated_columns(self):
-        assert search_columns("cnes", endpoint="lt") == []
+        assert search_columns("cnes", endpoint="pf") == []
 
     def test_search_query_matches_categories(self):
         results = search_columns("sinan", "bubônica")

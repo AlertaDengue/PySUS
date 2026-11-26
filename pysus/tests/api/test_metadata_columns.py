@@ -83,8 +83,38 @@ class TestLoadColumnMetadata:
             f"{synthetic_row['VINC_SUS']}-Sim" in meta["VINC_SUS"]["categories"]
         )
 
+    def test_load_cnes_lt_with_synthetic_row(self):
+        """LT metadata describes a synthetic row shaped like LTCE2610."""
+        synthetic_row = {
+            "CNES": "0000001",
+            "CODUFMUN": "230001",
+            "TP_LEITO": "2",
+            "CODLEITO": "33",
+            "QT_EXIST": "10",
+            "QT_CONTR": "0",
+            "QT_SUS": "8",
+            "QT_NSUS": "2",
+            "COMPETEN": "202610",
+            "NAT_JUR": "1234",
+        }
+        meta = load_column_metadata("cnes", group="lt")
+
+        assert set(meta) == set(synthetic_row)
+        assert all(meta[name]["type"] == "string" for name in synthetic_row)
+        assert meta["CNES"]["format"] == "7 characters"
+        assert meta["CODLEITO"]["format"] == "2 characters"
+        assert meta["COMPETEN"]["format"] == "YYYYMM"
+        assert (
+            f"{synthetic_row['TP_LEITO']}-Clínico"
+            in meta["TP_LEITO"]["categories"]
+        )
+        assert (
+            f"{synthetic_row['CODLEITO']}-CLINICA GERAL"
+            in meta["CODLEITO"]["categories"]
+        )
+
     def test_cnes_other_groups_remain_uncovered(self):
-        assert load_column_metadata("cnes", group="lt") == {}
+        assert load_column_metadata("cnes", group="pf") == {}
 
     def test_column_structure(self):
         """Test that column definitions have expected structure."""
@@ -166,5 +196,5 @@ class TestAvailableGroups:
         assert "arboviroses" not in groups
         assert "vigilanciameioambiente" not in groups
 
-    def test_cnes_has_st_group(self):
-        assert available_groups("cnes") == ["st"]
+    def test_cnes_has_lt_and_st_groups(self):
+        assert available_groups("cnes") == ["lt", "st"]
