@@ -20,11 +20,19 @@ Currently available:
 
 - **SIM** — Declaração de Óbito (death certificate)
 - **SINAN** — 30 disease notification schemas (dengue, peste, chikungunya, malaria, tuberculosis, etc.)
-- **CNES** — a curated subset of establishment (ST) fields from the
-  DATASUS CNES 2017-06 technical layout, checked against one official ST
-  file from September 2026. The CODUFMUN width differs between those two
-  sources, so the metadata does not prescribe a fixed width for it. Other
-  CNES groups and fields are not yet covered.
+- **CNES** — curated subsets of two groups from the DATASUS CNES 2017-06
+  technical layout:
+
+  - establishment (ST) fields, checked against one official ST file from
+    September 2026. The CODUFMUN width differs between those two sources,
+    so the metadata does not prescribe a fixed width for it.
+  - hospital bed (LT) fields, checked against one official LT file from
+    October 2026. Bed type (TP_LEITO) and bed specialty (CODLEITO) codes,
+    and the non-SUS bed count (QT_NSUS), come from the official DATASUS
+    TabWin package (TAB_CNES.zip), so they are searchable with
+    ``search_columns("cnes", "uti", endpoint="lt")``.
+
+  Other CNES groups and fields are not yet covered.
 
 SINAN Diseases
 ^^^^^^^^^^^^^^
@@ -110,6 +118,9 @@ Loading Column Metadata
 
    # Load the curated CNES establishment fields
    columns = load_column_metadata("cnes", "st")
+
+   # Load the curated CNES hospital bed fields
+   columns = load_column_metadata("cnes", "lt")
 
 Each column dict contains:
 
